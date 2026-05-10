@@ -15,6 +15,8 @@ let WORD_LIST = [];
 let availableWords = [];
 let discoveredLetters = [null, null, null, null, null];
 let ytPlayer = null;
+let musicQueue = [];
+let isMusicPlaying = false;
 
 // YouTube Iframe API setup
 function onYouTubeIframeAPIReady() {
@@ -30,8 +32,29 @@ function onYouTubeIframeAPIReady() {
 }
 
 function onPlayerStateChange(event) {
-  if (event.data == YT.PlayerState.ENDED || event.data == YT.PlayerState.PAUSED) {
+  // If the video ends (state 0), play the next one
+  if (event.data == YT.PlayerState.ENDED) {
+    playNextMusic();
+  }
+}
+
+function playNextMusic() {
+  if (musicQueue.length === 0) {
+    isMusicPlaying = false;
     document.getElementById('musicWidget').classList.remove('show');
+    return;
+  }
+  
+  isMusicPlaying = true;
+  const currentMusic = musicQueue.shift();
+  
+  document.getElementById('musicThumb').src = currentMusic.thumbnail || 'bg_nature.png';
+  document.getElementById('musicTitle').textContent = currentMusic.title;
+  document.getElementById('musicRequester').textContent = `@${currentMusic.requesterName}`;
+  document.getElementById('musicWidget').classList.add('show');
+  
+  if (ytPlayer && ytPlayer.loadVideoById) {
+    ytPlayer.loadVideoById(currentMusic.videoId);
   }
 }
 
@@ -175,13 +198,12 @@ function connectToLive() {
 
     socket.on('music-request', (data) => {
       console.log("Music Requested:", data);
-      document.getElementById('musicThumb').src = data.thumbnail || 'bg_nature.png';
-      document.getElementById('musicTitle').textContent = data.title;
-      document.getElementById('musicRequester').textContent = `@${data.requesterName}`;
-      document.getElementById('musicWidget').classList.add('show');
+      musicQueue.push(data);
       
-      if (ytPlayer && ytPlayer.loadVideoById) {
-        ytPlayer.loadVideoById(data.videoId);
+      if (!isMusicPlaying) {
+        playNextMusic();
+      } else {
+        showToast(`🎶 Added to queue: ${data.title}`, 3000);
       }
     });
   } else {

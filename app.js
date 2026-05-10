@@ -348,3 +348,15 @@ document.getElementById('usernameInput').addEventListener('keypress', function (
 
 // Set initial background
 bgLayer.className = `bg-layer ${currentBg}`;
+
+// Fullscreen / Immersive Mode Support
+document.addEventListener('click', () => {
+  const docElm = document.documentElement;
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    if (docElm.requestFullscreen) {
+      docElm.requestFullscreen().catch(err => console.log(err));
+    } else if (docElm.webkitRequestFullscreen) { /* Safari */
+      docElm.webkitRequestFullscreen().catch(err => console.log(err));
+    }
+  }
+});

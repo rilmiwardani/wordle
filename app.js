@@ -39,13 +39,18 @@ function onPlayerStateChange(event) {
 }
 
 function playNextMusic() {
+  const hostSkipBtn = document.getElementById('hostSkipBtn');
+  
   if (musicQueue.length === 0) {
     isMusicPlaying = false;
     document.getElementById('musicWidget').classList.remove('show');
+    if (hostSkipBtn) hostSkipBtn.style.display = 'none';
     return;
   }
   
   isMusicPlaying = true;
+  if (hostSkipBtn) hostSkipBtn.style.display = 'flex';
+  
   const currentMusic = musicQueue.shift();
   
   document.getElementById('musicThumb').src = currentMusic.thumbnail || 'bg_nature.png';
@@ -204,6 +209,13 @@ function connectToLive() {
         playNextMusic();
       } else {
         showToast(`🎶 Added to queue: ${data.title}`, 3000);
+      }
+    });
+
+    socket.on('music-skip', () => {
+      if (isMusicPlaying) {
+        showToast("⏭️ Song skipped", 2000);
+        playNextMusic();
       }
     });
   } else {
@@ -418,6 +430,7 @@ document.addEventListener('click', () => {
 
 // Host Music Control Logic
 const hostMusicBtn = document.getElementById('hostMusicBtn');
+const hostSkipBtn = document.getElementById('hostSkipBtn');
 const hostMusicInputContainer = document.getElementById('hostMusicInputContainer');
 const hostMusicInput = document.getElementById('hostMusicInput');
 
@@ -429,6 +442,15 @@ if (hostMusicBtn) {
       hostMusicInput.focus();
     }
   });
+
+  if (hostSkipBtn) {
+    hostSkipBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (isMusicPlaying) {
+        playNextMusic();
+      }
+    });
+  }
 
   hostMusicInputContainer.addEventListener('click', (e) => e.stopPropagation());
 

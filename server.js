@@ -307,6 +307,14 @@ function registerTikTokEvents(connection) {
     payload.comment = data.comment;
     payload.emotes = data.emotes || [];
     
+    // Check for Skip Request
+    if (data.comment.toLowerCase().trim() === '!skip') {
+      if (payload.isModerator || payload.uniqueId === connectionState.uniqueId) {
+        io.emit('music-skip');
+      }
+      return; // Do not relay as a regular chat message
+    }
+    
     // Check for Music Request
     if (data.comment.toLowerCase().startsWith('!play ')) {
       const query = data.comment.substring(6).trim();

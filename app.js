@@ -11,7 +11,8 @@ let isGameOver = false;
 let isProcessing = false;
 let round = 1;
 let currentBg = 'nature'; // 'nature' or 'city'
-let WORD_LIST = [];
+let TARGET_WORDS = [];
+let VALID_WORDS = [];
 let availableWords = [];
 let discoveredLetters = [null, null, null, null, null];
 let ytPlayer = null;
@@ -64,17 +65,25 @@ function playNextMusic() {
 }
 
 // Fetch words on load
-fetch('wordlist.txt')
-  .then(response => response.text())
-  .then(text => {
-    WORD_LIST = text.split('\n')
-      .map(w => w.trim().toUpperCase())
-      .filter(w => w.length === WORD_LENGTH);
-    availableWords = [...WORD_LIST];
-    shuffleArray(availableWords);
-    console.log(`Loaded ${WORD_LIST.length} words.`);
-  })
-  .catch(err => console.error("Failed to load wordlist:", err));
+Promise.all([
+  fetch('target_words.txt').then(r => r.text()),
+  fetch('valid_words.txt').then(r => r.text())
+]).then(([targetText, validText]) => {
+  TARGET_WORDS = targetText.split('\n')
+    .map(w => w.trim().toUpperCase())
+    .filter(w => w.length === WORD_LENGTH);
+    
+  const validList = validText.split('\n')
+    .map(w => w.trim().toUpperCase())
+    .filter(w => w.length === WORD_LENGTH);
+    
+  // A valid guess can be any word from VALID_WORDS or TARGET_WORDS
+  VALID_WORDS = [...new Set([...validList, ...TARGET_WORDS])];
+  
+  availableWords = [...TARGET_WORDS];
+  shuffleArray(availableWords);
+  console.log(`Loaded ${TARGET_WORDS.length} target words and ${VALID_WORDS.length} valid words.`);
+}).catch(err => console.error("Failed to load wordlists:", err));
 
 function shuffleArray(array) {
   for (let i = array.length - 1; i > 0; i--) {
@@ -84,9 +93,9 @@ function shuffleArray(array) {
 }
 
 function getRandomWord() {
-  if (WORD_LIST.length === 0) return "HELLO"; // fallback
+  if (TARGET_WORDS.length === 0) return "HELLO"; // fallback
   if (availableWords.length === 0) {
-    availableWords = [...WORD_LIST];
+    availableWords = [...TARGET_WORDS];
     shuffleArray(availableWords);
   }
   return availableWords.pop();
@@ -302,7 +311,7 @@ async function processGuess(guessWord, userData, speed) {
   const guessArray = guessWord.split('');
   const targetArray = currentWord.split('');
   const statuses = Array(WORD_LENGTH).fill('absent');
-  const isValidWord = WORD_LIST.includes(guessWord);
+  const isValidWord = VALID_WORDS.includes(guessWord);
   
   if (isValidWord) {
     // First pass: correct

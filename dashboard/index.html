@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TikTok Live Server — Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --surface2: #1a1a28;
+      --border: #2a2a3a;
+      --text: #e4e4ef;
+      --text2: #8888a0;
+      --accent: #fe2c55;
+      --accent2: #25f4ee;
+      --green: #2ee06a;
+      --orange: #ffa726;
+      --purple: #b388ff;
+      --blue: #42a5f5;
+      --gold: #ffd54f;
+      --radius: 16px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ═══ HEADER ═══ */
+    .header {
+      background: linear-gradient(135deg, rgba(254,44,85,0.08), rgba(37,244,238,0.06));
+      border-bottom: 1px solid var(--border);
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      backdrop-filter: blur(30px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-left { display:flex; align-items:center; gap:16px; }
+    .header-logo {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 12px;
+      display: flex; align-items:center; justify-content:center;
+      font-size: 22px; font-weight: 900;
+      box-shadow: 0 4px 24px rgba(254,44,85,0.3);
+    }
+    .header-title { font-size:20px; font-weight:700; letter-spacing:-0.5px; }
+    .header-sub { font-size:12px; color:var(--text2); margin-top:2px; }
+
+    /* ═══ CONNECTION PANEL ═══ */
+    .connect-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin: 24px 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .connect-panel label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text2);
+      white-space: nowrap;
+    }
+    .connect-panel input {
+      flex: 1;
+      min-width: 200px;
+      padding: 12px 18px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+      transition: border 0.2s, box-shadow 0.2s;
+    }
+    .connect-panel input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(254,44,85,0.15);
+    }
+    .btn {
+      padding: 12px 28px;
+      border-radius: 12px;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-connect {
+      background: linear-gradient(135deg, var(--accent), #ff4477);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(254,44,85,0.3);
+    }
+    .btn-connect:hover { transform:translateY(-1px); box-shadow:0 6px 24px rgba(254,44,85,0.4); }
+    .btn-disconnect {
+      background: var(--surface2);
+      color: var(--text2);
+      border: 1px solid var(--border);
+    }
+    .btn-disconnect:hover { background: #ff444420; color: #ff6666; border-color:#ff4444; }
+
+    .status-badge {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .status-badge.disconnected { background: #ff444420; color: #ff6666; }
+    .status-badge.connecting { background: #ffa72620; color: var(--orange); animation: pulse 1.5s infinite; }
+    .status-badge.connected { background: #2ee06a20; color: var(--green); }
+
+    @keyframes pulse {
+      0%, 100% { opacity:1; }
+      50% { opacity:0.5; }
+    }
+
+    /* ═══ STATS GRID ═══ */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin: 0 32px 24px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .stat-card:hover { transform:translateY(-2px); border-color:var(--accent); }
+    .stat-icon { font-size: 28px; margin-bottom: 8px; }
+    .stat-value { font-size: 32px; font-weight: 800; letter-spacing: -1px; }
+    .stat-label { font-size: 11px; color: var(--text2); font-weight: 500; text-transform:uppercase; margin-top: 4px; letter-spacing:0.5px; }
+
+    /* ═══ MAIN LAYOUT ═══ */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 24px;
+      margin: 0 32px 32px;
+    }
+    @media (max-width: 900px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .panel-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .panel-header .badge {
+      background: var(--accent);
+      color: #fff;
+      padding: 3px 10px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    /* ═══ EVENT FEED ═══ */
+    .event-feed {
+      flex: 1;
+      overflow-y: auto;
+      max-height: 600px;
+      padding: 8px;
+    }
+    .event-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      transition: background 0.15s;
+      animation: slideIn 0.3s ease;
+    }
+    .event-item:hover { background: var(--surface2); }
+
+    @keyframes slideIn {
+      from { opacity:0; transform:translateY(-8px); }
+      to { opacity:1; transform:translateY(0); }
+    }
+
+    .event-avatar {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+      background: var(--surface2);
+    }
+    .event-content { flex:1; min-width:0; }
+    .event-nickname {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .event-text {
+      font-size: 13px;
+      color: var(--text2);
+      margin-top: 2px;
+      word-break: break-word;
+    }
+    .event-type {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .event-type.chat { background: #42a5f520; color: var(--blue); }
+    .event-type.gift { background: #ffd54f20; color: var(--gold); }
+    .event-type.like { background: #fe2c5520; color: var(--accent); }
+    .event-type.member { background: #2ee06a20; color: var(--green); }
+    .event-type.social { background: #b388ff20; color: var(--purple); }
+    .event-type.follow { background: #b388ff20; color: var(--purple); }
+    .event-type.share { background: #25f4ee20; color: var(--accent2); }
+    .event-type.subscribe { background: #ffa72620; color: var(--orange); }
+    .event-type.emote { background: #42a5f520; color: var(--blue); }
+    .event-type.envelope { background: #ffd54f20; color: var(--gold); }
+    .event-type.barrage { background: #ff444420; color: #ff6666; }
+    .event-type.questionNew { background: #25f4ee20; color: var(--accent2); }
+
+    /* ═══ ROOM INFO ═══ */
+    .room-info-content { padding: 20px; }
+    .room-info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .room-info-row:last-child { border:none; }
+    .room-info-label { color:var(--text2); font-weight:500; }
+    .room-info-value { font-weight:600; text-align:right; max-width:60%; word-break:break-all; }
+
+    /* ═══ CODE PANEL ═══ */
+    .code-panel {
+      margin: 0 32px 32px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .code-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .code-block {
+      padding: 20px;
+      font-family: 'Consolas', 'Fira Code', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #c8c8e0;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .code-block .kw { color: #c792ea; }
+    .code-block .fn { color: #82aaff; }
+    .code-block .str { color: #c3e88d; }
+    .code-block .cm { color: #5a5a7a; }
+    .code-block .num { color: #f78c6c; }
+
+    /* ═══ SCROLLBAR ═══ */
+    ::-webkit-scrollbar { width:6px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+    ::-webkit-scrollbar-thumb:hover { background:#444; }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text2);
+    }
+    .empty-state .icon { font-size:48px; margin-bottom:16px; opacity:0.3; }
+    .empty-state p { font-size:14px; }
+
+    .tabs { display:flex; border-bottom:1px solid var(--border); }
+    .tab {
+      padding: 12px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      color: var(--text2);
+      transition: all 0.2s;
+    }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <div class="header-logo">🎮</div>
+      <div>
+        <div class="header-title">TikTok Live Server</div>
+        <div class="header-sub">WebSocket Backend for Interactive Games</div>
+      </div>
+    </div>
+    <div>
+      <span class="status-badge disconnected" id="statusBadge">DISCONNECTED</span>
+    </div>
+  </header>
+
+  <!-- CONNECTION -->
+  <div class="connect-panel">
+    <label>TikTok @username</label>
+    <input type="text" id="usernameInput" placeholder="Enter TikTok username..." />
+    <button class="btn btn-connect" id="connectBtn" onclick="connectTikTok()">
+      ⚡ Connect
+    </button>
+    <button class="btn btn-disconnect" id="disconnectBtn" onclick="disconnectTikTok()" style="display:none">
+      ✕ Disconnect
+    </button>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">👥</div>
+      <div class="stat-value" id="statViewers">0</div>
+      <div class="stat-label">Viewers</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">💬</div>
+      <div class="stat-value" id="statChat">0</div>
+      <div class="stat-label">Chat</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🎁</div>
+      <div class="stat-value" id="statGift">0</div>
+      <div class="stat-label">Gifts</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">❤️</div>
+      <div class="stat-value" id="statLike">0</div>
+      <div class="stat-label">Likes</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">👋</div>
+      <div class="stat-value" id="statMember">0</div>
+      <div class="stat-label">Joins</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🔗</div>
+      <div class="stat-value" id="statClients">0</div>
+      <div class="stat-label">Clients</div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main-grid">
+    <!-- EVENT FEED -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>📡 Live Event Feed</span>
+        <span class="badge" id="eventCount">0</span>
+      </div>
+      <div class="tabs">
+        <div class="tab active" data-filter="all" onclick="setFilter('all', this)">All</div>
+        <div class="tab" data-filter="chat" onclick="setFilter('chat', this)">💬 Chat</div>
+        <div class="tab" data-filter="gift" onclick="setFilter('gift', this)">🎁 Gift</div>
+        <div class="tab" data-filter="like" onclick="setFilter('like', this)">❤️ Like</div>
+        <div class="tab" data-filter="member" onclick="setFilter('member', this)">👋 Join</div>
+        <div class="tab" data-filter="social" onclick="setFilter('social', this)">🔔 Social</div>
+      </div>
+      <div class="event-feed" id="eventFeed">
+        <div class="empty-state">
+          <div class="icon">📡</div>
+          <p>Connect to a TikTok Live to see events</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROOM INFO -->
+    <div>
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-header">🏠 Room Info</div>
+        <div class="room-info-content" id="roomInfo">
+          <div class="empty-state" style="padding:24px">
+            <p>No room connected</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- QUICK CODE -->
+      <div class="panel">
+        <div class="panel-header">💻 Quick Integration</div>
+        <div class="code-block"><span class="cm">// Connect to this server from your game</span>
+<span class="kw">import</span> { io } <span class="kw">from</span> <span class="str">"socket.io-client"</span>;
+
+<span class="kw">const</span> socket = <span class="fn">io</span>(<span class="str">"http://localhost:9200"</span>);
+
+socket.<span class="fn">on</span>(<span class="str">"chat"</span>, (data) => {
+  console.<span class="fn">log</span>(data.nickname, data.comment);
+  console.<span class="fn">log</span>(data.profilePictureUrl);
+});
+
+socket.<span class="fn">on</span>(<span class="str">"gift"</span>, (data) => {
+  console.<span class="fn">log</span>(data.nickname, data.giftName);
+  console.<span class="fn">log</span>(<span class="str">"💎"</span>, data.diamondCount);
+});
+
+socket.<span class="fn">on</span>(<span class="str">"like"</span>, (data) => {
+  console.<span class="fn">log</span>(data.nickname, data.likeCount);
+});
+
+socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
+  console.<span class="fn">log</span>(data.nickname, <span class="str">"joined"</span>);
+});</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Socket.IO Client -->
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+  <script>
+    // ═══ SOCKET CONNECTION ═══
+    const socket = io("http://localhost:9200");
+    let currentFilter = "all";
+    let events = [];
+
+    socket.on("connect", () => {
+      console.log("[Dashboard] Connected to server");
+      socket.emit("getStatus");
+    });
+
+    // ═══ STATUS UPDATES ═══
+    socket.on("statusUpdate", (data) => {
+      updateStatus(data);
+    });
+
+    socket.on("tiktokConnected", (data) => {
+      showRoomInfo(data);
+    });
+
+    socket.on("tiktokDisconnected", () => {
+      document.getElementById("roomInfo").innerHTML =
+        '<div class="empty-state" style="padding:24px"><p>Disconnected</p></div>';
+    });
+
+    // ═══ EVENT HANDLERS ═══
+    const eventTypes = [
+      "chat", "gift", "like", "member", "social",
+      "follow", "share", "subscribe", "emote",
+      "envelope", "questionNew", "barrage",
+      "linkMicBattle", "linkMicArmies", "liveIntro"
+    ];
+
+    eventTypes.forEach((type) => {
+      socket.on(type, (data) => {
+        addEvent(type, data);
+      });
+    });
+
+    // ═══ FUNCTIONS ═══
+    function connectTikTok() {
+      const username = document.getElementById("usernameInput").value.trim().replace("@", "");
+      if (!username) return;
+      socket.emit("connect-tiktok", username);
+      document.getElementById("connectBtn").style.display = "none";
+      document.getElementById("disconnectBtn").style.display = "inline-flex";
+    }
+
+    function disconnectTikTok() {
+      socket.emit("disconnect-tiktok");
+      document.getElementById("connectBtn").style.display = "inline-flex";
+      document.getElementById("disconnectBtn").style.display = "none";
+    }
+
+    function updateStatus(data) {
+      const badge = document.getElementById("statusBadge");
+      badge.className = "status-badge " + data.status;
+      badge.textContent = data.status.toUpperCase();
+
+      if (data.status === "connected") {
+        document.getElementById("connectBtn").style.display = "none";
+        document.getElementById("disconnectBtn").style.display = "inline-flex";
+      } else if (data.status === "disconnected") {
+        document.getElementById("connectBtn").style.display = "inline-flex";
+        document.getElementById("disconnectBtn").style.display = "none";
+      }
+
+      document.getElementById("statViewers").textContent = formatNum(data.viewers || 0);
+      document.getElementById("statChat").textContent = formatNum(data.eventStats?.chat || 0);
+      document.getElementById("statGift").textContent = formatNum(data.eventStats?.gift || 0);
+      document.getElementById("statLike").textContent = formatNum(data.eventStats?.like || 0);
+      document.getElementById("statMember").textContent = formatNum(data.eventStats?.member || 0);
+      document.getElementById("statClients").textContent = data.connectedClients || 0;
+
+      if (data.roomInfo) {
+        showRoomInfo({ roomId: data.roomId, roomInfo: data.roomInfo });
+      }
+    }
+
+    function showRoomInfo(data) {
+      const info = data.roomInfo || {};
+      document.getElementById("roomInfo").innerHTML = `
+        <div class="room-info-row">
+          <span class="room-info-label">Username</span>
+          <span class="room-info-value">@${info.uniqueId || "—"}</span>
+        </div>
+        <div class="room-info-row">
+          <span class="room-info-label">Room ID</span>
+          <span class="room-info-value">${data.roomId || "—"}</span>
+        </div>
+        <div class="room-info-row">
+          <span class="room-info-label">Title</span>
+          <span class="room-info-value">${info.title || "—"}</span>
+        </div>
+        <div class="room-info-row">
+          <span class="room-info-label">Host</span>
+          <span class="room-info-value">${info.hostName || info.uniqueId || "—"}</span>
+        </div>
+      `;
+    }
+
+    function addEvent(type, data) {
+      const event = { type, data, timestamp: Date.now() };
+      events.unshift(event);
+      if (events.length > 200) events.length = 200;
+      document.getElementById("eventCount").textContent = events.length;
+      renderEvent(event, true);
+    }
+
+    function renderEvent(event, prepend = false) {
+      const { type, data } = event;
+      if (currentFilter !== "all" && type !== currentFilter) return;
+
+      const feed = document.getElementById("eventFeed");
+
+      // Remove empty state
+      const empty = feed.querySelector(".empty-state");
+      if (empty) empty.remove();
+
+      const avatarUrl = data.profilePictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.nickname || "?")}&background=2a2a3a&color=fff&size=76`;
+      const nickname = escapeHtml(data.nickname || data.uniqueId || "Anonymous");
+
+      let text = "";
+      switch (type) {
+        case "chat":
+          text = escapeHtml(data.comment || "");
+          break;
+        case "gift":
+          text = `🎁 ${escapeHtml(data.giftName || "Gift")} × ${data.repeatCount || 1} (💎 ${data.diamondCount || 0})`;
+          break;
+        case "like":
+          text = `❤️ liked × ${data.likeCount || 1}`;
+          break;
+        case "member":
+          text = "👋 joined the live";
+          break;
+        case "social":
+        case "follow":
+          text = `🔔 ${data.displayType || data.label || "social action"}`;
+          break;
+        case "share":
+          text = "📤 shared the live";
+          break;
+        case "subscribe":
+          text = `⭐ subscribed (month ${data.subMonth || 1})`;
+          break;
+        case "emote":
+          text = "😎 sent an emote";
+          break;
+        case "envelope":
+          text = `🧧 treasure box (${data.coins || 0} coins)`;
+          break;
+        case "barrage":
+          text = `💥 ${escapeHtml(data.caption || "barrage")}`;
+          break;
+        case "questionNew":
+          text = `❓ ${escapeHtml(data.questionText || "question")}`;
+          break;
+        default:
+          text = type;
+      }
+
+      const div = document.createElement("div");
+      div.className = "event-item";
+      div.innerHTML = `
+        <img class="event-avatar" src="${avatarUrl}" alt="" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(nickname)}&background=2a2a3a&color=fff&size=76'" />
+        <div class="event-content">
+          <div class="event-nickname">${nickname}</div>
+          <div class="event-text">${text}</div>
+        </div>
+        <span class="event-type ${type}">${type}</span>
+      `;
+
+      if (prepend) {
+        feed.insertBefore(div, feed.firstChild);
+        // Keep max 150 items in DOM
+        while (feed.children.length > 150) {
+          feed.removeChild(feed.lastChild);
+        }
+      } else {
+        feed.appendChild(div);
+      }
+    }
+
+    function setFilter(filter, el) {
+      currentFilter = filter;
+      document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+      el.classList.add("active");
+
+      const feed = document.getElementById("eventFeed");
+      feed.innerHTML = "";
+
+      const filtered = filter === "all" ? events : events.filter((e) => e.type === filter);
+      if (filtered.length === 0) {
+        feed.innerHTML = '<div class="empty-state"><div class="icon">📡</div><p>No events yet</p></div>';
+      } else {
+        filtered.slice(0, 100).forEach((e) => renderEvent(e));
+      }
+    }
+
+    function formatNum(n) {
+      if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
+      if (n >= 1000) return (n / 1000).toFixed(1) + "K";
+      return n.toString();
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // Enter key to connect
+    document.getElementById("usernameInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") connectTikTok();
+    });
+
+    // Periodic status poll
+    setInterval(() => {
+      socket.emit("getStatus");
+    }, 5000);
+  </script>
+</body>
+</html>

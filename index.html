@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TikTok Live Wordle</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+</head>
+<body>
+  
+  <!-- Dynamic Background Wrapper -->
+  <div class="bg-layer" id="bgLayer"></div>
+  <div class="glass-overlay"></div>
+
+  <!-- Connection Overlay -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-card">
+      <div class="login-logo">🎮</div>
+      <h1>TikTok Wordle</h1>
+      <p>Enter TikTok username to start</p>
+      <div class="input-group">
+        <span class="at-symbol">@</span>
+        <input type="text" id="usernameInput" placeholder="username" autocomplete="off">
+      </div>
+      <button id="connectBtn" onclick="connectToLive()">Connect to Live</button>
+      <div id="loginStatus" class="status-msg"></div>
+    </div>
+  </div>
+
+  <!-- Main Game Area -->
+  <div class="game-container" id="gameContainer" style="display: none;">
+    <header>
+      <div class="header-left">
+        <div class="room-info">
+          <div class="live-badge">LIVE</div>
+          <span id="roomHost">@username</span>
+        </div>
+      </div>
+      <div class="header-title">Wordle</div>
+      <div class="header-right">
+        <div class="round-badge">Round <span id="roundNumber">1</span></div>
+      </div>
+    </header>
+
+    <div class="instruction">Type a 5-letter word in chat to guess!</div>
+
+    <!-- Hint Board -->
+    <div class="hint-container">
+      <div class="hint-label">HINTS DISCOVERED</div>
+      <div class="hint-board" id="hintBoard">
+        <div class="hint-spacer"></div>
+        <div class="hint-tile" id="hint-0"></div>
+        <div class="hint-tile" id="hint-1"></div>
+        <div class="hint-tile" id="hint-2"></div>
+        <div class="hint-tile" id="hint-3"></div>
+        <div class="hint-tile" id="hint-4"></div>
+      </div>
+    </div>
+
+    <!-- Wordle Board -->
+    <div class="board-container">
+      <div id="board"></div>
+    </div>
+
+    <!-- Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+  </div>
+
+  <!-- Aesthetic Win Overlay -->
+  <div class="win-overlay" id="winOverlay">
+    <div class="win-card">
+      <div class="win-avatar-container">
+        <img id="winAvatar" src="" alt="Winner">
+        <div class="crown-icon">👑</div>
+      </div>
+      <div class="win-title">WE HAVE A WINNER!</div>
+      <div class="win-name" id="winName">@username</div>
+      <div class="win-divider"></div>
+      <div class="win-subtitle">Guessed the word:</div>
+      <div class="win-word" id="winWord">APPLE</div>
+      <div class="win-footer">Next round starting soon...</div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

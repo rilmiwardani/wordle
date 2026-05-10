@@ -7,6 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+  <script src="https://www.youtube.com/iframe_api"></script>
 </head>
 <body>
   
@@ -43,6 +44,16 @@
         <div class="round-badge">Round <span id="roundNumber">1</span></div>
       </div>
     </header>
+
+    <!-- Music Player Widget -->
+    <div class="music-widget" id="musicWidget">
+      <div id="ytPlayerContainer"></div>
+      <img id="musicThumb" src="" alt="Album Art">
+      <div class="music-info">
+        <div class="music-title" id="musicTitle">Song Title</div>
+        <div class="music-requester">Req by <span id="musicRequester">@user</span></div>
+      </div>
+    </div>
 
     <div class="instruction">Type a 5-letter word in chat to guess!</div>
 

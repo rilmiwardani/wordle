@@ -14,6 +14,26 @@ let currentBg = 'nature'; // 'nature' or 'city'
 let WORD_LIST = [];
 let availableWords = [];
 let discoveredLetters = [null, null, null, null, null];
+let ytPlayer = null;
+
+// YouTube Iframe API setup
+function onYouTubeIframeAPIReady() {
+  ytPlayer = new YT.Player('ytPlayerContainer', {
+    height: '0',
+    width: '0',
+    videoId: '',
+    playerVars: { 'autoplay': 1, 'controls': 0 },
+    events: {
+      'onStateChange': onPlayerStateChange
+    }
+  });
+}
+
+function onPlayerStateChange(event) {
+  if (event.data == YT.PlayerState.ENDED || event.data == YT.PlayerState.PAUSED) {
+    document.getElementById('musicWidget').classList.remove('show');
+  }
+}
 
 // Fetch words on load
 fetch('wordlist.txt')
@@ -150,6 +170,18 @@ function connectToLive() {
 
     socket.on('chat', (data) => {
       handleChatGuess(data);
+    });
+
+    socket.on('music-request', (data) => {
+      console.log("Music Requested:", data);
+      document.getElementById('musicThumb').src = data.thumbnail || 'bg_nature.png';
+      document.getElementById('musicTitle').textContent = data.title;
+      document.getElementById('musicRequester').textContent = `@${data.requesterName}`;
+      document.getElementById('musicWidget').classList.add('show');
+      
+      if (ytPlayer && ytPlayer.loadVideoById) {
+        ytPlayer.loadVideoById(data.videoId);
+      }
     });
   } else {
     socket.emit('connect-tiktok', username);

@@ -232,6 +232,69 @@ header {
   font-size: 0.9rem;
 }
 
+/* Music Widget */
+.music-widget {
+  position: absolute;
+  top: 80px;
+  right: 16px;
+  background: rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transform: translateX(150%);
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 100;
+  max-width: 250px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.music-widget.show {
+  transform: translateX(0);
+}
+
+#ytPlayerContainer {
+  display: none;
+}
+
+#musicThumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  animation: spin 4s linear infinite;
+}
+
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+.music-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.music-title {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #fff;
+}
+
+.music-requester {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+#musicRequester {
+  color: var(--correct);
+  font-weight: 600;
+}
+
 /* Hint Board */
 .hint-container {
   width: 100%;

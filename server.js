@@ -13,6 +13,7 @@ const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
 const { WebcastPushConnection } = require("tiktok-live-connector");
+const ytSearch = require("yt-search");
 
 // ═══════════════════════════════════════════════════════
 //  CONFIG
@@ -279,10 +280,35 @@ function disconnectFromTikTok() {
 // ═══════════════════════════════════════════════════════
 function registerTikTokEvents(connection) {
   // ─── Chat Messages ───
-  connection.on("chat", (data) => {
+  connection.on("chat", async (data) => {
     const payload = formatUser(data);
     payload.comment = data.comment;
     payload.emotes = data.emotes || [];
+    
+    // Check for Music Request
+    if (data.comment.toLowerCase().startsWith('!play ')) {
+      const query = data.comment.substring(6).trim();
+      if (query) {
+        try {
+          const r = await ytSearch(query);
+          if (r.videos.length > 0) {
+            const video = r.videos[0];
+            io.emit('music-request', {
+              videoId: video.videoId,
+              title: video.title,
+              author: video.author.name,
+              thumbnail: video.image,
+              requesterName: payload.nickname,
+              requesterImg: payload.profilePictureUrl
+            });
+          }
+        } catch (err) {
+          console.error("[Music] Error searching:", err);
+        }
+      }
+      return; // Do not relay as a regular chat message
+    }
+
     logEvent("chat", payload);
     io.emit("chat", payload);
   });

@@ -118,6 +118,28 @@ io.on("connection", (socket) => {
     disconnectFromTikTok();
   });
 
+  // Host Music Request
+  socket.on("host-music-request", async (query) => {
+    console.log(`[Socket.IO] Host requested music: ${query}`);
+    try {
+      const ytSearch = require("yt-search");
+      const r = await ytSearch(query);
+      if (r.videos.length > 0) {
+        const video = r.videos[0];
+        io.emit('music-request', {
+          videoId: video.videoId,
+          title: video.title,
+          author: video.author.name,
+          thumbnail: video.image,
+          requesterName: "Host",
+          requesterImg: "https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/7339798436154310662~c5_100x100.jpeg"
+        });
+      }
+    } catch (err) {
+      console.error("[Music] Error searching:", err);
+    }
+  });
+
   // Get status
   socket.on("getStatus", () => {
     socket.emit("statusUpdate", getStatusPayload());

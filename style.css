@@ -609,3 +609,63 @@ header {
   0%, 100% { opacity: 0.5; }
   50% { opacity: 1; }
 }
+
+/* Host Music Control */
+.host-music-control {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.host-music-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(5px);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.host-music-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.host-music-input {
+  width: 0;
+  overflow: hidden;
+  transition: width 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 20px;
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+}
+
+.host-music-input.open {
+  width: 200px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.host-music-input input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: white;
+  padding: 10px 15px;
+  font-family: inherit;
+  font-size: 14px;
+}

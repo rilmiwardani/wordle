@@ -154,6 +154,7 @@ function connectToLive() {
       if (data.status === 'connected') {
         loginOverlay.style.display = 'none';
         gameContainer.style.display = 'flex';
+        document.getElementById('hostMusicControl').style.display = 'flex';
         roomHost.textContent = `@${data.uniqueId}`;
         
         if(currentWord === "") {
@@ -392,3 +393,31 @@ document.addEventListener('click', () => {
     }
   }
 });
+
+// Host Music Control Logic
+const hostMusicBtn = document.getElementById('hostMusicBtn');
+const hostMusicInputContainer = document.getElementById('hostMusicInputContainer');
+const hostMusicInput = document.getElementById('hostMusicInput');
+
+if (hostMusicBtn) {
+  hostMusicBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // prevent fullscreen trigger
+    hostMusicInputContainer.classList.toggle('open');
+    if (hostMusicInputContainer.classList.contains('open')) {
+      hostMusicInput.focus();
+    }
+  });
+
+  hostMusicInputContainer.addEventListener('click', (e) => e.stopPropagation());
+
+  hostMusicInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      const query = hostMusicInput.value.trim();
+      if (query && socket) {
+        socket.emit('host-music-request', query.replace('!play ', ''));
+        hostMusicInput.value = '';
+        hostMusicInputContainer.classList.remove('open');
+      }
+    }
+  });
+}

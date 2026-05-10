@@ -318,7 +318,7 @@ header {
 
 .hint-board {
   display: grid;
-  grid-template-columns: 1fr repeat(5, 1fr);
+  grid-template-columns: 1fr repeat(var(--word-length, 5), 1fr);
   gap: 8px;
   justify-content: center;
 }
@@ -370,7 +370,7 @@ header {
 
 .board-row {
   display: grid;
-  grid-template-columns: 1fr repeat(5, 1fr);
+  grid-template-columns: 1fr repeat(var(--word-length, 5), 1fr);
   gap: 8px;
 }
 

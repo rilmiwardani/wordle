@@ -1,7 +1,8 @@
-// Configuration
 const SOCKET_URL = "http://localhost:9200";
 const MAX_GUESSES = 6;
-const WORD_LENGTH = 5;
+const urlParams = new URLSearchParams(window.location.search);
+const WORD_LENGTH = parseInt(urlParams.get('length')) || 5;
+document.documentElement.style.setProperty('--word-length', WORD_LENGTH);
 
 // State
 let socket = null;
@@ -14,7 +15,7 @@ let currentBg = 'nature'; // 'nature' or 'city'
 let TARGET_WORDS = [];
 let VALID_WORDS = [];
 let availableWords = [];
-let discoveredLetters = [null, null, null, null, null];
+let discoveredLetters = Array(WORD_LENGTH).fill(null);
 let ytPlayer = null;
 let musicQueue = [];
 let isMusicPlaying = false;
@@ -65,9 +66,12 @@ function playNextMusic() {
 }
 
 // Fetch words on load
+const targetFile = WORD_LENGTH === 6 ? 'target_words_6.txt' : 'target_words.txt';
+const validFile = WORD_LENGTH === 6 ? 'valid_words_6.txt' : 'valid_words.txt';
+
 Promise.all([
-  fetch('target_words.txt').then(r => r.text()),
-  fetch('valid_words.txt').then(r => r.text())
+  fetch(targetFile).then(r => r.text()),
+  fetch(validFile).then(r => r.text())
 ]).then(([targetText, validText]) => {
   TARGET_WORDS = targetText.split('\n')
     .map(w => w.trim().toUpperCase())
@@ -136,12 +140,23 @@ function initBoard() {
   }
 }
 
+function initHintBoard() {
+  const hintBoard = document.getElementById('hintBoard');
+  hintBoard.innerHTML = '<div class="hint-spacer"></div>';
+  for(let i=0; i<WORD_LENGTH; i++) {
+    const tile = document.createElement('div');
+    tile.className = 'hint-tile';
+    tile.id = `hint-${i}`;
+    hintBoard.appendChild(tile);
+  }
+}
+
 // Start Game
 function startNewRound() {
   currentWord = getRandomWord();
   guesses = [];
   guessQueue = [];
-  discoveredLetters = [null, null, null, null, null];
+  discoveredLetters = Array(WORD_LENGTH).fill(null);
   isGameOver = false;
   isProcessing = false;
   roundNumber.textContent = round;
@@ -151,15 +166,7 @@ function startNewRound() {
   bgLayer.className = `bg-layer ${currentBg}`;
   
   initBoard();
-  
-  // Reset Hint Board
-  for (let i = 0; i < WORD_LENGTH; i++) {
-    const hintTile = document.getElementById(`hint-${i}`);
-    if (hintTile) {
-      hintTile.textContent = '';
-      hintTile.className = 'hint-tile';
-    }
-  }
+  initHintBoard();
 
   console.log(`[Cheat] Target word is: ${currentWord}`);
   showToast(`Round ${round} Started!`, 2000);

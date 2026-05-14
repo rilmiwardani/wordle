@@ -71,29 +71,38 @@ let allTargetWords = { 5: [], 6: [] };
 let allValidWords = { 5: [], 6: [] };
 let allAvailableWords = { 5: [], 6: [] };
 
-Promise.all([
-  fetch('target_words.txt').then(r => r.text()),
-  fetch('valid_words.txt').then(r => r.text()),
-  fetch('target_words_6.txt').then(r => r.text()).catch(() => ""),
-  fetch('valid_words_6.txt').then(r => r.text()).catch(() => "")
-]).then(([t5, v5, t6, v6]) => {
-  // Process length 5
-  allTargetWords[5] = t5.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 5);
-  const validList5 = v5.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 5);
-  allValidWords[5] = [...new Set([...validList5, ...allTargetWords[5]])];
-  allAvailableWords[5] = [...allTargetWords[5]];
-  shuffleArray(allAvailableWords[5]);
-  
-  // Process length 6
-  allTargetWords[6] = t6.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 6);
-  const validList6 = v6.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 6);
-  allValidWords[6] = [...new Set([...validList6, ...allTargetWords[6]])];
-  allAvailableWords[6] = [...allTargetWords[6]];
-  shuffleArray(allAvailableWords[6]);
+function loadWordLists(lang) {
+  return new Promise((resolve, reject) => {
+    let suffix = lang === 'en' ? '' : '_id';
+    Promise.all([
+      fetch(`target_words${suffix}.txt`).then(r => r.text()),
+      fetch(`valid_words${suffix}.txt`).then(r => r.text()),
+      fetch(`target_words${suffix}_6.txt`).then(r => r.text()).catch(() => ""),
+      fetch(`valid_words${suffix}_6.txt`).then(r => r.text()).catch(() => "")
+    ]).then(([t5, v5, t6, v6]) => {
+      // Process length 5
+      allTargetWords[5] = t5.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 5);
+      const validList5 = v5.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 5);
+      allValidWords[5] = [...new Set([...validList5, ...allTargetWords[5]])];
+      allAvailableWords[5] = [...allTargetWords[5]];
+      shuffleArray(allAvailableWords[5]);
+      
+      // Process length 6
+      allTargetWords[6] = t6.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 6);
+      const validList6 = v6.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 6);
+      allValidWords[6] = [...new Set([...validList6, ...allTargetWords[6]])];
+      allAvailableWords[6] = [...allTargetWords[6]];
+      shuffleArray(allAvailableWords[6]);
 
-  wordsLoaded = true;
-  console.log(`Loaded length 5: ${allTargetWords[5].length} targets. Length 6: ${allTargetWords[6].length} targets.`);
-}).catch(err => console.error("Failed to load wordlists:", err));
+      wordsLoaded = true;
+      console.log(`Loaded length 5: ${allTargetWords[5].length} targets. Length 6: ${allTargetWords[6].length} targets.`);
+      resolve();
+    }).catch(err => {
+      console.error("Failed to load wordlists:", err);
+      reject(err);
+    });
+  });
+}
 
 function shuffleArray(array) {
   for (let i = array.length - 1; i > 0; i--) {
@@ -197,6 +206,7 @@ function startNewRound() {
 // Connection Logic
 function connectToLive() {
   const username = document.getElementById('usernameInput').value.trim();
+  const lang = document.getElementById('languageSelect').value;
   if (!username) {
     loginStatus.textContent = "Enter a username first!";
     return;
@@ -204,36 +214,38 @@ function connectToLive() {
 
   connectBtn.disabled = true;
   connectBtn.textContent = "Connecting...";
-  loginStatus.textContent = "";
+  loginStatus.textContent = "Loading dictionary...";
 
-  // Initialize Socket
-  if (!socket) {
-    socket = io(SOCKET_URL);
-    
-    socket.on('connect', () => {
-      console.log('Connected to local server');
-      // Tell server to connect to tiktok
-      socket.emit('connect-tiktok', username);
-    });
+  loadWordLists(lang).then(() => {
+    loginStatus.textContent = "";
+    // Initialize Socket
+    if (!socket) {
+      socket = io(SOCKET_URL);
+      
+      socket.on('connect', () => {
+        console.log('Connected to local server');
+        // Tell server to connect to tiktok
+        socket.emit('connect-tiktok', username);
+      });
 
-    socket.on('statusUpdate', (data) => {
-      if (data.status === 'connected') {
-        loginOverlay.style.display = 'none';
-        gameContainer.style.display = 'flex';
-        document.getElementById('hostMusicControl').style.display = 'flex';
-        roomHost.textContent = `@${data.uniqueId}`;
-        
-        if(currentWord === "") {
-            startNewRound();
+      socket.on('statusUpdate', (data) => {
+        if (data.status === 'connected') {
+          loginOverlay.style.display = 'none';
+          gameContainer.style.display = 'flex';
+          document.getElementById('hostMusicControl').style.display = 'flex';
+          roomHost.textContent = `@${data.uniqueId}`;
+          
+          if(currentWord === "") {
+              startNewRound();
+          }
+        } else if (data.status === 'disconnected') {
+          if(data.error) {
+             loginStatus.textContent = "Error: " + data.error;
+             connectBtn.disabled = false;
+             connectBtn.textContent = "Try Again";
+          }
         }
-      } else if (data.status === 'disconnected') {
-        if(data.error) {
-           loginStatus.textContent = "Error: " + data.error;
-           connectBtn.disabled = false;
-           connectBtn.textContent = "Try Again";
-        }
-      }
-    });
+      });
 
     socket.on('chat', (data) => {
       handleChatGuess(data);

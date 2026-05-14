@@ -669,3 +669,20 @@ header {
   font-family: inherit;
   font-size: 14px;
 }
+
+.lang-select {
+  background: transparent;
+  border: none;
+  color: white;
+  padding: 16px 12px;
+  width: 100%;
+  font-size: 16px;
+  font-weight: 600;
+  outline: none;
+  appearance: none;
+  cursor: pointer;
+}
+.lang-select option {
+  background: #1a1a2e;
+  color: white;
+}

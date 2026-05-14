@@ -365,7 +365,6 @@ header {
   gap: 8px;
   width: 100%;
   max-width: 420px;
-  aspect-ratio: 6/6;
 }
 
 .board-row {
@@ -377,7 +376,7 @@ header {
 /* Avatar Guesser */
 .guesser-avatar {
   width: 100%;
-  height: 100%;
+  aspect-ratio: 1/1;
   border-radius: 12px;
   border: 2px solid rgba(255,255,255,0.3);
   opacity: 0;
@@ -405,6 +404,7 @@ header {
   color: white;
   transition: transform 0.1s, background-color 0.4s, border-color 0.4s;
   box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+  aspect-ratio: 1/1;
 }
 
 .tile.filled {

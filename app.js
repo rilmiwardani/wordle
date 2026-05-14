@@ -283,6 +283,11 @@ function connectToLive() {
   } else {
     socket.emit('connect-tiktok', username);
   }
+  }).catch(err => {
+    loginStatus.textContent = "Error loading words!";
+    connectBtn.disabled = false;
+    connectBtn.textContent = "Connect to Live";
+  });
 }
 
 // Queue system for high-volume chat

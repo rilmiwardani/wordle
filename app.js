@@ -1,7 +1,7 @@
 const SOCKET_URL = "http://localhost:9200";
 const MAX_GUESSES = 6;
 const urlParams = new URLSearchParams(window.location.search);
-const WORD_LENGTH = parseInt(urlParams.get('length')) || 5;
+let WORD_LENGTH = 5;
 document.documentElement.style.setProperty('--word-length', WORD_LENGTH);
 
 // State
@@ -15,7 +15,7 @@ let currentBg = 'nature'; // 'nature' or 'city'
 let TARGET_WORDS = [];
 let VALID_WORDS = [];
 let availableWords = [];
-let discoveredLetters = Array(WORD_LENGTH).fill(null);
+let discoveredLetters = [];
 let ytPlayer = null;
 let musicQueue = [];
 let isMusicPlaying = false;
@@ -66,27 +66,33 @@ function playNextMusic() {
 }
 
 // Fetch words on load
-const targetFile = WORD_LENGTH === 6 ? 'target_words_6.txt' : 'target_words.txt';
-const validFile = WORD_LENGTH === 6 ? 'valid_words_6.txt' : 'valid_words.txt';
+let wordsLoaded = false;
+let allTargetWords = { 5: [], 6: [] };
+let allValidWords = { 5: [], 6: [] };
+let allAvailableWords = { 5: [], 6: [] };
 
 Promise.all([
-  fetch(targetFile).then(r => r.text()),
-  fetch(validFile).then(r => r.text())
-]).then(([targetText, validText]) => {
-  TARGET_WORDS = targetText.split('\n')
-    .map(w => w.trim().toUpperCase())
-    .filter(w => w.length === WORD_LENGTH);
-    
-  const validList = validText.split('\n')
-    .map(w => w.trim().toUpperCase())
-    .filter(w => w.length === WORD_LENGTH);
-    
-  // A valid guess can be any word from VALID_WORDS or TARGET_WORDS
-  VALID_WORDS = [...new Set([...validList, ...TARGET_WORDS])];
+  fetch('target_words.txt').then(r => r.text()),
+  fetch('valid_words.txt').then(r => r.text()),
+  fetch('target_words_6.txt').then(r => r.text()).catch(() => ""),
+  fetch('valid_words_6.txt').then(r => r.text()).catch(() => "")
+]).then(([t5, v5, t6, v6]) => {
+  // Process length 5
+  allTargetWords[5] = t5.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 5);
+  const validList5 = v5.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 5);
+  allValidWords[5] = [...new Set([...validList5, ...allTargetWords[5]])];
+  allAvailableWords[5] = [...allTargetWords[5]];
+  shuffleArray(allAvailableWords[5]);
   
-  availableWords = [...TARGET_WORDS];
-  shuffleArray(availableWords);
-  console.log(`Loaded ${TARGET_WORDS.length} target words and ${VALID_WORDS.length} valid words.`);
+  // Process length 6
+  allTargetWords[6] = t6.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 6);
+  const validList6 = v6.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 6);
+  allValidWords[6] = [...new Set([...validList6, ...allTargetWords[6]])];
+  allAvailableWords[6] = [...allTargetWords[6]];
+  shuffleArray(allAvailableWords[6]);
+
+  wordsLoaded = true;
+  console.log(`Loaded length 5: ${allTargetWords[5].length} targets. Length 6: ${allTargetWords[6].length} targets.`);
 }).catch(err => console.error("Failed to load wordlists:", err));
 
 function shuffleArray(array) {
@@ -97,10 +103,11 @@ function shuffleArray(array) {
 }
 
 function getRandomWord() {
-  if (TARGET_WORDS.length === 0) return "HELLO"; // fallback
+  if (TARGET_WORDS.length === 0) return WORD_LENGTH === 5 ? "HELLO" : "RANDOM"; // fallback
   if (availableWords.length === 0) {
     availableWords = [...TARGET_WORDS];
     shuffleArray(availableWords);
+    allAvailableWords[WORD_LENGTH] = availableWords;
   }
   return availableWords.pop();
 }
@@ -153,6 +160,21 @@ function initHintBoard() {
 
 // Start Game
 function startNewRound() {
+  // Randomize word length between 5 and 6
+  WORD_LENGTH = Math.random() < 0.5 ? 5 : 6;
+  document.documentElement.style.setProperty('--word-length', WORD_LENGTH);
+  
+  if (wordsLoaded) {
+    TARGET_WORDS = allTargetWords[WORD_LENGTH];
+    VALID_WORDS = allValidWords[WORD_LENGTH];
+    availableWords = allAvailableWords[WORD_LENGTH];
+  } else {
+    // Fallback if not loaded yet
+    TARGET_WORDS = [];
+    VALID_WORDS = [];
+    availableWords = [];
+  }
+
   currentWord = getRandomWord();
   guesses = [];
   guessQueue = [];
@@ -169,7 +191,7 @@ function startNewRound() {
   initHintBoard();
 
   console.log(`[Cheat] Target word is: ${currentWord}`);
-  showToast(`Round ${round} Started!`, 2000);
+  showToast(`Round ${round} Started! (${WORD_LENGTH} Letters)`, 2000);
 }
 
 // Connection Logic

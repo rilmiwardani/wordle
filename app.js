@@ -73,13 +73,25 @@ let allAvailableWords = { 5: [], 6: [] };
 
 function loadWordLists(lang) {
   return new Promise((resolve, reject) => {
-    let suffix = lang === 'en' ? '' : '_id';
-    Promise.all([
-      fetch(`target_words${suffix}.txt`).then(r => r.text()),
-      fetch(`valid_words${suffix}.txt`).then(r => r.text()),
-      fetch(`target_words${suffix}_6.txt`).then(r => r.text()).catch(() => ""),
-      fetch(`valid_words${suffix}_6.txt`).then(r => r.text()).catch(() => "")
-    ]).then(([t5, v5, t6, v6]) => {
+    let fetches = [];
+    if (lang === 'mixed') {
+      fetches = [
+        Promise.all([fetch(`target_words.txt`).then(r => r.text()), fetch(`target_words_id.txt`).then(r => r.text())]).then(r => r[0] + '\n' + r[1]),
+        Promise.all([fetch(`valid_words.txt`).then(r => r.text()), fetch(`valid_words_id.txt`).then(r => r.text())]).then(r => r[0] + '\n' + r[1]),
+        Promise.all([fetch(`target_words_6.txt`).then(r => r.text()).catch(()=>""), fetch(`target_words_id_6.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
+        Promise.all([fetch(`valid_words_6.txt`).then(r => r.text()).catch(()=>""), fetch(`valid_words_id_6.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1])
+      ];
+    } else {
+      let suffix = lang === 'en' ? '' : '_id';
+      fetches = [
+        fetch(`target_words${suffix}.txt`).then(r => r.text()),
+        fetch(`valid_words${suffix}.txt`).then(r => r.text()),
+        fetch(`target_words${suffix}_6.txt`).then(r => r.text()).catch(() => ""),
+        fetch(`valid_words${suffix}_6.txt`).then(r => r.text()).catch(() => "")
+      ];
+    }
+
+    Promise.all(fetches).then(([t5, v5, t6, v6]) => {
       // Process length 5
       allTargetWords[5] = t5.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 5);
       const validList5 = v5.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 5);

@@ -63,6 +63,11 @@ function playNextMusic() {
   document.getElementById('musicThumb').src = currentMusic.thumbnail || 'bg_nature.png';
   document.getElementById('musicTitle').textContent = currentMusic.title;
   document.getElementById('musicRequester').textContent = `@${currentMusic.requesterName}`;
+  const durSpan = document.getElementById('musicDuration');
+  if(durSpan) {
+    durSpan.textContent = currentMusic.duration || "";
+    document.querySelector('.music-dot').style.display = currentMusic.duration ? 'inline' : 'none';
+  }
   document.getElementById('musicWidget').classList.add('show');
   
   if (ytPlayer && ytPlayer.loadVideoById) {

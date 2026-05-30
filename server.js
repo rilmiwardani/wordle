@@ -144,6 +144,7 @@ io.on("connection", (socket) => {
           title: video.title,
           author: video.author.name,
           thumbnail: video.image,
+          duration: video.timestamp || "",
           requesterName: "Host",
           requesterImg: "https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/7339798436154310662~c5_100x100.jpeg"
         });
@@ -364,6 +365,7 @@ function registerTikTokEvents(connection) {
               title: video.title,
               author: video.author.name,
               thumbnail: video.image,
+              duration: video.timestamp || "",
               requesterName: payload.nickname,
               requesterImg: payload.profilePictureUrl
             });

@@ -319,6 +319,16 @@ header {
   font-weight: 600;
 }
 
+.music-dot {
+  margin: 0 4px;
+  opacity: 0.5;
+}
+
+.music-duration {
+  font-weight: 600;
+  color: #fff;
+}
+
 .settings-wrapper {
   position: relative;
   display: inline-block;

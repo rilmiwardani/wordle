@@ -220,9 +220,10 @@ function getStatusPayload() {
 async function connectToTikTok(uniqueId, sessionId = null) {
   if (!uniqueId) return;
 
-  // Disconnect existing
+  // Disconnect existing — remove all listeners first to prevent duplicates
   if (tiktokConnection) {
     try {
+      tiktokConnection.removeAllListeners();
       tiktokConnection.disconnect();
     } catch (e) {}
     tiktokConnection = null;
@@ -287,6 +288,13 @@ async function connectToTikTok(uniqueId, sessionId = null) {
 
     // ─── Register all event handlers ───
     registerTikTokEvents(tiktokConnection);
+
+    // Handle websocket upgrade (v2 library fires this after polling→ws)
+    // This is informational only; do NOT re-register events here
+    tiktokConnection.on('websocketConnected', (wsState) => {
+      console.log(`[TikTok] WebSocket upgraded! (${wsState.upgradedToWebsocket ? 'WebSocket' : 'Polling'})`);
+    });
+
   } catch (err) {
     console.error(`[TikTok] ❌ Connection failed:`, err.message);
     connectionState.status = "disconnected";
@@ -299,6 +307,7 @@ async function connectToTikTok(uniqueId, sessionId = null) {
 function disconnectFromTikTok() {
   if (tiktokConnection) {
     try {
+      tiktokConnection.removeAllListeners();
       tiktokConnection.disconnect();
     } catch (e) {}
     tiktokConnection = null;

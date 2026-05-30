@@ -381,7 +381,8 @@ function setupSocketListeners() {
   socket.on('connect', () => {
     console.log('[Socket.IO] Connected to local server');
     hideDisconnectBanner();
-    if (lastUsername) {
+    // Only send connect-tiktok if we're NOT already connected (prevent duplicates)
+    if (lastUsername && !isConnectedToTikTok) {
       socket.emit('connect-tiktok', { uniqueId: lastUsername, sessionId: lastSessionId });
     }
   });

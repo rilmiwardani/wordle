@@ -178,14 +178,16 @@ header {
   margin-bottom: 24px;
 }
 
-.header-left { flex: 1; }
-.header-right { flex: 1; text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.header-left { flex: 1; display: flex; align-items: center; min-width: 0; }
+.header-right { flex: 1; text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; }
 
 .header-title {
   font-size: 24px;
   font-weight: 800;
   letter-spacing: 1px;
   text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  flex-shrink: 0;
+  margin: 0 8px;
 }
 
 .room-info {
@@ -198,6 +200,15 @@ header {
   font-size: 13px;
   font-weight: 600;
   border: 1px solid rgba(255,255,255,0.1);
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+#roomHost {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100px;
 }
 
 .switch-btn {
@@ -238,6 +249,7 @@ header {
   font-size: 13px;
   font-weight: 700;
   backdrop-filter: blur(10px);
+  white-space: nowrap;
 }
 
 .settings-wrapper {

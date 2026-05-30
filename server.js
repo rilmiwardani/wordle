@@ -260,9 +260,16 @@ async function connectToTikTok(uniqueId, sessionId = null) {
       options.sessionId = sessionId;
     }
 
-    tiktokConnection = new WebcastPushConnection(uniqueId, options);
+    let currentConnection = new WebcastPushConnection(uniqueId, options);
+    tiktokConnection = currentConnection;
 
-    const state = await tiktokConnection.connect();
+    const state = await currentConnection.connect();
+
+    // Guard: if user disconnected or reconnected while we were waiting, abort!
+    if (tiktokConnection !== currentConnection) {
+      console.log(`[TikTok] Connection to @${uniqueId} aborted because a newer request was made or disconnected.`);
+      return;
+    }
 
     connectionState.status = "connected";
     connectionState.roomId = state.roomId;
@@ -287,11 +294,11 @@ async function connectToTikTok(uniqueId, sessionId = null) {
     io.emit("statusUpdate", getStatusPayload());
 
     // ─── Register all event handlers ───
-    registerTikTokEvents(tiktokConnection);
+    registerTikTokEvents(currentConnection);
 
     // Handle websocket upgrade (v2 library fires this after polling→ws)
     // This is informational only; do NOT re-register events here
-    tiktokConnection.on('websocketConnected', (wsState) => {
+    currentConnection.on('websocketConnected', (wsState) => {
       console.log(`[TikTok] WebSocket upgraded! (${wsState.upgradedToWebsocket ? 'WebSocket' : 'Polling'})`);
     });
 

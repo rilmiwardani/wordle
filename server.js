@@ -8,6 +8,7 @@
  * ╚══════════════════════════════════════════════════════════════╝
  */
 
+require("dotenv").config();
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -99,6 +100,11 @@ io.on("connection", (socket) => {
       roomId: connectionState.roomId,
       roomInfo: connectionState.roomInfo,
     });
+  }
+
+  // Send default Session ID from .env if available
+  if (process.env.TIKTOK_SESSION_ID) {
+    socket.emit("envSessionId", process.env.TIKTOK_SESSION_ID);
   }
 
   // IndoFinity-compatible: setUniqueId from client
@@ -250,6 +256,9 @@ async function connectToTikTok(uniqueId, sessionId = null) {
       enableExtendedGiftInfo: true,
       enableWebsocketUpgrade: true,
       requestPollingIntervalMs: 2000,
+      clientParams: {
+        "tt-target-idc": "alisg",
+      },
       requestHeaders: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",

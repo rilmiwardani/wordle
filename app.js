@@ -387,6 +387,13 @@ function setupSocketListeners() {
     }
   });
 
+  socket.on('envSessionId', (sessionId) => {
+    const sessionInputElem = document.getElementById('sessionInput');
+    if (sessionInputElem && !sessionInputElem.value.trim()) {
+      sessionInputElem.value = sessionId;
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('[Socket.IO] Disconnected from server');
     isConnectedToTikTok = false;

@@ -108,9 +108,16 @@ io.on("connection", (socket) => {
   });
 
   // Connect command from dashboard
-  socket.on("connect-tiktok", (uniqueId) => {
+  socket.on("connect-tiktok", (data) => {
+    let uniqueId, sessionId;
+    if (typeof data === "string") {
+      uniqueId = data;
+    } else {
+      uniqueId = data.uniqueId;
+      sessionId = data.sessionId;
+    }
     console.log(`[Socket.IO] connect-tiktok request: ${uniqueId}`);
-    connectToTikTok(uniqueId);
+    connectToTikTok(uniqueId, sessionId);
   });
 
   // Disconnect command
@@ -210,7 +217,7 @@ function getStatusPayload() {
 // ═══════════════════════════════════════════════════════
 //  TIKTOK CONNECTION
 // ═══════════════════════════════════════════════════════
-async function connectToTikTok(uniqueId) {
+async function connectToTikTok(uniqueId, sessionId = null) {
   if (!uniqueId) return;
 
   // Disconnect existing
@@ -237,7 +244,7 @@ async function connectToTikTok(uniqueId) {
   console.log(`\n[TikTok] Connecting to @${uniqueId}...`);
 
   try {
-    tiktokConnection = new WebcastPushConnection(uniqueId, {
+    let options = {
       processInitialData: true,
       enableExtendedGiftInfo: true,
       enableWebsocketUpgrade: true,
@@ -245,8 +252,14 @@ async function connectToTikTok(uniqueId) {
       requestHeaders: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-      },
-    });
+      }
+    };
+
+    if (sessionId) {
+      options.sessionId = sessionId;
+    }
+
+    tiktokConnection = new WebcastPushConnection(uniqueId, options);
 
     const state = await tiktokConnection.connect();
 

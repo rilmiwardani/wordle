@@ -21,6 +21,7 @@ let musicQueue = [];
 let isMusicPlaying = false;
 let lastUsername = "";
 let lastLang = "";
+let lastSessionId = "";
 let reconnectTimer = null;
 let isConnectedToTikTok = false;
 
@@ -240,11 +241,13 @@ function switchAccount() {
   try {
     localStorage.removeItem('wordle_username');
     localStorage.removeItem('wordle_lang');
+    localStorage.removeItem('wordle_sessionid');
   } catch (e) {}
 
   // Reset state
   lastUsername = "";
   lastLang = "";
+  lastSessionId = "";
   currentWord = "";
   isConnectedToTikTok = false;
   isGameOver = false;
@@ -325,7 +328,7 @@ function attemptReconnect() {
     console.log('[Reconnect] Attempting to reconnect to TikTok...');
     showToast('🔄 Reconnecting...', 3000);
     if (socket && socket.connected) {
-      socket.emit('connect-tiktok', lastUsername);
+      socket.emit('connect-tiktok', { uniqueId: lastUsername, sessionId: lastSessionId });
     }
   }, 5000);
 }
@@ -333,6 +336,9 @@ function attemptReconnect() {
 function connectToLive() {
   const username = document.getElementById('usernameInput').value.trim();
   const lang = document.getElementById('languageSelect').value;
+  const sessionInputElem = document.getElementById('sessionInput');
+  const sessionId = sessionInputElem ? sessionInputElem.value.trim() : "";
+
   if (!username) {
     loginStatus.textContent = "Enter a username first!";
     return;
@@ -340,11 +346,13 @@ function connectToLive() {
 
   lastUsername = username;
   lastLang = lang;
+  lastSessionId = sessionId;
 
   // Persist to localStorage for auto-reconnect on refresh
   try {
     localStorage.setItem('wordle_username', username);
     localStorage.setItem('wordle_lang', lang);
+    localStorage.setItem('wordle_sessionid', sessionId);
   } catch (e) {}
   connectBtn.disabled = true;
   connectBtn.textContent = "Connecting...";
@@ -357,7 +365,7 @@ function connectToLive() {
       socket = io(SOCKET_URL);
       setupSocketListeners();
     } else if (socket.connected) {
-      socket.emit('connect-tiktok', username);
+      socket.emit('connect-tiktok', { uniqueId: username, sessionId });
     } else {
       loginStatus.textContent = "Waiting for server connection...";
     }
@@ -374,7 +382,7 @@ function setupSocketListeners() {
     console.log('[Socket.IO] Connected to local server');
     hideDisconnectBanner();
     if (lastUsername) {
-      socket.emit('connect-tiktok', lastUsername);
+      socket.emit('connect-tiktok', { uniqueId: lastUsername, sessionId: lastSessionId });
     }
   });
 
@@ -390,7 +398,7 @@ function setupSocketListeners() {
     console.log('[Socket.IO] Reconnected to server');
     showToast('✅ Server reconnected!', 2000);
     if (lastUsername) {
-      socket.emit('connect-tiktok', lastUsername);
+      socket.emit('connect-tiktok', { uniqueId: lastUsername, sessionId: lastSessionId });
     }
   });
 
@@ -664,11 +672,16 @@ bgLayer.className = `bg-layer ${currentBg}`;
   try {
     const savedUsername = localStorage.getItem('wordle_username');
     const savedLang = localStorage.getItem('wordle_lang');
+    const savedSessionId = localStorage.getItem('wordle_sessionid');
+    
     if (savedUsername) {
       document.getElementById('usernameInput').value = savedUsername;
     }
     if (savedLang) {
       document.getElementById('languageSelect').value = savedLang;
+    }
+    if (savedSessionId && document.getElementById('sessionInput')) {
+      document.getElementById('sessionInput').value = savedSessionId;
     }
     // Auto-connect if we have a saved username
     if (savedUsername) {

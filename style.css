@@ -278,10 +278,11 @@ header {
 
 #ytPlayerContainer {
   position: absolute;
-  width: 0 !important;
-  height: 0 !important;
+  width: 200px !important;
+  height: 200px !important;
   opacity: 0;
   pointer-events: none;
+  z-index: -1;
 }
 
 #musicThumb {

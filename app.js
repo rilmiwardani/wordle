@@ -28,8 +28,8 @@ let isConnectedToTikTok = false;
 // YouTube Iframe API setup
 function onYouTubeIframeAPIReady() {
   ytPlayer = new YT.Player('ytPlayerContainer', {
-    height: '0',
-    width: '0',
+    height: '200',
+    width: '200',
     videoId: '',
     playerVars: { 'autoplay': 1, 'controls': 0 },
     events: {

@@ -557,20 +557,34 @@ function registerTikTokEvents(connection) {
 //  USER DATA FORMATTER
 // ═══════════════════════════════════════════════════════
 function formatUser(data) {
+  const userObj = data.user || data;
+  
+  // Extract avatar URL from various possible structures in v1 and v2
+  let avatar = data.profilePictureUrl || userObj.profilePictureUrl;
+  if (!avatar && userObj.profilePicture?.url?.length) {
+    avatar = userObj.profilePicture.url[0] || userObj.profilePicture.url[userObj.profilePicture.url.length - 1];
+  }
+  if (!avatar && userObj.avatarThumb?.urlList?.length) {
+    avatar = userObj.avatarThumb.urlList[0];
+  }
+  if (!avatar && userObj.avatarUrl) {
+    avatar = userObj.avatarUrl;
+  }
+
   return {
-    userId: data.userId?.toString() || null,
-    secUid: data.secUid || null,
-    uniqueId: data.uniqueId || null,
-    nickname: data.nickname || data.uniqueId || "Anonymous",
-    profilePictureUrl: data.profilePictureUrl || null,
-    followRole: data.followRole || 0, // 0=none, 1=follower, 2=friends
-    userBadges: data.userBadges || [],
-    isModerator: data.isModerator || false,
-    isNewGifter: data.isNewGifter || false,
-    isSubscriber: data.isSubscriber || false,
-    topGifterRank: data.topGifterRank || null,
-    gifterLevel: data.gifterLevel || 0,
-    teamMemberLevel: data.teamMemberLevel || 0,
+    userId: userObj.userId?.toString() || null,
+    secUid: userObj.secUid || null,
+    uniqueId: userObj.uniqueId || null,
+    nickname: userObj.nickname || userObj.uniqueId || "Anonymous",
+    profilePictureUrl: avatar || null,
+    followRole: userObj.followRole || data.followRole || 0, // 0=none, 1=follower, 2=friends
+    userBadges: userObj.userBadges || data.userBadges || [],
+    isModerator: userObj.isModerator || data.isModerator || false,
+    isNewGifter: userObj.isNewGifter || data.isNewGifter || false,
+    isSubscriber: userObj.isSubscriber || data.isSubscriber || false,
+    topGifterRank: userObj.topGifterRank || data.topGifterRank || null,
+    gifterLevel: userObj.gifterLevel || data.gifterLevel || 0,
+    teamMemberLevel: userObj.teamMemberLevel || data.teamMemberLevel || 0,
     msgId: data.msgId?.toString() || null,
     createTime: data.createTime?.toString() || null,
   };

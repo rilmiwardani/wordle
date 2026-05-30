@@ -44,11 +44,21 @@
         <div class="room-info">
           <div class="live-badge">LIVE</div>
           <span id="roomHost">@username</span>
+          <button id="switchAccountBtn" class="switch-btn" title="Ganti Akun" onclick="switchAccount()">🔄</button>
         </div>
       </div>
       <div class="header-title">WORDLE</div>
       <div class="header-right">
         <div class="round-badge">Round <span id="roundNumber">1</span></div>
+        <div class="settings-wrapper">
+          <button id="settingsBtn" class="settings-btn" onclick="toggleSettings(event)">⚙</button>
+          <div class="settings-dropdown" id="settingsDropdown">
+            <div class="settings-title">Bahasa / Language</div>
+            <button class="lang-option" data-lang="en" onclick="changeLang('en', event)">🇬🇧 English</button>
+            <button class="lang-option" data-lang="id" onclick="changeLang('id', event)">🇮🇩 Indonesia</button>
+            <button class="lang-option" data-lang="mixed" onclick="changeLang('mixed', event)">🌐 Campuran</button>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -75,6 +85,12 @@
     <!-- Wordle Board -->
     <div class="board-container">
       <div id="board"></div>
+    </div>
+
+    <!-- Disconnect Banner -->
+    <div class="disconnect-banner" id="disconnectBanner">
+      <div class="disconnect-dot"></div>
+      <span id="disconnectMsg">Connection lost</span>
     </div>
 
     <!-- Notifications -->

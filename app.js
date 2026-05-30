@@ -19,6 +19,10 @@ let discoveredLetters = [];
 let ytPlayer = null;
 let musicQueue = [];
 let isMusicPlaying = false;
+let lastUsername = "";
+let lastLang = "";
+let reconnectTimer = null;
+let isConnectedToTikTok = false;
 
 // YouTube Iframe API setup
 function onYouTubeIframeAPIReady() {
@@ -212,10 +216,120 @@ function startNewRound() {
   initHintBoard();
 
   console.log(`[Cheat] Target word is: ${currentWord}`);
+  if (lastLang === 'id') {
+    document.querySelector('.instruction').textContent = `Ketik kata ${WORD_LENGTH} huruf di chat untuk menebak!`;
+  } else if (lastLang === 'mixed') {
+    document.querySelector('.instruction').textContent = `Ketik kata ${WORD_LENGTH} huruf di chat! / Type a ${WORD_LENGTH}-letter word!`;
+  } else {
+    document.querySelector('.instruction').textContent = `Type a ${WORD_LENGTH}-letter word in chat to guess!`;
+  }
   showToast(`Round ${round} Started! (${WORD_LENGTH} Letters)`, 2000);
 }
 
+// Switch Account — disconnect and go back to login
+function switchAccount() {
+  // Stop auto-reconnect
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+
+  // Tell server to disconnect TikTok
+  if (socket && socket.connected) {
+    socket.emit('disconnect-tiktok');
+  }
+
+  // Clear saved session
+  try {
+    localStorage.removeItem('wordle_username');
+    localStorage.removeItem('wordle_lang');
+  } catch (e) {}
+
+  // Reset state
+  lastUsername = "";
+  lastLang = "";
+  currentWord = "";
+  isConnectedToTikTok = false;
+  isGameOver = false;
+  guesses = [];
+  round = 1;
+
+  // Switch UI back to login
+  gameContainer.style.display = 'none';
+  document.getElementById('hostMusicControl').style.display = 'none';
+  hideDisconnectBanner();
+  loginOverlay.style.display = 'flex';
+  connectBtn.disabled = false;
+  connectBtn.textContent = "Connect to Live";
+  loginStatus.textContent = "";
+  document.getElementById('usernameInput').value = "";
+  document.getElementById('usernameInput').focus();
+}
+
+// Settings — language picker
+function toggleSettings(e) {
+  e.stopPropagation();
+  const dropdown = document.getElementById('settingsDropdown');
+  dropdown.classList.toggle('open');
+
+  // Highlight active language
+  document.querySelectorAll('.lang-option').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === lastLang);
+  });
+}
+
+function changeLang(lang, e) {
+  e.stopPropagation();
+  if (lang === lastLang) {
+    document.getElementById('settingsDropdown').classList.remove('open');
+    return;
+  }
+
+  lastLang = lang;
+  try { localStorage.setItem('wordle_lang', lang); } catch (e) {}
+
+  // Close dropdown
+  document.getElementById('settingsDropdown').classList.remove('open');
+
+  // Reload word lists with new language and start fresh round
+  loadWordLists(lang).then(() => {
+    showToast(`Language changed!`, 2000);
+    startNewRound();
+  });
+}
+
+// Close settings dropdown when clicking elsewhere
+document.addEventListener('click', () => {
+  const dropdown = document.getElementById('settingsDropdown');
+  if (dropdown) dropdown.classList.remove('open');
+});
+
 // Connection Logic
+function showDisconnectBanner(message) {
+  const banner = document.getElementById('disconnectBanner');
+  if (banner) {
+    document.getElementById('disconnectMsg').textContent = message || 'Koneksi terputus';
+    banner.classList.add('show');
+  }
+}
+
+function hideDisconnectBanner() {
+  const banner = document.getElementById('disconnectBanner');
+  if (banner) {
+    banner.classList.remove('show');
+  }
+}
+
+function attemptReconnect() {
+  if (reconnectTimer) clearTimeout(reconnectTimer);
+  if (!lastUsername) return;
+
+  reconnectTimer = setTimeout(() => {
+    console.log('[Reconnect] Attempting to reconnect to TikTok...');
+    showToast('🔄 Reconnecting...', 3000);
+    if (socket && socket.connected) {
+      socket.emit('connect-tiktok', lastUsername);
+    }
+  }, 5000);
+}
+
 function connectToLive() {
   const username = document.getElementById('usernameInput').value.trim();
   const lang = document.getElementById('languageSelect').value;
@@ -224,69 +338,159 @@ function connectToLive() {
     return;
   }
 
+  lastUsername = username;
+  lastLang = lang;
+
+  // Persist to localStorage for auto-reconnect on refresh
+  try {
+    localStorage.setItem('wordle_username', username);
+    localStorage.setItem('wordle_lang', lang);
+  } catch (e) {}
   connectBtn.disabled = true;
   connectBtn.textContent = "Connecting...";
   loginStatus.textContent = "Loading dictionary...";
 
   loadWordLists(lang).then(() => {
-    loginStatus.textContent = "";
-    // Initialize Socket
+    loginStatus.textContent = "Connecting to server...";
+
     if (!socket) {
       socket = io(SOCKET_URL);
-      
-      socket.on('connect', () => {
-        console.log('Connected to local server');
-        // Tell server to connect to tiktok
-        socket.emit('connect-tiktok', username);
-      });
-
-      socket.on('statusUpdate', (data) => {
-        if (data.status === 'connected') {
-          loginOverlay.style.display = 'none';
-          gameContainer.style.display = 'flex';
-          document.getElementById('hostMusicControl').style.display = 'flex';
-          roomHost.textContent = `@${data.uniqueId}`;
-          
-          if(currentWord === "") {
-              startNewRound();
-          }
-        } else if (data.status === 'disconnected') {
-          if(data.error) {
-             loginStatus.textContent = "Error: " + data.error;
-             connectBtn.disabled = false;
-             connectBtn.textContent = "Try Again";
-          }
-        }
-      });
-
-    socket.on('chat', (data) => {
-      handleChatGuess(data);
-    });
-
-    socket.on('music-request', (data) => {
-      console.log("Music Requested:", data);
-      musicQueue.push(data);
-      
-      if (!isMusicPlaying) {
-        playNextMusic();
-      } else {
-        showToast(`🎶 Added to queue: ${data.title}`, 3000);
-      }
-    });
-
-    socket.on('music-skip', () => {
-      if (isMusicPlaying) {
-        showToast("⏭️ Song skipped", 2000);
-        playNextMusic();
-      }
-    });
-  } else {
-    socket.emit('connect-tiktok', username);
-  }
+      setupSocketListeners();
+    } else if (socket.connected) {
+      socket.emit('connect-tiktok', username);
+    } else {
+      loginStatus.textContent = "Waiting for server connection...";
+    }
   }).catch(err => {
     loginStatus.textContent = "Error loading words!";
     connectBtn.disabled = false;
     connectBtn.textContent = "Connect to Live";
+  });
+}
+
+function setupSocketListeners() {
+  // --- Socket.IO connection lifecycle (Bug 3 fix) ---
+  socket.on('connect', () => {
+    console.log('[Socket.IO] Connected to local server');
+    hideDisconnectBanner();
+    if (lastUsername) {
+      socket.emit('connect-tiktok', lastUsername);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('[Socket.IO] Disconnected from server');
+    isConnectedToTikTok = false;
+    if (gameContainer.style.display !== 'none') {
+      showDisconnectBanner('Server connection lost. Reconnecting...');
+    }
+  });
+
+  socket.on('reconnect', () => {
+    console.log('[Socket.IO] Reconnected to server');
+    showToast('✅ Server reconnected!', 2000);
+    if (lastUsername) {
+      socket.emit('connect-tiktok', lastUsername);
+    }
+  });
+
+  // --- TikTok status updates (Bug 1, 6, 7 fix) ---
+  socket.on('statusUpdate', (data) => {
+    if (data.status === 'connected') {
+      isConnectedToTikTok = true;
+      hideDisconnectBanner();
+      if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+
+      loginOverlay.style.display = 'none';
+      gameContainer.style.display = 'flex';
+      document.getElementById('hostMusicControl').style.display = 'flex';
+      roomHost.textContent = `@${data.uniqueId}`;
+
+      // Bug 7 fix: use boolean flag instead of empty string check
+      if (!currentWord) {
+        startNewRound();
+      }
+    } else if (data.status === 'connecting') {
+      // Bug 6 fix: show connecting feedback
+      loginStatus.textContent = "Connecting to TikTok Live...";
+      if (gameContainer.style.display !== 'none') {
+        showDisconnectBanner('Reconnecting to TikTok Live...');
+      }
+    } else if (data.status === 'disconnected') {
+      // Bug 1 fix: always re-enable button, not just when error exists
+      isConnectedToTikTok = false;
+      const errorMsg = data.error || 'Connection lost';
+
+      if (gameContainer.style.display === 'none') {
+        // Still on login screen
+        loginStatus.textContent = "Error: " + errorMsg;
+        connectBtn.disabled = false;
+        connectBtn.textContent = "Try Again";
+      } else {
+        // Bug 2 fix: already in game → show banner + auto-reconnect
+        showDisconnectBanner(errorMsg);
+        attemptReconnect();
+      }
+    }
+  });
+
+  // --- Bug 5 fix: handle tiktokConnected for late-joining clients ---
+  socket.on('tiktokConnected', (data) => {
+    console.log('[TikTok] Connected event received', data);
+    isConnectedToTikTok = true;
+    hideDisconnectBanner();
+
+    if (gameContainer.style.display === 'none') {
+      loginOverlay.style.display = 'none';
+      gameContainer.style.display = 'flex';
+      document.getElementById('hostMusicControl').style.display = 'flex';
+    }
+
+    if (!currentWord) {
+      startNewRound();
+    }
+  });
+
+  // --- Bug 4 fix: handle tiktokDisconnected ---
+  socket.on('tiktokDisconnected', (reason) => {
+    console.log('[TikTok] Disconnected:', reason);
+    isConnectedToTikTok = false;
+
+    let message = 'TikTok connection lost';
+    if (reason === 'tiktok.live_ended') message = 'Live stream ended';
+    else if (reason === 'tiktok.disconnected') message = 'TikTok disconnected';
+    else if (reason === 'manual_disconnect') message = 'Disconnected manually';
+
+    if (gameContainer.style.display !== 'none') {
+      showDisconnectBanner(message);
+      // Auto-reconnect unless manually disconnected
+      if (reason !== 'manual_disconnect') {
+        attemptReconnect();
+      }
+    }
+  });
+
+  // --- Game events ---
+  socket.on('chat', (data) => {
+    handleChatGuess(data);
+  });
+
+  socket.on('music-request', (data) => {
+    console.log("Music Requested:", data);
+    musicQueue.push(data);
+
+    if (!isMusicPlaying) {
+      playNextMusic();
+    } else {
+      showToast(`🎶 Added to queue: ${data.title}`, 3000);
+    }
+  });
+
+  socket.on('music-skip', () => {
+    if (isMusicPlaying) {
+      showToast("⏭️ Song skipped", 2000);
+      playNextMusic();
+    }
   });
 }
 
@@ -308,22 +512,23 @@ function handleChatGuess(data) {
   }
 }
 
-async function processQueue() {
+function processQueue() {
   if (isProcessing || guessQueue.length === 0 || isGameOver) return;
   isProcessing = true;
   
   const { guessWord, userData } = guessQueue.shift();
-  // Speed up animations dynamically if chat is spamming
-  const speed = guessQueue.length > 3 ? 0.25 : 1; 
 
-  await processGuess(guessWord, userData, speed);
+  processGuess(guessWord, userData);
   
   isProcessing = false;
-  setTimeout(processQueue, 50);
+  // Reduced from 50ms; near-instant queue drain
+  if (guessQueue.length > 0) {
+    setTimeout(processQueue, 10);
+  }
 }
 
-// Process a valid guess
-async function processGuess(guessWord, userData, speed) {
+// Process a valid guess — optimized: no blocking delays
+function processGuess(guessWord, userData) {
   const currentRow = guesses.length;
   
   // If we exceed 6 guesses, add a new row and remove the oldest one
@@ -348,24 +553,7 @@ async function processGuess(guessWord, userData, speed) {
     board.removeChild(board.firstChild);
   }
 
-  // Update board visually with letters first
-  for (let i = 0; i < WORD_LENGTH; i++) {
-    const tile = document.getElementById(`tile-${currentRow}-${i}`);
-    tile.textContent = guessWord[i];
-    tile.classList.add('filled');
-  }
-
-  // Show avatar
-  if (userData && userData.profilePictureUrl) {
-    const avatar = document.getElementById(`avatar-${currentRow}`);
-    avatar.src = userData.profilePictureUrl;
-    avatar.classList.add('show');
-  }
-
-  // Wait a tiny bit before animating
-  await new Promise(r => setTimeout(r, 200 * speed));
-
-  // Determine statuses
+  // Determine statuses FIRST (no delay)
   const guessArray = guessWord.split('');
   const targetArray = currentWord.split('');
   const statuses = Array(WORD_LENGTH).fill('absent');
@@ -376,27 +564,20 @@ async function processGuess(guessWord, userData, speed) {
     for (let i = 0; i < WORD_LENGTH; i++) {
       if (guessArray[i] === targetArray[i]) {
         statuses[i] = 'correct';
-        targetArray[i] = null; // consume
+        targetArray[i] = null;
         
-        // Update Hint Board if not already discovered and we haven't reached max hints (4)
         if (!discoveredLetters[i]) {
           const currentlyDiscovered = discoveredLetters.filter(l => l !== null).length;
-          
-          // Sisakan 1 yang kosong (max 4 hints allowed)
           if (currentlyDiscovered < WORD_LENGTH - 1) {
             const letter = guessArray[i];
             discoveredLetters[i] = letter;
             const hintTile = document.getElementById(`hint-${i}`);
             if (hintTile) {
-              // Delay the hint appearance slightly to sync with the tile flip
-              setTimeout(() => {
-                hintTile.textContent = letter;
-                hintTile.classList.add('discovered');
-              }, 300 * speed);
+              hintTile.textContent = letter;
+              hintTile.classList.add('discovered');
             }
           }
         }
-        
         guessArray[i] = null;
       }
     }
@@ -405,29 +586,27 @@ async function processGuess(guessWord, userData, speed) {
     for (let i = 0; i < WORD_LENGTH; i++) {
       if (guessArray[i] !== null && targetArray.includes(guessArray[i])) {
         statuses[i] = 'present';
-        targetArray[targetArray.indexOf(guessArray[i])] = null; // consume
+        targetArray[targetArray.indexOf(guessArray[i])] = null;
       }
     }
   }
 
-  // Animate flipping
+  // Apply letters + colors ALL AT ONCE (no stagger, no flip await)
   for (let i = 0; i < WORD_LENGTH; i++) {
     const tile = document.getElementById(`tile-${currentRow}-${i}`);
-    
-    if (speed < 1) tile.style.animationDuration = `${0.5 * speed}s`;
-    tile.classList.add('flip');
-    
-    // Change color at the halfway point of the flip
-    setTimeout(() => {
-      tile.classList.remove('filled');
-      if (isValidWord) {
-        tile.classList.add(statuses[i]);
-      } else {
-        tile.classList.add('invalid');
-      }
-    }, 250 * speed); // half of 0.5s animation
-    
-    await new Promise(r => setTimeout(r, 250 * speed)); // stagger the animation
+    tile.textContent = guessWord[i];
+    if (isValidWord) {
+      tile.classList.add(statuses[i]);
+    } else {
+      tile.classList.add('invalid');
+    }
+  }
+
+  // Show avatar
+  if (userData && userData.profilePictureUrl) {
+    const avatar = document.getElementById(`avatar-${currentRow}`);
+    avatar.src = userData.profilePictureUrl;
+    avatar.classList.add('show');
   }
 
   guesses.push(guessWord);
@@ -436,25 +615,22 @@ async function processGuess(guessWord, userData, speed) {
   if (guessWord === currentWord) {
     isGameOver = true;
     const winnerName = userData ? userData.nickname : 'Someone';
-    const avatarUrl = userData && userData.profilePictureUrl ? userData.profilePictureUrl : 'bg_nature.jpg'; // placeholder
+    const avatarUrl = userData && userData.profilePictureUrl ? userData.profilePictureUrl : 'bg_nature.jpg';
+    // Show win overlay immediately (no delay)
+    const winOverlay = document.getElementById('winOverlay');
+    document.getElementById('winAvatar').src = avatarUrl;
+    document.getElementById('winName').textContent = `@${winnerName}`;
+    document.getElementById('winWord').textContent = currentWord;
+    
+    winOverlay.classList.add('show');
     
     setTimeout(() => {
-      // Setup and show overlay
-      const winOverlay = document.getElementById('winOverlay');
-      document.getElementById('winAvatar').src = avatarUrl;
-      document.getElementById('winName').textContent = `@${winnerName}`;
-      document.getElementById('winWord').textContent = currentWord;
-      
-      winOverlay.classList.add('show');
-      
+      winOverlay.classList.remove('show');
       setTimeout(() => {
-        winOverlay.classList.remove('show');
-        setTimeout(() => {
-          round++;
-          startNewRound();
-        }, 600); // Wait for fade out
-      }, 5000); // Show for 5 seconds
-    }, 1000);
+        round++;
+        startNewRound();
+      }, 200);
+    }, 5000);
   }
 }
 
@@ -482,6 +658,26 @@ document.getElementById('usernameInput').addEventListener('keypress', function (
 
 // Set initial background
 bgLayer.className = `bg-layer ${currentBg}`;
+
+// Auto-restore saved session from localStorage
+(function restoreSavedSession() {
+  try {
+    const savedUsername = localStorage.getItem('wordle_username');
+    const savedLang = localStorage.getItem('wordle_lang');
+    if (savedUsername) {
+      document.getElementById('usernameInput').value = savedUsername;
+    }
+    if (savedLang) {
+      document.getElementById('languageSelect').value = savedLang;
+    }
+    // Auto-connect if we have a saved username
+    if (savedUsername) {
+      connectToLive();
+    }
+  } catch (e) {
+    console.log('Could not restore session:', e);
+  }
+})();
 
 // Fullscreen / Immersive Mode Support
 document.addEventListener('click', () => {

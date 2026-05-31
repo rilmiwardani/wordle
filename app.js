@@ -30,6 +30,26 @@ let isConnectedToTikTok = false;
 let playerPoints = {};
 let currentLbTab = 'session';
 
+// Memuat data mingguan ke memori saat halaman dimuat
+function initWeeklyLeaderboard() {
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('pts_')) {
+      const username = key.substring(4);
+      const pts = parseInt(localStorage.getItem(key)) || 0;
+      if (!playerPoints[username]) {
+        playerPoints[username] = {
+          avatar: 'bg_nature.png',
+          sessionPts: 0,
+          weeklyPts: pts
+        };
+      }
+    }
+  }
+  renderLeaderboard();
+}
+initWeeklyLeaderboard();
+
 function getWeeklyPts(username) {
   return parseInt(localStorage.getItem('pts_' + username) || '0');
 }
@@ -287,6 +307,123 @@ function initHintBoard() {
   }
 }
 
+// Rotating Instructions & !myrank system
+let rankCooldowns = {};
+let rankMessageQueue = [];
+let isShowingRankMsg = false;
+let instructionTimer = null;
+let currentInstructionIndex = 0;
+
+function getInstructionText(index) {
+  if (index === 0) {
+    if (lastLang === 'id') return `Ketik kata ${WORD_LENGTH} huruf di chat untuk menebak!`;
+    if (lastLang === 'mixed') return `Ketik kata ${WORD_LENGTH} huruf di chat! / Type a ${WORD_LENGTH}-letter word!`;
+    return `Type a ${WORD_LENGTH}-letter word in chat to guess!`;
+  } else {
+    if (lastLang === 'id') return `Ketik !myrank untuk cek rank & poin kamu!`;
+    if (lastLang === 'mixed') return `Ketik !myrank untuk cek poin! / Type !myrank to check points!`;
+    return `Type !myrank to check your rank and points!`;
+  }
+}
+
+function startInstructionRotation() {
+  if (instructionTimer) clearInterval(instructionTimer);
+  
+  const updateText = () => {
+    if (isShowingRankMsg) return; // Don't override rank msg
+    const text = getInstructionText(currentInstructionIndex % 2);
+    const instEl = document.querySelector('.instruction');
+    if (instEl) {
+      instEl.textContent = text;
+      instEl.style.color = 'var(--text-muted)';
+    }
+    currentInstructionIndex++;
+  };
+  
+  updateText();
+  instructionTimer = setInterval(updateText, 5000); // Switch every 5s
+}
+
+function processRankQueue() {
+  if (isShowingRankMsg || rankMessageQueue.length === 0) return;
+  isShowingRankMsg = true;
+  
+  const rankData = rankMessageQueue.shift();
+  const instEl = document.querySelector('.instruction');
+  if (instEl) {
+    instEl.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+        <img src="${rankData.avatar}" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.3);" onerror="this.src='bg_nature.png'">
+        <span>${rankData.msg}</span>
+      </div>
+    `;
+    instEl.style.color = 'var(--warning)';
+  }
+  
+  setTimeout(() => {
+    isShowingRankMsg = false;
+    if (rankMessageQueue.length > 0) {
+      processRankQueue();
+    } else {
+      // Revert to normal rotation
+      const text = getInstructionText((currentInstructionIndex - 1) % 2);
+      if (instEl) {
+        instEl.textContent = text;
+        instEl.style.color = 'var(--text-muted)';
+      }
+    }
+  }, 5000); // Show for 5s
+}
+
+function handleMyRank(userData) {
+  const userId = userData.uniqueId;
+  const now = Date.now();
+  if (rankCooldowns[userId] && now - rankCooldowns[userId] < 15000) {
+    return; // 15s cooldown per user
+  }
+  rankCooldowns[userId] = now;
+
+  const sessionPts = playerPoints[userId] || 0;
+  let sessionRank = "-";
+  
+  const sorted = Object.entries(playerPoints).sort((a, b) => b[1] - a[1]);
+  const index = sorted.findIndex(p => p[0] === userId);
+  if (index !== -1 && sessionPts > 0) {
+    sessionRank = `#${index + 1}`;
+  }
+
+  const weeklyPts = parseInt(localStorage.getItem(`pts_${userId}`)) || 0;
+  
+  // Hitung rank mingguan
+  const weeklyData = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('pts_')) {
+      const uId = key.substring(4);
+      const pts = parseInt(localStorage.getItem(key)) || 0;
+      weeklyData.push({ uId, pts });
+    }
+  }
+  weeklyData.sort((a, b) => b.pts - a.pts);
+  const wIndex = weeklyData.findIndex(p => p.uId === userId);
+  let weeklyRank = "-";
+  if (wIndex !== -1 && weeklyPts > 0) {
+    weeklyRank = `#${wIndex + 1}`;
+  }
+  
+  // Truncate panjang nickname agar tidak terlalu panjang
+  let nick = userData.nickname;
+  if (nick.length > 10) {
+    nick = nick.substring(0, 9) + '..';
+  }
+  
+  const msg = `${nick} - Sesi: ${sessionPts} Pts (Rank ${sessionRank}) | Mingguan: ${weeklyPts} Pts (Rank ${weeklyRank})`;
+  const avatar = userData.profilePictureUrl || 'bg_nature.png';
+  
+  rankMessageQueue.push({ msg, avatar });
+  processRankQueue();
+}
+
 // Start Game
 function startNewRound() {
   // Randomize word length between 5 and 6
@@ -320,13 +457,7 @@ function startNewRound() {
   initHintBoard();
 
   console.log(`[Cheat] Target word is: ${currentWord}`);
-  if (lastLang === 'id') {
-    document.querySelector('.instruction').textContent = `Ketik kata ${WORD_LENGTH} huruf di chat untuk menebak!`;
-  } else if (lastLang === 'mixed') {
-    document.querySelector('.instruction').textContent = `Ketik kata ${WORD_LENGTH} huruf di chat! / Type a ${WORD_LENGTH}-letter word!`;
-  } else {
-    document.querySelector('.instruction').textContent = `Type a ${WORD_LENGTH}-letter word in chat to guess!`;
-  }
+  startInstructionRotation();
   showToast(`Round ${round} Started! (${WORD_LENGTH} Letters)`, 2000);
 }
 
@@ -359,7 +490,7 @@ function switchAccount() {
   
   // Reset Leaderboard Sesi
   playerPoints = {};
-  renderLeaderboard();
+  initWeeklyLeaderboard();
 
   // Switch UI back to login
   gameContainer.style.display = 'none';
@@ -648,6 +779,14 @@ let guessQueue = [];
 function handleChatGuess(data) {
   if (isGameOver) return;
 
+  const rawMsg = data.comment.trim().toLowerCase();
+  
+  // Rank Command
+  if (rawMsg === '!myrank' || rawMsg === '!rank') {
+    handleMyRank(data);
+    return;
+  }
+
   // Hapus semua karakter selain huruf A-Z (spasi, titik, koma, dll) untuk bypass filter TikTok
   const msg = data.comment.toUpperCase().replace(/[^A-Z]/g, '');
   
@@ -786,11 +925,11 @@ function processGuess(guessWord, userData) {
     showFloatingPoints(10, `avatar-${currentRow}`);
     isGameOver = true;
     const winnerName = userData ? userData.nickname : 'Someone';
-    const avatarUrl = userData && userData.profilePictureUrl ? userData.profilePictureUrl : 'bg_nature.jpg';
-    // Show win overlay immediately (no delay)
+    const avatarUrl = userData && userData.profilePictureUrl ? userData.profilePictureUrl : 'bg_nature.png';
     const winOverlay = document.getElementById('winOverlay');
     document.getElementById('winAvatar').src = avatarUrl;
     document.getElementById('winName').textContent = winnerName;
+    document.getElementById('winPts').innerHTML = `🪙 +10 Poin`;
     document.getElementById('winWord').textContent = currentWord;
     
     winOverlay.classList.add('show');

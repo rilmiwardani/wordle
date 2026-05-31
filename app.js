@@ -1,4 +1,5 @@
-const SOCKET_URL = "http://localhost:9200";
+// Auto-detect hostname so it works on other devices in the same WiFi
+const SOCKET_URL = window.location.protocol + "//" + window.location.hostname + ":9200";
 const MAX_GUESSES = 6;
 const urlParams = new URLSearchParams(window.location.search);
 let WORD_LENGTH = 5;
@@ -25,17 +26,102 @@ let lastSessionId = "";
 let reconnectTimer = null;
 let isConnectedToTikTok = false;
 
+// Leaderboard State
+let playerPoints = {};
+let currentLbTab = 'session';
+
+function getWeeklyPts(username) {
+  return parseInt(localStorage.getItem('pts_' + username) || '0');
+}
+function saveWeeklyPts(username, pts) {
+  localStorage.setItem('pts_' + username, pts);
+}
+
+function addPoints(userData, points) {
+  if (!userData || !userData.nickname) return;
+  const username = userData.nickname;
+  if (!playerPoints[username]) {
+    playerPoints[username] = {
+      avatar: userData.profilePictureUrl || 'bg_nature.png',
+      sessionPts: 0,
+      weeklyPts: getWeeklyPts(username)
+    };
+  }
+  playerPoints[username].sessionPts += points;
+  playerPoints[username].weeklyPts += points;
+  if (userData.profilePictureUrl) playerPoints[username].avatar = userData.profilePictureUrl;
+  saveWeeklyPts(username, playerPoints[username].weeklyPts);
+  renderLeaderboard();
+}
+
+function switchLbTab(tab) {
+  currentLbTab = tab;
+  document.getElementById('tab-session').classList.toggle('active', tab === 'session');
+  document.getElementById('tab-weekly').classList.toggle('active', tab === 'weekly');
+  renderLeaderboard();
+}
+
+function renderLeaderboard() {
+  const lbList = document.getElementById('lbList');
+  if (!lbList) return;
+  lbList.innerHTML = '';
+  
+  const sortedPlayers = Object.entries(playerPoints)
+    .filter(([_, data]) => data[currentLbTab + 'Pts'] > 0)
+    .sort((a, b) => b[1][currentLbTab + 'Pts'] - a[1][currentLbTab + 'Pts'])
+    .slice(0, 3); // Top 3
+    
+  if (sortedPlayers.length === 0) {
+    lbList.innerHTML = '<div style="text-align:center;font-size:12px;color:rgba(255,255,255,0.4);padding:10px;">Belum ada tebakan benar</div>';
+    return;
+  }
+  
+  sortedPlayers.forEach(([username, data], index) => {
+    const item = document.createElement('div');
+    item.className = 'lb-item';
+    item.innerHTML = `
+      <div class="lb-avatar-wrapper">
+        <img src="${data.avatar}" class="lb-avatar" onerror="this.src='bg_nature.png'">
+        <div class="lb-rank rank-${index + 1}">${index + 1}</div>
+      </div>
+      <div class="lb-info">
+        <span class="lb-name">${username}</span>
+        <span class="lb-pts">${data[currentLbTab + 'Pts']} pts</span>
+      </div>
+    `;
+    lbList.appendChild(item);
+  });
+}
+
+// Auto-switch Leaderboard Tabs every 10 seconds for Live Stream automation
+setInterval(() => {
+  switchLbTab(currentLbTab === 'session' ? 'weekly' : 'session');
+}, 10000);
+
 // YouTube Iframe API setup
 function onYouTubeIframeAPIReady() {
   ytPlayer = new YT.Player('ytPlayerContainer', {
     height: '200',
     width: '200',
     videoId: '',
-    playerVars: { 'autoplay': 1, 'controls': 0 },
+    playerVars: {
+      'autoplay': 1,
+      'controls': 0,
+      'playsinline': 1,       // Required for iOS inline playback
+      'enablejsapi': 1
+    },
     events: {
-      'onStateChange': onPlayerStateChange
+      'onReady': onPlayerReady,
+      'onStateChange': onPlayerStateChange,
+      'onError': onPlayerError
     }
   });
+}
+
+let ytPlayerReady = false;
+
+function onPlayerReady(event) {
+  ytPlayerReady = true;
 }
 
 function onPlayerStateChange(event) {
@@ -43,6 +129,18 @@ function onPlayerStateChange(event) {
   if (event.data == YT.PlayerState.ENDED) {
     playNextMusic();
   }
+  // If video is cued but not playing (mobile autoplay blocked), force play
+  if (event.data == YT.PlayerState.CUED || event.data == YT.PlayerState.PAUSED) {
+    setTimeout(() => {
+      try { ytPlayer.playVideo(); } catch(e) {}
+    }, 300);
+  }
+}
+
+function onPlayerError(event) {
+  console.warn('[Music] YouTube player error:', event.data);
+  // Skip to next song on error (e.g. restricted/unavailable video)
+  setTimeout(() => playNextMusic(), 1000);
 }
 
 function playNextMusic() {
@@ -160,18 +258,18 @@ function initBoard() {
   for (let i = 0; i < MAX_GUESSES; i++) {
     const row = document.createElement('div');
     row.className = 'board-row';
-    row.id = `row-${i}`;
+    row.id = `row-empty-${i}`;
     
     // Avatar for the row
     const avatar = document.createElement('img');
     avatar.className = 'guesser-avatar';
-    avatar.id = `avatar-${i}`;
+    avatar.id = `avatar-empty-${i}`;
     row.appendChild(avatar);
 
     for (let j = 0; j < WORD_LENGTH; j++) {
       const tile = document.createElement('div');
       tile.className = 'tile';
-      tile.id = `tile-${i}-${j}`;
+      tile.id = `tile-empty-${i}-${j}`;
       row.appendChild(tile);
     }
     board.appendChild(row);
@@ -258,6 +356,10 @@ function switchAccount() {
   isGameOver = false;
   guesses = [];
   round = 1;
+  
+  // Reset Leaderboard Sesi
+  playerPoints = {};
+  renderLeaderboard();
 
   // Switch UI back to login
   gameContainer.style.display = 'none';
@@ -380,6 +482,30 @@ function connectToLive() {
     connectBtn.textContent = "Connect to Live";
   });
 }
+
+// Auto-reconnect on page refresh using saved credentials
+function autoReconnect() {
+  try {
+    const savedUser = localStorage.getItem('wordle_username');
+    const savedLang = localStorage.getItem('wordle_lang');
+    const savedSession = localStorage.getItem('wordle_sessionid');
+    
+    if (savedUser) {
+      // Pre-fill login fields
+      document.getElementById('usernameInput').value = savedUser;
+      const langSelect = document.getElementById('languageSelect');
+      if (savedLang && langSelect) langSelect.value = savedLang;
+      const sessionInput = document.getElementById('sessionInput');
+      if (savedSession && sessionInput) sessionInput.value = savedSession;
+      
+      // Auto-connect
+      connectToLive();
+    }
+  } catch (e) {}
+}
+
+// Run auto-reconnect when page loads
+window.addEventListener('DOMContentLoaded', autoReconnect);
 
 function setupSocketListeners() {
   // --- Socket.IO connection lifecycle (Bug 3 fix) ---
@@ -548,33 +674,59 @@ function processQueue() {
   }
 }
 
+function showFloatingPoints(points, targetElementId) {
+  const target = document.getElementById(targetElementId);
+  if (!target) return;
+  
+  const floater = document.createElement('div');
+  floater.className = 'floating-points';
+  floater.textContent = `+${points}`;
+  document.body.appendChild(floater);
+  
+  const rect = target.getBoundingClientRect();
+  floater.style.left = `${rect.left + (rect.width / 2)}px`;
+  floater.style.top = `${rect.top}px`;
+  
+  setTimeout(() => floater.remove(), 2600);
+}
+
 // Process a valid guess — optimized: no blocking delays
 function processGuess(guessWord, userData) {
   const currentRow = guesses.length;
   
-  // If we exceed 6 guesses, add a new row and remove the oldest one
-  if (currentRow >= 6) {
-    const row = document.createElement('div');
-    row.className = 'board-row';
-    row.id = `row-${currentRow}`;
-    
-    const avatar = document.createElement('img');
-    avatar.className = 'guesser-avatar';
-    avatar.id = `avatar-${currentRow}`;
-    row.appendChild(avatar);
+  // 1. Create a new row and attach to top of grid
+  const row = document.createElement('div');
+  row.className = 'board-row';
+  row.id = `row-${currentRow}`;
+  
+  const avatar = document.createElement('img');
+  avatar.className = 'guesser-avatar';
+  avatar.id = `avatar-${currentRow}`;
+  if (userData && userData.profilePictureUrl) {
+    avatar.src = userData.profilePictureUrl;
+    avatar.classList.add('show');
+  }
+  row.appendChild(avatar);
 
-    for (let j = 0; j < WORD_LENGTH; j++) {
-      const tile = document.createElement('div');
-      tile.className = 'tile';
-      tile.id = `tile-${currentRow}-${j}`;
-      row.appendChild(tile);
-    }
-    
-    board.appendChild(row);
-    board.removeChild(board.firstChild);
+  const tiles = [];
+  for (let j = 0; j < WORD_LENGTH; j++) {
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    tile.id = `tile-${currentRow}-${j}`;
+    tile.textContent = guessWord[j];
+    row.appendChild(tile);
+    tiles.push(tile);
+  }
+  
+  // Prepend to top of board
+  board.insertBefore(row, board.firstChild);
+  
+  // Remove the oldest row at the bottom if we exceed MAX_GUESSES
+  if (board.children.length > MAX_GUESSES) {
+    board.removeChild(board.lastChild);
   }
 
-  // Determine statuses FIRST (no delay)
+  // 2. Determine statuses FIRST
   const guessArray = guessWord.split('');
   const targetArray = currentWord.split('');
   const statuses = Array(WORD_LENGTH).fill('absent');
@@ -588,6 +740,11 @@ function processGuess(guessWord, userData) {
         targetArray[i] = null;
         
         if (!discoveredLetters[i]) {
+          // Assist Points: Newly discovered green (only if it's not the final winning guess)
+          if (guessWord !== currentWord) {
+            addPoints(userData, 2);
+            showFloatingPoints(2, `tile-${currentRow}-${i}`);
+          }
           const currentlyDiscovered = discoveredLetters.filter(l => l !== null).length;
           if (currentlyDiscovered < WORD_LENGTH - 1) {
             const letter = guessArray[i];
@@ -612,35 +769,28 @@ function processGuess(guessWord, userData) {
     }
   }
 
-  // Apply letters + colors ALL AT ONCE (no stagger, no flip await)
+  // 3. Apply classes
   for (let i = 0; i < WORD_LENGTH; i++) {
-    const tile = document.getElementById(`tile-${currentRow}-${i}`);
-    tile.textContent = guessWord[i];
     if (isValidWord) {
-      tile.classList.add(statuses[i]);
+      tiles[i].classList.add(statuses[i]);
     } else {
-      tile.classList.add('invalid');
+      tiles[i].classList.add('invalid');
     }
-  }
-
-  // Show avatar
-  if (userData && userData.profilePictureUrl) {
-    const avatar = document.getElementById(`avatar-${currentRow}`);
-    avatar.src = userData.profilePictureUrl;
-    avatar.classList.add('show');
   }
 
   guesses.push(guessWord);
   
   // Check win
   if (guessWord === currentWord) {
+    addPoints(userData, 10);
+    showFloatingPoints(10, `avatar-${currentRow}`);
     isGameOver = true;
     const winnerName = userData ? userData.nickname : 'Someone';
     const avatarUrl = userData && userData.profilePictureUrl ? userData.profilePictureUrl : 'bg_nature.jpg';
     // Show win overlay immediately (no delay)
     const winOverlay = document.getElementById('winOverlay');
     document.getElementById('winAvatar').src = avatarUrl;
-    document.getElementById('winName').textContent = `@${winnerName}`;
+    document.getElementById('winName').textContent = winnerName;
     document.getElementById('winWord').textContent = currentWord;
     
     winOverlay.classList.add('show');
@@ -754,3 +904,30 @@ if (hostMusicBtn) {
     }
   });
 }
+
+// ─── Reset Leaderboard ───
+window.resetLeaderboard = function(e) {
+  if (e) e.stopPropagation();
+  if (confirm("Reset SEMUA poin Sesi dan Mingguan? Tindakan ini tidak bisa dibatalkan.")) {
+    // Clear session points
+    playerPoints = {};
+    
+    // Clear weekly points from localStorage
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('pts_')) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    
+    // Refresh UI
+    renderLeaderboard();
+    showToast("Leaderboard telah di-reset!");
+    
+    // Close settings dropdown if open
+    const dropdown = document.getElementById('settingsDropdown');
+    if (dropdown) dropdown.classList.remove('show');
+  }
+};

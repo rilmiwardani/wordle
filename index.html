@@ -34,7 +34,7 @@
       </div>
       <div class="input-group" style="margin-top: 15px;" title="Optional. Used to fix connection errors. Get it from your TikTok cookies.">
         <span class="at-symbol">🔑</span>
-        <input type="text" id="sessionInput" placeholder="Session ID (Opsional)" autocomplete="off">
+        <input type="password" id="sessionInput" placeholder="Session ID (Opsional)" autocomplete="off">
       </div>
       <button id="connectBtn" onclick="connectToLive()">Connect to Live</button>
       <div id="loginStatus" class="status-msg"></div>
@@ -61,11 +61,27 @@
             <button class="lang-option" data-lang="en" onclick="changeLang('en', event)">🇬🇧 English</button>
             <button class="lang-option" data-lang="id" onclick="changeLang('id', event)">🇮🇩 Indonesia</button>
             <button class="lang-option" data-lang="mixed" onclick="changeLang('mixed', event)">🌐 Campuran</button>
+            
+            <div class="settings-title" style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">Admin</div>
+            <button class="lang-option" onclick="resetLeaderboard(event)" style="color: #ff4444; font-weight: bold;">🗑️ Reset Leaderboard</button>
           </div>
         </div>
       </div>
     </header>
 
+    <!-- Leaderboard (Compact) -->
+    <div class="leaderboard-container" id="leaderboardContainer">
+      <div class="lb-header">
+        <div class="lb-title">🏅 TOP RANK</div>
+        <div class="lb-tabs">
+          <button class="lb-tab active" id="tab-session" onclick="switchLbTab('session')">Sesi</button>
+          <button class="lb-tab" id="tab-weekly" onclick="switchLbTab('weekly')">Mingguan</button>
+        </div>
+      </div>
+      <div class="lb-list" id="lbList">
+        <!-- Generated dynamically -->
+      </div>
+    </div>
     <!-- Music Player Widget -->
     <div class="music-widget" id="musicWidget">
       <div id="ytPlayerContainer"></div>
@@ -99,6 +115,9 @@
 
     <!-- Notifications -->
     <div id="toastContainer" class="toast-container"></div>
+
+    <!-- TikTok Chat Safe Zone -->
+    <div class="chat-safe-zone"></div>
   </div>
 
   <!-- Aesthetic Win Overlay -->

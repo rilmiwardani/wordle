@@ -1,9 +1,16 @@
 // Auto-detect hostname so it works on other devices in the same WiFi
 const SOCKET_URL = window.location.protocol + "//" + window.location.hostname + ":9200";
-const MAX_GUESSES = 6;
+const DISPLAY_ROWS = 6; // Max visible rows on board
 const urlParams = new URLSearchParams(window.location.search);
 let WORD_LENGTH = 5;
 document.documentElement.style.setProperty('--word-length', WORD_LENGTH);
+
+// Game Mode State: 'wordle' or 'word500'
+let currentGameMode = localStorage.getItem('wordle_gameMode') || '';
+
+function getMaxGuesses() {
+  return currentGameMode === 'word500' ? Infinity : 6;
+}
 
 // State
 let socket = null;
@@ -17,6 +24,7 @@ let TARGET_WORDS = [];
 let VALID_WORDS = [];
 let availableWords = [];
 let discoveredLetters = [];
+let bestGuess = null;
 let ytPlayer = null;
 let musicQueue = [];
 let isMusicPlaying = false;
@@ -30,12 +38,19 @@ let isConnectedToTikTok = false;
 let playerPoints = {};
 let currentLbTab = 'session';
 
+function getPtsPrefix() {
+  return currentGameMode === 'word500' ? 'pts_w500_' : 'pts_';
+}
+
 // Memuat data mingguan ke memori saat halaman dimuat
 function initWeeklyLeaderboard() {
+  playerPoints = {};
+  const prefix = getPtsPrefix();
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key && key.startsWith('pts_')) {
-      const username = key.substring(4);
+    if (key && key.startsWith(prefix)) {
+      if (prefix === 'pts_' && key.startsWith('pts_w500_')) continue;
+      const username = key.substring(prefix.length);
       const pts = parseInt(localStorage.getItem(key)) || 0;
       if (!playerPoints[username]) {
         playerPoints[username] = {
@@ -51,10 +66,10 @@ function initWeeklyLeaderboard() {
 initWeeklyLeaderboard();
 
 function getWeeklyPts(username) {
-  return parseInt(localStorage.getItem('pts_' + username) || '0');
+  return parseInt(localStorage.getItem(getPtsPrefix() + username) || '0');
 }
 function saveWeeklyPts(username, pts) {
-  localStorage.setItem('pts_' + username, pts);
+  localStorage.setItem(getPtsPrefix() + username, pts);
 }
 
 function addPoints(userData, points) {
@@ -262,6 +277,7 @@ function getRandomWord() {
 }
 
 // DOM Elements
+const gameSelectOverlay = document.getElementById('gameSelectOverlay');
 const loginOverlay = document.getElementById('loginOverlay');
 const gameContainer = document.getElementById('gameContainer');
 const bgLayer = document.getElementById('bgLayer');
@@ -272,10 +288,102 @@ const board = document.getElementById('board');
 const toastContainer = document.getElementById('toastContainer');
 const roundNumber = document.getElementById('roundNumber');
 
+// ─── Game Selection ───
+function selectGame(mode) {
+  currentGameMode = mode;
+  try { localStorage.setItem('wordle_gameMode', mode); } catch(e) {}
+  
+  initWeeklyLeaderboard();
+
+  // Update login title
+  const loginTitle = document.getElementById('loginTitle');
+  if (loginTitle) {
+    loginTitle.textContent = mode === 'word500' ? 'TIKTOK WORD500' : 'TIKTOK WORDLE';
+  }
+
+  // Hide game select, show login
+  gameSelectOverlay.style.display = 'none';
+  loginOverlay.style.display = 'flex';
+}
+
+function switchGameMode(e) {
+  if (e) e.stopPropagation();
+  // Close settings
+  const dropdown = document.getElementById('settingsDropdown');
+  if (dropdown) dropdown.classList.remove('open');
+
+  if (!isConnectedToTikTok) {
+    currentGameMode = '';
+    try { localStorage.removeItem('wordle_gameMode'); } catch(e) {}
+    loginOverlay.style.display = 'none';
+    gameContainer.style.display = 'none';
+    gameSelectOverlay.style.display = 'flex';
+    return;
+  }
+
+  // Seamless switch
+  currentGameMode = currentGameMode === 'word500' ? 'wordle' : 'word500';
+  try { localStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
+
+  initWeeklyLeaderboard();
+  startNewRound();
+}
+
+function applyGameModeUI() {
+  const headerTitle = document.getElementById('headerTitle');
+  const hintContainer = document.getElementById('hintContainer');
+  const bestGuessContainer = document.getElementById('bestGuessContainer');
+  const switchBtn = document.getElementById('switchGameBtn');
+
+  if (currentGameMode === 'word500') {
+    if (headerTitle) headerTitle.textContent = 'WORD500';
+    if (hintContainer) hintContainer.style.display = 'none';
+    if (bestGuessContainer) bestGuessContainer.style.display = '';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
+  } else {
+    if (headerTitle) headerTitle.textContent = 'WORDLE';
+    if (hintContainer) hintContainer.style.display = '';
+    if (bestGuessContainer) bestGuessContainer.style.display = 'none';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Word500';
+  }
+}
+
+function updateBestGuessUI() {
+  const container = document.getElementById('bestGuessBoard');
+  if (!container) return;
+  
+  if (!bestGuess) {
+    container.innerHTML = '<div style="color: rgba(255,255,255,0.4); font-size: 13px; padding: 5px;">Belum ada tebakan valid</div>';
+    return;
+  }
+  
+  let html = `<div style="display: grid; grid-template-columns: 1fr repeat(${bestGuess.word.length}, 1fr) repeat(3, 1fr); gap: 8px; width: 100%; align-items: center; justify-items: center; padding-top: 5px;">`;
+  
+  // Spacer for avatar column
+  html += `<div></div>`;
+
+  for (let i = 0; i < bestGuess.word.length; i++) {
+    html += `<div class="tile blind" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 6px; font-size: 1.1rem; min-width: 0; min-height: 0; display:flex; align-items:center; justify-content:center;">${bestGuess.word[i]}</div>`;
+  }
+  html += `
+    <div class="w500-count green" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 6px; font-size: 1rem; min-width: 0; min-height: 0;">${bestGuess.c}</div>
+    <div class="w500-count yellow" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 6px; font-size: 1rem; min-width: 0; min-height: 0;">${bestGuess.p}</div>
+    <div class="w500-count red" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 6px; font-size: 1rem; min-width: 0; min-height: 0;">${bestGuess.a}</div>
+  </div>`;
+  container.innerHTML = html;
+}
+
 // Initialize Board
 function initBoard() {
   board.innerHTML = '';
-  for (let i = 0; i < MAX_GUESSES; i++) {
+
+  if (currentGameMode === 'word500') {
+    board.classList.add('w500-board');
+  } else {
+    board.classList.remove('w500-board');
+  }
+
+  for (let i = 0; i < DISPLAY_ROWS; i++) {
     const row = document.createElement('div');
     row.className = 'board-row';
     row.id = `row-empty-${i}`;
@@ -292,6 +400,17 @@ function initBoard() {
       tile.id = `tile-empty-${i}-${j}`;
       row.appendChild(tile);
     }
+
+    // Word500: add feedback placeholders
+    if (currentGameMode === 'word500') {
+      row.classList.add('w500-row');
+      for (let k = 0; k < 3; k++) {
+        const clue = document.createElement('div');
+        clue.className = 'w500-count empty-clue';
+        row.appendChild(clue);
+      }
+    }
+
     board.appendChild(row);
   }
 }
@@ -392,14 +511,16 @@ function handleMyRank(userData) {
     sessionRank = `#${index + 1}`;
   }
 
-  const weeklyPts = parseInt(localStorage.getItem(`pts_${userId}`)) || 0;
+  const prefix = getPtsPrefix();
+  const weeklyPts = parseInt(localStorage.getItem(prefix + userId)) || 0;
   
   // Hitung rank mingguan
   const weeklyData = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key && key.startsWith('pts_')) {
-      const uId = key.substring(4);
+    if (key && key.startsWith(prefix)) {
+      if (prefix === 'pts_' && key.startsWith('pts_w500_')) continue;
+      const uId = key.substring(prefix.length);
       const pts = parseInt(localStorage.getItem(key)) || 0;
       weeklyData.push({ uId, pts });
     }
@@ -426,8 +547,12 @@ function handleMyRank(userData) {
 
 // Start Game
 function startNewRound() {
-  // Randomize word length between 5 and 6
-  WORD_LENGTH = Math.random() < 0.5 ? 5 : 6;
+  // Word500 always uses 5 letters; Wordle randomizes 5-6
+  if (currentGameMode === 'word500') {
+    WORD_LENGTH = 5;
+  } else {
+    WORD_LENGTH = Math.random() < 0.5 ? 5 : 6;
+  }
   document.documentElement.style.setProperty('--word-length', WORD_LENGTH);
   
   if (wordsLoaded) {
@@ -435,7 +560,6 @@ function startNewRound() {
     VALID_WORDS = allValidWords[WORD_LENGTH];
     availableWords = allAvailableWords[WORD_LENGTH];
   } else {
-    // Fallback if not loaded yet
     TARGET_WORDS = [];
     VALID_WORDS = [];
     availableWords = [];
@@ -445,6 +569,7 @@ function startNewRound() {
   guesses = [];
   guessQueue = [];
   discoveredLetters = Array(WORD_LENGTH).fill(null);
+  bestGuess = null;
   isGameOver = false;
   isProcessing = false;
   roundNumber.textContent = round;
@@ -453,12 +578,18 @@ function startNewRound() {
   currentBg = currentBg === 'nature' ? 'city' : 'nature';
   bgLayer.className = `bg-layer ${currentBg}`;
   
+  // Apply mode-specific UI
+  applyGameModeUI();
   initBoard();
-  initHintBoard();
+  if (currentGameMode !== 'word500') {
+    initHintBoard();
+  }
+  updateBestGuessUI();
 
   console.log(`[Cheat] Target word is: ${currentWord}`);
   startInstructionRotation();
-  showToast(`Round ${round} Started! (${WORD_LENGTH} Letters)`, 2000);
+  const gameName = currentGameMode === 'word500' ? 'Word500' : 'Wordle';
+  showToast(`${gameName} Round ${round} Started! (${WORD_LENGTH} Letters)`, 2000);
 }
 
 // Switch Account — disconnect and go back to login
@@ -542,6 +673,101 @@ document.addEventListener('click', () => {
   if (dropdown) dropdown.classList.remove('open');
 });
 
+// Hard Mode Logic
+let isHardMode = localStorage.getItem('wordle_hardMode') === 'true';
+
+function toggleHardMode(e) {
+  if (e) e.stopPropagation();
+  isHardMode = !isHardMode;
+  try { localStorage.setItem('wordle_hardMode', isHardMode); } catch(e) {}
+  updateHardModeUI();
+  showToast(isHardMode ? '🔥 Hard Mode Diaktifkan' : 'Hard Mode Dinonaktifkan', 2000);
+}
+
+function updateHardModeUI() {
+  const btn = document.getElementById('hardModeBtn');
+  if (btn) {
+    btn.innerHTML = isHardMode ? '🔥 Hard Mode: ON' : '🔥 Hard Mode: OFF';
+    btn.style.color = isHardMode ? '#fe2c55' : '';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  updateHardModeUI();
+});
+
+function getScore(guess, target) {
+  const g = guess.split('');
+  const t = target.split('');
+  let c = 0, p = 0;
+  for(let i=0; i<g.length; i++) {
+    if(g[i]===t[i]) { c++; t[i]=null; g[i]=null; }
+  }
+  for(let i=0; i<g.length; i++) {
+    if(g[i]!==null && t.includes(g[i])) {
+      p++;
+      t[t.indexOf(g[i])] = null;
+    }
+  }
+  return {c, p};
+}
+
+function getWordleFeedback(guess, target) {
+  const g = guess.split('');
+  const t = target.split('');
+  const statuses = Array(g.length).fill('absent');
+  for(let i=0; i<g.length; i++) {
+    if(g[i]===t[i]) { statuses[i] = 'correct'; t[i]=null; g[i]=null; }
+  }
+  for(let i=0; i<g.length; i++) {
+    if(g[i]!==null && t.includes(g[i])) {
+      statuses[i] = 'present';
+      t[t.indexOf(g[i])] = null;
+    }
+  }
+  return statuses;
+}
+
+function validateHardMode(guessWord) {
+  if (!isHardMode || guesses.length === 0) return { valid: true };
+
+  const validPastGuesses = guesses.filter(g => VALID_WORDS.includes(g));
+
+  for (const past of validPastGuesses) {
+    if (currentGameMode === 'word500') {
+      const actual = getScore(past, currentWord);
+      const simulated = getScore(past, guessWord);
+      if (actual.c !== simulated.c || actual.p !== simulated.p) {
+        return { valid: false, msg: `Tebakan tidak konsisten dengan clue dari "${past}"` };
+      }
+    } else {
+      const statuses = getWordleFeedback(past, currentWord);
+      const newG = guessWord.split('');
+      
+      // Check Greens
+      for(let i=0; i<past.length; i++) {
+        if(statuses[i] === 'correct') {
+          if(newG[i] !== past[i]) {
+            return { valid: false, msg: `Huruf ke-${i+1} harus "${past[i]}"` };
+          }
+          newG[i] = null;
+        }
+      }
+      
+      // Check Yellows
+      for(let i=0; i<past.length; i++) {
+        if(statuses[i] === 'present') {
+          if(!newG.includes(past[i])) {
+             return { valid: false, msg: `Harus mengandung huruf "${past[i]}"` };
+          }
+          newG[newG.indexOf(past[i])] = null;
+        }
+      }
+    }
+  }
+  return { valid: true };
+}
+
 // Connection Logic
 function showDisconnectBanner(message) {
   const banner = document.getElementById('disconnectBanner');
@@ -620,8 +846,16 @@ function autoReconnect() {
     const savedUser = localStorage.getItem('wordle_username');
     const savedLang = localStorage.getItem('wordle_lang');
     const savedSession = localStorage.getItem('wordle_sessionid');
+    const savedMode = localStorage.getItem('wordle_gameMode');
     
-    if (savedUser) {
+    if (savedUser && savedMode) {
+      // Restore game mode
+      currentGameMode = savedMode;
+
+      // Hide game select, show login for auto-connect
+      gameSelectOverlay.style.display = 'none';
+      loginOverlay.style.display = 'flex';
+
       // Pre-fill login fields
       document.getElementById('usernameInput').value = savedUser;
       const langSelect = document.getElementById('languageSelect');
@@ -829,14 +1063,48 @@ function showFloatingPoints(points, targetElementId) {
   setTimeout(() => floater.remove(), 2600);
 }
 
+let lastInvalidTime = 0;
+
 // Process a valid guess — optimized: no blocking delays
 function processGuess(guessWord, userData) {
+  let isValidWord = VALID_WORDS.includes(guessWord);
+  let hardModeMsg = "";
+  
+  if (isValidWord) {
+    const hmCheck = validateHardMode(guessWord);
+    if (!hmCheck.valid) {
+      hardModeMsg = hmCheck.msg;
+      isValidWord = false; // Treat hard mode violation as invalid guess
+    }
+  }
+
+  if (!isValidWord) {
+    const now = Date.now();
+    if (now - lastInvalidTime < 2500) {
+      return false; // Skip to prevent flooding & flickering
+    }
+    lastInvalidTime = now;
+  }
+
+  // Hapus semua tebakan tidak valid sebelumnya dari layar
+  const invalidRows = document.querySelectorAll('.is-invalid-row');
+  invalidRows.forEach(el => el.remove());
+
   const currentRow = guesses.length;
+  const isWord500 = currentGameMode === 'word500';
   
   // 1. Create a new row and attach to top of grid
   const row = document.createElement('div');
-  row.className = 'board-row';
+  row.className = 'board-row' + (isWord500 ? ' w500-row' : '');
   row.id = `row-${currentRow}`;
+  row.style.position = 'relative';
+  
+  if (hardModeMsg) {
+    const tooltip = document.createElement('div');
+    tooltip.className = 'hm-tooltip';
+    tooltip.textContent = hardModeMsg;
+    row.appendChild(tooltip);
+  }
   
   const avatar = document.createElement('img');
   avatar.className = 'guesser-avatar';
@@ -857,29 +1125,25 @@ function processGuess(guessWord, userData) {
     tiles.push(tile);
   }
   
-  // Prepend to top of board
-  board.insertBefore(row, board.firstChild);
-  
-  // Remove the oldest row at the bottom if we exceed MAX_GUESSES
-  if (board.children.length > MAX_GUESSES) {
-    board.removeChild(board.lastChild);
-  }
-
-  // 2. Determine statuses FIRST
+  // 2. Determine statuses
   const guessArray = guessWord.split('');
   const targetArray = currentWord.split('');
   const statuses = Array(WORD_LENGTH).fill('absent');
-  const isValidWord = VALID_WORDS.includes(guessWord);
   
+  let correctCount = 0;
+  let presentCount = 0;
+  let absentCount = 0;
+
   if (isValidWord) {
     // First pass: correct
     for (let i = 0; i < WORD_LENGTH; i++) {
       if (guessArray[i] === targetArray[i]) {
         statuses[i] = 'correct';
         targetArray[i] = null;
+        correctCount++;
         
-        if (!discoveredLetters[i]) {
-          // Assist Points: Newly discovered green (only if it's not the final winning guess)
+        // Wordle mode: hint discovery + assist points
+        if (!isWord500 && !discoveredLetters[i]) {
           if (guessWord !== currentWord) {
             addPoints(userData, 2);
             showFloatingPoints(2, `tile-${currentRow}-${i}`);
@@ -904,32 +1168,92 @@ function processGuess(guessWord, userData) {
       if (guessArray[i] !== null && targetArray.includes(guessArray[i])) {
         statuses[i] = 'present';
         targetArray[targetArray.indexOf(guessArray[i])] = null;
+        presentCount++;
+      }
+    }
+    
+    absentCount = WORD_LENGTH - correctCount - presentCount;
+    
+    // Update Best Guess for Word500
+    if (isWord500 && guessWord !== currentWord) {
+      const score = (correctCount * 2) + presentCount;
+      if (!bestGuess || score > bestGuess.score) {
+        bestGuess = {
+          word: guessWord,
+          score: score,
+          c: correctCount,
+          p: presentCount,
+          a: absentCount
+        };
+        updateBestGuessUI();
       }
     }
   }
 
-  // 3. Apply classes
+  // 3. Apply tile classes
   for (let i = 0; i < WORD_LENGTH; i++) {
-    if (isValidWord) {
-      tiles[i].classList.add(statuses[i]);
-    } else {
+    if (!isValidWord) {
       tiles[i].classList.add('invalid');
+    } else if (isWord500) {
+      // Word500: all tiles are blind (no color feedback)
+      tiles[i].classList.add('blind');
+    } else {
+      // Wordle: normal colored feedback
+      tiles[i].classList.add(statuses[i]);
     }
   }
 
-  guesses.push(guessWord);
+  // 4. Word500: append feedback counters
+  if (isWord500) {
+    const greenClue = document.createElement('div');
+    greenClue.className = 'w500-count green';
+    greenClue.textContent = isValidWord ? correctCount : '';
+
+    const yellowClue = document.createElement('div');
+    yellowClue.className = 'w500-count yellow';
+    yellowClue.textContent = isValidWord ? presentCount : '';
+
+    const redClue = document.createElement('div');
+    redClue.className = 'w500-count red';
+    redClue.textContent = isValidWord ? absentCount : '';
+
+    if (!isValidWord) {
+      greenClue.className = 'w500-count empty-clue';
+      yellowClue.className = 'w500-count empty-clue';
+      redClue.className = 'w500-count empty-clue';
+    }
+
+    row.appendChild(greenClue);
+    row.appendChild(yellowClue);
+    row.appendChild(redClue);
+  }
+
+  // Prepend to top of board
+  board.insertBefore(row, board.firstChild);
+  
+  // Remove the oldest row at the bottom if we exceed DISPLAY_ROWS
+  if (board.children.length > DISPLAY_ROWS) {
+    board.removeChild(board.lastChild);
+  }
+
+  if (isValidWord) {
+    guesses.push(guessWord);
+  } else {
+    row.classList.add('is-invalid-row');
+  }
   
   // Check win
   if (guessWord === currentWord) {
-    addPoints(userData, 10);
-    showFloatingPoints(10, `avatar-${currentRow}`);
+    const winPts = isWord500 ? 15 : 10;
+    addPoints(userData, winPts);
+    showFloatingPoints(winPts, `avatar-${currentRow}`);
     isGameOver = true;
     const winnerName = userData ? userData.nickname : 'Someone';
     const avatarUrl = userData && userData.profilePictureUrl ? userData.profilePictureUrl : 'bg_nature.png';
     const winOverlay = document.getElementById('winOverlay');
     document.getElementById('winAvatar').src = avatarUrl;
     document.getElementById('winName').textContent = winnerName;
-    document.getElementById('winPts').innerHTML = `🪙 +10 Poin`;
+    document.getElementById('winPts').innerHTML = `🪙 +${winPts} Poin`;
     document.getElementById('winWord').textContent = currentWord;
     
     winOverlay.classList.add('show');
@@ -969,30 +1293,7 @@ document.getElementById('usernameInput').addEventListener('keypress', function (
 // Set initial background
 bgLayer.className = `bg-layer ${currentBg}`;
 
-// Auto-restore saved session from localStorage
-(function restoreSavedSession() {
-  try {
-    const savedUsername = localStorage.getItem('wordle_username');
-    const savedLang = localStorage.getItem('wordle_lang');
-    const savedSessionId = localStorage.getItem('wordle_sessionid');
-    
-    if (savedUsername) {
-      document.getElementById('usernameInput').value = savedUsername;
-    }
-    if (savedLang) {
-      document.getElementById('languageSelect').value = savedLang;
-    }
-    if (savedSessionId && document.getElementById('sessionInput')) {
-      document.getElementById('sessionInput').value = savedSessionId;
-    }
-    // Auto-connect if we have a saved username
-    if (savedUsername) {
-      connectToLive();
-    }
-  } catch (e) {
-    console.log('Could not restore session:', e);
-  }
-})();
+// Session restore is handled by autoReconnect() via DOMContentLoaded
 
 // Fullscreen / Immersive Mode Support
 document.addEventListener('click', () => {
@@ -1053,9 +1354,11 @@ window.resetLeaderboard = function(e) {
     
     // Clear weekly points from localStorage
     const keysToRemove = [];
+    const prefix = getPtsPrefix();
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith('pts_')) {
+      if (key && key.startsWith(prefix)) {
+        if (prefix === 'pts_' && key.startsWith('pts_w500_')) continue;
         keysToRemove.push(key);
       }
     }

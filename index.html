@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>TikTok Live Wordle</title>
+  <title>TikTok Live Games</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
@@ -15,11 +15,38 @@
   <div class="bg-layer" id="bgLayer"></div>
   <div class="glass-overlay"></div>
 
+  <!-- Game Selection Overlay -->
+  <div class="game-select-overlay" id="gameSelectOverlay">
+    <div class="game-select-container">
+      <div class="game-select-logo">🎮</div>
+      <h1 class="game-select-title">TIKTOK LIVE GAMES</h1>
+      <p class="game-select-subtitle">Pilih game untuk dimainkan</p>
+      <div class="game-cards">
+        <div class="game-card" onclick="selectGame('wordle')" id="cardWordle">
+          <div class="game-card-icon">🟩</div>
+          <div class="game-card-content">
+            <div class="game-card-name">WORDLE</div>
+            <div class="game-card-desc">Tebak kata dengan petunjuk warna per huruf. 6 kesempatan.</div>
+          </div>
+          <div class="game-card-arrow">→</div>
+        </div>
+        <div class="game-card" onclick="selectGame('word500')" id="cardWord500">
+          <div class="game-card-icon">🔢</div>
+          <div class="game-card-content">
+            <div class="game-card-name">WORD500</div>
+            <div class="game-card-desc">Hanya dapat angka: berapa huruf benar & hampir benar. Unlimited!</div>
+          </div>
+          <div class="game-card-arrow">→</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Connection Overlay -->
-  <div class="login-overlay" id="loginOverlay">
+  <div class="login-overlay" id="loginOverlay" style="display: none;">
     <div class="login-card">
       <div class="login-logo">🎮</div>
-      <h1>TIKTOK WORDLE</h1>
+      <h1 id="loginTitle">TIKTOK WORDLE</h1>
       <p>Enter TikTok username to start</p>
       <div class="input-group">
         <span class="at-symbol">@</span>
@@ -51,7 +78,7 @@
           <button id="switchAccountBtn" class="switch-btn" title="Ganti Akun" onclick="switchAccount()">🔄</button>
         </div>
       </div>
-      <div class="header-title">WORDLE</div>
+      <div class="header-title" id="headerTitle">WORDLE</div>
       <div class="header-right">
         <div class="round-badge">Round <span id="roundNumber">1</span></div>
         <div class="settings-wrapper">
@@ -62,6 +89,10 @@
             <button class="lang-option" data-lang="id" onclick="changeLang('id', event)">🇮🇩 Indonesia</button>
             <button class="lang-option" data-lang="mixed" onclick="changeLang('mixed', event)">🌐 Campuran</button>
             
+            <div class="settings-title" style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">Game Mode</div>
+            <button class="lang-option" id="switchGameBtn" onclick="switchGameMode(event)">🔄 Switch Game</button>
+            <button class="lang-option" id="hardModeBtn" onclick="toggleHardMode(event)">🔥 Hard Mode: OFF</button>
+
             <div class="settings-title" style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">Admin</div>
             <button class="lang-option" onclick="resetLeaderboard(event)" style="color: #ff4444; font-weight: bold;">🗑️ Reset Leaderboard</button>
           </div>
@@ -94,11 +125,19 @@
 
     <div class="instruction" id="gameInstruction">Type a 5-letter word in chat to guess!</div>
 
-    <!-- Hint Board -->
-    <div class="hint-container">
+    <!-- Hint Board (Wordle only) -->
+    <div class="hint-container" id="hintContainer">
       <div class="hint-label">HINTS DISCOVERED</div>
       <div class="hint-board" id="hintBoard">
         <!-- Generated dynamically in app.js -->
+      </div>
+    </div>
+
+    <!-- Best Guess Board (Word500 only) -->
+    <div class="hint-container" id="bestGuessContainer" style="display: none; max-width: 540px;">
+      <div class="hint-label" style="color: #10b981;">BEST GUESS</div>
+      <div id="bestGuessBoard" style="margin-top: 6px;">
+        <div style="color: rgba(255,255,255,0.4); font-size: 13px; padding: 5px;">Belum ada tebakan valid</div>
       </div>
     </div>
 

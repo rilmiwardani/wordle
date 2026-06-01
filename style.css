@@ -220,8 +220,8 @@ body {
 /* Blind tile for Word500 — no color feedback */
 .tile.blind {
   background: var(--absent);
-  border-color: rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.6);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.95);
 }
 
 /* Word500 board row — avatar, letters, and 3 feedback columns */

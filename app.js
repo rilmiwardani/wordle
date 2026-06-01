@@ -360,15 +360,15 @@ function updateBestGuessUI() {
   let html = `<div style="display: grid; grid-template-columns: 1fr repeat(${bestGuess.word.length}, 1fr) repeat(3, 1fr); gap: 8px; width: 100%; align-items: center; justify-items: center; padding-top: 5px;">`;
   
   // Spacer for avatar column
-  html += `<div></div>`;
+  html += `<div style="min-width: 0; min-height: 0; width: 100%;"></div>`;
 
   for (let i = 0; i < bestGuess.word.length; i++) {
-    html += `<div class="tile blind" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 6px; font-size: 1.1rem; min-width: 0; min-height: 0; display:flex; align-items:center; justify-content:center;">${bestGuess.word[i]}</div>`;
+    html += `<div class="tile blind" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 15%; font-size: 1.1rem; min-width: 0; min-height: 0; display:flex; align-items:center; justify-content:center;">${bestGuess.word[i]}</div>`;
   }
   html += `
-    <div class="w500-count green" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 6px; font-size: 1rem; min-width: 0; min-height: 0;">${bestGuess.c}</div>
-    <div class="w500-count yellow" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 6px; font-size: 1rem; min-width: 0; min-height: 0;">${bestGuess.p}</div>
-    <div class="w500-count red" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 6px; font-size: 1rem; min-width: 0; min-height: 0;">${bestGuess.a}</div>
+    <div class="w500-count green" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 15%; font-size: 1rem; min-width: 0; min-height: 0;">${bestGuess.c}</div>
+    <div class="w500-count yellow" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 15%; font-size: 1rem; min-width: 0; min-height: 0;">${bestGuess.p}</div>
+    <div class="w500-count red" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 15%; font-size: 1rem; min-width: 0; min-height: 0;">${bestGuess.a}</div>
   </div>`;
   container.innerHTML = html;
 }

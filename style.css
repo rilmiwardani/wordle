@@ -848,8 +848,9 @@ header {
 /* Mobile specific tweaks */
 @media (max-width: 400px) {
   #board { max-width: 360px; }
-  .tile { font-size: 1.5rem; border-radius: 8px; }
-  .guesser-avatar { border-radius: 8px; }
+  .tile { font-size: 1.5rem; border-radius: 15%; }
+  .guesser-avatar { border-radius: 15%; }
+  .w500-count { font-size: 1.2rem; border-radius: 15%; }
 }
 
 /* =========================================

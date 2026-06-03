@@ -1395,25 +1395,29 @@ function processGuess(guessWord, userData) {
     word500History.push({ word: guessWord, c: correctCount, p: presentCount, a: absentCount, score: (correctCount * 2) + presentCount, userData });
     guesses.push(guessWord);
     renderWord500Board();
+  } else if (isWord500 && !isValidWord) {
+    // Word500 invalid: jangan masukkan ke board, cukup tampilkan notif
+    // Board akan di-render ulang setelah cooldown agar invalid row tidak merusak grid
+    setTimeout(() => renderWord500Board(), 2500);
   } else {
-    // Wordle valid, atau semua invalid: insert standar
+    // Wordle valid/invalid: insert standar
     board.insertBefore(row, board.firstChild);
-    if (board.children.length > DISPLAY_ROWS) board.removeChild(board.lastChild);
+    const displayRows = getDisplayRows(); // Bug#3 fix: gunakan fungsi, bukan variabel undefined
+    if (board.children.length > displayRows) board.removeChild(board.lastChild);
     if (isValidWord) {
       guesses.push(guessWord);
     } else {
       row.classList.add('is-invalid-row');
-      // Word500 invalid: render ulang board setelah cooldown
-      if (isWord500) setTimeout(() => renderWord500Board(), 2500);
     }
   }
   
   // Check win
   if (guessWord === currentWord) {
+    isGameOver = true;
+    guessQueue = []; // Bug#1+#5 fix: clear antrian agar tebakan lama tidak masuk ronde baru
     const winPts = isWord500 ? 15 : 10;
     addPoints(userData, winPts);
     showFloatingPoints(winPts, `avatar-${currentRow}`);
-    isGameOver = true;
     const winnerName = userData ? userData.nickname : 'Someone';
     const avatarUrl = userData && userData.profilePictureUrl ? userData.profilePictureUrl : 'bg_nature.png';
     const winOverlay = document.getElementById('winOverlay');

@@ -640,6 +640,56 @@ header {
   color: var(--primary);
 }
 
+/* Display Rows control in settings */
+.display-rows-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 6px;
+}
+
+.rows-btn {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.rows-btn:hover {
+  background: rgba(254, 44, 85, 0.25);
+  border-color: var(--primary);
+}
+
+.rows-btn:active {
+  transform: scale(0.88);
+}
+
+.rows-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.8);
+  white-space: nowrap;
+  flex: 1;
+  text-align: center;
+}
+
+.rows-label strong {
+  color: white;
+  font-size: 15px;
+}
+
 .instruction {
   text-align: center;
   margin: 0 0 15px 0;
@@ -715,7 +765,7 @@ header {
 
 #board {
   display: grid;
-  grid-template-rows: repeat(6, 1fr);
+  grid-template-rows: repeat(var(--display-rows, 6), 1fr);
   gap: 8px;
   width: 100%;
   max-width: 420px;

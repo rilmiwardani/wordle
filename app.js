@@ -1,6 +1,38 @@
 // Auto-detect hostname so it works on other devices in the same WiFi
 const SOCKET_URL = window.location.protocol + "//" + window.location.hostname + ":9200";
-const DISPLAY_ROWS = 6; // Max visible rows on board
+// Max visible rows on board — per mode, configurable via Settings
+const DISPLAY_ROWS_DEFAULT = { wordle: 6, word500: 8 };
+const DISPLAY_ROWS_MIN = 3;
+const DISPLAY_ROWS_MAX = 12;
+let displayRowsWordle  = parseInt(localStorage.getItem('displayRows_wordle'))  || DISPLAY_ROWS_DEFAULT.wordle;
+let displayRowsWord500 = parseInt(localStorage.getItem('displayRows_word500')) || DISPLAY_ROWS_DEFAULT.word500;
+
+function getDisplayRows() {
+  return currentGameMode === 'word500' ? displayRowsWord500 : displayRowsWordle;
+}
+
+function changeDisplayRows(delta, e) {
+  if (e) e.stopPropagation();
+  if (currentGameMode === 'word500') {
+    displayRowsWord500 = Math.min(DISPLAY_ROWS_MAX, Math.max(DISPLAY_ROWS_MIN, displayRowsWord500 + delta));
+    localStorage.setItem('displayRows_word500', displayRowsWord500);
+  } else {
+    displayRowsWordle = Math.min(DISPLAY_ROWS_MAX, Math.max(DISPLAY_ROWS_MIN, displayRowsWordle + delta));
+    localStorage.setItem('displayRows_wordle', displayRowsWordle);
+  }
+  updateDisplayRowsUI();
+  // Re-render board immediately
+  if (currentGameMode === 'word500') {
+    renderWord500Board();
+  } else {
+    initBoard();
+  }
+}
+
+function updateDisplayRowsUI() {
+  const label = document.getElementById('displayRowsLabel');
+  if (label) label.textContent = getDisplayRows();
+}
 const urlParams = new URLSearchParams(window.location.search);
 let WORD_LENGTH = 5;
 document.documentElement.style.setProperty('--word-length', WORD_LENGTH);
@@ -430,6 +462,8 @@ function renderWord500Board() {
   board.innerHTML = '';
   board.classList.add('w500-board');
 
+  const DISPLAY_ROWS = getDisplayRows();
+  document.documentElement.style.setProperty('--display-rows', DISPLAY_ROWS);
   if (word500History.length === 0) {
     for (let i = 0; i < DISPLAY_ROWS; i++) board.appendChild(createEmptyW500Row(i));
     return;
@@ -449,7 +483,7 @@ function renderWord500Board() {
   for (const g of toShow) board.appendChild(createWord500RowEl(g, false));
 
   // Isi sisa dengan baris kosong
-  for (let i = toShow.length; i < slots; i++) board.appendChild(createEmptyW500Row(i));
+  for (let i = toShow.length; i < DISPLAY_ROWS - 1; i++) board.appendChild(createEmptyW500Row(i));
 }
 
 // Initialize Board
@@ -462,7 +496,9 @@ function initBoard() {
     board.classList.remove('w500-board');
   }
 
-  for (let i = 0; i < DISPLAY_ROWS; i++) {
+  const rows = getDisplayRows();
+  document.documentElement.style.setProperty('--display-rows', rows);
+  for (let i = 0; i < rows; i++) {
     const row = document.createElement('div');
     row.className = 'board-row';
     row.id = `row-empty-${i}`;
@@ -726,6 +762,9 @@ function toggleSettings(e) {
   document.querySelectorAll('.lang-option').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.lang === lastLang);
   });
+
+  // Sync display-rows label with current mode
+  updateDisplayRowsUI();
 }
 
 function changeLang(lang, e) {

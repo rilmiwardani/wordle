@@ -52,6 +52,7 @@ let isGameOver = false;
 let isProcessing = false;
 let round = 1;
 let currentBg = 'nature'; // 'nature' or 'city'
+let isDynamicBg = localStorage.getItem('wordle_dynamicBg') !== 'false'; // default: true
 let TARGET_WORDS = [];
 let VALID_WORDS = [];
 let availableWords = [];
@@ -691,9 +692,11 @@ function startNewRound() {
   isProcessing = false;
   roundNumber.textContent = round;
   
-  // Toggle background for visual delight
-  currentBg = currentBg === 'nature' ? 'city' : 'nature';
-  bgLayer.className = `bg-layer ${currentBg}`;
+  // Toggle background for visual delight (only if dynamic mode is on)
+  if (isDynamicBg) {
+    currentBg = currentBg === 'nature' ? 'city' : 'nature';
+    applyDynamicBg();
+  }
   
   // Apply mode-specific UI
   applyGameModeUI();
@@ -814,7 +817,37 @@ function updateHardModeUI() {
 
 document.addEventListener('DOMContentLoaded', () => {
   updateHardModeUI();
+  // Sync dynamic bg toggle state
+  const toggle = document.getElementById('dynamicBgToggle');
+  if (toggle) toggle.checked = isDynamicBg;
+  // Apply static bg immediately if needed
+  if (!isDynamicBg) applyStaticBg();
 });
+
+// Dynamic / Static Background toggle
+function applyStaticBg() {
+  // Warna background tab header Google Chrome: #202124
+  bgLayer.className = 'bg-layer';
+  bgLayer.style.backgroundImage = 'none';
+  bgLayer.style.backgroundColor = '#202124';
+}
+
+function applyDynamicBg() {
+  bgLayer.style.backgroundColor = '';
+  bgLayer.className = `bg-layer ${currentBg}`;
+}
+
+function toggleDynamicBg(enabled) {
+  isDynamicBg = enabled;
+  try { localStorage.setItem('wordle_dynamicBg', enabled); } catch(e) {}
+  if (enabled) {
+    applyDynamicBg();
+    showToast('🖼️ Background Dinamis Aktif', 1500);
+  } else {
+    applyStaticBg();
+    showToast('⬛ Background Statis Aktif', 1500);
+  }
+}
 
 function getScore(guess, target) {
   const g = guess.split('');

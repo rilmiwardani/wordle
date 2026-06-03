@@ -84,24 +84,34 @@
         <div class="settings-wrapper">
           <button id="settingsBtn" class="settings-btn" onclick="toggleSettings(event)">⚙</button>
           <div class="settings-dropdown" id="settingsDropdown">
-            <div class="settings-title">Bahasa / Language</div>
+            <div class="settings-title">Bahasa</div>
             <button class="lang-option" data-lang="en" onclick="changeLang('en', event)">🇬🇧 English</button>
             <button class="lang-option" data-lang="id" onclick="changeLang('id', event)">🇮🇩 Indonesia</button>
             <button class="lang-option" data-lang="mixed" onclick="changeLang('mixed', event)">🌐 Campuran</button>
-            
-            <div class="settings-title" style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">Game Mode</div>
+
+            <div class="settings-sep"></div>
+            <div class="settings-title">Game</div>
             <button class="lang-option" id="switchGameBtn" onclick="switchGameMode(event)">🔄 Switch Game</button>
             <button class="lang-option" id="hardModeBtn" onclick="toggleHardMode(event)">🔥 Hard Mode: OFF</button>
 
-            <div class="settings-title" style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">Admin</div>
-            <button class="lang-option" onclick="resetLeaderboard(event)" style="color: #ff4444; font-weight: bold;">🗑️ Reset Leaderboard</button>
-
-            <div class="settings-title" style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">Tampilan Grid</div>
+            <div class="settings-sep"></div>
+            <div class="settings-title">Tampilan</div>
             <div class="display-rows-control" onclick="event.stopPropagation()">
               <button class="rows-btn" onclick="changeDisplayRows(-1, event)">−</button>
               <span class="rows-label">Baris: <strong id="displayRowsLabel">6</strong></span>
               <button class="rows-btn" onclick="changeDisplayRows(1, event)">+</button>
             </div>
+            <label class="settings-toggle-row" onclick="event.stopPropagation()">
+              <span class="settings-toggle-label">🖼️ Background Dinamis</span>
+              <div class="toggle-switch">
+                <input type="checkbox" id="dynamicBgToggle" checked onchange="toggleDynamicBg(this.checked)">
+                <div class="toggle-track"></div>
+              </div>
+            </label>
+
+            <div class="settings-sep"></div>
+            <div class="settings-title">Admin</div>
+            <button class="lang-option" onclick="resetLeaderboard(event)" style="color: #ff6b6b;">🗑️ Reset Leaderboard</button>
           </div>
         </div>
       </div>

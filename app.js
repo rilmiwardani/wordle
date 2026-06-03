@@ -25,6 +25,7 @@ let VALID_WORDS = [];
 let availableWords = [];
 let discoveredLetters = [];
 let bestGuess = null;
+let word500History = []; // { word, c, p, a, score, userData }
 let ytPlayer = null;
 let musicQueue = [];
 let isMusicPlaying = false;
@@ -338,7 +339,7 @@ function applyGameModeUI() {
   if (currentGameMode === 'word500') {
     if (headerTitle) headerTitle.textContent = 'WORD500';
     if (hintContainer) hintContainer.style.display = 'none';
-    if (bestGuessContainer) bestGuessContainer.style.display = '';
+    if (bestGuessContainer) bestGuessContainer.style.display = 'none'; // replaced by sorted board
     if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
   } else {
     if (headerTitle) headerTitle.textContent = 'WORDLE';
@@ -371,6 +372,84 @@ function updateBestGuessUI() {
     <div class="w500-count red" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 15%; font-size: 1rem; min-width: 0; min-height: 0;">${bestGuess.a}</div>
   </div>`;
   container.innerHTML = html;
+}
+
+// ─── Word500 Sorted Board ───
+function createWord500RowEl(guessData, isLatest) {
+  const row = document.createElement('div');
+  row.className = 'board-row w500-row' + (isLatest ? ' w500-latest-row' : '');
+  const avatar = document.createElement('img');
+  avatar.className = 'guesser-avatar';
+  if (guessData.userData && guessData.userData.profilePictureUrl) {
+    avatar.src = guessData.userData.profilePictureUrl;
+    avatar.classList.add('show');
+  }
+  row.appendChild(avatar);
+  for (let j = 0; j < guessData.word.length; j++) {
+    const tile = document.createElement('div');
+    tile.className = 'tile blind';
+    tile.textContent = guessData.word[j];
+    row.appendChild(tile);
+  }
+  const greenClue = document.createElement('div');
+  greenClue.className = 'w500-count green';
+  greenClue.textContent = guessData.c;
+  const yellowClue = document.createElement('div');
+  yellowClue.className = 'w500-count yellow';
+  yellowClue.textContent = guessData.p;
+  const redClue = document.createElement('div');
+  redClue.className = 'w500-count red';
+  redClue.textContent = guessData.a;
+  row.appendChild(greenClue);
+  row.appendChild(yellowClue);
+  row.appendChild(redClue);
+  return row;
+}
+
+function createEmptyW500Row(idx) {
+  const row = document.createElement('div');
+  row.className = 'board-row w500-row';
+  row.id = `row-empty-${idx}`;
+  const avatar = document.createElement('img');
+  avatar.className = 'guesser-avatar';
+  row.appendChild(avatar);
+  for (let j = 0; j < WORD_LENGTH; j++) {
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    row.appendChild(tile);
+  }
+  for (let k = 0; k < 3; k++) {
+    const clue = document.createElement('div');
+    clue.className = 'w500-count empty-clue';
+    row.appendChild(clue);
+  }
+  return row;
+}
+
+function renderWord500Board() {
+  board.innerHTML = '';
+  board.classList.add('w500-board');
+
+  if (word500History.length === 0) {
+    for (let i = 0; i < DISPLAY_ROWS; i++) board.appendChild(createEmptyW500Row(i));
+    return;
+  }
+
+  // Baris paling atas: tebakan terbaru
+  const latest = word500History[word500History.length - 1];
+  board.appendChild(createWord500RowEl(latest, true));
+
+  // Di bawahnya: semua tebakan sebelumnya, diurutkan dari skor tertinggi
+  const previous = word500History.slice(0, -1)
+    .slice() // copy
+    .sort((a, b) => b.c - a.c || b.p - a.p || a.a - b.a);
+
+  const slots = DISPLAY_ROWS - 1;
+  const toShow = previous.slice(0, slots);
+  for (const g of toShow) board.appendChild(createWord500RowEl(g, false));
+
+  // Isi sisa dengan baris kosong
+  for (let i = toShow.length; i < slots; i++) board.appendChild(createEmptyW500Row(i));
 }
 
 // Initialize Board
@@ -570,6 +649,8 @@ function startNewRound() {
   guessQueue = [];
   discoveredLetters = Array(WORD_LENGTH).fill(null);
   bestGuess = null;
+  word500History = [];
+  userGuessDedup = new Set(); // reset per ronde
   isGameOver = false;
   isProcessing = false;
   roundNumber.textContent = round;
@@ -1009,6 +1090,9 @@ function setupSocketListeners() {
 // Queue system for high-volume chat
 let guessQueue = [];
 
+// Deduplication: mencegah user kirim kata yang sama lebih dari sekali per ronde
+let userGuessDedup = new Set(); // key: "userId:KATA"
+
 // Handle Guesses from Chat
 function handleChatGuess(data) {
   if (isGameOver) return;
@@ -1021,10 +1105,16 @@ function handleChatGuess(data) {
     return;
   }
 
-  // Hapus semua karakter selain huruf A-Z (spasi, titik, koma, dll) untuk bypass filter TikTok
+  // Hapus semua karakter selain huruf A-Z untuk bypass filter TikTok
   const msg = data.comment.toUpperCase().replace(/[^A-Z]/g, '');
   
   if (msg.length === WORD_LENGTH) {
+    // Tolak jika user sudah pernah kirim kata yang sama di ronde ini
+    const userId = data.uniqueId || data.nickname || 'anon';
+    const dedupKey = `${userId}:${msg}`;
+    if (userGuessDedup.has(dedupKey)) return; // skip duplikat
+    userGuessDedup.add(dedupKey);
+
     if (guessQueue.length < 50) {
       guessQueue.push({ guessWord: msg, userData: data });
       processQueue();
@@ -1228,18 +1318,22 @@ function processGuess(guessWord, userData) {
     row.appendChild(redClue);
   }
 
-  // Prepend to top of board
-  board.insertBefore(row, board.firstChild);
-  
-  // Remove the oldest row at the bottom if we exceed DISPLAY_ROWS
-  if (board.children.length > DISPLAY_ROWS) {
-    board.removeChild(board.lastChild);
-  }
-
-  if (isValidWord) {
+  if (isWord500 && isValidWord) {
+    // Word500 valid: tambah ke history lalu render ulang terurut
+    word500History.push({ word: guessWord, c: correctCount, p: presentCount, a: absentCount, score: (correctCount * 2) + presentCount, userData });
     guesses.push(guessWord);
+    renderWord500Board();
   } else {
-    row.classList.add('is-invalid-row');
+    // Wordle valid, atau semua invalid: insert standar
+    board.insertBefore(row, board.firstChild);
+    if (board.children.length > DISPLAY_ROWS) board.removeChild(board.lastChild);
+    if (isValidWord) {
+      guesses.push(guessWord);
+    } else {
+      row.classList.add('is-invalid-row');
+      // Word500 invalid: render ulang board setelah cooldown
+      if (isWord500) setTimeout(() => renderWord500Board(), 2500);
+    }
   }
   
   // Check win
@@ -1256,15 +1350,18 @@ function processGuess(guessWord, userData) {
     document.getElementById('winPts').innerHTML = `🪙 +${winPts} Poin`;
     document.getElementById('winWord').textContent = currentWord;
     
-    winOverlay.classList.add('show');
-    
+    // Tunggu 2 detik dulu agar jawaban di grid terlihat, baru tampilkan overlay
     setTimeout(() => {
-      winOverlay.classList.remove('show');
+      winOverlay.classList.add('show');
+      
       setTimeout(() => {
-        round++;
-        startNewRound();
-      }, 200);
-    }, 5000);
+        winOverlay.classList.remove('show');
+        setTimeout(() => {
+          round++;
+          startNewRound();
+        }, 200);
+      }, 5000);
+    }, 2000);
   }
 }
 

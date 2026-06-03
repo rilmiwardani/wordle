@@ -229,6 +229,23 @@ body {
   grid-template-columns: 1fr repeat(var(--word-length, 5), 1fr) repeat(3, 1fr);
 }
 
+/* Baris terbaru di Word500 — highlight mencolok */
+.board-row.w500-latest-row {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  outline: 2px solid rgba(255, 255, 255, 0.35);
+  outline-offset: 2px;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.08);
+  padding: 2px 4px;
+  animation: latestPop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes latestPop {
+  0%   { transform: scaleY(0.7); opacity: 0; }
+  60%  { transform: scaleY(1.04); }
+  100% { transform: scaleY(1);   opacity: 1; }
+}
+
 /* Login Overlay */
 .login-overlay {
   position: absolute;

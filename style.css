@@ -217,6 +217,11 @@ body {
   100% { transform: scale(1); opacity: 1; }
 }
 
+/* Hanya baris terbaru yang boleh animasi — baris lama tidak berkedip saat re-render */
+.board-row:not(.w500-latest-row) .w500-count {
+  animation: none;
+}
+
 /* Blind tile for Word500 — no color feedback */
 .tile.blind {
   background: var(--absent);

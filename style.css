@@ -808,7 +808,7 @@ header {
 .hint-board {
   display: grid;
   grid-template-columns: 1fr repeat(var(--word-length, 5), 1fr);
-  gap: 8px;
+  gap: clamp(4px, 1.5vw, 8px);
   justify-content: center;
 }
 
@@ -846,22 +846,21 @@ header {
   flex: 1;
   align-items: flex-start;
   margin: 0;
-  /* Harus punya tinggi terdefinisi agar grid 1fr bisa membagi baris secara proporsional */
-  height: 100%;
   min-height: 0;
-  /* overflow: hidden diganti agar outline .w500-latest-row tidak terpotong */
   overflow: visible;
 }
 
 #board {
   display: grid;
-  grid-template-rows: repeat(var(--display-rows, 6), 1fr);
-  gap: 8px;
+  /* auto: tinggi baris ditentukan oleh tile (aspect-ratio 1/1 dari lebar kolom) */
+  /* Tidak lagi pakai 1fr karena itu membagi tinggi container, bukan lebar tile */
+  grid-template-rows: repeat(var(--display-rows, 6), auto);
+  /* Gap responsif: lebih kecil di layar sempit, normal di layar lebar */
+  gap: clamp(4px, 1.5vw, 8px);
   width: 100%;
   max-width: 420px;
-  /* Tinggi harus sama dengan board-container agar 1fr bekerja di mobile */
-  height: 100%;
-  max-height: 100%;
+  /* Biarkan tinggi ditentukan oleh konten (tile), bukan dipaksakan 100% */
+  height: auto;
 }
 
 #board.w500-board {
@@ -871,7 +870,8 @@ header {
 .board-row {
   display: grid;
   grid-template-columns: 1fr repeat(var(--word-length, 5), 1fr);
-  gap: 8px;
+  /* Gap yang sama dengan board (responsif) */
+  gap: clamp(4px, 1.5vw, 8px);
   align-items: center;
 }
 

@@ -186,14 +186,12 @@ body {
   font-weight: 800;
   color: white;
   text-shadow: 0 1px 3px rgba(0,0,0,0.5);
-  animation: w500Pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .w500-count.empty-clue {
   background: var(--empty);
   border: 2px dashed rgba(255,255,255,0.2);
   box-shadow: none;
-  animation: none;
 }
 
 .w500-count.green {
@@ -209,17 +207,6 @@ body {
 .w500-count.red {
   background: #dc2626;
   box-shadow: 0 0 12px rgba(220, 38, 38, 0.5);
-}
-
-@keyframes w500Pop {
-  0% { transform: scale(0); opacity: 0; }
-  60% { transform: scale(1.2); }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-/* Hanya baris terbaru yang boleh animasi — baris lama tidak berkedip saat re-render */
-.board-row:not(.w500-latest-row) .w500-count {
-  animation: none;
 }
 
 /* Blind tile for Word500 — no color feedback */
@@ -242,13 +229,6 @@ body {
   outline-offset: 2px;
   box-shadow: 0 0 16px rgba(255, 255, 255, 0.08);
   padding: 2px 4px;
-  animation: latestPop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes latestPop {
-  0%   { transform: scaleY(0.7); opacity: 0; }
-  60%  { transform: scaleY(1.04); }
-  100% { transform: scaleY(1);   opacity: 1; }
 }
 
 /* Login Overlay */

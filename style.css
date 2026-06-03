@@ -849,7 +849,8 @@ header {
   /* Harus punya tinggi terdefinisi agar grid 1fr bisa membagi baris secara proporsional */
   height: 100%;
   min-height: 0;
-  overflow: hidden;
+  /* overflow: hidden diganti agar outline .w500-latest-row tidak terpotong */
+  overflow: visible;
 }
 
 #board {
@@ -937,7 +938,7 @@ header {
 
 /* Toasts */
 .toast-container {
-  position: absolute;
+  position: fixed;
   bottom: 80px;
   left: 50%;
   transform: translateX(-50%);
@@ -946,7 +947,8 @@ header {
   gap: 10px;
   align-items: center;
   pointer-events: none;
-  z-index: 300;
+  /* Selalu di atas semua elemen game */
+  z-index: 9998;
 }
 
 .toast {
@@ -1381,13 +1383,14 @@ header {
 
 /* Floating Points Animation */
 .floating-points {
-  position: absolute;
+  /* position: fixed agar tidak terpengaruh stacking context elemen lain */
+  position: fixed;
   font-size: 1.5rem;
   font-weight: 900;
   color: #2EE06A;
   text-shadow: 0 0 10px rgba(46,224,106,0.8), 0 2px 4px rgba(0,0,0,0.5);
   pointer-events: none;
-  z-index: 1000;
+  z-index: 9999;
   transform: translate(-50%, 0);
   animation: floatPoints 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }

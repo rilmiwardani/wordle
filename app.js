@@ -1396,9 +1396,11 @@ function processGuess(guessWord, userData) {
     guesses.push(guessWord);
     renderWord500Board();
   } else if (isWord500 && !isValidWord) {
-    // Word500 invalid: jangan masukkan ke board, cukup tampilkan notif
-    // Board akan di-render ulang setelah cooldown agar invalid row tidak merusak grid
-    setTimeout(() => renderWord500Board(), 2500);
+    // Word500 invalid: tampilkan toast, jangan insert ke board (grid layout berbeda)
+    const msg = hardModeMsg
+      ? `❌ ${guessWord}: ${hardModeMsg}`
+      : `❌ "${guessWord}" bukan kata yang valid`;
+    showToast(msg, 2000);
   } else {
     // Wordle valid/invalid: insert standar
     board.insertBefore(row, board.firstChild);

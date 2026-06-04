@@ -1261,10 +1261,15 @@ function processGuess(guessWord, userData) {
   row.id = `row-${currentRow}`;
   row.style.position = 'relative';
   
-  if (hardModeMsg) {
+  let invalidTooltipMsg = hardModeMsg;
+  if (!isValidWord && !hardModeMsg) {
+    invalidTooltipMsg = "Bukan kata valid";
+  }
+
+  if (invalidTooltipMsg) {
     const tooltip = document.createElement('div');
-    tooltip.className = 'hm-tooltip';
-    tooltip.textContent = hardModeMsg;
+    tooltip.className = 'row-tooltip';
+    tooltip.textContent = invalidTooltipMsg;
     row.appendChild(tooltip);
   }
   
@@ -1395,21 +1400,25 @@ function processGuess(guessWord, userData) {
     word500History.push({ word: guessWord, c: correctCount, p: presentCount, a: absentCount, score: (correctCount * 2) + presentCount, userData });
     guesses.push(guessWord);
     renderWord500Board();
-  } else if (isWord500 && !isValidWord) {
-    // Word500 invalid: tampilkan toast, jangan insert ke board (grid layout berbeda)
-    const msg = hardModeMsg
-      ? `❌ ${guessWord}: ${hardModeMsg}`
-      : `❌ "${guessWord}" bukan kata yang valid`;
-    showToast(msg, 2000);
   } else {
-    // Wordle valid/invalid: insert standar
+    // Wordle valid/invalid, ATAU Word500 invalid: insert ke board
     board.insertBefore(row, board.firstChild);
-    const displayRows = getDisplayRows(); // Bug#3 fix: gunakan fungsi, bukan variabel undefined
+    const displayRows = getDisplayRows();
     if (board.children.length > displayRows) board.removeChild(board.lastChild);
+    
     if (isValidWord) {
       guesses.push(guessWord);
     } else {
       row.classList.add('is-invalid-row');
+      // Otomatis hapus baris invalid setelah 2.5 detik
+      setTimeout(() => {
+        if (row.parentNode === board) {
+          row.style.opacity = '0';
+          setTimeout(() => {
+            if (row.parentNode === board) row.remove();
+          }, 300);
+        }
+      }, 2500);
     }
   }
   

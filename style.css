@@ -853,6 +853,7 @@ header {
   /* Gap yang sama dengan board (responsif) */
   gap: clamp(4px, 1.5vw, 8px);
   align-items: center;
+  transition: opacity 0.3s ease;
 }
 
 /* Avatar Guesser */
@@ -914,7 +915,29 @@ header {
   40%, 80% { transform: translateX(5px); }
 }
 
+/* Inline Row Tooltip (Invalid / Hard Mode) */
+.row-tooltip {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(254, 44, 85, 0.9);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(254, 44, 85, 0.4);
+  animation: tooltipFadeIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
 
+@keyframes tooltipFadeIn {
+  from { opacity: 0; transform: translate(-50%, 10px) scale(0.9); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
 
 /* Toasts */
 .toast-container {

@@ -1410,15 +1410,6 @@ function processGuess(guessWord, userData) {
       guesses.push(guessWord);
     } else {
       row.classList.add('is-invalid-row');
-      // Otomatis hapus baris invalid setelah 2.5 detik
-      setTimeout(() => {
-        if (row.parentNode === board) {
-          row.style.opacity = '0';
-          setTimeout(() => {
-            if (row.parentNode === board) row.remove();
-          }, 300);
-        }
-      }, 2500);
     }
   }
   

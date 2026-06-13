@@ -59,6 +59,17 @@ let isProcessing = false;
 let round = 1;
 let currentBg = 'nature'; // 'nature' or 'city'
 let isDynamicBg = localStorage.getItem('wordle_dynamicBg') !== 'false'; // default: true
+
+let isBadWordsFilterOn = localStorage.getItem('wordle_badWordsFilter') !== 'false';
+const STOPWORDS = [
+  "ANJING", "BABI", "BANGSAT", "KONTOL", "MEMEK", "JEMBUT", "NGENTOT", "PELACUR", "LONTE", "ASU", "JANCUK", "GOBLOK", "TOLOL", "BAJINGAN", "TAIK", "BERAK", "PEJU", "NGACENG", "SANGE", "MEKI", "KNTL", "NGWE", "ANJGN",
+  "SLOT", "JUDI", "GACOR", "ZEUS", "POKER", "TOGEL", "ROLET", "SCATTER", "MAXWIN", "RUNGKAD", "DEPO", "WD", "SLOTER", "PRAGMATIC"
+];
+
+window.toggleBadWords = function(checked) {
+  isBadWordsFilterOn = checked;
+  localStorage.setItem('wordle_badWordsFilter', isBadWordsFilterOn);
+};
 let TARGET_WORDS = [];
 let VALID_WORDS = [];
 let availableWords = [];
@@ -1343,6 +1354,15 @@ let lastInvalidTime = 0;
 
 // Process a valid guess — optimized: no blocking delays
 function processGuess(guessWord, userData) {
+  if (isBadWordsFilterOn) {
+    for (const bad of STOPWORDS) {
+      if (guessWord.includes(bad)) {
+        console.log(`[Bad Word Filter] Rejected guess: ${guessWord}`);
+        return; // Reject silently from the board
+      }
+    }
+  }
+
   let isValidWord = VALID_WORDS.includes(guessWord);
   let hardModeMsg = "";
   
@@ -1662,3 +1682,8 @@ window.resetLeaderboard = function(e) {
     if (dropdown) dropdown.classList.remove('show');
   }
 };
+
+document.addEventListener('DOMContentLoaded', () => {
+  const badWordsToggle = document.getElementById('badWordsToggle');
+  if (badWordsToggle) badWordsToggle.checked = isBadWordsFilterOn;
+});

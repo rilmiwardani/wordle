@@ -1,14 +1,17 @@
 // Auto-detect hostname so it works on other devices in the same WiFi
 const SOCKET_URL = window.location.protocol + "//" + window.location.hostname + ":9200";
 // Max visible rows on board — per mode, configurable via Settings
-const DISPLAY_ROWS_DEFAULT = { wordle: 6, word500: 8 };
+const DISPLAY_ROWS_DEFAULT = { wordle: 6, word500: 8, word600: 8 };
 const DISPLAY_ROWS_MIN = 3;
 const DISPLAY_ROWS_MAX = 12;
 let displayRowsWordle  = parseInt(localStorage.getItem('displayRows_wordle'))  || DISPLAY_ROWS_DEFAULT.wordle;
 let displayRowsWord500 = parseInt(localStorage.getItem('displayRows_word500')) || DISPLAY_ROWS_DEFAULT.word500;
+let displayRowsWord600 = parseInt(localStorage.getItem('displayRows_word600')) || DISPLAY_ROWS_DEFAULT.word600;
 
 function getDisplayRows() {
-  return currentGameMode === 'word500' ? displayRowsWord500 : displayRowsWordle;
+  if (currentGameMode === 'word500') return displayRowsWord500;
+  if (currentGameMode === 'word600') return displayRowsWord600;
+  return displayRowsWordle;
 }
 
 function changeDisplayRows(delta, e) {
@@ -16,13 +19,16 @@ function changeDisplayRows(delta, e) {
   if (currentGameMode === 'word500') {
     displayRowsWord500 = Math.min(DISPLAY_ROWS_MAX, Math.max(DISPLAY_ROWS_MIN, displayRowsWord500 + delta));
     localStorage.setItem('displayRows_word500', displayRowsWord500);
+  } else if (currentGameMode === 'word600') {
+    displayRowsWord600 = Math.min(DISPLAY_ROWS_MAX, Math.max(DISPLAY_ROWS_MIN, displayRowsWord600 + delta));
+    localStorage.setItem('displayRows_word600', displayRowsWord600);
   } else {
     displayRowsWordle = Math.min(DISPLAY_ROWS_MAX, Math.max(DISPLAY_ROWS_MIN, displayRowsWordle + delta));
     localStorage.setItem('displayRows_wordle', displayRowsWordle);
   }
   updateDisplayRowsUI();
   // Re-render board immediately
-  if (currentGameMode === 'word500') {
+  if (currentGameMode === 'word500' || currentGameMode === 'word600') {
     renderWord500Board();
   } else {
     initBoard();
@@ -41,7 +47,7 @@ document.documentElement.style.setProperty('--word-length', WORD_LENGTH);
 let currentGameMode = localStorage.getItem('wordle_gameMode') || '';
 
 function getMaxGuesses() {
-  return currentGameMode === 'word500' ? Infinity : 6;
+  return (currentGameMode === 'word500' || currentGameMode === 'word600') ? Infinity : 6;
 }
 
 // State
@@ -73,7 +79,9 @@ let playerPoints = {};
 let currentLbTab = 'session';
 
 function getPtsPrefix() {
-  return currentGameMode === 'word500' ? 'pts_w500_' : 'pts_';
+  if (currentGameMode === 'word500') return 'pts_w500_';
+  if (currentGameMode === 'word600') return 'pts_w600_';
+  return 'pts_';
 }
 
 // Memuat data mingguan ke memori saat halaman dimuat
@@ -244,9 +252,9 @@ function playNextMusic() {
 
 // Fetch words on load
 let wordsLoaded = false;
-let allTargetWords = { 5: [], 6: [] };
-let allValidWords = { 5: [], 6: [] };
-let allAvailableWords = { 5: [], 6: [] };
+let allTargetWords = { 5: [], 6: [], 7: [] };
+let allValidWords = { 5: [], 6: [], 7: [] };
+let allAvailableWords = { 5: [], 6: [], 7: [] };
 
 function loadWordLists(lang) {
   return new Promise((resolve, reject) => {
@@ -256,7 +264,9 @@ function loadWordLists(lang) {
         Promise.all([fetch(`target_words.txt`).then(r => r.text()), fetch(`target_words_id.txt`).then(r => r.text())]).then(r => r[0] + '\n' + r[1]),
         Promise.all([fetch(`valid_words.txt`).then(r => r.text()), fetch(`valid_words_id.txt`).then(r => r.text())]).then(r => r[0] + '\n' + r[1]),
         Promise.all([fetch(`target_words_6.txt`).then(r => r.text()).catch(()=>""), fetch(`target_words_id_6.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
-        Promise.all([fetch(`valid_words_6.txt`).then(r => r.text()).catch(()=>""), fetch(`valid_words_id_6.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1])
+        Promise.all([fetch(`valid_words_6.txt`).then(r => r.text()).catch(()=>""), fetch(`valid_words_id_6.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
+        Promise.all([fetch(`target_words_7.txt`).then(r => r.text()).catch(()=>""), fetch(`target_words_id_7.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
+        Promise.all([fetch(`valid_words_7.txt`).then(r => r.text()).catch(()=>""), fetch(`valid_words_id_7.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1])
       ];
     } else {
       let suffix = lang === 'en' ? '' : '_id';
@@ -264,11 +274,13 @@ function loadWordLists(lang) {
         fetch(`target_words${suffix}.txt`).then(r => r.text()),
         fetch(`valid_words${suffix}.txt`).then(r => r.text()),
         fetch(`target_words${suffix}_6.txt`).then(r => r.text()).catch(() => ""),
-        fetch(`valid_words${suffix}_6.txt`).then(r => r.text()).catch(() => "")
+        fetch(`valid_words${suffix}_6.txt`).then(r => r.text()).catch(() => ""),
+        fetch(`target_words${suffix}_7.txt`).then(r => r.text()).catch(() => ""),
+        fetch(`valid_words${suffix}_7.txt`).then(r => r.text()).catch(() => "")
       ];
     }
 
-    Promise.all(fetches).then(([t5, v5, t6, v6]) => {
+    Promise.all(fetches).then(([t5, v5, t6, v6, t7, v7]) => {
       // Process length 5
       allTargetWords[5] = t5.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 5);
       const validList5 = v5.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 5);
@@ -283,8 +295,15 @@ function loadWordLists(lang) {
       allAvailableWords[6] = [...allTargetWords[6]];
       shuffleArray(allAvailableWords[6]);
 
+      // Process length 7
+      allTargetWords[7] = t7.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 7);
+      const validList7 = v7.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 7);
+      allValidWords[7] = [...new Set([...validList7, ...allTargetWords[7]])];
+      allAvailableWords[7] = [...allTargetWords[7]];
+      shuffleArray(allAvailableWords[7]);
+
       wordsLoaded = true;
-      console.log(`Loaded length 5: ${allTargetWords[5].length} targets. Length 6: ${allTargetWords[6].length} targets.`);
+      console.log(`Loaded length 5: ${allTargetWords[5].length} targets. Length 6: ${allTargetWords[6].length} targets. Length 7: ${allTargetWords[7].length} targets.`);
       resolve();
     }).catch(err => {
       console.error("Failed to load wordlists:", err);
@@ -332,7 +351,9 @@ function selectGame(mode) {
   // Update login title
   const loginTitle = document.getElementById('loginTitle');
   if (loginTitle) {
-    loginTitle.textContent = mode === 'word500' ? 'TIKTOK WORD500' : 'TIKTOK WORDLE';
+    if (mode === 'word500') loginTitle.textContent = 'TIKTOK WORD500';
+    else if (mode === 'word600') loginTitle.textContent = 'TIKTOK WORD600';
+    else loginTitle.textContent = 'TIKTOK WORDLE';
   }
 
   // Hide game select, show login
@@ -356,7 +377,9 @@ function switchGameMode(e) {
   }
 
   // Seamless switch
-  currentGameMode = currentGameMode === 'word500' ? 'wordle' : 'word500';
+  if (currentGameMode === 'wordle') currentGameMode = 'word500';
+  else if (currentGameMode === 'word500') currentGameMode = 'word600';
+  else currentGameMode = 'wordle';
   try { localStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
 
   initWeeklyLeaderboard();
@@ -369,11 +392,13 @@ function applyGameModeUI() {
   const bestGuessContainer = document.getElementById('bestGuessContainer');
   const switchBtn = document.getElementById('switchGameBtn');
 
-  if (currentGameMode === 'word500') {
-    if (headerTitle) headerTitle.textContent = 'WORD500';
+  if (currentGameMode === 'word500' || currentGameMode === 'word600') {
+    if (headerTitle) headerTitle.textContent = currentGameMode === 'word500' ? 'WORD500' : 'WORD600';
     if (hintContainer) hintContainer.style.display = 'none';
     if (bestGuessContainer) bestGuessContainer.style.display = 'none'; // replaced by sorted board
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
+    if (switchBtn) {
+      switchBtn.textContent = currentGameMode === 'word500' ? '🔄 Switch to Word600' : '🔄 Switch to Wordle';
+    }
   } else {
     if (headerTitle) headerTitle.textContent = 'WORDLE';
     if (hintContainer) hintContainer.style.display = '';
@@ -396,8 +421,13 @@ function updateBestGuessUI() {
   // Spacer for avatar column
   html += `<div style="min-width: 0; min-height: 0; width: 100%;"></div>`;
 
+  const isAllRed = bestGuess.a === bestGuess.word.length;
+  const extraStyle = isAllRed 
+    ? 'background-color: rgba(220, 38, 38, 0.25); border: 2px solid rgba(220, 38, 38, 0.4); color: rgba(255, 255, 255, 0.4);' 
+    : '';
+
   for (let i = 0; i < bestGuess.word.length; i++) {
-    html += `<div class="tile blind" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 15%; font-size: 1.1rem; min-width: 0; min-height: 0; display:flex; align-items:center; justify-content:center;">${bestGuess.word[i]}</div>`;
+    html += `<div class="tile blind" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 15%; font-size: 1.1rem; min-width: 0; min-height: 0; display:flex; align-items:center; justify-content:center; ${extraStyle}">${bestGuess.word[i]}</div>`;
   }
   html += `
     <div class="w500-count green" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 15%; font-size: 1rem; min-width: 0; min-height: 0;">${bestGuess.c}</div>
@@ -418,9 +448,15 @@ function createWord500RowEl(guessData, isLatest) {
     avatar.classList.add('show');
   }
   row.appendChild(avatar);
+  const isAllRed = guessData.a === guessData.word.length;
   for (let j = 0; j < guessData.word.length; j++) {
     const tile = document.createElement('div');
     tile.className = 'tile blind';
+    if (isAllRed) {
+      tile.style.backgroundColor = 'rgba(220, 38, 38, 0.25)';
+      tile.style.borderColor = 'rgba(220, 38, 38, 0.4)';
+      tile.style.color = 'rgba(255, 255, 255, 0.4)';
+    }
     tile.textContent = guessData.word[j];
     row.appendChild(tile);
   }
@@ -491,7 +527,7 @@ function renderWord500Board() {
 function initBoard() {
   board.innerHTML = '';
 
-  if (currentGameMode === 'word500') {
+  if (currentGameMode === 'word500' || currentGameMode === 'word600') {
     board.classList.add('w500-board');
   } else {
     board.classList.remove('w500-board');
@@ -517,8 +553,8 @@ function initBoard() {
       row.appendChild(tile);
     }
 
-    // Word500: add feedback placeholders
-    if (currentGameMode === 'word500') {
+    // Word500/600: add feedback placeholders
+    if (currentGameMode === 'word500' || currentGameMode === 'word600') {
       row.classList.add('w500-row');
       for (let k = 0; k < 3; k++) {
         const clue = document.createElement('div');
@@ -663,11 +699,14 @@ function handleMyRank(userData) {
 
 // Start Game
 function startNewRound() {
-  // Word500 always uses 5 letters; Wordle randomizes 5-6
+  // Word500 always uses 5 letters; Word600 always uses 6 letters; Wordle randomizes 5, 6, or 7
   if (currentGameMode === 'word500') {
     WORD_LENGTH = 5;
+  } else if (currentGameMode === 'word600') {
+    WORD_LENGTH = 6;
   } else {
-    WORD_LENGTH = Math.random() < 0.5 ? 5 : 6;
+    const r = Math.random();
+    WORD_LENGTH = r < 0.33 ? 5 : (r < 0.66 ? 6 : 7);
   }
   document.documentElement.style.setProperty('--word-length', WORD_LENGTH);
   
@@ -701,14 +740,14 @@ function startNewRound() {
   // Apply mode-specific UI
   applyGameModeUI();
   initBoard();
-  if (currentGameMode !== 'word500') {
+  if (currentGameMode !== 'word500' && currentGameMode !== 'word600') {
     initHintBoard();
   }
   updateBestGuessUI();
 
   console.log(`[Cheat] Target word is: ${currentWord}`);
   startInstructionRotation();
-  const gameName = currentGameMode === 'word500' ? 'Word500' : 'Wordle';
+  const gameName = currentGameMode === 'word500' ? 'Word500' : (currentGameMode === 'word600' ? 'Word600' : 'Wordle');
   showToast(`${gameName} Round ${round} Started! (${WORD_LENGTH} Letters)`, 2000);
 }
 
@@ -796,22 +835,46 @@ document.addEventListener('click', () => {
   if (dropdown) dropdown.classList.remove('open');
 });
 
-// Hard Mode Logic
-let isHardMode = localStorage.getItem('wordle_hardMode') === 'true';
+let hardModeState = localStorage.getItem('wordle_hardModeState') || 'off';
+if (localStorage.getItem('wordle_hardMode') === 'true') {
+  hardModeState = 'hard';
+  localStorage.removeItem('wordle_hardMode');
+  localStorage.setItem('wordle_hardModeState', 'hard');
+} else if (localStorage.getItem('wordle_hardMode') === 'false') {
+  localStorage.removeItem('wordle_hardMode');
+}
 
 function toggleHardMode(e) {
   if (e) e.stopPropagation();
-  isHardMode = !isHardMode;
-  try { localStorage.setItem('wordle_hardMode', isHardMode); } catch(e) {}
+  if (hardModeState === 'off') {
+    hardModeState = 'hard';
+  } else if (hardModeState === 'hard') {
+    hardModeState = 'ultra';
+  } else {
+    hardModeState = 'off';
+  }
+  try { localStorage.setItem('wordle_hardModeState', hardModeState); } catch(e) {}
   updateHardModeUI();
-  showToast(isHardMode ? '🔥 Hard Mode Diaktifkan' : 'Hard Mode Dinonaktifkan', 2000);
+  
+  let msg = 'Hard Mode Dinonaktifkan';
+  if (hardModeState === 'hard') msg = '🔥 Hard Mode Diaktifkan';
+  if (hardModeState === 'ultra') msg = '☠️ Ultra Hard Mode Diaktifkan';
+  showToast(msg, 2000);
 }
 
 function updateHardModeUI() {
   const btn = document.getElementById('hardModeBtn');
   if (btn) {
-    btn.innerHTML = isHardMode ? '🔥 Hard Mode: ON' : '🔥 Hard Mode: OFF';
-    btn.style.color = isHardMode ? '#fe2c55' : '';
+    if (hardModeState === 'off') {
+      btn.innerHTML = '🔥 Hard Mode: OFF';
+      btn.style.color = '';
+    } else if (hardModeState === 'hard') {
+      btn.innerHTML = '🔥 Hard Mode: ON';
+      btn.style.color = '#fe2c55';
+    } else if (hardModeState === 'ultra') {
+      btn.innerHTML = '☠️ Ultra Hard: ON';
+      btn.style.color = '#8b0000';
+    }
   }
 }
 
@@ -834,6 +897,7 @@ function applyStaticBg() {
 
 function applyDynamicBg() {
   bgLayer.style.backgroundColor = '';
+  bgLayer.style.backgroundImage = ''; // Menghapus inline style 'none' dari applyStaticBg
   bgLayer.className = `bg-layer ${currentBg}`;
 }
 
@@ -882,20 +946,70 @@ function getWordleFeedback(guess, target) {
 }
 
 function validateHardMode(guessWord) {
-  if (!isHardMode || guesses.length === 0) return { valid: true };
+  if (hardModeState === 'off' || guesses.length === 0) return { valid: true };
 
   const validPastGuesses = guesses.filter(g => VALID_WORDS.includes(g));
 
   for (const past of validPastGuesses) {
-    if (currentGameMode === 'word500') {
+    if (currentGameMode === 'word500' || currentGameMode === 'word600') {
       const actual = getScore(past, currentWord);
       const simulated = getScore(past, guessWord);
       if (actual.c !== simulated.c || actual.p !== simulated.p) {
-        return { valid: false, msg: `Tebakan tidak konsisten dengan clue dari "${past}"` };
+        const simStatuses = getWordleFeedback(past, guessWord);
+        const gLetters = [];
+        const yLetters = [];
+        for(let i=0; i<past.length; i++) {
+          if (simStatuses[i] === 'correct') gLetters.push(past[i]);
+          else if (simStatuses[i] === 'present') yLetters.push(past[i]);
+        }
+        
+        let reason = "";
+        const simTotal = simulated.c + simulated.p;
+        const actTotal = actual.c + actual.p;
+        const allL = [...gLetters, ...yLetters];
+        const simLetterText = (simTotal > 0) ? `(tebakanmu cuma bawa huruf [${allL.join(',')}])` : `(tebakanmu malah buang semua hurufnya)`;
+
+        if (simTotal < actTotal) {
+           reason = `Woy! Di '${past}' kan ada ${actTotal} huruf bener, kok malah dibuang? ${simLetterText}`;
+        } else if (simTotal > actTotal) {
+           reason = `Kebanyakan! Di '${past}' cuma dapet ${actTotal} huruf, kok tebakanmu maksa bawa lebih? (bawa huruf [${allL.join(',')}])`;
+        } else if (simulated.c > actual.c) {
+           const gText = gLetters.length > 0 ? `huruf [${gLetters.join(',')}]` : 'hurufnya';
+           reason = `Ngaco! Di '${past}' kan aslinya cuma dapet ${actual.c} Hijau, kok ${gText} malah ditaruh di tempat yg sama persis?`;
+        } else if (simulated.c < actual.c) {
+           reason = `Sayang banget! Di '${past}' udah ada ${actual.c} huruf Hijau yg letaknya pas, kok malah digeser/diganti? ${simLetterText}`;
+        } else {
+           reason = `Kurang teliti! Susunan posisi tebakanmu (yg pakai huruf [${allL.join(',')}]) nggak masuk akal sama clue '${past}'.`;
+        }
+        return { 
+          valid: false, 
+          msg: `❌ ${reason}` 
+        };
       }
     } else {
       const statuses = getWordleFeedback(past, currentWord);
       const newG = guessWord.split('');
+      
+      // Ultra hard mode check: no using completely gray letters
+      if (hardModeState === 'ultra') {
+        const completelyGray = new Set();
+        for(let i=0; i<past.length; i++) {
+          if (statuses[i] === 'absent') {
+            let hasOther = false;
+            for(let j=0; j<past.length; j++) {
+              if (past[j] === past[i] && (statuses[j] === 'correct' || statuses[j] === 'present')) {
+                hasOther = true; break;
+              }
+            }
+            if (!hasOther) completelyGray.add(past[i]);
+          }
+        }
+        for(let i=0; i<guessWord.length; i++) {
+          if (completelyGray.has(guessWord[i])) {
+            return { valid: false, msg: `Huruf "${guessWord[i]}" (abu-abu) tidak boleh digunakan lagi` };
+          }
+        }
+      }
       
       // Check Greens
       for(let i=0; i<past.length; i++) {
@@ -1253,7 +1367,7 @@ function processGuess(guessWord, userData) {
   invalidRows.forEach(el => el.remove());
 
   const currentRow = guesses.length;
-  const isWord500 = currentGameMode === 'word500';
+  const isWord500 = currentGameMode === 'word500' || currentGameMode === 'word600';
   
   // 1. Create a new row and attach to top of grid
   const row = document.createElement('div');

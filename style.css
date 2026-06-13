@@ -952,6 +952,8 @@ header {
   pointer-events: none;
   /* Selalu di atas semua elemen game */
   z-index: 9998;
+  width: 100%;
+  padding: 0 20px;
 }
 
 .toast {
@@ -965,6 +967,10 @@ header {
   font-size: 14px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   animation: toastIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  max-width: 100%;
+  text-align: center;
+  line-height: 1.4;
+  word-wrap: break-word;
 }
 
 @keyframes toastIn {

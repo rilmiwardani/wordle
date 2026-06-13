@@ -224,11 +224,8 @@ body {
 /* Baris terbaru di Word500 — highlight mencolok */
 .board-row.w500-latest-row {
   background: rgba(255, 255, 255, 0.06);
-  border-radius: 14px;
-  outline: 2px solid rgba(255, 255, 255, 0.35);
-  outline-offset: 2px;
-  box-shadow: 0 0 16px rgba(255, 255, 255, 0.08);
-  padding: 2px 4px;
+  border-radius: 12px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35), 0 0 16px rgba(255, 255, 255, 0.08);
 }
 
 /* Login Overlay */
@@ -854,6 +851,8 @@ header {
   gap: clamp(4px, 1.5vw, 8px);
   align-items: center;
   transition: opacity 0.3s ease;
+  padding: 4px;
+  border-radius: 12px;
 }
 
 /* Avatar Guesser */

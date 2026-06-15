@@ -778,6 +778,25 @@ function startNewRound() {
   
   if (currentGameMode === 'wordloop') {
     updateWordLoopUI();
+    
+    // Automatically pick the first word to prevent looping cheats and provide an immediate constraint
+    if (VALID_WORDS.length > 0) {
+      let loopWord = null;
+      let attempts = 0;
+      while (!loopWord && attempts < 1000) {
+          const candidate = VALID_WORDS[Math.floor(Math.random() * VALID_WORDS.length)];
+          if (candidate.length === WORD_LENGTH && checkWordLoopPath(candidate.slice(-2), candidate.slice(0, 2), 5)) {
+              loopWord = candidate;
+          }
+          attempts++;
+      }
+      
+      if (loopWord) {
+          // Add to queue to simulate system play
+          guessQueue.push({ guessWord: loopWord, userData: { nickname: 'SISTEM', uniqueId: 'system' } });
+          setTimeout(processQueue, 300);
+      }
+    }
   }
 }
 
@@ -1494,7 +1513,12 @@ function processGuess(guessWord, userData) {
   
   // Word Loop logic
   if (currentGameMode === 'wordloop' && isValidWord) {
-    if (guesses.length > 0) {
+    if (guesses.includes(guessWord)) {
+      isValidWord = false;
+      hardModeMsg = `Kata sudah digunakan di ronde ini!`;
+    }
+    
+    if (isValidWord && guesses.length > 0) {
       const lastWord = guesses[guesses.length - 1];
       const requiredPrefix = lastWord.slice(-2);
       if (!guessWord.startsWith(requiredPrefix)) {

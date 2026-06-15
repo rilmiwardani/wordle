@@ -462,7 +462,7 @@ function updateBestGuessUI() {
 }
 
 // ─── Word500 Sorted Board ───
-function createWord500RowEl(guessData, isLatest) {
+function createWord500RowEl(guessData, isLatest, revealAllColors = false) {
   const row = document.createElement('div');
   row.className = 'board-row w500-row' + (isLatest ? ' w500-latest-row' : '');
   const avatar = document.createElement('img');
@@ -473,16 +473,26 @@ function createWord500RowEl(guessData, isLatest) {
   }
   row.appendChild(avatar);
   const isAllRed = guessData.a === guessData.word.length;
+  
+  let statuses = null;
+  if (revealAllColors) {
+    statuses = getWordleFeedback(guessData.word, currentWord);
+  }
+
   for (let j = 0; j < guessData.word.length; j++) {
     const tile = document.createElement('div');
-    tile.className = 'tile blind';
     const letter = guessData.word[j];
     
-    if (isAllRed || knownAbsentLetters.has(letter)) {
-      tile.style.backgroundColor = 'rgba(220, 38, 38, 0.25)';
-      tile.style.borderColor = 'rgba(220, 38, 38, 0.4)';
-      tile.style.color = 'rgba(255, 255, 255, 0.4)';
-      tile.style.textDecoration = 'line-through';
+    if (revealAllColors && statuses) {
+      tile.className = `tile ${statuses[j]}`;
+    } else {
+      tile.className = 'tile blind';
+      if (isAllRed || knownAbsentLetters.has(letter)) {
+        tile.style.backgroundColor = 'rgba(220, 38, 38, 0.25)';
+        tile.style.borderColor = 'rgba(220, 38, 38, 0.4)';
+        tile.style.color = 'rgba(255, 255, 255, 0.4)';
+        tile.style.textDecoration = 'line-through';
+      }
     }
     tile.textContent = letter;
     row.appendChild(tile);
@@ -522,7 +532,7 @@ function createEmptyW500Row(idx) {
   return row;
 }
 
-function renderWord500Board() {
+function renderWord500Board(revealAllColors = false) {
   board.innerHTML = '';
   board.classList.add('w500-board');
 
@@ -543,7 +553,7 @@ function renderWord500Board() {
 
   // Baris paling atas: tebakan terbaru
   const latest = word500History[word500History.length - 1];
-  board.appendChild(createWord500RowEl(latest, true));
+  board.appendChild(createWord500RowEl(latest, true, revealAllColors));
 
   // Di bawahnya: semua tebakan sebelumnya, diurutkan dari skor tertinggi
   const previous = word500History.slice(0, -1)
@@ -552,7 +562,7 @@ function renderWord500Board() {
 
   const slots = DISPLAY_ROWS - 1;
   const toShow = previous.slice(0, slots);
-  for (const g of toShow) board.appendChild(createWord500RowEl(g, false));
+  for (const g of toShow) board.appendChild(createWord500RowEl(g, false, revealAllColors));
 
   // Isi sisa dengan baris kosong
   for (let i = toShow.length; i < DISPLAY_ROWS - 1; i++) board.appendChild(createEmptyW500Row(i));
@@ -1813,7 +1823,12 @@ function processGuess(guessWord, userData) {
     document.getElementById('winPts').innerHTML = `🪙 +${winPts} Bonus`;
     document.getElementById('winWord').textContent = currentGameMode === 'wordloop' ? "LOOP COMPLETED!" : currentWord;
     
-    // Tunggu 2 detik dulu agar jawaban di grid terlihat, baru tampilkan overlay
+    // Jika di mode Word500/Word600, reveal seluruh grid sebelum overlay muncul
+    if (currentGameMode === 'word500' || currentGameMode === 'word600') {
+        renderWord500Board(true);
+    }
+    
+    // Tunggu 2 detik dulu agar jawaban di grid (dan efek reveal) terlihat, baru tampilkan overlay
     setTimeout(() => {
       winOverlay.classList.add('show');
       

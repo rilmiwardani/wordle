@@ -46,6 +46,14 @@
           </div>
           <div class="game-card-arrow">→</div>
         </div>
+        <div class="game-card" onclick="selectGame('wordloop')" id="cardWordLoop">
+          <div class="game-card-icon">🔁</div>
+          <div class="game-card-content">
+            <div class="game-card-name">WORD LOOP</div>
+            <div class="game-card-desc">Sambung kata 6 baris. Akhir kata menutup loop!</div>
+          </div>
+          <div class="game-card-arrow">→</div>
+        </div>
       </div>
     </div>
   </div>
@@ -110,6 +118,14 @@
             </label>
 
             <div class="settings-sep"></div>
+            <div class="settings-title">Panjang Kata (Wordle/Loop)</div>
+            <div class="settings-checkboxes" onclick="event.stopPropagation()" style="display: flex; gap: 10px; padding: 5px 12px; color: rgba(255,255,255,0.8); font-size: 13px;">
+              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="len5Toggle" checked onchange="updateAllowedLengths()"> 5</label>
+              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="len6Toggle" checked onchange="updateAllowedLengths()"> 6</label>
+              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="len7Toggle" checked onchange="updateAllowedLengths()"> 7</label>
+            </div>
+
+            <div class="settings-sep"></div>
             <div class="settings-title">Tampilan</div>
             <div class="display-rows-control" onclick="event.stopPropagation()">
               <button class="rows-btn" onclick="changeDisplayRows(-1, event)">−</button>
@@ -170,6 +186,14 @@
       <div class="hint-label" style="color: #10b981; margin-bottom: 10px;">BEST GUESS</div>
       <div id="bestGuessBoard">
         <div style="color: rgba(255,255,255,0.4); font-size: 13px; padding: 5px;">Belum ada tebakan valid</div>
+      </div>
+    </div>
+
+    <!-- Word Loop Info -->
+    <div id="wordLoopInfoContainer" style="display: none; max-width: 540px; width: 100%; margin: 0 auto 15px; text-align: center;">
+      <div class="hint-label" style="color: #3b82f6; margin-bottom: 5px;">INFO SAMBUNGAN</div>
+      <div id="wordLoopCount" style="color: rgba(255,255,255,0.8); font-size: 16px; font-weight: 600;">
+        Ketik kata 5 huruf bebas untuk mulai!
       </div>
     </div>
 

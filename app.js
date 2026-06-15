@@ -11,6 +11,7 @@ let displayRowsWord600 = parseInt(localStorage.getItem('displayRows_word600')) |
 function getDisplayRows() {
   if (currentGameMode === 'word500') return displayRowsWord500;
   if (currentGameMode === 'word600') return displayRowsWord600;
+  if (currentGameMode === 'wordloop') return 6;
   return displayRowsWordle;
 }
 
@@ -92,6 +93,7 @@ let currentLbTab = 'session';
 function getPtsPrefix() {
   if (currentGameMode === 'word500') return 'pts_w500_';
   if (currentGameMode === 'word600') return 'pts_w600_';
+  if (currentGameMode === 'wordloop') return 'pts_wloop_';
   return 'pts_';
 }
 
@@ -390,6 +392,7 @@ function switchGameMode(e) {
   // Seamless switch
   if (currentGameMode === 'wordle') currentGameMode = 'word500';
   else if (currentGameMode === 'word500') currentGameMode = 'word600';
+  else if (currentGameMode === 'word600') currentGameMode = 'wordloop';
   else currentGameMode = 'wordle';
   try { localStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
 
@@ -402,14 +405,23 @@ function applyGameModeUI() {
   const hintContainer = document.getElementById('hintContainer');
   const bestGuessContainer = document.getElementById('bestGuessContainer');
   const switchBtn = document.getElementById('switchGameBtn');
+  const wordLoopInfoContainer = document.getElementById('wordLoopInfoContainer');
+
+  if (wordLoopInfoContainer) wordLoopInfoContainer.style.display = 'none';
 
   if (currentGameMode === 'word500' || currentGameMode === 'word600') {
     if (headerTitle) headerTitle.textContent = currentGameMode === 'word500' ? 'WORD500' : 'WORD600';
     if (hintContainer) hintContainer.style.display = 'none';
     if (bestGuessContainer) bestGuessContainer.style.display = 'none'; // replaced by sorted board
     if (switchBtn) {
-      switchBtn.textContent = currentGameMode === 'word500' ? '🔄 Switch to Word600' : '🔄 Switch to Wordle';
+      switchBtn.textContent = currentGameMode === 'word500' ? '🔄 Switch to Word600' : '🔄 Switch to Word Loop';
     }
+  } else if (currentGameMode === 'wordloop') {
+    if (headerTitle) headerTitle.textContent = 'WORD LOOP';
+    if (hintContainer) hintContainer.style.display = 'none';
+    if (bestGuessContainer) bestGuessContainer.style.display = 'none';
+    if (wordLoopInfoContainer) wordLoopInfoContainer.style.display = '';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
   } else {
     if (headerTitle) headerTitle.textContent = 'WORDLE';
     if (hintContainer) hintContainer.style.display = '';
@@ -710,14 +722,17 @@ function handleMyRank(userData) {
 
 // Start Game
 function startNewRound() {
-  // Word500 always uses 5 letters; Word600 always uses 6 letters; Wordle randomizes 5, 6, or 7
+  // Word500 always uses 5 letters; Word600 always uses 6 letters; Wordle/WordLoop randomizes 5, 6, or 7
   if (currentGameMode === 'word500') {
     WORD_LENGTH = 5;
   } else if (currentGameMode === 'word600') {
     WORD_LENGTH = 6;
   } else {
-    const r = Math.random();
-    WORD_LENGTH = r < 0.33 ? 5 : (r < 0.66 ? 6 : 7);
+    let allowedLengths = [5, 6, 7];
+    try { allowedLengths = JSON.parse(localStorage.getItem('allowed_lengths') || '[5,6,7]'); } catch(e) {}
+    if (!allowedLengths || allowedLengths.length === 0) allowedLengths = [5];
+    const rIdx = Math.floor(Math.random() * allowedLengths.length);
+    WORD_LENGTH = allowedLengths[rIdx];
   }
   document.documentElement.style.setProperty('--word-length', WORD_LENGTH);
   
@@ -758,8 +773,12 @@ function startNewRound() {
 
   console.log(`[Cheat] Target word is: ${currentWord}`);
   startInstructionRotation();
-  const gameName = currentGameMode === 'word500' ? 'Word500' : (currentGameMode === 'word600' ? 'Word600' : 'Wordle');
+  const gameName = currentGameMode === 'word500' ? 'Word500' : (currentGameMode === 'word600' ? 'Word600' : (currentGameMode === 'wordloop' ? 'Word Loop' : 'Wordle'));
   showToast(`${gameName} Round ${round} Started! (${WORD_LENGTH} Letters)`, 2000);
+  
+  if (currentGameMode === 'wordloop') {
+    updateWordLoopUI();
+  }
 }
 
 // Switch Account — disconnect and go back to login
@@ -1352,6 +1371,78 @@ function showFloatingPoints(points, targetElementId) {
 
 let lastInvalidTime = 0;
 
+function updateWordLoopUI() {
+  if (currentGameMode !== 'wordloop') return;
+  const wordLoopCountEl = document.getElementById('wordLoopCount');
+  
+  if (guesses.length === 0) {
+    if (wordLoopCountEl) wordLoopCountEl.textContent = `Ketik kata ${WORD_LENGTH} huruf bebas untuk mulai!`;
+    return;
+  }
+  
+  if (guesses.length === 6) {
+    if (wordLoopCountEl) wordLoopCountEl.textContent = `LOOP SELESAI! 🎉`;
+    return;
+  }
+  
+  const lastWord = guesses[guesses.length - 1];
+  const requiredPrefix = lastWord.slice(-2);
+  let available = 0;
+  
+  if (guesses.length === 5) {
+     const requiredSuffix = guesses[0].slice(0, 2);
+     for (let w of VALID_WORDS) {
+        if (w.length === WORD_LENGTH && w.startsWith(requiredPrefix) && w.endsWith(requiredSuffix)) available++;
+     }
+     if (wordLoopCountEl) wordLoopCountEl.textContent = `Tersedia ${available} kata (Awal: ${requiredPrefix}, Akhir: ${requiredSuffix})`;
+  } else {
+     for (let w of VALID_WORDS) {
+        if (w.length === WORD_LENGTH && w.startsWith(requiredPrefix)) available++;
+     }
+     if (wordLoopCountEl) wordLoopCountEl.textContent = `Tersedia ${available} kata (Awal: ${requiredPrefix})`;
+  }
+  
+  // Pre-fill next row
+  const nextEmptyRow = document.getElementById(`row-empty-${guesses.length}`);
+  if (nextEmptyRow) {
+    const tiles = nextEmptyRow.querySelectorAll('.tile');
+    if (tiles.length >= WORD_LENGTH) {
+      // Clear all first
+      tiles.forEach(t => { t.textContent = ''; t.className = 'tile'; });
+      
+      // Fill prefix
+      tiles[0].textContent = requiredPrefix[0];
+      tiles[1].textContent = requiredPrefix[1];
+      tiles[0].classList.add('prefilled');
+      tiles[1].classList.add('prefilled');
+      
+      // If row 6, fill suffix too
+      if (guesses.length === 5) {
+        const requiredSuffix = guesses[0].slice(0, 2);
+        tiles[WORD_LENGTH - 2].textContent = requiredSuffix[0];
+        tiles[WORD_LENGTH - 1].textContent = requiredSuffix[1];
+        tiles[WORD_LENGTH - 2].classList.add('prefilled');
+        tiles[WORD_LENGTH - 1].classList.add('prefilled');
+      }
+    }
+  }
+  
+  // Always pre-fill the suffix on the 6th row (if we haven't reached it yet)
+  if (guesses.length > 0 && guesses.length < 5) {
+    const sixthRow = document.getElementById('row-empty-5');
+    if (sixthRow) {
+      const sixthTiles = sixthRow.querySelectorAll('.tile');
+      if (sixthTiles.length >= WORD_LENGTH) {
+        const requiredSuffix = guesses[0].slice(0, 2);
+        sixthTiles[WORD_LENGTH - 2].textContent = requiredSuffix[0];
+        sixthTiles[WORD_LENGTH - 1].textContent = requiredSuffix[1];
+        sixthTiles[WORD_LENGTH - 2].classList.add('prefilled');
+        sixthTiles[WORD_LENGTH - 1].classList.add('prefilled');
+      }
+    }
+  }
+}
+
 // Process a valid guess — optimized: no blocking delays
 function processGuess(guessWord, userData) {
   if (isBadWordsFilterOn) {
@@ -1366,7 +1457,55 @@ function processGuess(guessWord, userData) {
   let isValidWord = VALID_WORDS.includes(guessWord);
   let hardModeMsg = "";
   
-  if (isValidWord) {
+  // Word Loop logic
+  if (currentGameMode === 'wordloop' && isValidWord) {
+    if (guesses.length > 0) {
+      const lastWord = guesses[guesses.length - 1];
+      const requiredPrefix = lastWord.slice(-2);
+      if (!guessWord.startsWith(requiredPrefix)) {
+        isValidWord = false;
+        hardModeMsg = `Harus diawali huruf "${requiredPrefix}"`;
+      }
+    }
+    
+    if (isValidWord && guesses.length === 5) {
+      const firstWord = guesses[0];
+      const requiredSuffix = firstWord.slice(0, 2);
+      if (!guessWord.endsWith(requiredSuffix)) {
+        isValidWord = false;
+        hardModeMsg = `Akhir loop harus "${requiredSuffix}"`;
+      }
+    }
+    
+    if (isValidWord && guesses.length < 5) {
+      const newPrefix = guessWord.slice(-2);
+      let hasContinuations = false;
+      
+      if (guesses.length === 4) {
+         const requiredSuffixFor6th = guesses[0].slice(0, 2);
+         for (let w of VALID_WORDS) {
+            if (w.length === WORD_LENGTH && w.startsWith(newPrefix) && w.endsWith(requiredSuffixFor6th)) {
+               hasContinuations = true;
+               break;
+            }
+         }
+      } else {
+         for (let w of VALID_WORDS) {
+            if (w.length === WORD_LENGTH && w.startsWith(newPrefix)) {
+               hasContinuations = true;
+               break;
+            }
+         }
+      }
+      
+      if (!hasContinuations) {
+        isValidWord = false;
+        hardModeMsg = `Jalan buntu! Tidak ada kata sambungan.`;
+      }
+    }
+  }
+
+  if (isValidWord && currentGameMode !== 'wordloop') {
     const hmCheck = validateHardMode(guessWord);
     if (!hmCheck.valid) {
       hardModeMsg = hmCheck.msg;
@@ -1428,7 +1567,7 @@ function processGuess(guessWord, userData) {
   
   // 2. Determine statuses
   const guessArray = guessWord.split('');
-  const targetArray = currentWord.split('');
+  const targetArray = currentWord ? currentWord.split('') : [];
   const statuses = Array(WORD_LENGTH).fill('absent');
   
   let correctCount = 0;
@@ -1436,7 +1575,13 @@ function processGuess(guessWord, userData) {
   let absentCount = 0;
 
   if (isValidWord) {
-    // First pass: correct
+    if (currentGameMode === 'wordloop') {
+      for (let i = 0; i < WORD_LENGTH; i++) statuses[i] = 'correct';
+      // Word Loop gives 5 points per valid word
+      addPoints(userData, 5);
+      showFloatingPoints(5, `avatar-${currentRow}`);
+    } else {
+      // First pass: correct
     for (let i = 0; i < WORD_LENGTH; i++) {
       if (guessArray[i] === targetArray[i]) {
         statuses[i] = 'correct';
@@ -1490,7 +1635,8 @@ function processGuess(guessWord, userData) {
       }
     }
   }
-
+  }
+  
   // 3. Apply tile classes
   for (let i = 0; i < WORD_LENGTH; i++) {
     if (!isValidWord) {
@@ -1536,31 +1682,78 @@ function processGuess(guessWord, userData) {
     renderWord500Board();
   } else {
     // Wordle valid/invalid, ATAU Word500 invalid: insert ke board
-    board.insertBefore(row, board.firstChild);
-    const displayRows = getDisplayRows();
-    if (board.children.length > displayRows) board.removeChild(board.lastChild);
+    if (currentGameMode === 'wordloop') {
+       if (isValidWord) {
+          const emptyRow = document.getElementById(`row-empty-${currentRow}`);
+          if (emptyRow) board.replaceChild(row, emptyRow);
+          else board.appendChild(row);
+       } else {
+          // Temporarily show invalid guess at bottom
+          board.appendChild(row);
+       }
+    } else {
+       board.insertBefore(row, board.firstChild);
+       const displayRows = getDisplayRows();
+       if (board.children.length > displayRows) board.removeChild(board.lastChild);
+    }
     
     if (isValidWord) {
       guesses.push(guessWord);
+      if (currentGameMode === 'wordloop') updateWordLoopUI();
     } else {
       row.classList.add('is-invalid-row');
+      // Hapus row invalid setelah 2.5 detik agar tidak menumpuk di board
+      setTimeout(() => {
+        if (row.parentNode) {
+          row.remove();
+          // Di mode Wordle, kembalikan empty row di bawah jika perlu
+          if (currentGameMode !== 'wordloop' && !isWord500 && board.children.length < getDisplayRows()) {
+             const newRow = document.createElement('div');
+             newRow.className = 'board-row';
+             const avatar = document.createElement('img');
+             avatar.className = 'guesser-avatar';
+             newRow.appendChild(avatar);
+             for(let j=0; j<WORD_LENGTH; j++) {
+               const tile = document.createElement('div');
+               tile.className = 'tile';
+               newRow.appendChild(tile);
+             }
+             board.appendChild(newRow);
+          }
+        }
+      }, 2500);
     }
   }
   
   // Check win
-  if (guessWord === currentWord) {
+  let isWin = false;
+  let winPts = 0;
+  if (currentGameMode === 'wordloop') {
+    if (guesses.length === 6) {
+      isWin = true;
+      winPts = 10; // Bonus points for completing loop
+    }
+  } else {
+    if (guessWord === currentWord) {
+      isWin = true;
+      winPts = isWord500 ? 15 : 10;
+    }
+  }
+
+  if (isWin) {
     isGameOver = true;
     guessQueue = []; // Bug#1+#5 fix: clear antrian agar tebakan lama tidak masuk ronde baru
-    const winPts = isWord500 ? 15 : 10;
-    addPoints(userData, winPts);
-    showFloatingPoints(winPts, `avatar-${currentRow}`);
+    if (winPts > 0) {
+      addPoints(userData, winPts);
+      showFloatingPoints(winPts, `avatar-${currentRow}`);
+    }
     const winnerName = userData ? userData.nickname : 'Someone';
     const avatarUrl = userData && userData.profilePictureUrl ? userData.profilePictureUrl : 'bg_nature.png';
     const winOverlay = document.getElementById('winOverlay');
     document.getElementById('winAvatar').src = avatarUrl;
     document.getElementById('winName').textContent = winnerName;
-    document.getElementById('winPts').innerHTML = `🪙 +${winPts} Poin`;
-    document.getElementById('winWord').textContent = currentWord;
+    document.getElementById('winPts').innerHTML = `🪙 +${winPts} Bonus`;
+    document.getElementById('winWord').textContent = currentGameMode === 'wordloop' ? "LOOP COMPLETED!" : currentWord;
     
     // Tunggu 2 detik dulu agar jawaban di grid terlihat, baru tampilkan overlay
     setTimeout(() => {
@@ -1686,4 +1879,31 @@ window.resetLeaderboard = function(e) {
 document.addEventListener('DOMContentLoaded', () => {
   const badWordsToggle = document.getElementById('badWordsToggle');
   if (badWordsToggle) badWordsToggle.checked = isBadWordsFilterOn;
+
+  // Initialize length checkboxes
+  try {
+    const savedLengths = JSON.parse(localStorage.getItem('allowed_lengths') || '[5,6,7]');
+    if (document.getElementById('len5Toggle')) document.getElementById('len5Toggle').checked = savedLengths.includes(5);
+    if (document.getElementById('len6Toggle')) document.getElementById('len6Toggle').checked = savedLengths.includes(6);
+    if (document.getElementById('len7Toggle')) document.getElementById('len7Toggle').checked = savedLengths.includes(7);
+  } catch(e) {}
 });
+
+window.updateAllowedLengths = function() {
+  const is5 = document.getElementById('len5Toggle') ? document.getElementById('len5Toggle').checked : true;
+  const is6 = document.getElementById('len6Toggle') ? document.getElementById('len6Toggle').checked : true;
+  const is7 = document.getElementById('len7Toggle') ? document.getElementById('len7Toggle').checked : true;
+  
+  let lengths = [];
+  if (is5) lengths.push(5);
+  if (is6) lengths.push(6);
+  if (is7) lengths.push(7);
+  
+  // Prevent all unchecked (default to 5)
+  if (lengths.length === 0) {
+    lengths = [5];
+    if (document.getElementById('len5Toggle')) document.getElementById('len5Toggle').checked = true;
+  }
+  
+  localStorage.setItem('allowed_lengths', JSON.stringify(lengths));
+};

@@ -1443,6 +1443,41 @@ function updateWordLoopUI() {
   }
 }
 
+// Graph BFS to check if there is a path from startPrefix to targetSuffix of exact length stepsLeft
+function checkWordLoopPath(startPrefix, targetSuffix, stepsLeft) {
+    if (stepsLeft === 0) return startPrefix === targetSuffix;
+    
+    if (!window.wordLoopAdjCache || window.wordLoopAdjCache.wordLength !== WORD_LENGTH || window.wordLoopAdjCache.validWords !== VALID_WORDS) {
+        const adj = {};
+        for (let w of VALID_WORDS) {
+            if (w.length !== WORD_LENGTH) continue;
+            const p = w.slice(0, 2);
+            const s = w.slice(-2);
+            if (!adj[p]) adj[p] = new Set();
+            adj[p].add(s);
+        }
+        window.wordLoopAdjCache = { wordLength: WORD_LENGTH, validWords: VALID_WORDS, adj: adj };
+    }
+    
+    const adj = window.wordLoopAdjCache.adj;
+    let currentLevel = new Set([startPrefix]);
+    
+    for (let step = 0; step < stepsLeft; step++) {
+        let nextLevel = new Set();
+        for (let prefix of currentLevel) {
+            if (adj[prefix]) {
+                for (let nextPrefix of adj[prefix]) {
+                    nextLevel.add(nextPrefix);
+                }
+            }
+        }
+        currentLevel = nextLevel;
+        if (currentLevel.size === 0) return false;
+    }
+    
+    return currentLevel.has(targetSuffix);
+}
+
 // Process a valid guess — optimized: no blocking delays
 function processGuess(guessWord, userData) {
   if (isBadWordsFilterOn) {
@@ -1479,28 +1514,14 @@ function processGuess(guessWord, userData) {
     
     if (isValidWord && guesses.length < 5) {
       const newPrefix = guessWord.slice(-2);
-      let hasContinuations = false;
+      const targetSuffix = guesses.length === 0 ? guessWord.slice(0, 2) : guesses[0].slice(0, 2);
+      const stepsLeft = 5 - guesses.length;
       
-      if (guesses.length === 4) {
-         const requiredSuffixFor6th = guesses[0].slice(0, 2);
-         for (let w of VALID_WORDS) {
-            if (w.length === WORD_LENGTH && w.startsWith(newPrefix) && w.endsWith(requiredSuffixFor6th)) {
-               hasContinuations = true;
-               break;
-            }
-         }
-      } else {
-         for (let w of VALID_WORDS) {
-            if (w.length === WORD_LENGTH && w.startsWith(newPrefix)) {
-               hasContinuations = true;
-               break;
-            }
-         }
-      }
+      const hasContinuations = checkWordLoopPath(newPrefix, targetSuffix, stepsLeft);
       
       if (!hasContinuations) {
         isValidWord = false;
-        hardModeMsg = `Jalan buntu! Tidak ada kata sambungan.`;
+        hardModeMsg = `Jalan buntu! Tidak ada kata sambungan hingga akhir.`;
       }
     }
   }

@@ -55,6 +55,7 @@ function getMaxGuesses() {
 let socket = null;
 let currentWord = "";
 let guesses = [];
+let knownAbsentLetters = new Set();
 let isGameOver = false;
 let isProcessing = false;
 let round = 1;
@@ -475,12 +476,15 @@ function createWord500RowEl(guessData, isLatest) {
   for (let j = 0; j < guessData.word.length; j++) {
     const tile = document.createElement('div');
     tile.className = 'tile blind';
-    if (isAllRed) {
+    const letter = guessData.word[j];
+    
+    if (isAllRed || knownAbsentLetters.has(letter)) {
       tile.style.backgroundColor = 'rgba(220, 38, 38, 0.25)';
       tile.style.borderColor = 'rgba(220, 38, 38, 0.4)';
       tile.style.color = 'rgba(255, 255, 255, 0.4)';
+      tile.style.textDecoration = 'line-through';
     }
-    tile.textContent = guessData.word[j];
+    tile.textContent = letter;
     row.appendChild(tile);
   }
   const greenClue = document.createElement('div');
@@ -524,6 +528,14 @@ function renderWord500Board() {
 
   const DISPLAY_ROWS = getDisplayRows();
   document.documentElement.style.setProperty('--display-rows', DISPLAY_ROWS);
+  
+  knownAbsentLetters.clear();
+  for (const g of word500History) {
+      if (g.a === g.word.length) {
+          for (const char of g.word) knownAbsentLetters.add(char);
+      }
+  }
+
   if (word500History.length === 0) {
     for (let i = 0; i < DISPLAY_ROWS; i++) board.appendChild(createEmptyW500Row(i));
     return;
@@ -1560,7 +1572,7 @@ function processGuess(guessWord, userData) {
 
   if (!isValidWord) {
     const now = Date.now();
-    if (now - lastInvalidTime < 2500) {
+    if (now - lastInvalidTime < 6000) {
       return false; // Skip to prevent flooding & flickering
     }
     lastInvalidTime = now;
@@ -1747,7 +1759,8 @@ function processGuess(guessWord, userData) {
       if (currentGameMode === 'wordloop') updateWordLoopUI();
     } else {
       row.classList.add('is-invalid-row');
-      // Hapus row invalid setelah 2.5 detik agar tidak menumpuk di board
+      // Hapus row invalid setelah 6 detik agar tidak menumpuk di board,
+      // memberikan penonton waktu lebih lama untuk membaca pesan tooltip.
       setTimeout(() => {
         if (row.parentNode) {
           row.remove();
@@ -1766,7 +1779,7 @@ function processGuess(guessWord, userData) {
              board.appendChild(newRow);
           }
         }
-      }, 2500);
+      }, 6000);
     }
   }
   

@@ -78,6 +78,7 @@ let availableWords = [];
 let discoveredLetters = [];
 let bestGuess = null;
 let word500History = []; // { word, c, p, a, score, userData }
+let word500PendingInvalidRow = null; // baris invalid yang sedang tampil di board (Word500/600)
 let ytPlayer = null;
 let musicQueue = [];
 let isMusicPlaying = false;
@@ -534,6 +535,7 @@ function createEmptyW500Row(idx) {
 
 function renderWord500Board(revealAllColors = false) {
   board.innerHTML = '';
+  word500PendingInvalidRow = null; // DOM-nya sudah dihapus oleh innerHTML=''
   board.classList.add('w500-board');
 
   const DISPLAY_ROWS = getDisplayRows();
@@ -774,6 +776,7 @@ function startNewRound() {
   discoveredLetters = Array(WORD_LENGTH).fill(null);
   bestGuess = null;
   word500History = [];
+  word500PendingInvalidRow = null;
   userGuessDedup = new Set(); // reset per ronde
   isGameOver = false;
   isProcessing = false;
@@ -1588,7 +1591,11 @@ function processGuess(guessWord, userData) {
     lastInvalidTime = now;
   }
 
-  // Hapus semua tebakan tidak valid sebelumnya dari layar
+  // Hapus baris invalid sebelumnya dari layar (saat ada tebakan baru masuk)
+  if (word500PendingInvalidRow) {
+    if (word500PendingInvalidRow.parentNode) word500PendingInvalidRow.remove();
+    word500PendingInvalidRow = null;
+  }
   const invalidRows = document.querySelectorAll('.is-invalid-row');
   invalidRows.forEach(el => el.remove());
 
@@ -1747,8 +1754,17 @@ function processGuess(guessWord, userData) {
     word500History.push({ word: guessWord, c: correctCount, p: presentCount, a: absentCount, score: (correctCount * 2) + presentCount, userData });
     guesses.push(guessWord);
     renderWord500Board();
+  } else if (isWord500 && !isValidWord) {
+    // Word500 invalid: masukkan ke dalam board di posisi terbaru (atas),
+    // tetap terlihat sampai digantikan oleh tebakan berikutnya.
+    row.classList.add('w500-latest-row', 'is-invalid-row');
+    board.insertBefore(row, board.firstChild);
+    // Trim jika melebihi jumlah baris tampil
+    while (board.children.length > getDisplayRows()) board.removeChild(board.lastChild);
+    // Simpan referensi agar bisa dihapus tepat saat tebakan berikutnya masuk
+    word500PendingInvalidRow = row;
   } else {
-    // Wordle valid/invalid, ATAU Word500 invalid: insert ke board
+    // Wordle valid/invalid, ATAU Word Loop: insert ke board
     if (currentGameMode === 'wordloop') {
        if (isValidWord) {
           const emptyRow = document.getElementById(`row-empty-${currentRow}`);

@@ -716,24 +716,26 @@ function processRankQueue() {
 }
 
 function handleMyRank(userData) {
-  const userId = userData.uniqueId;
+  const userId = userData.uniqueId; // used for cooldown
+  const username = userData.nickname; // used for points and storage
   const now = Date.now();
   if (rankCooldowns[userId] && now - rankCooldowns[userId] < 15000) {
     return; // 15s cooldown per user
   }
   rankCooldowns[userId] = now;
 
-  const sessionPts = playerPoints[userId] || 0;
+  const sessionObj = playerPoints[username];
+  const sessionPts = sessionObj ? sessionObj.sessionPts : 0;
   let sessionRank = "-";
   
-  const sorted = Object.entries(playerPoints).sort((a, b) => b[1] - a[1]);
-  const index = sorted.findIndex(p => p[0] === userId);
+  const sorted = Object.entries(playerPoints).sort((a, b) => b[1].sessionPts - a[1].sessionPts);
+  const index = sorted.findIndex(p => p[0] === username);
   if (index !== -1 && sessionPts > 0) {
     sessionRank = `#${index + 1}`;
   }
 
   const prefix = getPtsPrefix();
-  const weeklyPts = parseInt(localStorage.getItem(prefix + userId)) || 0;
+  const weeklyPts = parseInt(localStorage.getItem(prefix + username)) || 0;
   
   // Hitung rank mingguan
   const weeklyData = [];
@@ -741,13 +743,13 @@ function handleMyRank(userData) {
     const key = localStorage.key(i);
     if (key && key.startsWith(prefix)) {
       if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_'))) continue;
-      const uId = key.substring(prefix.length);
+      const uName = key.substring(prefix.length);
       const pts = parseInt(localStorage.getItem(key)) || 0;
-      weeklyData.push({ uId, pts });
+      weeklyData.push({ uName, pts });
     }
   }
   weeklyData.sort((a, b) => b.pts - a.pts);
-  const wIndex = weeklyData.findIndex(p => p.uId === userId);
+  const wIndex = weeklyData.findIndex(p => p.uName === username);
   let weeklyRank = "-";
   if (wIndex !== -1 && weeklyPts > 0) {
     weeklyRank = `#${wIndex + 1}`;

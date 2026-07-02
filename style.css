@@ -9,7 +9,7 @@
   
   /* Wordle Colors */
   --correct: #16a34a; /* Deeper green for better white contrast */
-  --present: #d97706; /* Deeper amber/yellow for better white contrast */
+  --present: #c6aa24; /* Softer yellow, less orange, comfortable for eyes */
   --absent: rgba(255, 255, 255, 0.2);
   --empty: rgba(255, 255, 255, 0.05);
 }
@@ -811,7 +811,7 @@ header {
 .hint-tile.discovered {
   background: var(--correct);
   border: 2px solid var(--correct);
-  box-shadow: 0 0 15px rgba(22, 163, 74, 0.6);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
   text-shadow: 0 2px 4px rgba(0,0,0,0.6);
   transform: scale(1.05);
 }

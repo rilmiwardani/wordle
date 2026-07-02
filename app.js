@@ -98,6 +98,7 @@ function getPtsPrefix() {
   if (currentGameMode === 'word500') return 'pts_w500_';
   if (currentGameMode === 'word600') return 'pts_w600_';
   if (currentGameMode === 'wordloop') return 'pts_wloop_';
+  if (currentGameMode === 'fillblanks') return 'pts_fill_';
   return 'pts_';
 }
 
@@ -108,7 +109,7 @@ function initWeeklyLeaderboard() {
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key && key.startsWith(prefix)) {
-      if (prefix === 'pts_' && key.startsWith('pts_w500_')) continue;
+      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_'))) continue;
       const username = key.substring(prefix.length);
       const pts = parseInt(localStorage.getItem(key)) || 0;
       if (!playerPoints[username]) {
@@ -739,7 +740,7 @@ function handleMyRank(userData) {
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key && key.startsWith(prefix)) {
-      if (prefix === 'pts_' && key.startsWith('pts_w500_')) continue;
+      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_'))) continue;
       const uId = key.substring(prefix.length);
       const pts = parseInt(localStorage.getItem(key)) || 0;
       weeklyData.push({ uId, pts });
@@ -2193,7 +2194,7 @@ window.resetLeaderboard = function(e) {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && key.startsWith(prefix)) {
-        if (prefix === 'pts_' && key.startsWith('pts_w500_')) continue;
+        if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_'))) continue;
         keysToRemove.push(key);
       }
     }

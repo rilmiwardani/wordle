@@ -46,7 +46,7 @@ let WORD_LENGTH = 5;
 document.documentElement.style.setProperty('--word-length', WORD_LENGTH);
 
 // Game Mode State: 'wordle' or 'word500'
-let currentGameMode = localStorage.getItem('wordle_gameMode') || '';
+let currentGameMode = sessionStorage.getItem('wordle_gameMode') || '';
 
 function getMaxGuesses() {
   return (currentGameMode === 'word500' || currentGameMode === 'word600') ? Infinity : 6;
@@ -114,7 +114,7 @@ function initWeeklyLeaderboard() {
       const pts = parseInt(localStorage.getItem(key)) || 0;
       if (!playerPoints[username]) {
         playerPoints[username] = {
-          avatar: 'bg_nature.png',
+          avatar: 'assets/bg_nature.png',
           sessionPts: 0,
           weeklyPts: pts
         };
@@ -137,7 +137,7 @@ function addPoints(userData, points) {
   const username = userData.nickname;
   if (!playerPoints[username]) {
     playerPoints[username] = {
-      avatar: userData.profilePictureUrl || 'bg_nature.png',
+      avatar: userData.profilePictureUrl || 'assets/bg_nature.png',
       sessionPts: 0,
       weeklyPts: getWeeklyPts(username)
     };
@@ -176,7 +176,7 @@ function renderLeaderboard() {
     item.className = 'lb-item';
     item.innerHTML = `
       <div class="lb-avatar-wrapper">
-        <img src="${data.avatar}" class="lb-avatar" onerror="this.src='bg_nature.png'">
+        <img src="${data.avatar}" class="lb-avatar" onerror="this.src='assets/bg_nature.png'">
         <div class="lb-rank rank-${index + 1}">${index + 1}</div>
       </div>
       <div class="lb-info">
@@ -253,7 +253,7 @@ function playNextMusic() {
   
   const currentMusic = musicQueue.shift();
   
-  document.getElementById('musicThumb').src = currentMusic.thumbnail || 'bg_nature.png';
+  document.getElementById('musicThumb').src = currentMusic.thumbnail || 'assets/bg_nature.png';
   document.getElementById('musicTitle').textContent = currentMusic.title;
   document.getElementById('musicRequester').textContent = `@${currentMusic.requesterName}`;
   const durSpan = document.getElementById('musicDuration');
@@ -270,35 +270,39 @@ function playNextMusic() {
 
 // Fetch words on load
 let wordsLoaded = false;
-let allTargetWords = { 5: [], 6: [], 7: [] };
-let allValidWords = { 5: [], 6: [], 7: [] };
-let allAvailableWords = { 5: [], 6: [], 7: [] };
+let allTargetWords = { 5: [], 6: [], 7: [], 8: [] };
+let allValidWords = { 5: [], 6: [], 7: [], 8: [] };
+let allAvailableWords = { 5: [], 6: [], 7: [], 8: [] };
 
 function loadWordLists(lang) {
   return new Promise((resolve, reject) => {
     let fetches = [];
     if (lang === 'mixed') {
       fetches = [
-        Promise.all([fetch(`target_words.txt`).then(r => r.text()), fetch(`target_words_id.txt`).then(r => r.text())]).then(r => r[0] + '\n' + r[1]),
-        Promise.all([fetch(`valid_words.txt`).then(r => r.text()), fetch(`valid_words_id.txt`).then(r => r.text())]).then(r => r[0] + '\n' + r[1]),
-        Promise.all([fetch(`target_words_6.txt`).then(r => r.text()).catch(()=>""), fetch(`target_words_id_6.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
-        Promise.all([fetch(`valid_words_6.txt`).then(r => r.text()).catch(()=>""), fetch(`valid_words_id_6.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
-        Promise.all([fetch(`target_words_7.txt`).then(r => r.text()).catch(()=>""), fetch(`target_words_id_7.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
-        Promise.all([fetch(`valid_words_7.txt`).then(r => r.text()).catch(()=>""), fetch(`valid_words_id_7.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1])
+        Promise.all([fetch(`wordlist/target_words.txt`).then(r => r.text()), fetch(`wordlist/target_words_id.txt`).then(r => r.text())]).then(r => r[0] + '\n' + r[1]),
+        Promise.all([fetch(`wordlist/valid_words.txt`).then(r => r.text()), fetch(`wordlist/valid_words_id.txt`).then(r => r.text())]).then(r => r[0] + '\n' + r[1]),
+        Promise.all([fetch(`wordlist/target_words_6.txt`).then(r => r.text()).catch(()=>""), fetch(`wordlist/target_words_id_6.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
+        Promise.all([fetch(`wordlist/valid_words_6.txt`).then(r => r.text()).catch(()=>""), fetch(`wordlist/valid_words_id_6.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
+        Promise.all([fetch(`wordlist/target_words_7.txt`).then(r => r.text()).catch(()=>""), fetch(`wordlist/target_words_id_7.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
+        Promise.all([fetch(`wordlist/valid_words_7.txt`).then(r => r.text()).catch(()=>""), fetch(`wordlist/valid_words_id_7.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
+        Promise.all([fetch(`wordlist/target_words_8.txt`).then(r => r.text()).catch(()=>""), fetch(`wordlist/target_words_id_8.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
+        Promise.all([fetch(`wordlist/valid_words_8.txt`).then(r => r.text()).catch(()=>""), fetch(`wordlist/valid_words_id_8.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1])
       ];
     } else {
       let suffix = lang === 'en' ? '' : '_id';
       fetches = [
-        fetch(`target_words${suffix}.txt`).then(r => r.text()),
-        fetch(`valid_words${suffix}.txt`).then(r => r.text()),
-        fetch(`target_words${suffix}_6.txt`).then(r => r.text()).catch(() => ""),
-        fetch(`valid_words${suffix}_6.txt`).then(r => r.text()).catch(() => ""),
-        fetch(`target_words${suffix}_7.txt`).then(r => r.text()).catch(() => ""),
-        fetch(`valid_words${suffix}_7.txt`).then(r => r.text()).catch(() => "")
+        fetch(`wordlist/target_words${suffix}.txt`).then(r => r.text()),
+        fetch(`wordlist/valid_words${suffix}.txt`).then(r => r.text()),
+        fetch(`wordlist/target_words${suffix}_6.txt`).then(r => r.text()).catch(() => ""),
+        fetch(`wordlist/valid_words${suffix}_6.txt`).then(r => r.text()).catch(() => ""),
+        fetch(`wordlist/target_words${suffix}_7.txt`).then(r => r.text()).catch(() => ""),
+        fetch(`wordlist/valid_words${suffix}_7.txt`).then(r => r.text()).catch(() => ""),
+        fetch(`wordlist/target_words${suffix}_8.txt`).then(r => r.text()).catch(() => ""),
+        fetch(`wordlist/valid_words${suffix}_8.txt`).then(r => r.text()).catch(() => "")
       ];
     }
 
-    Promise.all(fetches).then(([t5, v5, t6, v6, t7, v7]) => {
+    Promise.all(fetches).then(([t5, v5, t6, v6, t7, v7, t8, v8]) => {
       // Process length 5
       allTargetWords[5] = t5.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 5);
       const validList5 = v5.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 5);
@@ -320,8 +324,15 @@ function loadWordLists(lang) {
       allAvailableWords[7] = [...allTargetWords[7]];
       shuffleArray(allAvailableWords[7]);
 
+      // Process length 8
+      allTargetWords[8] = (t8 || "").split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 8);
+      const validList8 = (v8 || "").split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 8);
+      allValidWords[8] = [...new Set([...validList8, ...allTargetWords[8]])];
+      allAvailableWords[8] = [...allTargetWords[8]];
+      shuffleArray(allAvailableWords[8]);
+
       wordsLoaded = true;
-      console.log(`Loaded length 5: ${allTargetWords[5].length} targets. Length 6: ${allTargetWords[6].length} targets. Length 7: ${allTargetWords[7].length} targets.`);
+      console.log(`Loaded length 5: ${allTargetWords[5].length} targets. Length 6: ${allTargetWords[6].length} targets. Length 7: ${allTargetWords[7].length} targets. Length 8: ${allTargetWords[8].length} targets.`);
       resolve();
     }).catch(err => {
       console.error("Failed to load wordlists:", err);
@@ -362,7 +373,7 @@ const roundNumber = document.getElementById('roundNumber');
 // ─── Game Selection ───
 function selectGame(mode) {
   currentGameMode = mode;
-  try { localStorage.setItem('wordle_gameMode', mode); } catch(e) {}
+  try { sessionStorage.setItem('wordle_gameMode', mode); } catch(e) {}
   
   initWeeklyLeaderboard();
 
@@ -388,7 +399,7 @@ function switchGameMode(e) {
 
   if (!isConnectedToTikTok) {
     currentGameMode = '';
-    try { localStorage.removeItem('wordle_gameMode'); } catch(e) {}
+    try { sessionStorage.removeItem('wordle_gameMode'); } catch(e) {}
     loginOverlay.style.display = 'none';
     gameContainer.style.display = 'none';
     gameSelectOverlay.style.display = 'flex';
@@ -401,7 +412,7 @@ function switchGameMode(e) {
   else if (currentGameMode === 'word600') currentGameMode = 'wordloop';
   else if (currentGameMode === 'wordloop') currentGameMode = 'fillblanks';
   else currentGameMode = 'wordle';
-  try { localStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
+  try { sessionStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
 
   initWeeklyLeaderboard();
   startNewRound();
@@ -693,7 +704,7 @@ function processRankQueue() {
   if (instEl) {
     instEl.innerHTML = `
       <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
-        <img src="${rankData.avatar}" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.3);" onerror="this.src='bg_nature.png'">
+        <img src="${rankData.avatar}" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.3);" onerror="this.src='assets/bg_nature.png'">
         <span>${rankData.msg}</span>
       </div>
     `;
@@ -762,7 +773,7 @@ function handleMyRank(userData) {
   }
   
   const msg = `${nick} - Sesi: ${sessionPts} Pts (Rank ${sessionRank}) | Mingguan: ${weeklyPts} Pts (Rank ${weeklyRank})`;
-  const avatar = userData.profilePictureUrl || 'bg_nature.png';
+  const avatar = userData.profilePictureUrl || 'assets/bg_nature.png';
   
   rankMessageQueue.push({ msg, avatar });
   processRankQueue();
@@ -777,7 +788,7 @@ function startNewRound() {
     WORD_LENGTH = 6;
   } else {
     let allowedLengths = [5, 6, 7];
-    try { allowedLengths = JSON.parse(localStorage.getItem('allowed_lengths') || '[5,6,7]'); } catch(e) {}
+    try { allowedLengths = JSON.parse(localStorage.getItem('allowed_lengths') || '[5,6,7,8]'); } catch(e) {}
     if (!allowedLengths || allowedLengths.length === 0) allowedLengths = [5];
     const rIdx = Math.floor(Math.random() * allowedLengths.length);
     WORD_LENGTH = allowedLengths[rIdx];
@@ -1275,7 +1286,7 @@ function autoReconnect() {
     const savedUser = localStorage.getItem('wordle_username');
     const savedLang = localStorage.getItem('wordle_lang');
     const savedSession = localStorage.getItem('wordle_sessionid');
-    const savedMode = localStorage.getItem('wordle_gameMode');
+    const savedMode = sessionStorage.getItem('wordle_gameMode');
     
     if (savedUser && savedMode) {
       // Restore game mode
@@ -1723,7 +1734,7 @@ function processGuess(guessWord, userData) {
           setTimeout(() => {
             const winOverlay = document.getElementById('winOverlay');
             const winAvatar = document.getElementById('winAvatar');
-            if (winAvatar) winAvatar.src = (mvpData && mvpData.profilePictureUrl) ? mvpData.profilePictureUrl : 'bg_nature.png';
+            if (winAvatar) winAvatar.src = (mvpData && mvpData.profilePictureUrl) ? mvpData.profilePictureUrl : 'assets/bg_nature.png';
             const winName = document.getElementById('winName');
             if (winName) winName.textContent = (mvpData && mvpData.nickname) ? mvpData.nickname : 'MVP';
             const winPts = document.getElementById('winPts');
@@ -2079,7 +2090,7 @@ function processGuess(guessWord, userData) {
       showFloatingPoints(winPts, `avatar-${currentRow}`);
     }
     const winnerName = userData ? userData.nickname : 'Someone';
-    const avatarUrl = userData && userData.profilePictureUrl ? userData.profilePictureUrl : 'bg_nature.png';
+    const avatarUrl = userData && userData.profilePictureUrl ? userData.profilePictureUrl : 'assets/bg_nature.png';
     const winOverlay = document.getElementById('winOverlay');
     document.getElementById('winAvatar').src = avatarUrl;
     document.getElementById('winName').textContent = winnerName;
@@ -2218,10 +2229,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize length checkboxes
   try {
-    const savedLengths = JSON.parse(localStorage.getItem('allowed_lengths') || '[5,6,7]');
+    const savedLengths = JSON.parse(localStorage.getItem('allowed_lengths') || '[5,6,7,8]');
     if (document.getElementById('len5Toggle')) document.getElementById('len5Toggle').checked = savedLengths.includes(5);
     if (document.getElementById('len6Toggle')) document.getElementById('len6Toggle').checked = savedLengths.includes(6);
     if (document.getElementById('len7Toggle')) document.getElementById('len7Toggle').checked = savedLengths.includes(7);
+    if (document.getElementById('len8Toggle')) document.getElementById('len8Toggle').checked = savedLengths.includes(8);
   } catch(e) {}
 });
 
@@ -2229,11 +2241,13 @@ window.updateAllowedLengths = function() {
   const is5 = document.getElementById('len5Toggle') ? document.getElementById('len5Toggle').checked : true;
   const is6 = document.getElementById('len6Toggle') ? document.getElementById('len6Toggle').checked : true;
   const is7 = document.getElementById('len7Toggle') ? document.getElementById('len7Toggle').checked : true;
+  const is8 = document.getElementById('len8Toggle') ? document.getElementById('len8Toggle').checked : true;
   
   let lengths = [];
   if (is5) lengths.push(5);
   if (is6) lengths.push(6);
   if (is7) lengths.push(7);
+  if (is8) lengths.push(8);
   
   // Prevent all unchecked (default to 5)
   if (lengths.length === 0) {

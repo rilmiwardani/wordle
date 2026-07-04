@@ -41,8 +41,8 @@ body {
   transition: background-image 1.5s ease-in-out;
 }
 
-.bg-layer.nature { background-image: url('bg_nature.png'); }
-.bg-layer.city { background-image: url('bg_city.png'); }
+.bg-layer.nature { background-image: url('assets/bg_nature.png'); }
+.bg-layer.city { background-image: url('assets/bg_city.png'); }
 
 .glass-overlay {
   position: absolute;

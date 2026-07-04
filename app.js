@@ -475,11 +475,19 @@ function updateBestGuessUI() {
   for (let i = 0; i < bestGuess.word.length; i++) {
     html += `<div class="tile blind" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 15%; font-size: 1.1rem; min-width: 0; min-height: 0; display:flex; align-items:center; justify-content:center; ${extraStyle}">${bestGuess.word[i]}</div>`;
   }
-  html += `
-    <div class="w500-count green" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 15%; font-size: 1rem; min-width: 0; min-height: 0;">${bestGuess.c}</div>
-    <div class="w500-count yellow" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 15%; font-size: 1rem; min-width: 0; min-height: 0;">${bestGuess.p}</div>
-    <div class="w500-count red" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 15%; font-size: 1rem; min-width: 0; min-height: 0;">${bestGuess.a}</div>
-  </div>`;
+  if (window.w500UseMastermind) {
+    html += `<div class="mastermind-container" style="grid-column: span 3; width: 100%; height: auto; aspect-ratio: 3/1; margin: 0;">`;
+    for (let m=0; m<bestGuess.c; m++) { html += `<div class="mm-block green"></div>`; }
+    for (let m=0; m<bestGuess.p; m++) { html += `<div class="mm-block yellow"></div>`; }
+    for (let m=0; m<bestGuess.a; m++) { html += `<div class="mm-block red"></div>`; }
+    html += `</div></div>`;
+  } else {
+    html += `
+      <div class="w500-count green" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 15%; font-size: 1rem; min-width: 0; min-height: 0;">${bestGuess.c}</div>
+      <div class="w500-count yellow" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 15%; font-size: 1rem; min-width: 0; min-height: 0;">${bestGuess.p}</div>
+      <div class="w500-count red" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 15%; font-size: 1rem; min-width: 0; min-height: 0;">${bestGuess.a}</div>
+    </div>`;
+  }
   container.innerHTML = html;
 }
 
@@ -519,18 +527,27 @@ function createWord500RowEl(guessData, isLatest, revealAllColors = false) {
     tile.textContent = letter;
     row.appendChild(tile);
   }
-  const greenClue = document.createElement('div');
-  greenClue.className = 'w500-count green';
-  greenClue.textContent = guessData.c;
-  const yellowClue = document.createElement('div');
-  yellowClue.className = 'w500-count yellow';
-  yellowClue.textContent = guessData.p;
-  const redClue = document.createElement('div');
-  redClue.className = 'w500-count red';
-  redClue.textContent = guessData.a;
-  row.appendChild(greenClue);
-  row.appendChild(yellowClue);
-  row.appendChild(redClue);
+  if (window.w500UseMastermind) {
+    const mmContainer = document.createElement('div');
+    mmContainer.className = 'mastermind-container';
+    for (let m=0; m<guessData.c; m++) { const b=document.createElement('div'); b.className='mm-block green'; mmContainer.appendChild(b); }
+    for (let m=0; m<guessData.p; m++) { const b=document.createElement('div'); b.className='mm-block yellow'; mmContainer.appendChild(b); }
+    for (let m=0; m<guessData.a; m++) { const b=document.createElement('div'); b.className='mm-block red'; mmContainer.appendChild(b); }
+    row.appendChild(mmContainer);
+  } else {
+    const greenClue = document.createElement('div');
+    greenClue.className = 'w500-count green';
+    greenClue.textContent = guessData.c;
+    const yellowClue = document.createElement('div');
+    yellowClue.className = 'w500-count yellow';
+    yellowClue.textContent = guessData.p;
+    const redClue = document.createElement('div');
+    redClue.className = 'w500-count red';
+    redClue.textContent = guessData.a;
+    row.appendChild(greenClue);
+    row.appendChild(yellowClue);
+    row.appendChild(redClue);
+  }
   return row;
 }
 
@@ -546,10 +563,19 @@ function createEmptyW500Row(idx) {
     tile.className = 'tile';
     row.appendChild(tile);
   }
-  for (let k = 0; k < 3; k++) {
-    const clue = document.createElement('div');
-    clue.className = 'w500-count empty-clue';
-    row.appendChild(clue);
+  if (window.w500UseMastermind) {
+    const mmContainer = document.createElement('div');
+    mmContainer.className = 'mastermind-container';
+    for (let m=0; m<WORD_LENGTH; m++) {
+      const b=document.createElement('div'); b.className='mm-block empty'; mmContainer.appendChild(b);
+    }
+    row.appendChild(mmContainer);
+  } else {
+    for (let k = 0; k < 3; k++) {
+      const clue = document.createElement('div');
+      clue.className = 'w500-count empty-clue';
+      row.appendChild(clue);
+    }
   }
   return row;
 }
@@ -2256,4 +2282,50 @@ window.updateAllowedLengths = function() {
   }
   
   localStorage.setItem('allowed_lengths', JSON.stringify(lengths));
+};
+
+// Word500/600 manual hint marking
+document.addEventListener('click', (e) => {
+  if (currentGameMode !== 'word500' && currentGameMode !== 'word600') return;
+  const tile = e.target.closest('.tile');
+  if (!tile || !tile.textContent.trim()) return;
+  
+  // Only allow clicking tiles inside board or bestGuessBoard
+  if (!tile.closest('#board') && !tile.closest('#bestGuessBoard')) return;
+  
+  if (tile.classList.contains('correct')) {
+    tile.classList.remove('correct');
+    tile.classList.add('present');
+  } else if (tile.classList.contains('present')) {
+    tile.classList.remove('present');
+    tile.classList.add('absent');
+  } else if (tile.classList.contains('absent')) {
+    tile.classList.remove('absent');
+    tile.classList.add('blind');
+  } else {
+    tile.classList.remove('blind', 'present', 'absent');
+    tile.classList.add('correct');
+  }
+});
+
+// Mastermind Style Initialization
+window.w500UseMastermind = true;
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    const savedStyle = localStorage.getItem('w500_mastermind');
+    if (savedStyle !== null) {
+      window.w500UseMastermind = savedStyle === 'true';
+    }
+    const toggle = document.getElementById('w500StyleToggle');
+    if (toggle) toggle.checked = window.w500UseMastermind;
+  } catch(e) {}
+});
+
+window.toggleW500Style = function(checked) {
+  window.w500UseMastermind = checked;
+  localStorage.setItem('w500_mastermind', checked);
+  updateBestGuessUI();
+  if (currentGameMode === 'word500' || currentGameMode === 'word600') {
+    renderSortedW500Board();
+  }
 };

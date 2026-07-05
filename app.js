@@ -657,10 +657,21 @@ function initBoard() {
     // Word500/600: add feedback placeholders
     if (currentGameMode === 'word500' || currentGameMode === 'word600') {
       row.classList.add('w500-row');
-      for (let k = 0; k < 3; k++) {
-        const clue = document.createElement('div');
-        clue.className = 'w500-count empty-clue';
-        row.appendChild(clue);
+      if (window.w500UseMastermind) {
+        const mmContainer = document.createElement('div');
+        mmContainer.className = 'mastermind-container';
+        for (let m = 0; m < WORD_LENGTH; m++) {
+          const b = document.createElement('div');
+          b.className = 'mm-block empty';
+          mmContainer.appendChild(b);
+        }
+        row.appendChild(mmContainer);
+      } else {
+        for (let k = 0; k < 3; k++) {
+          const clue = document.createElement('div');
+          clue.className = 'w500-count empty-clue';
+          row.appendChild(clue);
+        }
       }
     }
 
@@ -1915,7 +1926,7 @@ function processGuess(guessWord, userData) {
   
   let invalidTooltipMsg = hardModeMsg;
   if (!isValidWord && !hardModeMsg) {
-    invalidTooltipMsg = "Bukan kata valid";
+    invalidTooltipMsg = "Kata tidak ada di kamus";
   }
 
   if (invalidTooltipMsg) {
@@ -2031,27 +2042,44 @@ function processGuess(guessWord, userData) {
 
   // 4. Word500: append feedback counters
   if (isWord500) {
-    const greenClue = document.createElement('div');
-    greenClue.className = 'w500-count green';
-    greenClue.textContent = isValidWord ? correctCount : '';
+    if (window.w500UseMastermind) {
+      const mmContainer = document.createElement('div');
+      mmContainer.className = 'mastermind-container';
+      if (!isValidWord) {
+        for (let m = 0; m < WORD_LENGTH; m++) {
+          const b = document.createElement('div');
+          b.className = 'mm-block empty';
+          mmContainer.appendChild(b);
+        }
+      } else {
+        for (let m = 0; m < correctCount; m++) { const b = document.createElement('div'); b.className = 'mm-block green'; mmContainer.appendChild(b); }
+        for (let m = 0; m < presentCount; m++) { const b = document.createElement('div'); b.className = 'mm-block yellow'; mmContainer.appendChild(b); }
+        for (let m = 0; m < absentCount; m++) { const b = document.createElement('div'); b.className = 'mm-block red'; mmContainer.appendChild(b); }
+      }
+      row.appendChild(mmContainer);
+    } else {
+      const greenClue = document.createElement('div');
+      greenClue.className = 'w500-count green';
+      greenClue.textContent = isValidWord ? correctCount : '';
 
-    const yellowClue = document.createElement('div');
-    yellowClue.className = 'w500-count yellow';
-    yellowClue.textContent = isValidWord ? presentCount : '';
+      const yellowClue = document.createElement('div');
+      yellowClue.className = 'w500-count yellow';
+      yellowClue.textContent = isValidWord ? presentCount : '';
 
-    const redClue = document.createElement('div');
-    redClue.className = 'w500-count red';
-    redClue.textContent = isValidWord ? absentCount : '';
+      const redClue = document.createElement('div');
+      redClue.className = 'w500-count red';
+      redClue.textContent = isValidWord ? absentCount : '';
 
-    if (!isValidWord) {
-      greenClue.className = 'w500-count empty-clue';
-      yellowClue.className = 'w500-count empty-clue';
-      redClue.className = 'w500-count empty-clue';
+      if (!isValidWord) {
+        greenClue.className = 'w500-count empty-clue';
+        yellowClue.className = 'w500-count empty-clue';
+        redClue.className = 'w500-count empty-clue';
+      }
+
+      row.appendChild(greenClue);
+      row.appendChild(yellowClue);
+      row.appendChild(redClue);
     }
-
-    row.appendChild(greenClue);
-    row.appendChild(yellowClue);
-    row.appendChild(redClue);
   }
 
   if (isWord500 && isValidWord) {

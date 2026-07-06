@@ -226,6 +226,7 @@ let ytPlayerReady = false;
 
 function onPlayerReady(event) {
   ytPlayerReady = true;
+  event.target.unMute();
   event.target.setVolume(musicSettings.volume);
 }
 
@@ -274,7 +275,12 @@ function playNextMusic() {
   document.getElementById('musicWidget').classList.add('show');
   
   if (ytPlayer && ytPlayer.loadVideoById) {
+    ytPlayer.unMute();
+    ytPlayer.setVolume(musicSettings.volume);
     ytPlayer.loadVideoById(currentMusic.videoId);
+    setTimeout(() => {
+      try { ytPlayer.playVideo(); } catch(e) {}
+    }, 500);
   }
 }
 

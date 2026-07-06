@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=overlays-content">
   <title>TikTok Live Games</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
@@ -88,6 +88,7 @@
         <input type="password" id="sessionInput" placeholder="Session ID (Opsional)" autocomplete="off">
       </div>
       <button id="connectBtn" onclick="connectToLive()">Connect to Live</button>
+      <button id="offlineBtn" onclick="startOfflineMode()" style="margin-top: 10px; background: #3b82f6; border: none; padding: 12px; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; transition: all 0.2s;">Main Offline (Host)</button>
       <div id="loginStatus" class="status-msg"></div>
     </div>
   </div>
@@ -158,6 +159,8 @@
 
             <div class="settings-sep"></div>
             <div class="settings-title">Admin</div>
+            <button class="lang-option" onclick="openMusicSettings(event)">🎵 Pengaturan Musik</button>
+            <button class="lang-option" onclick="openTTSSettings(event)">🗣️ Pengaturan Suara (TTS)</button>
             <button class="lang-option" onclick="resetLeaderboard(event)" style="color: #ff6b6b;">🗑️ Reset Leaderboard</button>
           </div>
         </div>
@@ -248,8 +251,15 @@
     </div>
   </div>
 
-  <!-- Host Music Control -->
+  <!-- Host Control Area -->
   <div class="host-music-control" id="hostMusicControl" style="display: none;">
+    <div class="host-music-input" id="hostGuessInputContainer" style="margin-right: 10px;">
+      <input type="text" id="hostGuessInput" placeholder="Tebak kata..." autocomplete="off">
+    </div>
+    <button id="hostGuessBtn" class="host-music-btn" title="Kirim Tebakan Host">📝</button>
+
+    <div style="width: 2px; background: rgba(255,255,255,0.2); margin: 0 10px; height: 24px;"></div>
+
     <button id="hostSkipBtn" class="host-music-btn" style="display: none;" title="Skip Song">⏭️</button>
     <div class="host-music-input" id="hostMusicInputContainer">
       <input type="text" id="hostMusicInput" placeholder="Type song name..." autocomplete="off">
@@ -257,6 +267,84 @@
     <button id="hostMusicBtn" class="host-music-btn" title="Request Song">🎵</button>
   </div>
 
-  <script src="app.js"></script>
+  <!-- Music Settings Modal -->
+  <div class="login-overlay" id="musicSettingsModal" style="display: none; z-index: 500;">
+    <div class="login-card" style="max-width: 380px; width: 90%; padding: 25px;">
+      <h2 style="margin-bottom: 20px; color: white; font-size: 1.2rem;">🎵 Pengaturan Request Musik</h2>
+      
+      <div style="text-align: left; margin-bottom: 12px;">
+        <label style="font-size: 13px; color: #ccc;">Maksimal Antrian Global:</label>
+        <input type="number" id="musicMaxGlobal" style="width: 100%; padding: 10px; margin-top: 5px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px;">
+      </div>
+      
+      <div style="text-align: left; margin-bottom: 12px;">
+        <label style="font-size: 13px; color: #ccc;">Maksimal Antrian Per User:</label>
+        <input type="number" id="musicMaxUser" style="width: 100%; padding: 10px; margin-top: 5px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px;">
+      </div>
+      
+      <div style="text-align: left; margin-bottom: 12px;">
+        <label style="font-size: 13px; color: #ccc;">Maksimal Durasi Lagu (Menit):</label>
+        <input type="number" id="musicMaxDuration" style="width: 100%; padding: 10px; margin-top: 5px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px;">
+      </div>
+      
+      <div style="text-align: left; margin-bottom: 25px;">
+        <label style="font-size: 13px; color: #ccc;">Banned Keywords (pisahkan koma):</label>
+        <textarea id="musicBannedKeywords" rows="3" placeholder="contoh: koplo, dj, remix" style="width: 100%; padding: 10px; margin-top: 5px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; resize: none; line-height: 1.4;"></textarea>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button onclick="saveMusicSettings()" style="flex: 1; padding: 12px; background: #3b82f6; border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Simpan</button>
+        <button onclick="document.getElementById('musicSettingsModal').style.display='none'" style="flex: 1; padding: 12px; background: rgba(255,255,255,0.2); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Batal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TTS Settings Modal -->
+  <div class="login-overlay" id="ttsSettingsModal" style="display: none; z-index: 500;">
+    <div class="login-card" style="max-width: 380px; width: 90%; padding: 25px;">
+      <h2 style="margin-bottom: 20px; color: white; font-size: 1.2rem;">🗣️ Pengaturan Suara (TTS)</h2>
+      
+      <label style="text-align: left; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+        <span style="font-size: 13px; color: #ccc;">Aktifkan Pembaca Suara:</span>
+        <div class="toggle-switch">
+          <input type="checkbox" id="ttsEnabledToggle">
+          <div class="toggle-track"></div>
+        </div>
+      </label>
+      
+      <label style="text-align: left; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+        <span style="font-size: 13px; color: #ccc;">Hanya Follower:</span>
+        <div class="toggle-switch">
+          <input type="checkbox" id="ttsFollowerOnlyToggle">
+          <div class="toggle-track"></div>
+        </div>
+      </label>
+
+      <div style="text-align: left; margin-bottom: 12px;">
+        <label style="font-size: 13px; color: #ccc;">Mode Pembacaan:</label>
+        <select id="ttsModeSelect" style="width: 100%; padding: 10px; margin-top: 5px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px;">
+          <option value="all">Semua Komentar (Bebas)</option>
+          <option value="guess_only">Hanya Tebakan (Satu Kata Huruf Saja)</option>
+        </select>
+      </div>
+      
+      <div style="text-align: left; margin-bottom: 25px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <label style="font-size: 13px; color: #ccc;">Pilih Suara (Voice):</label>
+          <button onclick="testTTS()" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;">▶️ TEST</button>
+        </div>
+        <select id="ttsVoiceSelect" style="width: 100%; padding: 10px; margin-top: 5px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px;">
+          <option value="">Default Browser Voice</option>
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button onclick="saveTTSSettings()" style="flex: 1; padding: 12px; background: #3b82f6; border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Simpan</button>
+        <button onclick="document.getElementById('ttsSettingsModal').style.display='none'" style="flex: 1; padding: 12px; background: rgba(255,255,255,0.2); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Batal</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=11"></script>
 </body>
 </html>

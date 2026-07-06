@@ -84,6 +84,11 @@ let fillBlanksTargets = [];
 let ytPlayer = null;
 let musicQueue = [];
 let isMusicPlaying = false;
+let musicSettings = { maxGlobal: 20, maxUser: 2, maxDuration: 6, bannedKeywords: [] };
+try {
+  const saved = localStorage.getItem('music_settings');
+  if (saved) musicSettings = JSON.parse(saved);
+} catch(e) {}
 let lastUsername = "";
 let lastLang = "";
 let lastSessionId = "";
@@ -707,10 +712,14 @@ function getInstructionText(index) {
     if (lastLang === 'id') return `Ketik kata ${WORD_LENGTH} huruf di chat untuk menebak!`;
     if (lastLang === 'mixed') return `Ketik kata ${WORD_LENGTH} huruf di chat! / Type a ${WORD_LENGTH}-letter word!`;
     return `Type a ${WORD_LENGTH}-letter word in chat to guess!`;
-  } else {
+  } else if (index === 1) {
     if (lastLang === 'id') return `Ketik !myrank untuk cek rank & poin kamu!`;
     if (lastLang === 'mixed') return `Ketik !myrank untuk cek poin! / Type !myrank to check points!`;
     return `Type !myrank to check your rank and points!`;
+  } else {
+    if (lastLang === 'id') return `Ketik !play <b>judul lagu</b> untuk request musik 🎵`;
+    if (lastLang === 'mixed') return `Ketik !play <b>judul</b> untuk musik! / Type !play <b>title</b> for music!`;
+    return `Type !play <b>song title</b> in chat to request music 🎵`;
   }
 }
 
@@ -719,10 +728,10 @@ function startInstructionRotation() {
   
   const updateText = () => {
     if (isShowingRankMsg) return; // Don't override rank msg
-    const text = getInstructionText(currentInstructionIndex % 2);
+    const text = getInstructionText(currentInstructionIndex % 3);
     const instEl = document.querySelector('.instruction');
     if (instEl) {
-      instEl.textContent = text;
+      instEl.innerHTML = text;
       instEl.style.color = 'var(--text-muted)';
     }
     currentInstructionIndex++;
@@ -754,9 +763,9 @@ function processRankQueue() {
       processRankQueue();
     } else {
       // Revert to normal rotation
-      const text = getInstructionText((currentInstructionIndex - 1) % 2);
+      const text = getInstructionText((currentInstructionIndex - 1 + 3) % 3);
       if (instEl) {
-        instEl.textContent = text;
+        instEl.innerHTML = text;
         instEl.style.color = 'var(--text-muted)';
       }
     }
@@ -1317,6 +1326,38 @@ function connectToLive() {
   });
 }
 
+function startOfflineMode() {
+  const lang = document.getElementById('languageSelect').value;
+  lastLang = lang;
+  lastUsername = ""; // Clear username to prevent TikTok auto-connect
+  connectBtn.disabled = true;
+  connectBtn.textContent = "Loading...";
+  loginStatus.textContent = "Loading dictionary...";
+
+  loadWordLists(lang).then(() => {
+    loginOverlay.style.display = 'none';
+    gameContainer.style.display = 'flex';
+    document.getElementById('hostMusicControl').style.display = 'flex';
+    roomHost.textContent = `@HostOffline`;
+    
+    isConnectedToTikTok = false;
+    
+    // Initialize socket to local server for music requests
+    if (!socket) {
+      socket = io(SOCKET_URL);
+      setupSocketListeners();
+    }
+    
+    if (!currentWord) {
+      startNewRound();
+    }
+  }).catch(err => {
+    loginStatus.textContent = "Error loading words!";
+    connectBtn.disabled = false;
+    connectBtn.textContent = "Connect to Live";
+  });
+}
+
 // Auto-reconnect on page refresh using saved credentials
 function autoReconnect() {
   try {
@@ -1461,11 +1502,54 @@ function setupSocketListeners() {
 
   // --- Game events ---
   socket.on('chat', (data) => {
+    readTTS(data.nickname, data.comment, data.followRole);
     handleChatGuess(data);
   });
 
   socket.on('music-request', (data) => {
     console.log("Music Requested:", data);
+    
+    // Check banned keywords
+    const titleLower = data.title.toLowerCase();
+    const queryLower = (data.originalQuery || "").toLowerCase();
+    
+    if (musicSettings.bannedKeywords.length > 0) {
+      if (musicSettings.bannedKeywords.some(kw => titleLower.includes(kw) || queryLower.includes(kw))) {
+        console.log("Music rejected: Contains banned keyword");
+        if (data.requesterName === "Host") showToast("🚫 Lagu ditolak: Mengandung kata terlarang!");
+        return;
+      }
+    }
+    
+    // Check duration
+    let durMins = 0;
+    if (data.duration) {
+      const parts = data.duration.split(':').map(Number);
+      if (parts.length === 2) durMins = parts[0] + (parts[1]/60);
+      else if (parts.length === 3) durMins = (parts[0]*60) + parts[1] + (parts[2]/60);
+    }
+    if (musicSettings.maxDuration > 0 && durMins > musicSettings.maxDuration) {
+      console.log("Music rejected: Exceeds max duration");
+      if (data.requesterName === "Host") showToast(`🚫 Lagu ditolak: Durasi melebihi batas (${musicSettings.maxDuration} menit)!`);
+      return;
+    }
+    
+    // Check global limit
+    if (musicSettings.maxGlobal > 0 && musicQueue.length >= musicSettings.maxGlobal) {
+      console.log("Music rejected: Global queue full");
+      if (data.requesterName === "Host") showToast("🚫 Antrian penuh!");
+      return;
+    }
+    
+    // Check user limit
+    if (musicSettings.maxUser > 0 && data.requesterName !== "Host") {
+      const userReqs = musicQueue.filter(m => m.requesterName === data.requesterName).length;
+      if (userReqs >= musicSettings.maxUser) {
+        console.log(`Music rejected: User ${data.requesterName} hit queue limit`);
+        return;
+      }
+    }
+
     musicQueue.push(data);
 
     if (!isMusicPlaying) {
@@ -2210,6 +2294,65 @@ document.addEventListener('click', () => {
   }
 });
 
+// Host Guess Logic
+const hostGuessBtn = document.getElementById('hostGuessBtn');
+const hostGuessInput = document.getElementById('hostGuessInput');
+const hostGuessInputContainer = document.getElementById('hostGuessInputContainer');
+
+if (hostGuessBtn && hostGuessInput && hostGuessInputContainer) {
+  const submitHostGuess = () => {
+    const guess = hostGuessInput.value.trim().toUpperCase();
+    if (guess) {
+      handleChatGuess({
+        comment: guess,
+        uniqueId: 'host_offline',
+        nickname: 'Host',
+        profilePictureUrl: 'assets/bg_nature.png'
+      });
+      hostGuessInput.value = '';
+    }
+  };
+
+  hostGuessBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    hostGuessInputContainer.classList.toggle('open');
+    if (hostGuessInputContainer.classList.contains('open')) {
+      hostGuessInput.focus();
+    } else {
+      submitHostGuess();
+    }
+  });
+
+  hostGuessInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      submitHostGuess();
+      hostGuessInputContainer.classList.remove('open');
+      hostGuessInput.blur();
+    }
+  });
+  
+  hostGuessInputContainer.addEventListener('click', (e) => e.stopPropagation());
+  hostGuessInput.addEventListener('click', (e) => e.stopPropagation());
+}
+
+// Global keydown for PC host typing
+document.addEventListener('keydown', (e) => {
+  // Ignore if user is already typing in an input
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  
+  // Only intercept letter keys (A-Z)
+  if (e.key.length === 1 && e.key.match(/[a-zA-Z]/)) {
+    if (hostGuessInputContainer && hostGuessInput) {
+      if (!hostGuessInputContainer.classList.contains('open')) {
+        hostGuessInputContainer.classList.add('open');
+      }
+      hostGuessInput.focus();
+      hostGuessInput.value += e.key;
+      e.preventDefault();
+    }
+  }
+});
+
 // Host Music Control Logic
 const hostMusicBtn = document.getElementById('hostMusicBtn');
 const hostSkipBtn = document.getElementById('hostSkipBtn');
@@ -2357,3 +2500,131 @@ window.toggleW500Style = function(checked) {
     renderSortedW500Board();
   }
 };
+
+// ─── Music Settings Functions ───
+window.openMusicSettings = function(e) {
+  if (e) e.stopPropagation();
+  const dropdown = document.getElementById('settingsDropdown');
+  if (dropdown) dropdown.classList.remove('open');
+  
+  document.getElementById('musicMaxGlobal').value = musicSettings.maxGlobal;
+  document.getElementById('musicMaxUser').value = musicSettings.maxUser;
+  document.getElementById('musicMaxDuration').value = musicSettings.maxDuration;
+  document.getElementById('musicBannedKeywords').value = musicSettings.bannedKeywords.join(', ');
+  
+  document.getElementById('musicSettingsModal').style.display = 'flex';
+};
+
+window.saveMusicSettings = function() {
+  musicSettings.maxGlobal = parseInt(document.getElementById('musicMaxGlobal').value) || 20;
+  musicSettings.maxUser = parseInt(document.getElementById('musicMaxUser').value) || 2;
+  musicSettings.maxDuration = parseInt(document.getElementById('musicMaxDuration').value) || 6;
+  
+  const keywords = document.getElementById('musicBannedKeywords').value;
+  musicSettings.bannedKeywords = keywords.split(',').map(k => k.trim().toLowerCase()).filter(k => k);
+  
+  localStorage.setItem('music_settings', JSON.stringify(musicSettings));
+  document.getElementById('musicSettingsModal').style.display = 'none';
+  
+  showToast("✅ Pengaturan Musik disimpan!");
+};
+
+// ─── TTS Settings Functions ───
+let ttsSettings = {
+  enabled: false,
+  followerOnly: false,
+  mode: 'all',
+  voiceURI: ''
+};
+try {
+  const savedTTS = localStorage.getItem('tts_settings');
+  if (savedTTS) ttsSettings = JSON.parse(savedTTS);
+} catch(e) {}
+
+let availableVoices = [];
+function loadTTSVoices() {
+  availableVoices = window.speechSynthesis.getVoices();
+  const select = document.getElementById('ttsVoiceSelect');
+  if (select) {
+    select.innerHTML = '<option value="">Default Browser Voice</option>';
+    availableVoices.forEach(voice => {
+      const option = document.createElement('option');
+      option.value = voice.voiceURI;
+      option.textContent = `${voice.name} (${voice.lang})`;
+      if (voice.voiceURI === ttsSettings.voiceURI) option.selected = true;
+      select.appendChild(option);
+    });
+  }
+}
+if (window.speechSynthesis) {
+  window.speechSynthesis.onvoiceschanged = loadTTSVoices;
+  setTimeout(loadTTSVoices, 500);
+}
+
+window.openTTSSettings = function(e) {
+  if (e) e.stopPropagation();
+  const dropdown = document.getElementById('settingsDropdown');
+  if (dropdown) dropdown.classList.remove('open');
+  
+  loadTTSVoices(); // Reload voices just in case
+  
+  document.getElementById('ttsEnabledToggle').checked = ttsSettings.enabled;
+  document.getElementById('ttsFollowerOnlyToggle').checked = ttsSettings.followerOnly;
+  document.getElementById('ttsModeSelect').value = ttsSettings.mode;
+  document.getElementById('ttsVoiceSelect').value = ttsSettings.voiceURI;
+  
+  document.getElementById('ttsSettingsModal').style.display = 'flex';
+};
+
+window.saveTTSSettings = function() {
+  ttsSettings.enabled = document.getElementById('ttsEnabledToggle').checked;
+  ttsSettings.followerOnly = document.getElementById('ttsFollowerOnlyToggle').checked;
+  ttsSettings.mode = document.getElementById('ttsModeSelect').value;
+  ttsSettings.voiceURI = document.getElementById('ttsVoiceSelect').value;
+  
+  localStorage.setItem('tts_settings', JSON.stringify(ttsSettings));
+  document.getElementById('ttsSettingsModal').style.display = 'none';
+  
+  showToast("✅ Pengaturan Suara disimpan!");
+};
+
+window.testTTS = function() {
+  if (!window.speechSynthesis) return;
+  const voiceURI = document.getElementById('ttsVoiceSelect').value;
+  const utterance = new SpeechSynthesisUtterance("Halo, ini adalah tes pembaca suara dari TikTok Wordle!");
+  
+  if (voiceURI && availableVoices.length > 0) {
+    const selectedVoice = availableVoices.find(v => v.voiceURI === voiceURI);
+    if (selectedVoice) utterance.voice = selectedVoice;
+  }
+  
+  window.speechSynthesis.cancel(); // Stop any currently playing speech
+  window.speechSynthesis.speak(utterance);
+};
+
+function readTTS(nickname, comment, followRole) {
+  if (!ttsSettings.enabled || !window.speechSynthesis) return;
+  
+  if (ttsSettings.followerOnly && followRole !== 1 && followRole !== 2) return;
+  
+  const msg = comment.trim();
+  if (msg.startsWith('!')) return; // Ignore commands
+  
+  let textToSpeak = "";
+  if (ttsSettings.mode === 'guess_only') {
+    if (/^[a-zA-Z]+$/.test(msg)) {
+       textToSpeak = `${nickname} menebak ${msg}`;
+    }
+  } else {
+    textToSpeak = `${nickname} berkata ${msg}`;
+  }
+  
+  if (textToSpeak) {
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+    if (ttsSettings.voiceURI && availableVoices.length > 0) {
+      const selectedVoice = availableVoices.find(v => v.voiceURI === ttsSettings.voiceURI);
+      if (selectedVoice) utterance.voice = selectedVoice;
+    }
+    window.speechSynthesis.speak(utterance);
+  }
+}

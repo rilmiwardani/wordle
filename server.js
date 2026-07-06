@@ -146,7 +146,8 @@ io.on("connection", (socket) => {
           thumbnail: video.image,
           duration: video.timestamp || "",
           requesterName: "Host",
-          requesterImg: "https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/7339798436154310662~c5_100x100.jpeg"
+          requesterImg: "https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/7339798436154310662~c5_100x100.jpeg",
+          originalQuery: query
         });
       }
     } catch (err) {
@@ -367,7 +368,8 @@ function registerTikTokEvents(connection) {
               thumbnail: video.image,
               duration: video.timestamp || "",
               requesterName: payload.nickname,
-              requesterImg: payload.profilePictureUrl
+              requesterImg: payload.profilePictureUrl,
+              originalQuery: query
             });
           }
         } catch (err) {

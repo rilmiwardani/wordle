@@ -97,6 +97,7 @@ let lastLang = "";
 let lastSessionId = "";
 let reconnectTimer = null;
 let isConnectedToTikTok = false;
+let hasPlayedCloseAudio = false;
 
 // Leaderboard State
 let playerPoints = {};
@@ -841,6 +842,7 @@ function handleMyRank(userData) {
 
 // Start Game
 function startNewRound() {
+  hasPlayedCloseAudio = false;
   // Word500 always uses 5 letters; Word600 always uses 6 letters; Wordle/WordLoop randomizes 5, 6, or 7
   if (currentGameMode === 'word500') {
     WORD_LENGTH = 5;
@@ -1886,7 +1888,7 @@ function processGuess(guessWord, userData) {
                 round++;
                 startNewRound();
               }, 200);
-            }, 5000);
+            }, 10000);
           }, 1000);
         }
       } else {
@@ -2184,7 +2186,8 @@ function processGuess(guessWord, userData) {
   }
 
   if (isValidWord && guessWord !== currentWord && (correctCount + presentCount >= Math.floor(WORD_LENGTH / 2) + 1)) {
-    if (Math.random() < 0.3) {
+    if (!hasPlayedCloseAudio) {
+      hasPlayedCloseAudio = true;
       if (window.playHostAudio) playHostAudio('close');
     }
   }
@@ -2274,7 +2277,7 @@ function processGuess(guessWord, userData) {
           round++;
           startNewRound();
         }, 200);
-      }, 5000);
+      }, 10000);
     }, 2000);
   }
 }
@@ -2721,16 +2724,33 @@ try {
 } catch(e) {}
 
 const hostAudioFiles = {
-  start: ['assets/audio/start.mp3', 'assets/audio/start2.mp3'],
+  start: ['assets/audio/start.mp3'],
   win: ['assets/audio/win1.mp3', 'assets/audio/win2.mp3'],
   close: ['assets/audio/dikit-lagi.mp3'],
   interaction: ['assets/audio/interaction.mp3', 'assets/audio/interaction2.mp3']
+};
+
+const sfxAudioFiles = {
+  win: ['assets/audio/sfx-win.mp3']
 };
 
 let currentHostAudio = null;
 
 window.playHostAudio = function(type) {
   if (!hostAudioSettings.enabled) return;
+  
+  // Play SFX (Backsound) if exists for this type
+  if (typeof sfxAudioFiles !== 'undefined' && sfxAudioFiles[type]) {
+    const sfxFiles = sfxAudioFiles[type];
+    if (sfxFiles && sfxFiles.length > 0) {
+      const sfxFile = sfxFiles[Math.floor(Math.random() * sfxFiles.length)];
+      const sfxAudio = new Audio(sfxFile);
+      // Volume SFX dibuat sedikit lebih pelan (50% dari volume host) agar suara host tetap jelas
+      sfxAudio.volume = (hostAudioSettings.volume / 100) * 0.5;
+      sfxAudio.play().catch(e => console.log('SFX play blocked', e));
+    }
+  }
+
   const files = hostAudioFiles[type];
   if (!files || files.length === 0) return;
   

@@ -2779,6 +2779,20 @@ window.playHostAudio = function(type) {
 window.testHostAudio = function() {
   const types = Object.keys(hostAudioFiles);
   const randomType = types[Math.floor(Math.random() * types.length)];
+  
+  const vol = (window._tempHostAudioVolume !== undefined && window._tempHostAudioVolume !== null) ? window._tempHostAudioVolume : hostAudioSettings.volume;
+
+  // Test SFX if exists
+  if (typeof sfxAudioFiles !== 'undefined' && sfxAudioFiles[randomType]) {
+    const sfxFiles = sfxAudioFiles[randomType];
+    if (sfxFiles && sfxFiles.length > 0) {
+      const sfxFile = sfxFiles[Math.floor(Math.random() * sfxFiles.length)];
+      const sfxAudio = new Audio(sfxFile);
+      sfxAudio.volume = (vol / 100) * 0.5;
+      sfxAudio.play().catch(e => console.log('SFX play blocked', e));
+    }
+  }
+
   const files = hostAudioFiles[randomType];
   const file = files[Math.floor(Math.random() * files.length)];
   
@@ -2788,7 +2802,6 @@ window.testHostAudio = function() {
   }
   
   currentHostAudio = new Audio(file);
-  const vol = (window._tempHostAudioVolume !== undefined && window._tempHostAudioVolume !== null) ? window._tempHostAudioVolume : hostAudioSettings.volume;
   currentHostAudio.volume = vol / 100;
   
   currentHostAudio.play().catch(e => console.log('Test host audio play blocked', e));

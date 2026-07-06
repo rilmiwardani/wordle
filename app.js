@@ -2572,6 +2572,7 @@ window.saveMusicSettings = function() {
 let ttsSettings = {
   enabled: false,
   followerOnly: false,
+  readNickname: true,
   mode: 'all',
   voiceURI: '',
   volume: 100
@@ -2581,6 +2582,7 @@ try {
   if (savedTTS) {
     ttsSettings = JSON.parse(savedTTS);
     if (ttsSettings.volume === undefined) ttsSettings.volume = 100;
+    if (ttsSettings.readNickname === undefined) ttsSettings.readNickname = true;
   }
 } catch(e) {}
 
@@ -2613,11 +2615,20 @@ window.openTTSSettings = function(e) {
   
   document.getElementById('ttsEnabledToggle').checked = ttsSettings.enabled;
   document.getElementById('ttsFollowerOnlyToggle').checked = ttsSettings.followerOnly;
+  
+  if (document.getElementById('ttsReadNicknameToggle')) {
+    document.getElementById('ttsReadNicknameToggle').checked = ttsSettings.readNickname;
+  }
+  
   document.getElementById('ttsModeSelect').value = ttsSettings.mode;
   document.getElementById('ttsVoiceSelect').value = ttsSettings.voiceURI;
   
   document.getElementById('ttsVolumeSlider').value = ttsSettings.volume;
   document.getElementById('ttsVolumeLabel').textContent = `${ttsSettings.volume}%`;
+  
+  document.getElementById('hostAudioEnabledToggle').checked = hostAudioSettings.enabled;
+  document.getElementById('hostAudioVolumeSlider').value = hostAudioSettings.volume;
+  document.getElementById('hostAudioVolumeLabel').textContent = `${hostAudioSettings.volume}%`;
   
   document.getElementById('ttsSettingsModal').style.display = 'flex';
 };
@@ -2628,9 +2639,14 @@ window.updateTTSVolumeUI = function(val) {
   window._tempTTSVolume = parseInt(val) || 100;
 };
 
+// Original save function handled directly, hook handles host audio
+const originalSaveTTS2 = window.saveTTSSettings;
 window.saveTTSSettings = function() {
   ttsSettings.enabled = document.getElementById('ttsEnabledToggle').checked;
   ttsSettings.followerOnly = document.getElementById('ttsFollowerOnlyToggle').checked;
+  if (document.getElementById('ttsReadNicknameToggle')) {
+    ttsSettings.readNickname = document.getElementById('ttsReadNicknameToggle').checked;
+  }
   ttsSettings.mode = document.getElementById('ttsModeSelect').value;
   ttsSettings.voiceURI = document.getElementById('ttsVoiceSelect').value;
   ttsSettings.volume = parseInt(document.getElementById('ttsVolumeSlider').value) || 100;
@@ -2638,6 +2654,12 @@ window.saveTTSSettings = function() {
   localStorage.setItem('tts_settings', JSON.stringify(ttsSettings));
   document.getElementById('ttsSettingsModal').style.display = 'none';
   window._tempTTSVolume = null;
+  
+  // Also save host audio (from hook)
+  hostAudioSettings.enabled = document.getElementById('hostAudioEnabledToggle').checked;
+  hostAudioSettings.volume = parseInt(document.getElementById('hostAudioVolumeSlider').value) || 100;
+  localStorage.setItem('host_audio_settings', JSON.stringify(hostAudioSettings));
+  window._tempHostAudioVolume = null;
   
   showToast("✅ Pengaturan Suara disimpan!");
 };
@@ -2670,10 +2692,10 @@ function readTTS(nickname, comment, followRole) {
   let textToSpeak = "";
   if (ttsSettings.mode === 'guess_only') {
     if (/^[a-zA-Z]+$/.test(msg)) {
-       textToSpeak = `${nickname} menebak ${msg}`;
+       textToSpeak = ttsSettings.readNickname ? `${nickname} menebak ${msg}` : msg;
     }
   } else {
-    textToSpeak = `${nickname} berkata ${msg}`;
+    textToSpeak = ttsSettings.readNickname ? `${nickname} berkata ${msg}` : msg;
   }
   
   if (textToSpeak) {
@@ -2705,15 +2727,30 @@ const hostAudioFiles = {
   interaction: ['assets/audio/interaction.mp3', 'assets/audio/interaction2.mp3']
 };
 
+let currentHostAudio = null;
+
 window.playHostAudio = function(type) {
   if (!hostAudioSettings.enabled) return;
   const files = hostAudioFiles[type];
   if (!files || files.length === 0) return;
   
+  // If a major event (win or start), cancel current audio and play new one
+  if (type === 'win' || type === 'start') {
+    if (currentHostAudio) {
+      currentHostAudio.pause();
+      currentHostAudio.currentTime = 0;
+    }
+  } else {
+    // If minor event (close, interaction), and audio is already playing, ignore new request to prevent overlap
+    if (currentHostAudio && !currentHostAudio.paused) {
+      return;
+    }
+  }
+  
   const file = files[Math.floor(Math.random() * files.length)];
-  const audio = new Audio(file);
-  audio.volume = hostAudioSettings.volume / 100;
-  audio.play().catch(e => console.log('Host audio play blocked', e));
+  currentHostAudio = new Audio(file);
+  currentHostAudio.volume = hostAudioSettings.volume / 100;
+  currentHostAudio.play().catch(e => console.log('Host audio play blocked', e));
 };
 
 window.testHostAudio = function() {
@@ -2721,12 +2758,17 @@ window.testHostAudio = function() {
   const randomType = types[Math.floor(Math.random() * types.length)];
   const files = hostAudioFiles[randomType];
   const file = files[Math.floor(Math.random() * files.length)];
-  const audio = new Audio(file);
   
+  if (currentHostAudio) {
+    currentHostAudio.pause();
+    currentHostAudio.currentTime = 0;
+  }
+  
+  currentHostAudio = new Audio(file);
   const vol = (window._tempHostAudioVolume !== undefined && window._tempHostAudioVolume !== null) ? window._tempHostAudioVolume : hostAudioSettings.volume;
-  audio.volume = vol / 100;
+  currentHostAudio.volume = vol / 100;
   
-  audio.play().catch(e => console.log('Test host audio play blocked', e));
+  currentHostAudio.play().catch(e => console.log('Test host audio play blocked', e));
 };
 
 window.updateHostAudioVolumeUI = function(val) {
@@ -2734,22 +2776,6 @@ window.updateHostAudioVolumeUI = function(val) {
   window._tempHostAudioVolume = parseInt(val) || 100;
 };
 
-// Hook into TTSSettings saving to save hostAudio settings too
-const originalSaveTTS = window.saveTTSSettings;
-window.saveTTSSettings = function() {
-  hostAudioSettings.enabled = document.getElementById('hostAudioEnabledToggle').checked;
-  hostAudioSettings.volume = parseInt(document.getElementById('hostAudioVolumeSlider').value) || 100;
-  localStorage.setItem('host_audio_settings', JSON.stringify(hostAudioSettings));
-  window._tempHostAudioVolume = null;
-  
-  if (originalSaveTTS) originalSaveTTS();
-};
+// (Removed originalSaveTTS override as it was merged above)
 
-const originalOpenTTS = window.openTTSSettings;
-window.openTTSSettings = function(e) {
-  if (originalOpenTTS) originalOpenTTS(e);
-  
-  document.getElementById('hostAudioEnabledToggle').checked = hostAudioSettings.enabled;
-  document.getElementById('hostAudioVolumeSlider').value = hostAudioSettings.volume;
-  document.getElementById('hostAudioVolumeLabel').textContent = `${hostAudioSettings.volume}%`;
-};
+// (Removed originalOpenTTS override as it was merged above)

@@ -84,10 +84,13 @@ let fillBlanksTargets = [];
 let ytPlayer = null;
 let musicQueue = [];
 let isMusicPlaying = false;
-let musicSettings = { maxGlobal: 20, maxUser: 2, maxDuration: 6, bannedKeywords: [] };
+let musicSettings = { maxGlobal: 20, maxUser: 2, maxDuration: 6, bannedKeywords: [], volume: 50 };
 try {
   const saved = localStorage.getItem('music_settings');
-  if (saved) musicSettings = JSON.parse(saved);
+  if (saved) {
+    musicSettings = JSON.parse(saved);
+    if (musicSettings.volume === undefined) musicSettings.volume = 50;
+  }
 } catch(e) {}
 let lastUsername = "";
 let lastLang = "";
@@ -222,6 +225,7 @@ let ytPlayerReady = false;
 
 function onPlayerReady(event) {
   ytPlayerReady = true;
+  event.target.setVolume(musicSettings.volume);
 }
 
 function onPlayerStateChange(event) {
@@ -716,10 +720,14 @@ function getInstructionText(index) {
     if (lastLang === 'id') return `Ketik !myrank untuk cek rank & poin kamu!`;
     if (lastLang === 'mixed') return `Ketik !myrank untuk cek poin! / Type !myrank to check points!`;
     return `Type !myrank to check your rank and points!`;
-  } else {
+  } else if (index === 2) {
     if (lastLang === 'id') return `Ketik !play <b>judul lagu</b> untuk request musik 🎵`;
     if (lastLang === 'mixed') return `Ketik !play <b>judul</b> untuk musik! / Type !play <b>title</b> for music!`;
     return `Type !play <b>song title</b> in chat to request music 🎵`;
+  } else {
+    if (lastLang === 'id') return `Jangan lupa tap-tap layar, follow & share live ini ya! ❤️`;
+    if (lastLang === 'mixed') return `Jangan lupa tap layar & follow! / Tap the screen & follow! ❤️`;
+    return `Don't forget to tap the screen, follow & share this live! ❤️`;
   }
 }
 
@@ -728,12 +736,18 @@ function startInstructionRotation() {
   
   const updateText = () => {
     if (isShowingRankMsg) return; // Don't override rank msg
-    const text = getInstructionText(currentInstructionIndex % 3);
+    const text = getInstructionText(currentInstructionIndex % 4);
     const instEl = document.querySelector('.instruction');
     if (instEl) {
       instEl.innerHTML = text;
       instEl.style.color = 'var(--text-muted)';
     }
+    
+    // Play interaction sound sparingly when the instruction rotates to "Follow & Share"
+    if (currentInstructionIndex % 4 === 3 && Math.random() < 0.4) {
+       if (window.playHostAudio) playHostAudio('interaction');
+    }
+    
     currentInstructionIndex++;
   };
   
@@ -763,7 +777,7 @@ function processRankQueue() {
       processRankQueue();
     } else {
       // Revert to normal rotation
-      const text = getInstructionText((currentInstructionIndex - 1 + 3) % 3);
+      const text = getInstructionText((currentInstructionIndex - 1 + 4) % 4);
       if (instEl) {
         instEl.innerHTML = text;
         instEl.style.color = 'var(--text-muted)';
@@ -945,6 +959,8 @@ function startNewRound() {
   startInstructionRotation();
   const gameName = currentGameMode === 'fillblanks' ? 'Fill Blanks' : (currentGameMode === 'word500' ? 'Word500' : (currentGameMode === 'word600' ? 'Word600' : (currentGameMode === 'wordloop' ? 'Word Loop' : 'Wordle')));
   showToast(`${gameName} Round ${round} Started! (${WORD_LENGTH} Letters)`, 2000);
+  
+  if (window.playHostAudio) playHostAudio('start');
   
   if (currentGameMode === 'wordloop') {
     updateWordLoopUI();
@@ -1863,6 +1879,7 @@ function processGuess(guessWord, userData) {
             const winWord = document.getElementById('winWord');
             if (winWord) winWord.textContent = "SEMUA KATA TERTEBAK!";
             if (winOverlay) winOverlay.classList.add('show');
+            if (window.playHostAudio) playHostAudio('win');
             setTimeout(() => {
               if (winOverlay) winOverlay.classList.remove('show');
               setTimeout(() => {
@@ -2166,6 +2183,12 @@ function processGuess(guessWord, userData) {
     }
   }
 
+  if (isValidWord && !isWin && (correctCount + presentCount >= Math.floor(WORD_LENGTH / 2) + 1)) {
+    if (Math.random() < 0.3) {
+      if (window.playHostAudio) playHostAudio('close');
+    }
+  }
+
   if (isWord500 && isValidWord) {
     // Word500 valid: tambah ke history lalu render ulang terurut
     word500History.push({ word: guessWord, c: correctCount, p: presentCount, a: absentCount, score: (correctCount * 2) + presentCount, userData });
@@ -2243,6 +2266,7 @@ function processGuess(guessWord, userData) {
     // Tunggu 2 detik dulu agar jawaban di grid (dan efek reveal) terlihat, baru tampilkan overlay
     setTimeout(() => {
       winOverlay.classList.add('show');
+      if (window.playHostAudio) playHostAudio('win');
       
       setTimeout(() => {
         winOverlay.classList.remove('show');
@@ -2512,19 +2536,34 @@ window.openMusicSettings = function(e) {
   document.getElementById('musicMaxDuration').value = musicSettings.maxDuration;
   document.getElementById('musicBannedKeywords').value = musicSettings.bannedKeywords.join(', ');
   
+  document.getElementById('musicVolumeSlider').value = musicSettings.volume;
+  document.getElementById('musicVolumeLabel').textContent = `${musicSettings.volume}%`;
+  
   document.getElementById('musicSettingsModal').style.display = 'flex';
+};
+
+window.updateMusicVolumeUI = function(val) {
+  document.getElementById('musicVolumeLabel').textContent = `${val}%`;
+  if (ytPlayer && ytPlayer.setVolume) {
+    ytPlayer.setVolume(val);
+  }
 };
 
 window.saveMusicSettings = function() {
   musicSettings.maxGlobal = parseInt(document.getElementById('musicMaxGlobal').value) || 20;
   musicSettings.maxUser = parseInt(document.getElementById('musicMaxUser').value) || 2;
   musicSettings.maxDuration = parseInt(document.getElementById('musicMaxDuration').value) || 6;
+  musicSettings.volume = parseInt(document.getElementById('musicVolumeSlider').value) || 50;
   
   const keywords = document.getElementById('musicBannedKeywords').value;
   musicSettings.bannedKeywords = keywords.split(',').map(k => k.trim().toLowerCase()).filter(k => k);
   
   localStorage.setItem('music_settings', JSON.stringify(musicSettings));
   document.getElementById('musicSettingsModal').style.display = 'none';
+  
+  if (ytPlayer && ytPlayer.setVolume) {
+    ytPlayer.setVolume(musicSettings.volume);
+  }
   
   showToast("✅ Pengaturan Musik disimpan!");
 };
@@ -2534,11 +2573,15 @@ let ttsSettings = {
   enabled: false,
   followerOnly: false,
   mode: 'all',
-  voiceURI: ''
+  voiceURI: '',
+  volume: 100
 };
 try {
   const savedTTS = localStorage.getItem('tts_settings');
-  if (savedTTS) ttsSettings = JSON.parse(savedTTS);
+  if (savedTTS) {
+    ttsSettings = JSON.parse(savedTTS);
+    if (ttsSettings.volume === undefined) ttsSettings.volume = 100;
+  }
 } catch(e) {}
 
 let availableVoices = [];
@@ -2573,7 +2616,16 @@ window.openTTSSettings = function(e) {
   document.getElementById('ttsModeSelect').value = ttsSettings.mode;
   document.getElementById('ttsVoiceSelect').value = ttsSettings.voiceURI;
   
+  document.getElementById('ttsVolumeSlider').value = ttsSettings.volume;
+  document.getElementById('ttsVolumeLabel').textContent = `${ttsSettings.volume}%`;
+  
   document.getElementById('ttsSettingsModal').style.display = 'flex';
+};
+
+window.updateTTSVolumeUI = function(val) {
+  document.getElementById('ttsVolumeLabel').textContent = `${val}%`;
+  // We can temporarily store the active volume for testTTS
+  window._tempTTSVolume = parseInt(val) || 100;
 };
 
 window.saveTTSSettings = function() {
@@ -2581,9 +2633,11 @@ window.saveTTSSettings = function() {
   ttsSettings.followerOnly = document.getElementById('ttsFollowerOnlyToggle').checked;
   ttsSettings.mode = document.getElementById('ttsModeSelect').value;
   ttsSettings.voiceURI = document.getElementById('ttsVoiceSelect').value;
+  ttsSettings.volume = parseInt(document.getElementById('ttsVolumeSlider').value) || 100;
   
   localStorage.setItem('tts_settings', JSON.stringify(ttsSettings));
   document.getElementById('ttsSettingsModal').style.display = 'none';
+  window._tempTTSVolume = null;
   
   showToast("✅ Pengaturan Suara disimpan!");
 };
@@ -2592,6 +2646,9 @@ window.testTTS = function() {
   if (!window.speechSynthesis) return;
   const voiceURI = document.getElementById('ttsVoiceSelect').value;
   const utterance = new SpeechSynthesisUtterance("Halo, ini adalah tes pembaca suara dari TikTok Wordle!");
+  
+  const vol = (window._tempTTSVolume !== undefined && window._tempTTSVolume !== null) ? window._tempTTSVolume : ttsSettings.volume;
+  utterance.volume = vol / 100;
   
   if (voiceURI && availableVoices.length > 0) {
     const selectedVoice = availableVoices.find(v => v.voiceURI === voiceURI);
@@ -2621,6 +2678,8 @@ function readTTS(nickname, comment, followRole) {
   
   if (textToSpeak) {
     const utterance = new SpeechSynthesisUtterance(textToSpeak);
+    utterance.volume = ttsSettings.volume / 100;
+    
     if (ttsSettings.voiceURI && availableVoices.length > 0) {
       const selectedVoice = availableVoices.find(v => v.voiceURI === ttsSettings.voiceURI);
       if (selectedVoice) utterance.voice = selectedVoice;
@@ -2628,3 +2687,69 @@ function readTTS(nickname, comment, followRole) {
     window.speechSynthesis.speak(utterance);
   }
 }
+
+// ─── Host MP3 Audio Auto Functions ───
+let hostAudioSettings = {
+  enabled: false,
+  volume: 100
+};
+try {
+  const savedHostAudio = localStorage.getItem('host_audio_settings');
+  if (savedHostAudio) hostAudioSettings = JSON.parse(savedHostAudio);
+} catch(e) {}
+
+const hostAudioFiles = {
+  start: ['assets/audio/start.mp3', 'assets/audio/start2.mp3'],
+  win: ['assets/audio/win1.mp3', 'assets/audio/win2.mp3'],
+  close: ['assets/audio/dikit-lagi.mp3'],
+  interaction: ['assets/audio/interaction.mp3', 'assets/audio/interaction2.mp3']
+};
+
+window.playHostAudio = function(type) {
+  if (!hostAudioSettings.enabled) return;
+  const files = hostAudioFiles[type];
+  if (!files || files.length === 0) return;
+  
+  const file = files[Math.floor(Math.random() * files.length)];
+  const audio = new Audio(file);
+  audio.volume = hostAudioSettings.volume / 100;
+  audio.play().catch(e => console.log('Host audio play blocked', e));
+};
+
+window.testHostAudio = function() {
+  const types = Object.keys(hostAudioFiles);
+  const randomType = types[Math.floor(Math.random() * types.length)];
+  const files = hostAudioFiles[randomType];
+  const file = files[Math.floor(Math.random() * files.length)];
+  const audio = new Audio(file);
+  
+  const vol = (window._tempHostAudioVolume !== undefined && window._tempHostAudioVolume !== null) ? window._tempHostAudioVolume : hostAudioSettings.volume;
+  audio.volume = vol / 100;
+  
+  audio.play().catch(e => console.log('Test host audio play blocked', e));
+};
+
+window.updateHostAudioVolumeUI = function(val) {
+  document.getElementById('hostAudioVolumeLabel').textContent = `${val}%`;
+  window._tempHostAudioVolume = parseInt(val) || 100;
+};
+
+// Hook into TTSSettings saving to save hostAudio settings too
+const originalSaveTTS = window.saveTTSSettings;
+window.saveTTSSettings = function() {
+  hostAudioSettings.enabled = document.getElementById('hostAudioEnabledToggle').checked;
+  hostAudioSettings.volume = parseInt(document.getElementById('hostAudioVolumeSlider').value) || 100;
+  localStorage.setItem('host_audio_settings', JSON.stringify(hostAudioSettings));
+  window._tempHostAudioVolume = null;
+  
+  if (originalSaveTTS) originalSaveTTS();
+};
+
+const originalOpenTTS = window.openTTSSettings;
+window.openTTSSettings = function(e) {
+  if (originalOpenTTS) originalOpenTTS(e);
+  
+  document.getElementById('hostAudioEnabledToggle').checked = hostAudioSettings.enabled;
+  document.getElementById('hostAudioVolumeSlider').value = hostAudioSettings.volume;
+  document.getElementById('hostAudioVolumeLabel').textContent = `${hostAudioSettings.volume}%`;
+};

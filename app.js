@@ -2183,7 +2183,7 @@ function processGuess(guessWord, userData) {
     }
   }
 
-  if (isValidWord && !isWin && (correctCount + presentCount >= Math.floor(WORD_LENGTH / 2) + 1)) {
+  if (isValidWord && guessWord !== currentWord && (correctCount + presentCount >= Math.floor(WORD_LENGTH / 2) + 1)) {
     if (Math.random() < 0.3) {
       if (window.playHostAudio) playHostAudio('close');
     }

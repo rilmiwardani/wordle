@@ -1520,7 +1520,7 @@ function setupSocketListeners() {
 
   // --- Game events ---
   socket.on('chat', (data) => {
-    readTTS(data.nickname, data.comment, data.followRole);
+    readTTS(data.nickname, data.comment, data.followRole, data.isFollower);
     handleChatGuess(data);
   });
 
@@ -2684,10 +2684,13 @@ window.testTTS = function() {
   window.speechSynthesis.speak(utterance);
 };
 
-function readTTS(nickname, comment, followRole) {
+function readTTS(nickname, comment, followRole, isFollower) {
   if (!ttsSettings.enabled || !window.speechSynthesis) return;
   
-  if (ttsSettings.followerOnly && followRole !== 1 && followRole !== 2) return;
+  if (ttsSettings.followerOnly) {
+    // Check if the user is a follower (followRole 1 or 2, or isFollower boolean)
+    if (followRole !== 1 && followRole !== 2 && !isFollower) return;
+  }
   
   const msg = comment.trim();
   if (msg.startsWith('!')) return; // Ignore commands

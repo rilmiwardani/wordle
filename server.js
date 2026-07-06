@@ -579,7 +579,8 @@ function formatUser(data) {
     uniqueId: userObj.uniqueId || null,
     nickname: userObj.nickname || userObj.uniqueId || "Anonymous",
     profilePictureUrl: avatar || null,
-    followRole: userObj.followRole || data.followRole || 0, // 0=none, 1=follower, 2=friends
+    followRole: userObj.followInfo?.followStatus || userObj.followRole || data.followRole || 0, // 0=none, 1=follower, 2=friends
+    isFollower: userObj.isFollower || data.isFollower || false,
     userBadges: userObj.userBadges || data.userBadges || [],
     isModerator: userObj.isModerator || data.isModerator || false,
     isNewGifter: userObj.isNewGifter || data.isNewGifter || false,

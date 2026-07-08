@@ -41,6 +41,31 @@ function updateDisplayRowsUI() {
   const label = document.getElementById('displayRowsLabel');
   if (label) label.textContent = getDisplayRows();
 }
+
+let boardScale = parseInt(localStorage.getItem('board_scale')) || 100;
+
+function changeBoardScale(delta, e) {
+  if (e) e.stopPropagation();
+  boardScale = Math.min(140, Math.max(60, boardScale + delta));
+  localStorage.setItem('board_scale', boardScale);
+  updateBoardScaleUI();
+}
+
+function updateBoardScaleUI() {
+  const label = document.getElementById('boardScaleLabel');
+  if (label) label.textContent = boardScale + '%';
+
+  let baseWidth = 420;
+  if (currentGameMode === 'word500' || currentGameMode === 'word600') {
+    baseWidth = 540;
+  } else {
+    const baseWidths = { 3: 280, 4: 350, 5: 420, 6: 460, 7: 500, 8: 540 };
+    baseWidth = baseWidths[WORD_LENGTH] || 420;
+  }
+  const finalWidth = Math.round(baseWidth * (boardScale / 100));
+  document.documentElement.style.setProperty('--board-max-width', finalWidth + 'px');
+}
+
 const urlParams = new URLSearchParams(window.location.search);
 let WORD_LENGTH = 5;
 document.documentElement.style.setProperty('--word-length', WORD_LENGTH);
@@ -858,6 +883,7 @@ function startNewRound() {
     WORD_LENGTH = allowedLengths[rIdx];
   }
   document.documentElement.style.setProperty('--word-length', WORD_LENGTH);
+  updateBoardScaleUI();
   
   if (wordsLoaded) {
     TARGET_WORDS = allTargetWords[WORD_LENGTH];
@@ -2492,6 +2518,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('len7Toggle')) document.getElementById('len7Toggle').checked = savedLengths.includes(7);
     if (document.getElementById('len8Toggle')) document.getElementById('len8Toggle').checked = savedLengths.includes(8);
   } catch(e) {}
+  if (typeof updateBoardScaleUI === 'function') updateBoardScaleUI();
 });
 
 window.updateAllowedLengths = function() {

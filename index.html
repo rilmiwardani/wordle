@@ -144,6 +144,11 @@
               <span class="rows-label">Baris: <strong id="displayRowsLabel">6</strong></span>
               <button class="rows-btn" onclick="changeDisplayRows(1, event)">+</button>
             </div>
+            <div class="display-rows-control" onclick="event.stopPropagation()">
+              <button class="rows-btn" onclick="changeBoardScale(-10, event)">−</button>
+              <span class="rows-label">Ukuran Kotak: <strong id="boardScaleLabel">100%</strong></span>
+              <button class="rows-btn" onclick="changeBoardScale(10, event)">+</button>
+            </div>
             <label class="settings-toggle-row" onclick="event.stopPropagation()">
               <span class="settings-toggle-label">🖼️ Background Dinamis</span>
               <div class="toggle-switch">

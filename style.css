@@ -764,7 +764,7 @@ header {
 /* Hint Board */
 .hint-container {
   width: 100%;
-  max-width: 420px;
+  max-width: var(--board-max-width, 420px);
   margin: 0 auto 10px;
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -837,13 +837,13 @@ header {
   /* Gap responsif: lebih kecil di layar sempit, normal di layar lebar */
   gap: clamp(4px, 1.5vw, 8px);
   width: 100%;
-  max-width: 420px;
+  max-width: var(--board-max-width, 420px);
   /* Biarkan tinggi ditentukan oleh konten (tile), bukan dipaksakan 100% */
   height: auto;
 }
 
 #board.w500-board {
-  max-width: 540px;
+  max-width: var(--board-max-width, 540px);
 }
 
 .board-row {

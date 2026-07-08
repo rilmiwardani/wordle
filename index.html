@@ -128,7 +128,9 @@
 
             <div class="settings-sep"></div>
             <div class="settings-title">Panjang Kata (Wordle/Loop)</div>
-            <div class="settings-checkboxes" onclick="event.stopPropagation()" style="display: flex; gap: 10px; padding: 5px 12px; color: rgba(255,255,255,0.8); font-size: 13px;">
+            <div class="settings-checkboxes" onclick="event.stopPropagation()" style="display: flex; gap: 10px; padding: 5px 12px; color: rgba(255,255,255,0.8); font-size: 13px; flex-wrap: wrap;">
+              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="len3Toggle" onchange="updateAllowedLengths()"> 3</label>
+              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="len4Toggle" onchange="updateAllowedLengths()"> 4</label>
               <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="len5Toggle" checked onchange="updateAllowedLengths()"> 5</label>
               <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="len6Toggle" checked onchange="updateAllowedLengths()"> 6</label>
               <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="len7Toggle" checked onchange="updateAllowedLengths()"> 7</label>

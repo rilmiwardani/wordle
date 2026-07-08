@@ -283,15 +283,19 @@ function playNextMusic() {
 
 // Fetch words on load
 let wordsLoaded = false;
-let allTargetWords = { 5: [], 6: [], 7: [], 8: [] };
-let allValidWords = { 5: [], 6: [], 7: [], 8: [] };
-let allAvailableWords = { 5: [], 6: [], 7: [], 8: [] };
+let allTargetWords = { 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] };
+let allValidWords = { 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] };
+let allAvailableWords = { 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] };
 
 function loadWordLists(lang) {
   return new Promise((resolve, reject) => {
     let fetches = [];
     if (lang === 'mixed') {
       fetches = [
+        Promise.all([fetch(`wordlist/target_words_3.txt`).then(r => r.text()).catch(()=>""), fetch(`wordlist/target_words_id_3.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
+        Promise.all([fetch(`wordlist/valid_words_3.txt`).then(r => r.text()).catch(()=>""), fetch(`wordlist/valid_words_id_3.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
+        Promise.all([fetch(`wordlist/target_words_4.txt`).then(r => r.text()).catch(()=>""), fetch(`wordlist/target_words_id_4.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
+        Promise.all([fetch(`wordlist/valid_words_4.txt`).then(r => r.text()).catch(()=>""), fetch(`wordlist/valid_words_id_4.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
         Promise.all([fetch(`wordlist/target_words.txt`).then(r => r.text()), fetch(`wordlist/target_words_id.txt`).then(r => r.text())]).then(r => r[0] + '\n' + r[1]),
         Promise.all([fetch(`wordlist/valid_words.txt`).then(r => r.text()), fetch(`wordlist/valid_words_id.txt`).then(r => r.text())]).then(r => r[0] + '\n' + r[1]),
         Promise.all([fetch(`wordlist/target_words_6.txt`).then(r => r.text()).catch(()=>""), fetch(`wordlist/target_words_id_6.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
@@ -304,6 +308,10 @@ function loadWordLists(lang) {
     } else {
       let suffix = lang === 'en' ? '' : '_id';
       fetches = [
+        fetch(`wordlist/target_words${suffix}_3.txt`).then(r => r.text()).catch(() => ""),
+        fetch(`wordlist/valid_words${suffix}_3.txt`).then(r => r.text()).catch(() => ""),
+        fetch(`wordlist/target_words${suffix}_4.txt`).then(r => r.text()).catch(() => ""),
+        fetch(`wordlist/valid_words${suffix}_4.txt`).then(r => r.text()).catch(() => ""),
         fetch(`wordlist/target_words${suffix}.txt`).then(r => r.text()),
         fetch(`wordlist/valid_words${suffix}.txt`).then(r => r.text()),
         fetch(`wordlist/target_words${suffix}_6.txt`).then(r => r.text()).catch(() => ""),
@@ -315,37 +323,20 @@ function loadWordLists(lang) {
       ];
     }
 
-    Promise.all(fetches).then(([t5, v5, t6, v6, t7, v7, t8, v8]) => {
-      // Process length 5
-      allTargetWords[5] = t5.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 5);
-      const validList5 = v5.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 5);
-      allValidWords[5] = [...new Set([...validList5, ...allTargetWords[5]])];
-      allAvailableWords[5] = [...allTargetWords[5]];
-      shuffleArray(allAvailableWords[5]);
-      
-      // Process length 6
-      allTargetWords[6] = t6.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 6);
-      const validList6 = v6.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 6);
-      allValidWords[6] = [...new Set([...validList6, ...allTargetWords[6]])];
-      allAvailableWords[6] = [...allTargetWords[6]];
-      shuffleArray(allAvailableWords[6]);
-
-      // Process length 7
-      allTargetWords[7] = t7.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 7);
-      const validList7 = v7.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 7);
-      allValidWords[7] = [...new Set([...validList7, ...allTargetWords[7]])];
-      allAvailableWords[7] = [...allTargetWords[7]];
-      shuffleArray(allAvailableWords[7]);
-
-      // Process length 8
-      allTargetWords[8] = (t8 || "").split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 8);
-      const validList8 = (v8 || "").split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === 8);
-      allValidWords[8] = [...new Set([...validList8, ...allTargetWords[8]])];
-      allAvailableWords[8] = [...allTargetWords[8]];
-      shuffleArray(allAvailableWords[8]);
+    Promise.all(fetches).then((results) => {
+      const lengths = [3, 4, 5, 6, 7, 8];
+      lengths.forEach((len, idx) => {
+        const tStr = typeof results[idx * 2] === 'string' ? results[idx * 2] : "";
+        const vStr = typeof results[idx * 2 + 1] === 'string' ? results[idx * 2 + 1] : "";
+        allTargetWords[len] = tStr.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === len);
+        const validList = vStr.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === len);
+        allValidWords[len] = [...new Set([...validList, ...allTargetWords[len]])];
+        allAvailableWords[len] = [...allTargetWords[len]];
+        shuffleArray(allAvailableWords[len]);
+      });
 
       wordsLoaded = true;
-      console.log(`Loaded length 5: ${allTargetWords[5].length} targets. Length 6: ${allTargetWords[6].length} targets. Length 7: ${allTargetWords[7].length} targets. Length 8: ${allTargetWords[8].length} targets.`);
+      console.log(`Loaded target words - Length 3: ${allTargetWords[3].length}, 4: ${allTargetWords[4].length}, 5: ${allTargetWords[5].length}, 6: ${allTargetWords[6].length}, 7: ${allTargetWords[7].length}, 8: ${allTargetWords[8].length}`);
       resolve();
     }).catch(err => {
       console.error("Failed to load wordlists:", err);
@@ -2494,6 +2485,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize length checkboxes
   try {
     const savedLengths = JSON.parse(localStorage.getItem('allowed_lengths') || '[5,6,7,8]');
+    if (document.getElementById('len3Toggle')) document.getElementById('len3Toggle').checked = savedLengths.includes(3);
+    if (document.getElementById('len4Toggle')) document.getElementById('len4Toggle').checked = savedLengths.includes(4);
     if (document.getElementById('len5Toggle')) document.getElementById('len5Toggle').checked = savedLengths.includes(5);
     if (document.getElementById('len6Toggle')) document.getElementById('len6Toggle').checked = savedLengths.includes(6);
     if (document.getElementById('len7Toggle')) document.getElementById('len7Toggle').checked = savedLengths.includes(7);
@@ -2502,12 +2495,16 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 window.updateAllowedLengths = function() {
+  const is3 = document.getElementById('len3Toggle') ? document.getElementById('len3Toggle').checked : false;
+  const is4 = document.getElementById('len4Toggle') ? document.getElementById('len4Toggle').checked : false;
   const is5 = document.getElementById('len5Toggle') ? document.getElementById('len5Toggle').checked : true;
   const is6 = document.getElementById('len6Toggle') ? document.getElementById('len6Toggle').checked : true;
   const is7 = document.getElementById('len7Toggle') ? document.getElementById('len7Toggle').checked : true;
   const is8 = document.getElementById('len8Toggle') ? document.getElementById('len8Toggle').checked : true;
   
   let lengths = [];
+  if (is3) lengths.push(3);
+  if (is4) lengths.push(4);
   if (is5) lengths.push(5);
   if (is6) lengths.push(6);
   if (is7) lengths.push(7);

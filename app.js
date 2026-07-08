@@ -1543,6 +1543,10 @@ function setupSocketListeners() {
     handleChatGuess(data);
   });
 
+  socket.on('member', (data) => {
+    if (typeof handleAutoGuessOnJoin === 'function') handleAutoGuessOnJoin(data);
+  });
+
   socket.on('music-request', (data) => {
     console.log("Music Requested:", data);
     
@@ -1609,6 +1613,68 @@ let guessQueue = [];
 
 // Deduplication: mencegah user kirim kata yang sama lebih dari sekali per ronde
 let userGuessDedup = new Set(); // key: "userId:KATA"
+let joinGuessUsersDedup = new Set(); // key: userId
+let lastJoinGuessTime = 0;
+
+function getFarWordFromTarget() {
+  if (!VALID_WORDS || VALID_WORDS.length === 0 || !currentWord) return null;
+  const targetChars = new Set(currentWord.split(''));
+  
+  // 1. Cari kata dengan 0 huruf overlap dengan target
+  const zeroOverlap = VALID_WORDS.filter(w => w.length === WORD_LENGTH && w !== currentWord && ![...w].some(c => targetChars.has(c)));
+  if (zeroOverlap.length > 0) {
+    return zeroOverlap[Math.floor(Math.random() * zeroOverlap.length)];
+  }
+  
+  // 2. Jika tidak ada 0 overlap, cari dengan overlap minimal
+  let bestWords = [];
+  let minOverlap = 99;
+  for (let w of VALID_WORDS) {
+    if (w.length !== WORD_LENGTH || w === currentWord) continue;
+    let overlap = 0;
+    for (let c of w) {
+      if (targetChars.has(c)) overlap++;
+    }
+    if (overlap < minOverlap) {
+      minOverlap = overlap;
+      bestWords = [w];
+    } else if (overlap === minOverlap) {
+      bestWords.push(w);
+    }
+  }
+  if (bestWords.length > 0) {
+    return bestWords[Math.floor(Math.random() * bestWords.length)];
+  }
+  return null;
+}
+
+function handleAutoGuessOnJoin(memberData) {
+  if (isGameOver || !window.autoGuessOnJoin) return;
+  
+  const userId = memberData.uniqueId || memberData.nickname || 'anon_joiner';
+  if (joinGuessUsersDedup.has(userId)) return; // 1x auto-jawab saat join per ronde
+  
+  // Throttle agar tidak spam jika banyak joiner sekaligus (min interval 2.5 detik)
+  const now = Date.now();
+  if (now - lastJoinGuessTime < 2500) return;
+  
+  const farWord = getFarWordFromTarget();
+  if (!farWord) return;
+  
+  lastJoinGuessTime = now;
+  joinGuessUsersDedup.add(userId);
+  
+  const simulatedData = {
+    nickname: memberData.nickname || memberData.uniqueId || 'Viewer',
+    uniqueId: memberData.uniqueId || 'viewer',
+    profilePictureUrl: memberData.profilePictureUrl || 'https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/7339798436154310662~c5_100x100.jpeg',
+    comment: farWord,
+    followRole: memberData.followRole || 0,
+    isFollower: memberData.isFollower || false
+  };
+
+  handleChatGuess(simulatedData);
+}
 
 // Handle Guesses from Chat
 function handleChatGuess(data) {
@@ -2600,6 +2666,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggle = document.getElementById('w500StyleToggle');
     if (toggle) toggle.checked = window.w500UseMastermind;
     if (window.updateMastermindNames) window.updateMastermindNames();
+
+    const savedAutoJoin = localStorage.getItem('auto_guess_on_join');
+    window.autoGuessOnJoin = savedAutoJoin === 'true';
+    const joinToggle = document.getElementById('autoGuessJoinToggle');
+    if (joinToggle) joinToggle.checked = window.autoGuessOnJoin;
   } catch(e) {}
 });
 
@@ -2612,6 +2683,11 @@ window.toggleW500Style = function(checked) {
   if (currentGameMode === 'word500' || currentGameMode === 'word600') {
     renderSortedW500Board();
   }
+};
+
+window.toggleAutoGuessJoin = function(checked) {
+  window.autoGuessOnJoin = checked;
+  localStorage.setItem('auto_guess_on_join', checked);
 };
 
 // ─── Music Settings Functions ───

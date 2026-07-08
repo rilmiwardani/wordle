@@ -163,6 +163,13 @@
                 <div class="toggle-track"></div>
               </div>
             </label>
+            <label class="settings-toggle-row" onclick="event.stopPropagation()">
+              <span class="settings-toggle-label">🤖 Auto-Jawab saat Join</span>
+              <div class="toggle-switch">
+                <input type="checkbox" id="autoGuessJoinToggle" onchange="toggleAutoGuessJoin(this.checked)">
+                <div class="toggle-track"></div>
+              </div>
+            </label>
 
             <div class="settings-sep"></div>
             <div class="settings-title">Admin</div>

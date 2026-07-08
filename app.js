@@ -278,9 +278,6 @@ function playNextMusic() {
     ytPlayer.unMute();
     ytPlayer.setVolume(musicSettings.volume);
     ytPlayer.loadVideoById(currentMusic.videoId);
-    setTimeout(() => {
-      try { ytPlayer.playVideo(); } catch(e) {}
-    }, 500);
   }
 }
 
@@ -396,8 +393,8 @@ function selectGame(mode) {
   // Update login title
   const loginTitle = document.getElementById('loginTitle');
   if (loginTitle) {
-    if (mode === 'word500') loginTitle.textContent = 'TIKTOK WORD500';
-    else if (mode === 'word600') loginTitle.textContent = 'TIKTOK WORD600';
+    if (mode === 'word500') loginTitle.textContent = window.w500UseMastermind ? 'TIKTOK WORD PEGS 5' : 'TIKTOK WORD500';
+    else if (mode === 'word600') loginTitle.textContent = window.w500UseMastermind ? 'TIKTOK WORD PEGS 6' : 'TIKTOK WORD600';
     else if (mode === 'fillblanks') loginTitle.textContent = 'FILL THE BLANKS';
     else loginTitle.textContent = 'TIKTOK WORDLE';
   }
@@ -444,11 +441,18 @@ function applyGameModeUI() {
   if (wordLoopInfoContainer) wordLoopInfoContainer.style.display = 'none';
 
   if (currentGameMode === 'word500' || currentGameMode === 'word600') {
-    if (headerTitle) headerTitle.textContent = currentGameMode === 'word500' ? 'WORD500' : 'WORD600';
+    if (headerTitle) {
+      if (currentGameMode === 'word500') {
+        headerTitle.textContent = window.w500UseMastermind ? 'WORD PEGS 5' : 'WORD500';
+      } else {
+        headerTitle.textContent = window.w500UseMastermind ? 'WORD PEGS 6' : 'WORD600';
+      }
+    }
     if (hintContainer) hintContainer.style.display = 'none';
     if (bestGuessContainer) bestGuessContainer.style.display = 'none'; // replaced by sorted board
     if (switchBtn) {
-      switchBtn.textContent = currentGameMode === 'word500' ? '🔄 Switch to Word600' : '🔄 Switch to Word Loop';
+      const nextName = window.w500UseMastermind ? 'Word Pegs 6' : 'Word600';
+      switchBtn.textContent = currentGameMode === 'word500' ? `🔄 Switch to ${nextName}` : '🔄 Switch to Word Loop';
     }
   } else if (currentGameMode === 'wordloop') {
     if (headerTitle) headerTitle.textContent = 'WORD LOOP';
@@ -465,7 +469,8 @@ function applyGameModeUI() {
     if (headerTitle) headerTitle.textContent = 'WORDLE';
     if (hintContainer) hintContainer.style.display = '';
     if (bestGuessContainer) bestGuessContainer.style.display = 'none';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Word500';
+    const nextName = window.w500UseMastermind ? 'Word Pegs 5' : 'Word500';
+    if (switchBtn) switchBtn.textContent = `🔄 Switch to ${nextName}`;
   }
 }
 
@@ -965,7 +970,9 @@ function startNewRound() {
 
   console.log(`[Cheat] Target word is: ${currentWord}`);
   startInstructionRotation();
-  const gameName = currentGameMode === 'fillblanks' ? 'Fill Blanks' : (currentGameMode === 'word500' ? 'Word500' : (currentGameMode === 'word600' ? 'Word600' : (currentGameMode === 'wordloop' ? 'Word Loop' : 'Wordle')));
+  const getW500Name = () => window.w500UseMastermind ? 'Word Pegs 5' : 'Word500';
+  const getW600Name = () => window.w500UseMastermind ? 'Word Pegs 6' : 'Word600';
+  const gameName = currentGameMode === 'fillblanks' ? 'Fill Blanks' : (currentGameMode === 'word500' ? getW500Name() : (currentGameMode === 'word600' ? getW600Name() : (currentGameMode === 'wordloop' ? 'Word Loop' : 'Wordle')));
   showToast(`${gameName} Round ${round} Started! (${WORD_LENGTH} Letters)`, 2000);
   
   if (window.playHostAudio) playHostAudio('start');
@@ -1198,35 +1205,24 @@ function validateHardMode(guessWord) {
       const actual = getScore(past, currentWord);
       const simulated = getScore(past, guessWord);
       if (actual.c !== simulated.c || actual.p !== simulated.p) {
-        const simStatuses = getWordleFeedback(past, guessWord);
-        const gLetters = [];
-        const yLetters = [];
-        for(let i=0; i<past.length; i++) {
-          if (simStatuses[i] === 'correct') gLetters.push(past[i]);
-          else if (simStatuses[i] === 'present') yLetters.push(past[i]);
-        }
-        
+        // Pesan singkat agar mudah dibaca di live stream
         let reason = "";
-        const simTotal = simulated.c + simulated.p;
-        const actTotal = actual.c + actual.p;
-        const allL = [...gLetters, ...yLetters];
-        const simLetterText = (simTotal > 0) ? `(tebakanmu cuma bawa huruf [${allL.join(',')}])` : `(tebakanmu malah buang semua hurufnya)`;
+        const actC = actual.c, actP = actual.p;
+        const simC = simulated.c, simP = simulated.p;
 
-        if (simTotal < actTotal) {
-           reason = `Woy! Di '${past}' kan ada ${actTotal} huruf bener, kok malah dibuang? ${simLetterText}`;
-        } else if (simTotal > actTotal) {
-           reason = `Kebanyakan! Di '${past}' cuma dapet ${actTotal} huruf, kok tebakanmu maksa bawa lebih? (bawa huruf [${allL.join(',')}])`;
-        } else if (simulated.c > actual.c) {
-           const gText = gLetters.length > 0 ? `huruf [${gLetters.join(',')}]` : 'hurufnya';
-           reason = `Ngaco! Di '${past}' kan aslinya cuma dapet ${actual.c} Hijau, kok ${gText} malah ditaruh di tempat yg sama persis?`;
-        } else if (simulated.c < actual.c) {
-           reason = `Sayang banget! Di '${past}' udah ada ${actual.c} huruf Hijau yg letaknya pas, kok malah digeser/diganti? ${simLetterText}`;
+        if (simC + simP < actC + actP) {
+           reason = `Clue '${past}' ada ${actC}🟩${actP}🟨 — jumlah huruf cocok di tebakanmu kurang!`;
+        } else if (simC + simP > actC + actP) {
+           reason = `Clue '${past}' cuma ${actC}🟩${actP}🟨 — tebakanmu bawa terlalu banyak huruf dari kata ini!`;
+        } else if (simC !== actC) {
+           reason = `Clue '${past}' harusnya ${actC}🟩${actP}🟨 — letak/posisi huruf di tebakanmu salah!`;
         } else {
-           reason = `Kurang teliti! Susunan posisi tebakanmu (yg pakai huruf [${allL.join(',')}]) nggak masuk akal sama clue '${past}'.`;
+           reason = `Tidak cocok dengan clue '${past}' (${actC}🟩${actP}🟨)`;
         }
         return { 
           valid: false, 
-          msg: `❌ ${reason}` 
+          msg: `❌ ${reason}`,
+          conflictWord: past
         };
       }
     } else {
@@ -1249,7 +1245,7 @@ function validateHardMode(guessWord) {
         }
         for(let i=0; i<guessWord.length; i++) {
           if (completelyGray.has(guessWord[i])) {
-            return { valid: false, msg: `Huruf "${guessWord[i]}" (abu-abu) tidak boleh digunakan lagi` };
+            return { valid: false, msg: `Huruf "${guessWord[i]}" (abu-abu) tidak boleh digunakan lagi`, conflictWord: past };
           }
         }
       }
@@ -1258,7 +1254,7 @@ function validateHardMode(guessWord) {
       for(let i=0; i<past.length; i++) {
         if(statuses[i] === 'correct') {
           if(newG[i] !== past[i]) {
-            return { valid: false, msg: `Huruf ke-${i+1} harus "${past[i]}"` };
+            return { valid: false, msg: `Huruf ke-${i+1} harus "${past[i]}"`, conflictWord: past };
           }
           newG[i] = null;
         }
@@ -1268,7 +1264,7 @@ function validateHardMode(guessWord) {
       for(let i=0; i<past.length; i++) {
         if(statuses[i] === 'present') {
           if(!newG.includes(past[i])) {
-             return { valid: false, msg: `Harus mengandung huruf "${past[i]}"` };
+             return { valid: false, msg: `Harus mengandung huruf "${past[i]}"`, conflictWord: past };
           }
           newG[newG.indexOf(past[i])] = null;
         }
@@ -1890,10 +1886,14 @@ function processGuess(guessWord, userData) {
             if (window.playHostAudio) playHostAudio('win');
             setTimeout(() => {
               if (winOverlay) winOverlay.classList.remove('show');
+              board.classList.add('board-transitioning');
               setTimeout(() => {
                 round++;
                 startNewRound();
-              }, 200);
+                requestAnimationFrame(() => {
+                  board.classList.remove('board-transitioning');
+                });
+              }, 600);
             }, 10000);
           }, 1000);
         }
@@ -1960,14 +1960,17 @@ function processGuess(guessWord, userData) {
   }
 
   let hardModeMsg = "";
+
+  // Cek duplikat untuk semua mode (kecuali fillblanks)
+  if (isValidWord && guesses.includes(guessWord)) {
+    isValidWord = false;
+    if (lastLang === 'en') hardModeMsg = `Already guessed this round`;
+    else if (lastLang === 'mixed') hardModeMsg = `Sudah ditebak / Already guessed`;
+    else hardModeMsg = `Kata sudah ditebak di ronde ini`;
+  }
   
   // Word Loop logic
   if (currentGameMode === 'wordloop' && isValidWord) {
-    if (guesses.includes(guessWord)) {
-      isValidWord = false;
-      hardModeMsg = `Kata sudah digunakan di ronde ini!`;
-    }
-    
     if (isValidWord && guesses.length > 0) {
       const lastWord = guesses[guesses.length - 1];
       const requiredPrefix = lastWord.slice(-2);
@@ -2000,10 +2003,13 @@ function processGuess(guessWord, userData) {
     }
   }
 
+  let hardModeConflictWord = null;
+
   if (isValidWord && currentGameMode !== 'wordloop') {
     const hmCheck = validateHardMode(guessWord);
     if (!hmCheck.valid) {
       hardModeMsg = hmCheck.msg;
+      hardModeConflictWord = hmCheck.conflictWord || null;
       isValidWord = false; // Treat hard mode violation as invalid guess
     }
   }
@@ -2035,12 +2041,14 @@ function processGuess(guessWord, userData) {
   
   let invalidTooltipMsg = hardModeMsg;
   if (!isValidWord && !hardModeMsg) {
-    invalidTooltipMsg = "Kata tidak ada di kamus";
+    if (lastLang === 'en') invalidTooltipMsg = "Word not in dictionary";
+    else if (lastLang === 'mixed') invalidTooltipMsg = "Kata tidak ada di kamus / Not in dictionary";
+    else invalidTooltipMsg = "Kata tidak ada di kamus";
   }
 
   if (invalidTooltipMsg) {
     const tooltip = document.createElement('div');
-    tooltip.className = 'row-tooltip';
+    tooltip.className = 'row-tooltip' + (hardModeConflictWord ? ' clue-conflict-tooltip' : '');
     tooltip.textContent = invalidTooltipMsg;
     row.appendChild(tooltip);
   }
@@ -2139,7 +2147,8 @@ function processGuess(guessWord, userData) {
   // 3. Apply tile classes
   for (let i = 0; i < WORD_LENGTH; i++) {
     if (!isValidWord) {
-      tiles[i].classList.add('invalid');
+      // Beda warna: oranye untuk "tidak cocok clue", pink untuk "bukan kata"
+      tiles[i].classList.add(hardModeConflictWord ? 'clue-conflict' : 'invalid');
     } else if (isWord500) {
       // Word500: all tiles are blind (no color feedback)
       tiles[i].classList.add('blind');
@@ -2236,6 +2245,22 @@ function processGuess(guessWord, userData) {
       row.classList.add('is-invalid-row');
     }
   }
+
+  // Flash baris clue yang berkonflik (Word500/Wordle hard mode)
+  if (hardModeConflictWord && !isValidWord) {
+    const allRows = board.querySelectorAll('.board-row');
+    for (const boardRow of allRows) {
+      if (boardRow === row) continue; // Skip row invalid itu sendiri
+      const rowTiles = boardRow.querySelectorAll('.tile');
+      let rowWord = '';
+      rowTiles.forEach(t => rowWord += (t.textContent || ''));
+      if (rowWord === hardModeConflictWord) {
+        boardRow.classList.add('flash-conflict');
+        setTimeout(() => boardRow.classList.remove('flash-conflict'), 1500);
+        break;
+      }
+    }
+  }
   
   // Check win
   let isWin = false;
@@ -2278,11 +2303,20 @@ function processGuess(guessWord, userData) {
       if (window.playHostAudio) playHostAudio('win');
       
       setTimeout(() => {
+        // Fade out overlay smoothly
         winOverlay.classList.remove('show');
+        // Fade out board selama overlay masih terlihat
+        board.classList.add('board-transitioning');
+        
+        // Tunggu transisi overlay selesai (500ms), baru reset board
         setTimeout(() => {
           round++;
           startNewRound();
-        }, 200);
+          // Board sudah di-reset, tunggu 1 frame lalu fade-in board
+          requestAnimationFrame(() => {
+            board.classList.remove('board-transitioning');
+          });
+        }, 600);
       }, 10000);
     }, 2000);
   }
@@ -2514,6 +2548,25 @@ document.addEventListener('click', (e) => {
 
 // Mastermind Style Initialization
 window.w500UseMastermind = true;
+
+window.updateMastermindNames = function() {
+  const isMM = window.w500UseMastermind;
+  const nameW500 = document.getElementById('cardNameW500');
+  const descW500 = document.getElementById('cardDescW500');
+  const iconW500 = document.getElementById('cardIconW500');
+  const nameW600 = document.getElementById('cardNameW600');
+  const descW600 = document.getElementById('cardDescW600');
+  const iconW600 = document.getElementById('cardIconW600');
+
+  if (nameW500) nameW500.textContent = isMM ? 'WORD PEGS 5' : 'WORD500';
+  if (descW500) descW500.textContent = isMM ? 'Clue balok warna: berapa huruf hijau & kuning tanpa posisi pasti. Unlimited!' : 'Hanya dapat angka: berapa huruf benar & hampir benar. Unlimited!';
+  if (iconW500) iconW500.textContent = isMM ? '🧩' : '🔢';
+
+  if (nameW600) nameW600.textContent = isMM ? 'WORD PEGS 6' : 'WORD600';
+  if (descW600) descW600.textContent = isMM ? 'Sama seperti Word Pegs 5 tapi dengan tebakan 6 huruf.' : 'Sama seperti Word500 tapi dengan tebakan 6 huruf.';
+  if (iconW600) iconW600.textContent = isMM ? '🧩' : '🔠';
+};
+
 document.addEventListener('DOMContentLoaded', () => {
   try {
     const savedStyle = localStorage.getItem('w500_mastermind');
@@ -2522,12 +2575,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const toggle = document.getElementById('w500StyleToggle');
     if (toggle) toggle.checked = window.w500UseMastermind;
+    if (window.updateMastermindNames) window.updateMastermindNames();
   } catch(e) {}
 });
 
 window.toggleW500Style = function(checked) {
   window.w500UseMastermind = checked;
   localStorage.setItem('w500_mastermind', checked);
+  if (window.updateMastermindNames) window.updateMastermindNames();
+  if (typeof applyGameModeUI === 'function') applyGameModeUI();
   updateBestGuessUI();
   if (currentGameMode === 'word500' || currentGameMode === 'word600') {
     renderSortedW500Board();
@@ -2686,6 +2742,11 @@ window.testTTS = function() {
     if (selectedVoice) utterance.voice = selectedVoice;
   }
   
+  // Duck musik saat test TTS
+  utterance.onstart = function() { duckMusicVolume(); };
+  utterance.onend = function() { restoreMusicVolume(); };
+  utterance.onerror = function() { restoreMusicVolume(); };
+  
   window.speechSynthesis.cancel(); // Stop any currently playing speech
   window.speechSynthesis.speak(utterance);
 };
@@ -2718,6 +2779,12 @@ function readTTS(nickname, comment, followRole, isFollower) {
       const selectedVoice = availableVoices.find(v => v.voiceURI === ttsSettings.voiceURI);
       if (selectedVoice) utterance.voice = selectedVoice;
     }
+    
+    // Duck musik saat TTS bicara
+    utterance.onstart = function() { duckMusicVolume(); };
+    utterance.onend = function() { restoreMusicVolume(); };
+    utterance.onerror = function() { restoreMusicVolume(); };
+    
     window.speechSynthesis.speak(utterance);
   }
 }
@@ -2744,19 +2811,48 @@ const sfxAudioFiles = {
 };
 
 let currentHostAudio = null;
+let _musicDucked = false;
+const DUCK_VOLUME_RATIO = 0.2; // Musik turun ke 20% saat host audio bermain
+
+// ─── Audio Ducking: turunkan volume YouTube saat host bicara ───
+function duckMusicVolume() {
+  if (_musicDucked) return;
+  _musicDucked = true;
+  try {
+    if (ytPlayer && ytPlayer.setVolume && isMusicPlaying) {
+      const duckedVol = Math.round(musicSettings.volume * DUCK_VOLUME_RATIO);
+      ytPlayer.setVolume(duckedVol);
+      console.log('[Audio] Music ducked to', duckedVol + '%');
+    }
+  } catch(e) { console.warn('[Audio] Duck error', e); }
+}
+
+function restoreMusicVolume() {
+  if (!_musicDucked) return;
+  _musicDucked = false;
+  try {
+    if (ytPlayer && ytPlayer.setVolume) {
+      ytPlayer.setVolume(musicSettings.volume);
+      console.log('[Audio] Music restored to', musicSettings.volume + '%');
+    }
+  } catch(e) { console.warn('[Audio] Restore error', e); }
+}
 
 window.playHostAudio = function(type) {
   if (!hostAudioSettings.enabled) return;
   
-  // Play SFX (Backsound) if exists for this type
+  // Play SFX (Backsound) if exists for this type — SFX berjalan independen dari host audio
+  // SFX diputar dengan delay 300ms agar suara host terdengar duluan dan tidak tenggelam
   if (typeof sfxAudioFiles !== 'undefined' && sfxAudioFiles[type]) {
     const sfxFiles = sfxAudioFiles[type];
     if (sfxFiles && sfxFiles.length > 0) {
       const sfxFile = sfxFiles[Math.floor(Math.random() * sfxFiles.length)];
-      const sfxAudio = new Audio(sfxFile);
-      // Volume SFX dibuat sedikit lebih pelan (50% dari volume host) agar suara host tetap jelas
-      sfxAudio.volume = (hostAudioSettings.volume / 100) * 0.5;
-      sfxAudio.play().catch(e => console.log('SFX play blocked', e));
+      setTimeout(() => {
+        const sfxAudio = new Audio(sfxFile);
+        // Volume SFX 25% dari volume host — cukup terdengar tapi tidak mengalahkan suara host
+        sfxAudio.volume = (hostAudioSettings.volume / 100) * 0.25;
+        sfxAudio.play().catch(e => console.log('SFX play blocked', e));
+      }, 300);
     }
   }
 
@@ -2770,7 +2866,8 @@ window.playHostAudio = function(type) {
       currentHostAudio.currentTime = 0;
     }
   } else {
-    // If minor event (close, interaction), and audio is already playing, ignore new request to prevent overlap
+    // If minor event (close, interaction), and HOST audio is already playing, skip
+    // Note: hanya cek currentHostAudio, bukan SFX — supaya SFX tidak menghalangi host
     if (currentHostAudio && !currentHostAudio.paused) {
       return;
     }
@@ -2779,7 +2876,21 @@ window.playHostAudio = function(type) {
   const file = files[Math.floor(Math.random() * files.length)];
   currentHostAudio = new Audio(file);
   currentHostAudio.volume = hostAudioSettings.volume / 100;
-  currentHostAudio.play().catch(e => console.log('Host audio play blocked', e));
+  
+  // Duck musik YouTube selama host audio bermain
+  duckMusicVolume();
+  
+  currentHostAudio.onended = function() {
+    restoreMusicVolume();
+  };
+  currentHostAudio.onerror = function() {
+    restoreMusicVolume();
+  };
+  
+  currentHostAudio.play().catch(e => {
+    console.log('Host audio play blocked', e);
+    restoreMusicVolume(); // Restore jika play gagal
+  });
 };
 
 window.testHostAudio = function() {
@@ -2788,14 +2899,16 @@ window.testHostAudio = function() {
   
   const vol = (window._tempHostAudioVolume !== undefined && window._tempHostAudioVolume !== null) ? window._tempHostAudioVolume : hostAudioSettings.volume;
 
-  // Test SFX if exists
+  // Test SFX if exists — same volume and delay as playHostAudio
   if (typeof sfxAudioFiles !== 'undefined' && sfxAudioFiles[randomType]) {
     const sfxFiles = sfxAudioFiles[randomType];
     if (sfxFiles && sfxFiles.length > 0) {
       const sfxFile = sfxFiles[Math.floor(Math.random() * sfxFiles.length)];
-      const sfxAudio = new Audio(sfxFile);
-      sfxAudio.volume = (vol / 100) * 0.5;
-      sfxAudio.play().catch(e => console.log('SFX play blocked', e));
+      setTimeout(() => {
+        const sfxAudio = new Audio(sfxFile);
+        sfxAudio.volume = (vol / 100) * 0.25;
+        sfxAudio.play().catch(e => console.log('SFX play blocked', e));
+      }, 300);
     }
   }
 
@@ -2810,13 +2923,81 @@ window.testHostAudio = function() {
   currentHostAudio = new Audio(file);
   currentHostAudio.volume = vol / 100;
   
-  currentHostAudio.play().catch(e => console.log('Test host audio play blocked', e));
+  duckMusicVolume();
+  currentHostAudio.onended = function() { restoreMusicVolume(); };
+  currentHostAudio.onerror = function() { restoreMusicVolume(); };
+  
+  currentHostAudio.play().catch(e => {
+    console.log('Test host audio play blocked', e);
+    restoreMusicVolume();
+  });
 };
 
 window.updateHostAudioVolumeUI = function(val) {
   document.getElementById('hostAudioVolumeLabel').textContent = `${val}%`;
   window._tempHostAudioVolume = parseInt(val) || 100;
 };
+
+// ─── Audio Context Unlock ───
+// Browser memblokir autoplay audio sampai user interaksi pertama kali (klik/tap/keypress).
+// Ini penting untuk OBS Browser Source & tab baru agar audio bisa keluar ke live.
+let _audioUnlocked = false;
+function unlockAudioContext() {
+  if (_audioUnlocked) return;
+  _audioUnlocked = true;
+  
+  // Resume AudioContext jika ada (untuk Web Audio API)
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (AudioCtx) {
+      const ctx = new AudioCtx();
+      ctx.resume().then(() => {
+        console.log('[Audio] AudioContext unlocked');
+        ctx.close();
+      });
+    }
+  } catch(e) {}
+  
+  // Play silent audio untuk unlock HTML5 Audio
+  try {
+    const silentAudio = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=');
+    silentAudio.volume = 0.01;
+    silentAudio.play().then(() => {
+      silentAudio.pause();
+      console.log('[Audio] HTML5 Audio unlocked');
+    }).catch(() => {});
+  } catch(e) {}
+  
+  // Force YouTube player unmute
+  try {
+    if (ytPlayer && ytPlayer.unMute) {
+      ytPlayer.unMute();
+      ytPlayer.setVolume(musicSettings.volume);
+      console.log('[Audio] YouTube player unmuted');
+    }
+  } catch(e) {}
+  
+  // Resume speechSynthesis
+  try {
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      console.log('[Audio] SpeechSynthesis ready');
+    }
+  } catch(e) {}
+  
+  console.log('[Audio] ✅ All audio channels unlocked');
+}
+
+// Intercept first user gesture to unlock all audio
+['click', 'touchstart', 'keydown'].forEach(event => {
+  document.addEventListener(event, unlockAudioContext, { once: false, capture: true });
+});
+// Also try to unlock after a short delay (for auto-started pages)
+setTimeout(() => {
+  if (!_audioUnlocked) {
+    console.log('[Audio] ⚠️ Audio belum di-unlock — butuh interaksi user (klik/tap). Jika di OBS, aktifkan "Interact" dulu.');
+  }
+}, 3000);
 
 // (Removed originalSaveTTS override as it was merged above)
 

@@ -754,9 +754,14 @@ header {
 
 .instruction {
   text-align: center;
-  margin: 0 0 15px 0;
+  margin: 0 0 12px 0;
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
 }
 
 
@@ -821,12 +826,15 @@ header {
 /* Board */
 .board-container {
   display: flex;
-  justify-content: center;
-  flex: 1;
-  align-items: flex-start;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  flex: 1 1 auto;
   margin: 0;
   min-height: 0;
-  overflow: visible;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-top: 4px;
 }
 
 #board {
@@ -1544,3 +1552,182 @@ header {
     flex: 0 0 25vh; /* Reserving bottom 25% of the screen for TikTok comments/UI */
   }
 }
+
+/* =========================================
+   WORD TANGO STYLES
+   ========================================= */
+
+.board-container:has(.tango-board) {
+  flex: 1 1 auto !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+}
+
+.tango-board {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  width: 100% !important;
+  max-width: 440px !important;
+  margin: 0 auto !important;
+  padding: 10px 0 !important;
+  /* Reset grid properties inherited from #board */
+  grid-template-rows: none !important;
+  grid-template-columns: none !important;
+  height: auto !important;
+}
+
+.tango-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 auto !important;
+  width: fit-content !important;
+  position: relative !important;
+}
+
+.tango-tiles {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Square tile inside tango board */
+.tango-board .tile {
+  width: calc(clamp(42px, 11vw, 54px) * var(--board-scale, 1)) !important;
+  height: calc(clamp(42px, 11vw, 54px) * var(--board-scale, 1)) !important;
+  aspect-ratio: 1/1 !important;
+  border-radius: 8px !important;
+  font-size: calc(clamp(1.7rem, 5.5vw, 2.1rem) * var(--board-scale, 1)) !important;
+  line-height: 1 !important;
+  text-transform: uppercase !important;
+  font-weight: 800 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  flex: 0 0 auto !important;
+  margin: 0 !important;
+}
+
+/* Circular guesser avatar absolute to the left of the tiles pyramid */
+.tango-board .guesser-avatar {
+  position: absolute !important;
+  right: 100% !important;
+  top: 50% !important;
+  width: calc(clamp(42px, 11vw, 54px) * var(--board-scale, 1)) !important;
+  height: calc(clamp(42px, 11vw, 54px) * var(--board-scale, 1)) !important;
+  aspect-ratio: 1/1 !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4) !important;
+  border: 2.5px solid #facc15 !important;
+  margin: 0 12px 0 0 !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  transform: translateY(-50%) scale(0.8) !important;
+}
+
+.tango-board .guesser-avatar.show {
+  visibility: visible !important;
+  opacity: 1 !important;
+  transform: translateY(-50%) scale(1) !important;
+}
+
+/* Green revealed tile (matching Wordle .tile.correct exactly) */
+.tile.tango-revealed {
+  background: var(--correct) !important;
+  border: 2px solid var(--correct) !important;
+  color: #ffffff !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 800 !important;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* White empty slot tile */
+.tile.tango-slot {
+  background: #ffffff !important;
+  border: 2px solid #f0f0f0 !important;
+  color: transparent !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06), 0 3px 8px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Solved row (matching Wordle .tile.correct exactly) */
+.tango-row.solved .tile.tango-slot {
+  background: var(--correct) !important;
+  border: 2px solid var(--correct) !important;
+  color: #ffffff !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 800 !important;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Letter Pool */
+.tango-pool-container {
+  width: 100% !important;
+  max-width: 440px !important;
+  margin: 16px auto 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: 0 !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+.tango-pool-title {
+  display: none !important;
+}
+
+.tango-pool-chips {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+
+/* Blue square pool chips */
+.tango-chip {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: calc(clamp(42px, 11vw, 52px) * var(--board-scale, 1)) !important;
+  height: calc(clamp(42px, 11vw, 52px) * var(--board-scale, 1)) !important;
+  border-radius: 8px !important;
+  background: #3b82f6 !important;
+  border: 2px solid #60a5fa !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-size: calc(clamp(1.6rem, 5vw, 1.9rem) * var(--board-scale, 1)) !important;
+  line-height: 1 !important;
+  text-transform: uppercase !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  cursor: default !important;
+  flex-shrink: 0 !important;
+}
+
+.tango-chip.used {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 2px solid rgba(255, 255, 255, 0.15) !important;
+  color: rgba(255, 255, 255, 0.2) !important;
+  transform: scale(0.88) !important;
+  box-shadow: none !important;
+}
+

@@ -10,6 +10,7 @@ let displayRowsWord600 = parseInt(localStorage.getItem('displayRows_word600')) |
 
 function getDisplayRows() {
   if (currentGameMode === 'fillblanks') return 6;
+  if (currentGameMode === 'wordtango') return 4;
   if (currentGameMode === 'word500') return displayRowsWord500;
   if (currentGameMode === 'word600') return displayRowsWord600;
   if (currentGameMode === 'wordloop') return 6;
@@ -64,6 +65,7 @@ function updateBoardScaleUI() {
   }
   const finalWidth = Math.round(baseWidth * (boardScale / 100));
   document.documentElement.style.setProperty('--board-max-width', finalWidth + 'px');
+  document.documentElement.style.setProperty('--board-scale', (boardScale / 100));
 }
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -106,6 +108,8 @@ let bestGuess = null;
 let word500History = []; // { word, c, p, a, score, userData }
 let word500PendingInvalidRow = null; // baris invalid yang sedang tampil di board (Word500/600)
 let fillBlanksTargets = [];
+let wordTangoTargets = []; // { word, length, missingIndices, solved, solver, points }
+let wordTangoPool = []; // { id, char, used }
 let ytPlayer = null;
 let musicQueue = [];
 let isMusicPlaying = false;
@@ -133,6 +137,7 @@ function getPtsPrefix() {
   if (currentGameMode === 'word600') return 'pts_w600_';
   if (currentGameMode === 'wordloop') return 'pts_wloop_';
   if (currentGameMode === 'fillblanks') return 'pts_fill_';
+  if (currentGameMode === 'wordtango') return 'pts_tango_';
   return 'pts_';
 }
 
@@ -143,7 +148,7 @@ function initWeeklyLeaderboard() {
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key && key.startsWith(prefix)) {
-      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_'))) continue;
+      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_'))) continue;
       const username = key.substring(prefix.length);
       const pts = parseInt(localStorage.getItem(key)) || 0;
       if (!playerPoints[username]) {
@@ -412,6 +417,7 @@ function selectGame(mode) {
     if (mode === 'word500') loginTitle.textContent = window.w500UseMastermind ? 'TIKTOK WORD PEGS 5' : 'TIKTOK WORD500';
     else if (mode === 'word600') loginTitle.textContent = window.w500UseMastermind ? 'TIKTOK WORD PEGS 6' : 'TIKTOK WORD600';
     else if (mode === 'fillblanks') loginTitle.textContent = 'FILL THE BLANKS';
+    else if (mode === 'wordtango') loginTitle.textContent = 'WORD TANGO';
     else loginTitle.textContent = 'TIKTOK WORDLE';
   }
 
@@ -426,7 +432,7 @@ function switchGameMode(e) {
   const dropdown = document.getElementById('settingsDropdown');
   if (dropdown) dropdown.classList.remove('open');
 
-  if (!isConnectedToTikTok) {
+  if (!isConnectedToTikTok && gameContainer.style.display === 'none') {
     currentGameMode = '';
     try { sessionStorage.removeItem('wordle_gameMode'); } catch(e) {}
     loginOverlay.style.display = 'none';
@@ -440,9 +446,11 @@ function switchGameMode(e) {
   else if (currentGameMode === 'word500') currentGameMode = 'word600';
   else if (currentGameMode === 'word600') currentGameMode = 'wordloop';
   else if (currentGameMode === 'wordloop') currentGameMode = 'fillblanks';
+  else if (currentGameMode === 'fillblanks') currentGameMode = 'wordtango';
   else currentGameMode = 'wordle';
   try { sessionStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
 
+  applyGameModeUI();
   initWeeklyLeaderboard();
   startNewRound();
 }
@@ -453,8 +461,12 @@ function applyGameModeUI() {
   const bestGuessContainer = document.getElementById('bestGuessContainer');
   const switchBtn = document.getElementById('switchGameBtn');
   const wordLoopInfoContainer = document.getElementById('wordLoopInfoContainer');
+  const wordTangoInfoContainer = document.getElementById('wordTangoInfoContainer');
+  const tangoPoolContainer = document.getElementById('tangoPoolContainer');
 
   if (wordLoopInfoContainer) wordLoopInfoContainer.style.display = 'none';
+  if (wordTangoInfoContainer) wordTangoInfoContainer.style.display = 'none';
+  if (tangoPoolContainer) tangoPoolContainer.style.display = 'none';
 
   if (currentGameMode === 'word500' || currentGameMode === 'word600') {
     if (headerTitle) {
@@ -480,6 +492,13 @@ function applyGameModeUI() {
     if (headerTitle) headerTitle.textContent = 'FILL THE BLANKS';
     if (hintContainer) hintContainer.style.display = 'none';
     if (bestGuessContainer) bestGuessContainer.style.display = 'none';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Word Tango';
+  } else if (currentGameMode === 'wordtango') {
+    if (headerTitle) headerTitle.textContent = 'WORD TANGO';
+    if (hintContainer) hintContainer.style.display = 'none';
+    if (bestGuessContainer) bestGuessContainer.style.display = 'none';
+    // wordTangoInfoContainer stays hidden — header already shows mode name
+    if (tangoPoolContainer) tangoPoolContainer.style.display = 'flex';
     if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
   } else {
     if (headerTitle) headerTitle.textContent = 'WORDLE';
@@ -488,6 +507,7 @@ function applyGameModeUI() {
     const nextName = window.w500UseMastermind ? 'Word Pegs 5' : 'Word500';
     if (switchBtn) switchBtn.textContent = `🔄 Switch to ${nextName}`;
   }
+  updateBoardScaleUI();
 }
 
 function updateBestGuessUI() {
@@ -654,14 +674,99 @@ function renderWord500Board(revealAllColors = false) {
   for (let i = toShow.length; i < DISPLAY_ROWS - 1; i++) board.appendChild(createEmptyW500Row(i));
 }
 
+// Render Word Tango Letter Pool in a 2-row pyramid, hiding used letters
+function renderTangoPool() {
+  const chipsDiv = document.getElementById('tangoPoolChips');
+  if (!chipsDiv) return;
+  chipsDiv.innerHTML = '';
+
+  const available = wordTangoPool.filter(item => !item.used);
+  if (available.length === 0) return;
+
+  const N = available.length;
+  let topCount;
+  if (N >= 8) topCount = 3;
+  else if (N === 7) topCount = 3;
+  else if (N === 6) topCount = 3;
+  else if (N === 5) topCount = 2;
+  else if (N === 4) topCount = 2;
+  else if (N === 3) topCount = 1;
+  else topCount = N;
+  
+  const topRow = available.slice(0, topCount);
+  const bottomRow = available.slice(topCount);
+
+  const makeRowEl = (chips) => {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'tango-pool-row';
+    rowEl.style.display = 'flex';
+    rowEl.style.justifyContent = 'center';
+    rowEl.style.gap = '8px';
+    rowEl.style.marginBottom = '8px';
+    chips.forEach(item => {
+      const chip = document.createElement('div');
+      chip.className = 'tango-chip';
+      chip.id = `tango-chip-${item.id}`;
+      chip.textContent = item.char;
+      rowEl.appendChild(chip);
+    });
+    return rowEl;
+  };
+
+  if (topRow.length > 0) chipsDiv.appendChild(makeRowEl(topRow));
+  if (bottomRow.length > 0) {
+    const bEl = makeRowEl(bottomRow);
+    bEl.style.marginBottom = '0';
+    chipsDiv.appendChild(bEl);
+  }
+}
+
 // Initialize Board
 function initBoard() {
   board.innerHTML = '';
+  board.className = '';
 
   if (currentGameMode === 'word500' || currentGameMode === 'word600') {
     board.classList.add('w500-board');
-  } else {
-    board.classList.remove('w500-board');
+  } else if (currentGameMode === 'wordtango') {
+    board.classList.add('tango-board');
+    for (let i = 0; i < 4; i++) {
+      const target = wordTangoTargets[i];
+      if (!target) continue;
+      const row = document.createElement('div');
+      row.className = 'tango-row';
+      row.id = `tango-row-${i}`;
+
+      // Left Solver Avatar (reserved slot, hidden via CSS until solved)
+      const avatar = document.createElement('img');
+      avatar.className = 'guesser-avatar tango-avatar';
+      avatar.id = `avatar-tango-${i}`;
+      row.appendChild(avatar);
+
+      // Center Tiles
+      const tilesDiv = document.createElement('div');
+      tilesDiv.className = 'tango-tiles';
+      for (let j = 0; j < target.length; j++) {
+        const tile = document.createElement('div');
+        tile.className = 'tile';
+        tile.id = `tango-tile-${i}-${j}`;
+        if (target.missingIndices.includes(j)) {
+          tile.classList.add('tango-slot');
+          tile.textContent = '';
+        } else {
+          tile.classList.add('tango-revealed');
+          tile.textContent = target.word[j];
+        }
+        tilesDiv.appendChild(tile);
+      }
+      row.appendChild(tilesDiv);
+
+      board.appendChild(row);
+    }
+
+    // Render Letter Pool Chips in 2-row pyramid
+    renderTangoPool();
+    return;
   }
 
   const rows = getDisplayRows();
@@ -736,22 +841,27 @@ let currentInstructionIndex = 0;
 
 function getInstructionText(index) {
   if (index === 0) {
+    if (currentGameMode === 'wordtango') {
+      if (lastLang === 'id') return `Ketik kata dari Letter Pool di komentar!`;
+      if (lastLang === 'mixed') return `Ketik kata dari Letter Pool! / Type words from Letter Pool!`;
+      return `Type complete words from the Letter Pool in chat!`;
+    }
     if (currentGameMode === 'fillblanks') {
       if (lastLang === 'id') return `Tebak kata ${WORD_LENGTH} huruf untuk mengisi baris kosong!`;
       if (lastLang === 'mixed') return `Tebak kata untuk isi baris kosong! / Guess to fill the blanks!`;
       return `Guess a ${WORD_LENGTH}-letter word to fill the blanks!`;
     }
-    if (lastLang === 'id') return `Ketik kata ${WORD_LENGTH} huruf di chat untuk menebak!`;
-    if (lastLang === 'mixed') return `Ketik kata ${WORD_LENGTH} huruf di chat! / Type a ${WORD_LENGTH}-letter word!`;
+    if (lastLang === 'id') return `Ketik kata ${WORD_LENGTH} huruf di komentar untuk menebak!`;
+    if (lastLang === 'mixed') return `Ketik kata ${WORD_LENGTH} huruf di komentar! / Type a ${WORD_LENGTH}-letter word!`;
     return `Type a ${WORD_LENGTH}-letter word in chat to guess!`;
   } else if (index === 1) {
     if (lastLang === 'id') return `Ketik !myrank untuk cek rank & poin kamu!`;
     if (lastLang === 'mixed') return `Ketik !myrank untuk cek poin! / Type !myrank to check points!`;
     return `Type !myrank to check your rank and points!`;
   } else if (index === 2) {
-    if (lastLang === 'id') return `Ketik !play <b>judul lagu</b> untuk request musik 🎵`;
-    if (lastLang === 'mixed') return `Ketik !play <b>judul</b> untuk musik! / Type !play <b>title</b> for music!`;
-    return `Type !play <b>song title</b> in chat to request music 🎵`;
+    if (lastLang === 'id') return `Ketik !play&nbsp;<b>judul lagu</b>&nbsp;untuk request musik 🎵`;
+    if (lastLang === 'mixed') return `Ketik !play&nbsp;<b>judul</b>&nbsp;untuk musik! / Type !play&nbsp;<b>title</b>&nbsp;for music!`;
+    return `Type !play&nbsp;<b>song title</b>&nbsp;in chat to request music 🎵`;
   } else {
     if (lastLang === 'id') return `Jangan lupa tap-tap layar, follow & share live ini ya! ❤️`;
     if (lastLang === 'mixed') return `Jangan lupa tap layar & follow! / Tap the screen & follow! ❤️`;
@@ -869,6 +979,7 @@ function handleMyRank(userData) {
 
 // Start Game
 function startNewRound() {
+  applyGameModeUI();
   hasPlayedCloseAudio = false;
   // Word500 always uses 5 letters; Word600 always uses 6 letters; Wordle/WordLoop randomizes 5, 6, or 7
   if (currentGameMode === 'word500') {
@@ -977,10 +1088,55 @@ function startNewRound() {
     }
   }
 
+  if (currentGameMode === 'wordtango') {
+    wordTangoTargets = [];
+    wordTangoPool = [];
+    const tangoPatterns = [
+      [4, 4, 5, 6],
+      [4, 5, 5, 6],
+      [4, 4, 5, 5],
+      [4, 5, 6, 6],
+      [4, 4, 6, 6],
+      [4, 5, 5, 5],
+      [3, 4, 5, 6],
+      [3, 5, 5, 6]
+    ];
+    const tangoLengths = tangoPatterns[Math.floor(Math.random() * tangoPatterns.length)];
+    let poolIdCounter = 0;
+
+    for (let i = 0; i < 4; i++) {
+      const len = tangoLengths[i];
+      const list = allTargetWords[len] || [];
+      const chosenWord = list.length > 0
+        ? list[Math.floor(Math.random() * list.length)]
+        : (len === 3 ? "APA" : (len === 4 ? "KATA" : (len === 5 ? "RUMAH" : "MENARA")));
+
+      const missingIndices = [];
+      const numMissing = len === 3 ? 2 : (len === 4 ? 2 : (len === 5 ? 2 : 3));
+      const allIdx = Array.from({ length: len }, (_, k) => k);
+      shuffleArray(allIdx);
+      for (let m = 0; m < numMissing; m++) {
+        const idx = allIdx[m];
+        missingIndices.push(idx);
+        wordTangoPool.push({ id: poolIdCounter++, char: chosenWord[idx], used: false });
+      }
+      missingIndices.sort((a, b) => a - b);
+      wordTangoTargets.push({
+        word: chosenWord,
+        length: len,
+        missingIndices,
+        solved: false,
+        solver: null,
+        points: len * 3
+      });
+    }
+    shuffleArray(wordTangoPool);
+  }
+
   // Apply mode-specific UI
   applyGameModeUI();
   initBoard();
-  if (currentGameMode !== 'word500' && currentGameMode !== 'word600' && currentGameMode !== 'fillblanks') {
+  if (currentGameMode !== 'word500' && currentGameMode !== 'word600' && currentGameMode !== 'fillblanks' && currentGameMode !== 'wordtango') {
     initHintBoard();
   }
   updateBestGuessUI();
@@ -989,8 +1145,8 @@ function startNewRound() {
   startInstructionRotation();
   const getW500Name = () => window.w500UseMastermind ? 'Word Pegs 5' : 'Word500';
   const getW600Name = () => window.w500UseMastermind ? 'Word Pegs 6' : 'Word600';
-  const gameName = currentGameMode === 'fillblanks' ? 'Fill Blanks' : (currentGameMode === 'word500' ? getW500Name() : (currentGameMode === 'word600' ? getW600Name() : (currentGameMode === 'wordloop' ? 'Word Loop' : 'Wordle')));
-  showToast(`${gameName} Round ${round} Started! (${WORD_LENGTH} Letters)`, 2000);
+  const gameName = currentGameMode === 'wordtango' ? 'Word Tango' : (currentGameMode === 'fillblanks' ? 'Fill Blanks' : (currentGameMode === 'word500' ? getW500Name() : (currentGameMode === 'word600' ? getW600Name() : (currentGameMode === 'wordloop' ? 'Word Loop' : 'Wordle'))));
+  showToast(`${gameName} Round ${round} Started!`, 2000);
   
   if (window.playHostAudio) playHostAudio('start');
   
@@ -1691,7 +1847,12 @@ function handleChatGuess(data) {
   // Hapus semua karakter selain huruf A-Z untuk bypass filter TikTok
   const msg = data.comment.toUpperCase().replace(/[^A-Z]/g, '');
   
-  if (msg.length === WORD_LENGTH) {
+  let isAllowedLength = (msg.length === WORD_LENGTH);
+  if (currentGameMode === 'wordtango') {
+    isAllowedLength = (msg.length >= 3 && msg.length <= 6);
+  }
+
+  if (isAllowedLength) {
     // Tolak jika user sudah pernah kirim kata yang sama di ronde ini
     const userId = data.uniqueId || data.nickname || 'anon';
     const dedupKey = `${userId}:${msg}`;
@@ -1856,6 +2017,114 @@ function processGuess(guessWord, userData) {
     }
   }
 
+  if (currentGameMode === 'wordtango') {
+    let matchedIndex = -1;
+    for (let i = 0; i < 4; i++) {
+      const t = wordTangoTargets[i];
+      if (t && !t.solved && t.word === guessWord) {
+        matchedIndex = i;
+        break;
+      }
+    }
+    if (matchedIndex === -1) return;
+
+    const target = wordTangoTargets[matchedIndex];
+    target.solved = true;
+    target.solver = userData;
+    const pts = target.points || 15;
+    addPoints(userData, pts);
+
+    const row = document.getElementById(`tango-row-${matchedIndex}`);
+    if (row) {
+      row.classList.add('solved');
+      const avatar = row.querySelector('.guesser-avatar');
+      if (avatar && userData && userData.profilePictureUrl) {
+        avatar.src = userData.profilePictureUrl;
+        avatar.style.display = '';
+        avatar.classList.add('show');
+        showFloatingPoints(pts, avatar.id);
+      }
+
+      const tiles = row.querySelectorAll('.tile');
+      for (let j = 0; j < target.length; j++) {
+        const tile = tiles[j];
+        if (tile) {
+          tile.textContent = target.word[j];
+          tile.className = 'tile correct';
+          tile.style.transform = 'scale(1.15)';
+          setTimeout(() => tile.style.transform = '', 200);
+        }
+      }
+    }
+
+    for (const idx of target.missingIndices) {
+      const letter = target.word[idx];
+      const poolItem = wordTangoPool.find(item => !item.used && item.char === letter);
+      if (poolItem) {
+        poolItem.used = true;
+      }
+    }
+    renderTangoPool();
+
+    if (window.playHostAudio) playHostAudio('correct');
+
+    if (wordTangoTargets.every(t => t.solved)) {
+      isGameOver = true;
+
+      const solverScores = {};
+      wordTangoTargets.forEach(t => {
+        if (t.solver && t.solver.uniqueId) {
+          if (!solverScores[t.solver.uniqueId]) {
+            solverScores[t.solver.uniqueId] = { score: 0, words: 0, data: t.solver };
+          }
+          solverScores[t.solver.uniqueId].score += (t.points || 15);
+          solverScores[t.solver.uniqueId].words++;
+        }
+      });
+
+      let maxScore = 0;
+      Object.values(solverScores).forEach(s => {
+        if (s.score > maxScore) maxScore = s.score;
+      });
+
+      let mvpData = userData;
+      const mvp = Object.values(solverScores).find(s => s.score === maxScore);
+      if (mvp) mvpData = mvp.data;
+
+      setTimeout(() => {
+        const winOverlay = document.getElementById('winOverlay');
+        const winAvatar = document.getElementById('winAvatar');
+        if (winAvatar) winAvatar.src = (mvpData && mvpData.profilePictureUrl) ? mvpData.profilePictureUrl : 'assets/bg_nature.png';
+        const winName = document.getElementById('winName');
+        if (winName) winName.textContent = (mvpData && mvpData.nickname) ? mvpData.nickname : 'MVP';
+        const winPts = document.getElementById('winPts');
+        if (winPts) winPts.innerHTML = `🪙 MVP (${maxScore} PTS)`;
+        const winWord = document.getElementById('winWord');
+        if (winWord) {
+          const solvedWords = wordTangoTargets.map(t => t.word).join(', ');
+          winWord.textContent = solvedWords;
+          if (solvedWords.length > 12) {
+            winWord.style.fontSize = 'clamp(18px, 4vw, 24px)';
+            winWord.style.letterSpacing = '2px';
+          } else {
+            winWord.style.fontSize = '';
+            winWord.style.letterSpacing = '';
+          }
+        }
+        if (winOverlay) winOverlay.classList.add('show');
+
+        if (window.playHostAudio) playHostAudio('win');
+
+        setTimeout(() => {
+          if (winOverlay) winOverlay.classList.remove('show');
+          round++;
+          startNewRound();
+        }, 5000);
+      }, 1000);
+    }
+    return;
+  }
+
   let isValidWord = VALID_WORDS.includes(guessWord);
 
   if (currentGameMode === 'fillblanks') {
@@ -1964,7 +2233,11 @@ function processGuess(guessWord, userData) {
             const winPts = document.getElementById('winPts');
             if (winPts) winPts.innerHTML = `🪙 MVP (${maxScore} PTS)`;
             const winWord = document.getElementById('winWord');
-            if (winWord) winWord.textContent = "SEMUA KATA TERTEBAK!";
+            if (winWord) {
+              winWord.textContent = "SEMUA KATA TERTEBAK!";
+              winWord.style.fontSize = 'clamp(18px, 4vw, 24px)';
+              winWord.style.letterSpacing = '2px';
+            }
             if (winOverlay) winOverlay.classList.add('show');
             if (window.playHostAudio) playHostAudio('win');
             setTimeout(() => {
@@ -2373,7 +2646,12 @@ function processGuess(guessWord, userData) {
     document.getElementById('winAvatar').src = avatarUrl;
     document.getElementById('winName').textContent = winnerName;
     document.getElementById('winPts').innerHTML = `🪙 +${winPts} Bonus`;
-    document.getElementById('winWord').textContent = currentGameMode === 'wordloop' ? "LOOP COMPLETED!" : currentWord;
+    const winWordEl = document.getElementById('winWord');
+    if (winWordEl) {
+      winWordEl.textContent = currentGameMode === 'wordloop' ? "LOOP COMPLETED!" : currentWord;
+      winWordEl.style.fontSize = '';
+      winWordEl.style.letterSpacing = '';
+    }
     
     // Jika di mode Word500/Word600, reveal seluruh grid sebelum overlay muncul
     if (currentGameMode === 'word500' || currentGameMode === 'word600') {

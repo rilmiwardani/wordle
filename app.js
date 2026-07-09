@@ -3330,6 +3330,16 @@ window.updateHostAudioVolumeUI = function(val) {
 // Ini penting untuk OBS Browser Source & tab baru agar audio bisa keluar ke live.
 let _audioUnlocked = false;
 function unlockAudioContext() {
+  // YouTube force-play runs on EVERY tap (mobile needs repeated gestures for iframe)
+  try {
+    if (ytPlayer && ytPlayer.unMute && isMusicPlaying) {
+      ytPlayer.unMute();
+      ytPlayer.setVolume(musicSettings.volume);
+      ytPlayAttempts = 0;
+      try { ytPlayer.playVideo(); } catch(e2) {}
+    }
+  } catch(e) {}
+
   if (_audioUnlocked) return;
   _audioUnlocked = true;
   
@@ -3355,12 +3365,19 @@ function unlockAudioContext() {
     }).catch(() => {});
   } catch(e) {}
   
-  // Force YouTube player unmute
+  // Force YouTube player unmute AND resume playback if stuck
   try {
     if (ytPlayer && ytPlayer.unMute) {
       ytPlayer.unMute();
       ytPlayer.setVolume(musicSettings.volume);
-      console.log('[Audio] YouTube player unmuted');
+      ytPlayAttempts = 0; // Reset attempt counter so it can retry
+      // If music is supposed to be playing but got blocked, force play
+      if (isMusicPlaying) {
+        try { ytPlayer.playVideo(); } catch(e2) {}
+        console.log('[Audio] YouTube player unmuted + forced play');
+      } else {
+        console.log('[Audio] YouTube player unmuted');
+      }
     }
   } catch(e) {}
   

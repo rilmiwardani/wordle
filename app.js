@@ -260,16 +260,31 @@ function onPlayerReady(event) {
   event.target.setVolume(musicSettings.volume);
 }
 
+let ytPlayAttempts = 0;
 function onPlayerStateChange(event) {
   // If the video ends (state 0), play the next one
   if (event.data == YT.PlayerState.ENDED) {
+    ytPlayAttempts = 0;
     playNextMusic();
   }
-  // If video is cued but not playing (mobile autoplay blocked), force play
+  
+  if (event.data == YT.PlayerState.PLAYING) {
+    ytPlayAttempts = 0;
+  }
+
+  // If video is cued but not playing (mobile autoplay blocked), force play (max 3 attempts)
   if (event.data == YT.PlayerState.CUED || event.data == YT.PlayerState.PAUSED) {
-    setTimeout(() => {
-      try { ytPlayer.playVideo(); } catch(e) {}
-    }, 300);
+    if (ytPlayAttempts < 3) {
+      ytPlayAttempts++;
+      setTimeout(() => {
+        try { ytPlayer.playVideo(); } catch(e) {}
+      }, 500);
+    } else {
+      console.warn("[Music] Autoplay blocked by browser. User interaction required.");
+      if (typeof showToast === 'function') {
+        showToast("Tolong KLIK layar game 1x agar musik bisa berbunyi!", 5000);
+      }
+    }
   }
 }
 

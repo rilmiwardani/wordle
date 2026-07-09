@@ -2799,6 +2799,14 @@ const hostMusicInput = document.getElementById('hostMusicInput');
 if (hostMusicBtn) {
   hostMusicBtn.addEventListener('click', (e) => {
     e.stopPropagation(); // prevent fullscreen trigger
+    // Unlock audio context on music button tap (mobile user gesture)
+    try {
+      if (ytPlayer && ytPlayer.unMute) {
+        ytPlayer.unMute();
+        ytPlayer.setVolume(musicSettings.volume);
+        ytPlayAttempts = 0;
+      }
+    } catch(eu) {}
     hostMusicInputContainer.classList.toggle('open');
     if (hostMusicInputContainer.classList.contains('open')) {
       hostMusicInput.focus();
@@ -2820,6 +2828,18 @@ if (hostMusicBtn) {
     if (e.key === 'Enter') {
       const query = hostMusicInput.value.trim();
       if (query && socket) {
+        // Pre-warm YouTube player within user gesture context (mobile requires this)
+        if (ytPlayer && ytPlayer.unMute) {
+          try {
+            ytPlayer.unMute();
+            ytPlayer.setVolume(musicSettings.volume);
+            ytPlayAttempts = 0;
+            // Load a silent/blank video to "unlock" the iframe player
+            ytPlayer.loadVideoById({ videoId: 'about:blank' });
+            ytPlayer.stopVideo();
+            console.log('[Music] YouTube player pre-warmed via user gesture');
+          } catch(ew) {}
+        }
         socket.emit('host-music-request', query.replace('!play ', ''));
         hostMusicInput.value = '';
         hostMusicInputContainer.classList.remove('open');

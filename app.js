@@ -684,14 +684,8 @@ function renderTangoPool() {
   if (available.length === 0) return;
 
   const N = available.length;
-  let topCount;
-  if (N >= 8) topCount = 3;
-  else if (N === 7) topCount = 3;
-  else if (N === 6) topCount = 3;
-  else if (N === 5) topCount = 2;
-  else if (N === 4) topCount = 2;
-  else if (N === 3) topCount = 1;
-  else topCount = N;
+  let topCount = Math.floor(N / 2);
+  if (topCount === 0 && N > 0) topCount = 1;
   
   const topRow = available.slice(0, topCount);
   const bottomRow = available.slice(topCount);
@@ -1112,7 +1106,7 @@ function startNewRound() {
         : (len === 3 ? "APA" : (len === 4 ? "KATA" : (len === 5 ? "RUMAH" : "MENARA")));
 
       const missingIndices = [];
-      const numMissing = len === 3 ? 2 : (len === 4 ? 2 : (len === 5 ? 2 : 3));
+      const numMissing = len === 3 ? 2 : (len === 4 ? 3 : (len === 5 ? 3 : 4));
       const allIdx = Array.from({ length: len }, (_, k) => k);
       shuffleArray(allIdx);
       for (let m = 0; m < numMissing; m++) {

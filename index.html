@@ -127,6 +127,13 @@
             <button class="lang-option" id="switchGameBtn" onclick="switchGameMode(event)">🔄 Switch Game</button>
             <button class="lang-option" id="hardModeBtn" onclick="toggleHardMode(event)">🔥 Hard Mode: OFF</button>
             <label class="settings-toggle-row" onclick="event.stopPropagation()">
+              <span class="settings-toggle-label">🟨 Tanpa Clue Kuning</span>
+              <div class="toggle-switch">
+                <input type="checkbox" id="noYellowToggle" onchange="toggleNoYellow(this.checked)">
+                <div class="toggle-track"></div>
+              </div>
+            </label>
+            <label class="settings-toggle-row" onclick="event.stopPropagation()">
               <span class="settings-toggle-label">🚫 Filter Kata Kasar</span>
               <div class="toggle-switch">
                 <input type="checkbox" id="badWordsToggle" checked onchange="toggleBadWords(this.checked)">

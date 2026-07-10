@@ -1270,12 +1270,19 @@ document.addEventListener('click', () => {
 });
 
 let hardModeState = localStorage.getItem('wordle_hardModeState') || 'off';
+let isNoYellowMode = localStorage.getItem('wordle_noYellow') === 'true';
+
 if (localStorage.getItem('wordle_hardMode') === 'true') {
   hardModeState = 'hard';
   localStorage.removeItem('wordle_hardMode');
   localStorage.setItem('wordle_hardModeState', 'hard');
 } else if (localStorage.getItem('wordle_hardMode') === 'false') {
   localStorage.removeItem('wordle_hardMode');
+}
+
+function toggleNoYellow(checked) {
+  isNoYellowMode = checked;
+  try { localStorage.setItem('wordle_noYellow', checked); } catch(e) {}
 }
 
 function toggleHardMode(e) {
@@ -1370,10 +1377,12 @@ function getWordleFeedback(guess, target) {
   for(let i=0; i<g.length; i++) {
     if(g[i]===t[i]) { statuses[i] = 'correct'; t[i]=null; g[i]=null; }
   }
-  for(let i=0; i<g.length; i++) {
-    if(g[i]!==null && t.includes(g[i])) {
-      statuses[i] = 'present';
-      t[t.indexOf(g[i])] = null;
+  if (!isNoYellowMode) {
+    for(let i=0; i<g.length; i++) {
+      if(g[i]!==null && t.includes(g[i])) {
+        statuses[i] = 'present';
+        t[t.indexOf(g[i])] = null;
+      }
     }
   }
   return statuses;
@@ -2538,11 +2547,13 @@ function processGuess(guessWord, userData) {
     }
 
     // Second pass: present
-    for (let i = 0; i < WORD_LENGTH; i++) {
-      if (guessArray[i] !== null && targetArray.includes(guessArray[i])) {
-        statuses[i] = 'present';
-        targetArray[targetArray.indexOf(guessArray[i])] = null;
-        presentCount++;
+    if (!isNoYellowMode) {
+      for (let i = 0; i < WORD_LENGTH; i++) {
+        if (guessArray[i] !== null && targetArray.includes(guessArray[i])) {
+          statuses[i] = 'present';
+          targetArray[targetArray.indexOf(guessArray[i])] = null;
+          presentCount++;
+        }
       }
     }
     
@@ -2724,6 +2735,16 @@ function processGuess(guessWord, userData) {
     }
     
     // Tunggu 2 detik dulu agar jawaban di grid (dan efek reveal) terlihat, baru tampilkan overlay
+    const winningRow = (currentGameMode === 'word500' || currentGameMode === 'word600') ? board.firstChild : row;
+    if (winningRow) {
+      const winningTiles = winningRow.querySelectorAll('.tile');
+      setTimeout(() => {
+        winningTiles.forEach((t, idx) => {
+          setTimeout(() => t.classList.add('win-wave'), idx * 100);
+        });
+      }, 1200); // Mulai wave saat huruf terakhir hampir selesai flip
+    }
+
     setTimeout(() => {
       winOverlay.classList.add('show');
       if (window.playHostAudio) playHostAudio('win');
@@ -2743,8 +2764,8 @@ function processGuess(guessWord, userData) {
             board.classList.remove('board-transitioning');
           });
         }, 600);
-      }, 10000);
-    }, 2000);
+      }, 4000); // Durasi overlay dikurangi dari 10 detik menjadi 4 detik
+    }, 2400); // Tunggu wave selesai sebelum memunculkan overlay
   }
 }
 
@@ -2936,6 +2957,9 @@ window.resetLeaderboard = function(e) {
 document.addEventListener('DOMContentLoaded', () => {
   const badWordsToggle = document.getElementById('badWordsToggle');
   if (badWordsToggle) badWordsToggle.checked = isBadWordsFilterOn;
+
+  const noYellowToggle = document.getElementById('noYellowToggle');
+  if (noYellowToggle) noYellowToggle.checked = isNoYellowMode;
 
   // Initialize length checkboxes
   try {

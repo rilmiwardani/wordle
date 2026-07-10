@@ -1732,11 +1732,16 @@ function setupSocketListeners() {
     const avatar = document.getElementById('socialAlertAvatar');
     const nameEl = document.getElementById('socialAlertName');
     const actionEl = document.getElementById('socialAlertAction');
+    const giftImg = document.getElementById('socialAlertGiftImg');
+    const giftCount = document.getElementById('socialAlertGiftCount');
 
     if (!container || !userData) return;
 
     avatar.src = userData.profilePictureUrl || 'assets/default-avatar.png';
     nameEl.textContent = userData.nickname || userData.uniqueId || 'Seseorang';
+    
+    if (giftImg) giftImg.style.display = 'none';
+    if (giftCount) giftCount.style.display = 'none';
     
     if (actionType === 'share') {
       actionEl.textContent = 'TELAH SHARE LIVE! 🚀';
@@ -1746,6 +1751,20 @@ function setupSocketListeners() {
       actionEl.textContent = 'BARU SAJA FOLLOW! 💖';
       actionEl.style.color = 'var(--primary)';
       container.style.borderColor = 'var(--primary)';
+    } else if (actionType === 'gift') {
+      const giftName = userData.giftName ? userData.giftName.toUpperCase() : 'GIFT';
+      actionEl.textContent = `MENGIRIM ${giftName}! 🎁`;
+      actionEl.style.color = '#FFD700';
+      container.style.borderColor = '#FFD700';
+      
+      if (giftImg && userData.giftPictureUrl) {
+        giftImg.src = userData.giftPictureUrl;
+        giftImg.style.display = 'block';
+      }
+      if (giftCount && userData.repeatCount) {
+        giftCount.textContent = `x${userData.repeatCount}`;
+        giftCount.style.display = 'block';
+      }
     }
 
     container.classList.add('show');
@@ -1762,6 +1781,12 @@ function setupSocketListeners() {
 
   socket.on('follow', (data) => {
     showSocialAlert(data, 'follow');
+  });
+
+  socket.on('gift', (data) => {
+    // Only show alert when streak ends or it's a non-repeatable gift, to prevent spam
+    if (data.giftType === 1 && !data.repeatEnd) return;
+    showSocialAlert(data, 'gift');
   });
 
   socket.on('music-request', (data) => {

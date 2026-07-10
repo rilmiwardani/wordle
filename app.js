@@ -653,6 +653,7 @@ function createEmptyW500Row(idx) {
 }
 
 function renderWord500Board(revealAllColors = false) {
+  document.querySelectorAll('.is-invalid-tooltip').forEach(el => el.remove());
   board.innerHTML = '';
   word500PendingInvalidRow = null; // DOM-nya sudah dihapus oleh innerHTML=''
   board.classList.add('w500-board');
@@ -732,6 +733,7 @@ function renderTangoPool() {
 
 // Initialize Board
 function initBoard() {
+  document.querySelectorAll('.is-invalid-tooltip').forEach(el => el.remove());
   board.innerHTML = '';
   board.className = '';
 
@@ -1712,6 +1714,44 @@ function setupSocketListeners() {
     if (typeof handleAutoGuessOnJoin === 'function') handleAutoGuessOnJoin(data);
   });
 
+  let socialAlertTimeout = null;
+  function showSocialAlert(userData, actionType) {
+    const container = document.getElementById('socialAlertContainer');
+    const avatar = document.getElementById('socialAlertAvatar');
+    const nameEl = document.getElementById('socialAlertName');
+    const actionEl = document.getElementById('socialAlertAction');
+
+    if (!container || !userData) return;
+
+    avatar.src = userData.profilePictureUrl || 'assets/default-avatar.png';
+    nameEl.textContent = userData.nickname || userData.uniqueId || 'Seseorang';
+    
+    if (actionType === 'share') {
+      actionEl.textContent = 'TELAH SHARE LIVE! 🚀';
+      actionEl.style.color = '#2EE06A';
+      container.style.borderColor = '#2EE06A';
+    } else if (actionType === 'follow') {
+      actionEl.textContent = 'BARU SAJA FOLLOW! 💖';
+      actionEl.style.color = 'var(--primary)';
+      container.style.borderColor = 'var(--primary)';
+    }
+
+    container.classList.add('show');
+
+    if (socialAlertTimeout) clearTimeout(socialAlertTimeout);
+    socialAlertTimeout = setTimeout(() => {
+      container.classList.remove('show');
+    }, 4000);
+  }
+
+  socket.on('share', (data) => {
+    showSocialAlert(data, 'share');
+  });
+
+  socket.on('follow', (data) => {
+    showSocialAlert(data, 'follow');
+  });
+
   socket.on('music-request', (data) => {
     console.log("Music Requested:", data);
     
@@ -2394,6 +2434,8 @@ function processGuess(guessWord, userData) {
   }
   const invalidRows = document.querySelectorAll('.is-invalid-row');
   invalidRows.forEach(el => el.remove());
+  const invalidTooltips = document.querySelectorAll('.is-invalid-tooltip');
+  invalidTooltips.forEach(el => el.remove());
 
   const currentRow = guesses.length;
   const isWord500 = currentGameMode === 'word500' || currentGameMode === 'word600';
@@ -2403,6 +2445,9 @@ function processGuess(guessWord, userData) {
   row.className = 'board-row' + (isWord500 ? ' w500-row' : '');
   row.id = `row-${currentRow}`;
   row.style.position = 'relative';
+  if (!isValidWord) {
+    row.style.zIndex = "999";
+  }
   
   let invalidTooltipMsg = hardModeMsg;
   if (!isValidWord && !hardModeMsg) {
@@ -2413,9 +2458,20 @@ function processGuess(guessWord, userData) {
 
   if (invalidTooltipMsg) {
     const tooltip = document.createElement('div');
-    tooltip.className = 'row-tooltip' + (hardModeConflictWord ? ' clue-conflict-tooltip' : '');
+    tooltip.className = 'row-tooltip is-invalid-tooltip' + (hardModeConflictWord ? ' clue-conflict-tooltip' : '');
     tooltip.textContent = invalidTooltipMsg;
-    row.appendChild(tooltip);
+    document.body.appendChild(tooltip);
+    
+    // Position it dynamically after row is rendered
+    requestAnimationFrame(() => {
+      const rowRect = row.getBoundingClientRect();
+      const tooltipHeight = tooltip.offsetHeight;
+      tooltip.style.position = 'fixed';
+      tooltip.style.bottom = 'auto';
+      tooltip.style.left = (rowRect.left + rowRect.width / 2) + 'px';
+      tooltip.style.top = (rowRect.top - tooltipHeight - 8) + 'px';
+      tooltip.style.zIndex = '9999';
+    });
   }
   
   const avatar = document.createElement('img');

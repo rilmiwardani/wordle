@@ -855,6 +855,7 @@ header {
 }
 
 .board-row {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr repeat(var(--word-length, 5), 1fr);
   /* Gap yang sama dengan board (responsif) */
@@ -1729,5 +1730,76 @@ header {
   color: rgba(255, 255, 255, 0.2) !important;
   transform: scale(0.88) !important;
   box-shadow: none !important;
+}
+
+
+
+/* =========================================
+   SOCIAL ALERTS (SHARE & FOLLOW)
+   ========================================= */
+.social-alert-container {
+  position: fixed;
+  top: 35%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.5);
+  background: rgba(20, 20, 30, 0.95);
+  border: 2px solid var(--primary);
+  box-shadow: 0 0 40px rgba(254, 44, 85, 0.6), inset 0 0 20px rgba(254, 44, 85, 0.3);
+  border-radius: 30px;
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  z-index: 10000;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.social-alert-container.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  animation: pulseAlert 2s infinite;
+}
+
+.social-alert-avatar {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+  object-fit: cover;
+}
+
+.social-alert-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.social-alert-name {
+  font-size: 24px;
+  font-weight: 900;
+  color: white;
+  text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  white-space: nowrap;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.social-alert-action {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--primary);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+@keyframes pulseAlert {
+  0% { box-shadow: 0 0 40px rgba(254, 44, 85, 0.6), inset 0 0 20px rgba(254, 44, 85, 0.3); }
+  50% { box-shadow: 0 0 80px rgba(254, 44, 85, 0.9), inset 0 0 40px rgba(254, 44, 85, 0.5); }
+  100% { box-shadow: 0 0 40px rgba(254, 44, 85, 0.6), inset 0 0 20px rgba(254, 44, 85, 0.3); }
 }
 

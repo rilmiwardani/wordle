@@ -301,6 +301,9 @@ function playNextMusic() {
     isMusicPlaying = false;
     document.getElementById('musicWidget').classList.remove('show');
     if (hostSkipBtn) hostSkipBtn.style.display = 'none';
+    if (ytPlayer && ytPlayer.stopVideo) {
+      try { ytPlayer.stopVideo(); } catch(e) {}
+    }
     return;
   }
   
@@ -2908,13 +2911,12 @@ if (hostMusicBtn) {
         // Pre-warm YouTube player within user gesture context (mobile requires this)
         if (ytPlayer && ytPlayer.unMute) {
           try {
-            ytPlayer.unMute();
-            ytPlayer.setVolume(musicSettings.volume);
-            ytPlayAttempts = 0;
-            // Load a silent/blank video to "unlock" the iframe player
-            ytPlayer.loadVideoById({ videoId: 'about:blank' });
-            ytPlayer.stopVideo();
-            console.log('[Music] YouTube player pre-warmed via user gesture');
+            if (!isMusicPlaying) {
+              ytPlayer.unMute();
+              ytPlayer.setVolume(musicSettings.volume);
+              ytPlayAttempts = 0;
+              console.log('[Music] YouTube player pre-warmed via user gesture');
+            }
           } catch(ew) {}
         }
         socket.emit('host-music-request', query.replace('!play ', ''));

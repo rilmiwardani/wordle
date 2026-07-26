@@ -713,6 +713,9 @@ function showMusicNotif(requesterName, title) {
   const container = document.getElementById('musicNotifContainer');
   if (!container) return;
   
+  // Prevent flooding: limit to 1 active notification by clearing the container first
+  container.innerHTML = '';
+  
   const notif = document.createElement('div');
   notif.className = 'music-notif';
   
@@ -2571,66 +2574,6 @@ function setupSocketListeners() {
     }
   });
 
-  socket.on('music-request', (data) => {
-    console.log("Music Requested:", data);
-    
-    // Check banned keywords
-    const titleLower = data.title.toLowerCase();
-    const queryLower = (data.originalQuery || "").toLowerCase();
-    
-    if (musicSettings.bannedKeywords.length > 0) {
-      if (musicSettings.bannedKeywords.some(kw => titleLower.includes(kw) || queryLower.includes(kw))) {
-        console.log("Music rejected: Contains banned keyword");
-        if (data.requesterName === "Host") showToast("🚫 Lagu ditolak: Mengandung kata terlarang!");
-        return;
-      }
-    }
-    
-    // Check duration
-    let durMins = 0;
-    if (data.duration) {
-      const parts = data.duration.split(':').map(Number);
-      if (parts.length === 2) durMins = parts[0] + (parts[1]/60);
-      else if (parts.length === 3) durMins = (parts[0]*60) + parts[1] + (parts[2]/60);
-    }
-    if (musicSettings.maxDuration > 0 && durMins > musicSettings.maxDuration) {
-      console.log("Music rejected: Exceeds max duration");
-      if (data.requesterName === "Host") showToast(`🚫 Lagu ditolak: Durasi melebihi batas (${musicSettings.maxDuration} menit)!`);
-      return;
-    }
-    
-    // Check global limit
-    if (musicSettings.maxGlobal > 0 && musicQueue.length >= musicSettings.maxGlobal) {
-      console.log("Music rejected: Global queue full");
-      if (data.requesterName === "Host") showToast("🚫 Antrian penuh!");
-      return;
-    }
-    
-    // Check user limit
-    if (musicSettings.maxUser > 0 && data.requesterName !== "Host") {
-      const userReqs = musicQueue.filter(m => m.requesterName === data.requesterName).length;
-      if (userReqs >= musicSettings.maxUser) {
-        console.log(`Music rejected: User ${data.requesterName} hit queue limit`);
-        return;
-      }
-    }
-
-    musicQueue.push(data);
-    updateMusicQueueUI();
-
-    if (!isMusicPlaying) {
-      playNextMusic();
-    } else {
-      showMusicNotif(data.requesterName, data.title);
-    }
-  });
-
-  socket.on('music-skip', () => {
-    if (isMusicPlaying) {
-      showToast("⏭️ Song skipped", 2000);
-      playNextMusic();
-    }
-  });
 }
 
 // Queue system for high-volume chat

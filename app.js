@@ -79,8 +79,72 @@ function getMaxGuesses() {
   return (currentGameMode === 'word500' || currentGameMode === 'word600') ? Infinity : 6;
 }
 
+class IndoFinitySocket {
+  constructor(url) {
+    this.ws = new WebSocket(url);
+    this.listeners = {};
+    this.connected = false;
+    this._isIndoFinity = true;
+
+    this.ws.onopen = () => {
+      this.connected = true;
+      console.log('[IndoFinity] WebSocket connected to', url);
+      
+      // Fire 'connect' listeners but skip any connect-tiktok emit (handled via emit override)
+      if (this.listeners['connect']) this.listeners['connect'].forEach(cb => cb());
+      
+      // Simulate the statusUpdate 'connected' that setupSocketListeners expects
+      setTimeout(() => {
+        if (this.listeners['statusUpdate']) {
+          this.listeners['statusUpdate'].forEach(cb => cb({
+            status: 'connected',
+            uniqueId: 'IndoFinity'
+          }));
+        }
+        if (this.listeners['tiktokConnected']) {
+          this.listeners['tiktokConnected'].forEach(cb => cb({ uniqueId: 'IndoFinity' }));
+        }
+      }, 100);
+    };
+
+    this.ws.onmessage = (msg) => {
+      try {
+        const payload = JSON.parse(msg.data);
+        const event = payload.event;
+        const data = payload.data;
+        if (this.listeners[event]) {
+          this.listeners[event].forEach(cb => cb(data));
+        }
+      } catch (e) {
+        console.error('[IndoFinity] Error parsing message', e);
+      }
+    };
+
+    this.ws.onclose = () => {
+      this.connected = false;
+      console.log('[IndoFinity] WebSocket closed');
+      // Don't fire 'disconnect' to avoid triggering Socket.IO reconnect logic
+    };
+    
+    this.ws.onerror = (err) => {
+      console.error('[IndoFinity] WebSocket error:', err);
+    };
+  }
+
+  on(event, callback) {
+    if (!this.listeners[event]) this.listeners[event] = [];
+    this.listeners[event].push(callback);
+  }
+
+  emit(event, data) {
+    // IndoFinity doesn't need connect-tiktok or any server emits, silently ignore
+  }
+}
+
 // State
 let socket = null;
+let localSocket = null; // Dedicated connection to local node server for music features
+
 let currentWord = "";
 let guesses = [];
 let knownAbsentLetters = new Set();
@@ -100,6 +164,333 @@ window.toggleBadWords = function(checked) {
   isBadWordsFilterOn = checked;
   localStorage.setItem('wordle_badWordsFilter', isBadWordsFilterOn);
 };
+
+let isLikeRestartEnabled = localStorage.getItem('wordle_likeRestart') === 'true';
+let likeRestartThreshold = parseInt(localStorage.getItem('wordle_likeThreshold')) || 1000;
+let currentLikes = 0;
+
+window.toggleLikeRestart = function(checked) {
+  isLikeRestartEnabled = checked;
+  localStorage.setItem('wordle_likeRestart', checked);
+  const container = document.getElementById('likeThresholdContainer');
+  const progressContainer = document.getElementById('likeProgressContainer');
+  if (container) container.style.display = checked ? 'block' : 'none';
+  if (progressContainer) progressContainer.style.display = checked ? 'block' : 'none';
+  updateLikeProgressBar();
+};
+
+let isHeartFlurryEnabled = localStorage.getItem('wordle_heartFlurryEnabled') !== 'false';
+window.toggleHeartFlurry = function(checked) {
+  isHeartFlurryEnabled = checked;
+  localStorage.setItem('wordle_heartFlurryEnabled', checked);
+};
+
+let isMarqueeEnabled = localStorage.getItem('wordle_marqueeEnabled') !== 'false';
+let playerLikes = {};
+let playerShares = {};
+let playerGifts = {};
+let pendingMarqueeHTML = "";
+
+window.toggleMarquee = function(checked) {
+  isMarqueeEnabled = checked;
+  localStorage.setItem('wordle_marqueeEnabled', checked);
+  updateMarqueeUI(true);
+};
+
+function initTrackers() {
+  playerLikes = {};
+  playerShares = {};
+  playerGifts = {};
+  const prefix = getPtsPrefix();
+  const likePrefix = prefix + 'like_';
+  const sharePrefix = prefix + 'share_';
+  const giftPrefix = prefix + 'gift_';
+  
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key) {
+      if (key.startsWith(likePrefix)) {
+        const username = key.substring(likePrefix.length);
+        const count = parseInt(localStorage.getItem(key)) || 0;
+        playerLikes[username] = count;
+      } else if (key.startsWith(sharePrefix)) {
+        const username = key.substring(sharePrefix.length);
+        const count = parseInt(localStorage.getItem(key)) || 0;
+        playerShares[username] = count;
+      } else if (key.startsWith(giftPrefix)) {
+        const username = key.substring(giftPrefix.length);
+        const count = parseInt(localStorage.getItem(key)) || 0;
+        playerGifts[username] = count;
+      }
+    }
+  }
+  updateMarqueeUI(true);
+}
+
+function getTop3(trackerObject) {
+  return Object.entries(trackerObject)
+    .filter(([_, count]) => count > 0)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([username, count]) => ({ username, count }));
+}
+
+function applyMarqueeAnimationProps(contentEl, marqueeContainer) {
+  const speed = 65; // pixels/sec
+  const containerWidth = marqueeContainer.clientWidth || 420;
+  
+  contentEl.style.setProperty('--marquee-start', `${containerWidth}px`);
+  
+  const textWidth = contentEl.scrollWidth || 500;
+  const duration = (containerWidth + textWidth) / speed;
+  
+  contentEl.style.animation = 'none';
+  contentEl.offsetHeight; // trigger reflow
+  contentEl.style.animation = `marquee-scroll ${duration}s linear infinite`;
+}
+
+function updateMarqueeUI(forceImmediate = false) {
+  const marqueeContainer = document.getElementById('marqueeContainer');
+  if (!marqueeContainer) return;
+  
+  if (!isMarqueeEnabled) {
+    marqueeContainer.style.display = 'none';
+    return;
+  }
+  
+  const topLikers = getTop3(playerLikes);
+  const topSharers = getTop3(playerShares);
+  const topGifters = getTop3(playerGifts);
+  
+  let likerText = "❤️ TOP LIKERS: ";
+  if (topLikers.length > 0) {
+    likerText += topLikers.map((u, i) => `${i + 1}. <span class="highlight">${u.username}</span> (${u.count})`).join(" &nbsp;");
+  } else {
+    likerText += `<span class="highlight">-</span>`;
+  }
+  
+  let sharerText = "🚀 TOP SHARERS: ";
+  if (topSharers.length > 0) {
+    sharerText += topSharers.map((u, i) => `${i + 1}. <span class="highlight">${u.username}</span> (${u.count})`).join(" &nbsp;");
+  } else {
+    sharerText += `<span class="highlight">-</span>`;
+  }
+
+  let gifterText = "🎁 TOP GIFTERS: ";
+  if (topGifters.length > 0) {
+    gifterText += topGifters.map((u, i) => `${i + 1}. <span class="highlight">${u.username}</span> (${u.count} COINS)`).join(" &nbsp;");
+  } else {
+    gifterText += `<span class="highlight">-</span>`;
+  }
+  
+  const newHTML = `${gifterText} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${likerText} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${sharerText}`;
+  
+  const contentEl = document.getElementById('marqueeContent');
+  if (!contentEl) return;
+  
+  const isCurrentlyEmpty = !contentEl.innerHTML || contentEl.innerHTML === "";
+  const isContainerHidden = marqueeContainer.style.display === 'none';
+  
+  if (forceImmediate || isCurrentlyEmpty || isContainerHidden) {
+    contentEl.innerHTML = newHTML;
+    applyMarqueeAnimationProps(contentEl, marqueeContainer);
+    pendingMarqueeHTML = "";
+  } else {
+    pendingMarqueeHTML = newHTML;
+  }
+  
+  marqueeContainer.style.display = 'flex';
+}
+
+window.updateLikeThreshold = function(val) {
+  let num = parseInt(val);
+  if (isNaN(num) || num < 10) num = 1000;
+  likeRestartThreshold = num;
+  localStorage.setItem('wordle_likeThreshold', num);
+  updateLikeProgressBar();
+};
+
+function updateLikeProgressBar() {
+  const container = document.getElementById('likeProgressContainer');
+  const fill = document.getElementById('likeProgressBarFill');
+  const text = document.getElementById('likeProgressText');
+  
+  const mContainer = document.getElementById('multiLikeProgressContainer');
+  const mFill = document.getElementById('multiLikeProgressBarFill');
+  const mText = document.getElementById('multiLikeProgressText');
+
+  if (!isLikeRestartEnabled) {
+    if (container) container.style.display = 'none';
+    if (mContainer) mContainer.style.display = 'none';
+    return;
+  }
+  
+  const percentage = Math.min(100, (currentLikes / likeRestartThreshold) * 100);
+  const textVal = `${currentLikes} / ${likeRestartThreshold}`;
+
+  if (container && fill && text) {
+    container.style.display = 'block';
+    fill.style.width = `${percentage}%`;
+    text.textContent = textVal;
+  }
+
+  if (mContainer && mFill && mText) {
+    mContainer.style.display = 'block';
+    mFill.style.width = `${percentage}%`;
+    mText.textContent = textVal;
+  }
+}
+
+// ═══════════════════════════════════════
+//         HEART FLURRY ANIMATION
+// ═══════════════════════════════════════
+const HEART_EMOJIS = ['❤️', '💖', '💗', '💕', '💓', '💘', '💝', '🩷', '🤍', '💜'];
+const MAX_HEARTS_ON_SCREEN = 18;
+
+function spawnHeartFlurry(count) {
+  if (!isHeartFlurryEnabled) return;
+  const container = document.getElementById('heartFlurryContainer');
+  if (!container) return;
+
+  for (let i = 0; i < count; i++) {
+    // Performance cap: if already full, don't spawn new ones to save CPU
+    if (container.children.length >= MAX_HEARTS_ON_SCREEN) {
+      break;
+    }
+
+    const heart = document.createElement('span');
+    heart.className = 'heart-particle';
+    heart.textContent = HEART_EMOJIS[Math.floor(Math.random() * HEART_EMOJIS.length)];
+
+    // Randomize position and physics
+    const xPos = Math.random() * 60;
+    const duration = 2 + Math.random() * 1.5;
+    const delay = i * 0.08;
+    const size = 20 + Math.random() * 18;
+
+    heart.style.left = `${xPos}px`;
+    heart.style.fontSize = `${size}px`;
+    heart.style.setProperty('--duration', `${duration}s`);
+    heart.style.setProperty('--delay', `${delay}s`);
+    heart.style.setProperty('--drift1', `${(Math.random() - 0.5) * 30}px`);
+    heart.style.setProperty('--drift2', `${(Math.random() - 0.5) * 40}px`);
+    heart.style.setProperty('--drift3', `${(Math.random() - 0.5) * 30}px`);
+    heart.style.setProperty('--drift4', `${(Math.random() - 0.5) * 20}px`);
+    heart.style.setProperty('--rot1', `${(Math.random() - 0.5) * 30}deg`);
+    heart.style.setProperty('--rot2', `${(Math.random() - 0.5) * 40}deg`);
+    heart.style.setProperty('--rot3', `${(Math.random() - 0.5) * 30}deg`);
+    heart.style.setProperty('--rot4', `${(Math.random() - 0.5) * 50}deg`);
+
+    container.appendChild(heart);
+
+    // Remove after animation completes
+    setTimeout(() => {
+      if (heart.parentNode) heart.parentNode.removeChild(heart);
+    }, (duration + delay) * 1000 + 200);
+  }
+}
+
+// Like counter widget state
+let totalSessionLikes = 0;
+let _likeCounterHideTimer = null;
+
+function updateLikeCounter(data, addedLikes) {
+  totalSessionLikes += addedLikes;
+  
+  const widget = document.getElementById('likeCounterWidget');
+  const avatarEl = document.getElementById('likeCounterAvatar');
+  const totalEl = document.getElementById('likeCounterTotal');
+  const nameEl = document.getElementById('likeCounterName');
+  if (!widget) return;
+
+  // Show widget
+  widget.style.display = 'flex';
+
+  // Format count
+  const formatted = totalSessionLikes >= 1000 
+    ? `${(totalSessionLikes / 1000).toFixed(1)}k` 
+    : totalSessionLikes;
+  totalEl.textContent = `❤️ ${formatted}`;
+
+  // Update last liker info
+  const nickname = data.nickname || data.uniqueId || '';
+  const avatar = data.profilePictureUrl || '';
+  if (nickname) nameEl.textContent = nickname;
+  if (avatar && avatarEl) {
+    avatarEl.src = avatar;
+    avatarEl.style.display = 'block';
+  } else {
+    if (avatarEl) avatarEl.style.display = 'none';
+  }
+
+  // Pop animation
+  widget.classList.remove('pop');
+  void widget.offsetWidth; // Force reflow
+  widget.classList.add('pop');
+
+  // Auto-hide after 5s of no likes
+  if (_likeCounterHideTimer) clearTimeout(_likeCounterHideTimer);
+  _likeCounterHideTimer = setTimeout(() => {
+    widget.style.display = 'none';
+  }, 5000);
+}
+
+let isWaitingForLikes = false;
+
+window.executeRestartTransition = function() {
+  if (!isWaitingForLikes) return; // Prevent double trigger
+  isWaitingForLikes = false;
+  
+  const winOverlay = document.getElementById('winOverlay');
+  if (winOverlay) winOverlay.classList.remove('show');
+  
+  const multiWinOverlay = document.getElementById('multiWinOverlay');
+  if (multiWinOverlay) multiWinOverlay.classList.remove('show');
+  
+  const board = document.getElementById('board');
+  if (board) board.classList.add('board-transitioning');
+  
+  setTimeout(() => {
+    round++;
+    startNewRound();
+    requestAnimationFrame(() => {
+      if (board) board.classList.remove('board-transitioning');
+    });
+  }, 600);
+};
+
+function triggerWinTransition(winDuration, isMultiWinner = false) {
+  const overlayId = isMultiWinner ? 'multiWinOverlay' : 'winOverlay';
+  const footerId = isMultiWinner ? 'multiWinFooter' : 'winFooter';
+  const progressId = isMultiWinner ? 'multiLikeProgressContainer' : 'likeProgressContainer';
+
+  const activeOverlay = document.getElementById(overlayId);
+  const activeFooter = document.getElementById(footerId);
+  const activeProgress = document.getElementById(progressId);
+  
+  if (activeOverlay) activeOverlay.classList.add('show');
+  if (window.playHostAudio) playHostAudio('win');
+  
+  if (isLikeRestartEnabled) {
+    isWaitingForLikes = true;
+    currentLikes = 0;
+    if (activeFooter) activeFooter.style.display = 'none';
+    if (activeProgress) activeProgress.style.display = 'block';
+    updateLikeProgressBar();
+  } else {
+    isWaitingForLikes = false;
+    if (activeFooter) activeFooter.style.display = 'block';
+    if (activeProgress) activeProgress.style.display = 'none';
+    
+    // Automatically restart after the defined duration if no likes required
+    setTimeout(() => {
+      // Set to true temporarily so executeRestartTransition works
+      isWaitingForLikes = true;
+      executeRestartTransition();
+    }, winDuration);
+  }
+}
+
 let TARGET_WORDS = [];
 let VALID_WORDS = [];
 let availableWords = [];
@@ -113,12 +504,13 @@ let wordTangoPool = []; // { id, char, used }
 let ytPlayer = null;
 let musicQueue = [];
 let isMusicPlaying = false;
-let musicSettings = { maxGlobal: 20, maxUser: 2, maxDuration: 6, bannedKeywords: [], volume: 50 };
+let musicSettings = { maxGlobal: 20, maxUser: 2, maxDuration: 6, bannedKeywords: [], volume: 50, requestsEnabled: true };
 try {
   const saved = localStorage.getItem('music_settings');
   if (saved) {
     musicSettings = JSON.parse(saved);
     if (musicSettings.volume === undefined) musicSettings.volume = 50;
+    if (musicSettings.requestsEnabled === undefined) musicSettings.requestsEnabled = true;
   }
 } catch(e) {}
 let lastUsername = "";
@@ -141,26 +533,45 @@ function getPtsPrefix() {
   return 'pts_';
 }
 
-// Memuat data mingguan ke memori saat halaman dimuat
+// Memuat data harian & mingguan ke memori saat halaman dimuat
 function initWeeklyLeaderboard() {
   playerPoints = {};
   const prefix = getPtsPrefix();
+  const dailyPrefix = prefix + 'daily_';
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key && key.startsWith(prefix)) {
       if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_'))) continue;
-      const username = key.substring(prefix.length);
-      const pts = parseInt(localStorage.getItem(key)) || 0;
-      if (!playerPoints[username]) {
-        playerPoints[username] = {
-          avatar: 'assets/bg_nature.png',
-          sessionPts: 0,
-          weeklyPts: pts
-        };
+      
+      if (key.startsWith(dailyPrefix)) {
+        const username = key.substring(dailyPrefix.length);
+        const pts = parseInt(localStorage.getItem(key)) || 0;
+        if (!playerPoints[username]) {
+          playerPoints[username] = {
+            avatar: 'assets/bg_nature.png',
+            sessionPts: pts,
+            weeklyPts: 0
+          };
+        } else {
+          playerPoints[username].sessionPts = pts;
+        }
+      } else {
+        const username = key.substring(prefix.length);
+        const pts = parseInt(localStorage.getItem(key)) || 0;
+        if (!playerPoints[username]) {
+          playerPoints[username] = {
+            avatar: 'assets/bg_nature.png',
+            sessionPts: 0,
+            weeklyPts: pts
+          };
+        } else {
+          playerPoints[username].weeklyPts = pts;
+        }
       }
     }
   }
   renderLeaderboard();
+  initTrackers();
 }
 initWeeklyLeaderboard();
 
@@ -171,19 +582,27 @@ function saveWeeklyPts(username, pts) {
   localStorage.setItem(getPtsPrefix() + username, pts);
 }
 
+function getDailyPts(username) {
+  return parseInt(localStorage.getItem(getPtsPrefix() + 'daily_' + username) || '0');
+}
+function saveDailyPts(username, pts) {
+  localStorage.setItem(getPtsPrefix() + 'daily_' + username, pts);
+}
+
 function addPoints(userData, points) {
   if (!userData || !userData.nickname) return;
   const username = userData.nickname;
   if (!playerPoints[username]) {
     playerPoints[username] = {
       avatar: userData.profilePictureUrl || 'assets/bg_nature.png',
-      sessionPts: 0,
+      sessionPts: getDailyPts(username),
       weeklyPts: getWeeklyPts(username)
     };
   }
   playerPoints[username].sessionPts += points;
   playerPoints[username].weeklyPts += points;
   if (userData.profilePictureUrl) playerPoints[username].avatar = userData.profilePictureUrl;
+  saveDailyPts(username, playerPoints[username].sessionPts);
   saveWeeklyPts(username, playerPoints[username].weeklyPts);
   renderLeaderboard();
 }
@@ -481,10 +900,12 @@ function applyGameModeUI() {
   const wordLoopInfoContainer = document.getElementById('wordLoopInfoContainer');
   const wordTangoInfoContainer = document.getElementById('wordTangoInfoContainer');
   const tangoPoolContainer = document.getElementById('tangoPoolContainer');
+  const tangoGuessFeed = document.getElementById('tangoGuessFeed');
 
   if (wordLoopInfoContainer) wordLoopInfoContainer.style.display = 'none';
   if (wordTangoInfoContainer) wordTangoInfoContainer.style.display = 'none';
   if (tangoPoolContainer) tangoPoolContainer.style.display = 'none';
+  if (tangoGuessFeed) tangoGuessFeed.style.display = 'none';
 
   if (currentGameMode === 'word500' || currentGameMode === 'word600') {
     if (headerTitle) {
@@ -517,6 +938,7 @@ function applyGameModeUI() {
     if (bestGuessContainer) bestGuessContainer.style.display = 'none';
     // wordTangoInfoContainer stays hidden — header already shows mode name
     if (tangoPoolContainer) tangoPoolContainer.style.display = 'flex';
+    if (tangoGuessFeed) tangoGuessFeed.style.display = 'flex';
     if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
   } else {
     if (headerTitle) headerTitle.textContent = 'WORDLE';
@@ -853,8 +1275,11 @@ let isShowingRankMsg = false;
 let instructionTimer = null;
 let currentInstructionIndex = 0;
 
-function getInstructionText(index) {
-  if (index === 0) {
+function getInstructionText() {
+  const steps = [];
+  
+  // 1. Guessing / Tango / Fillblanks
+  steps.push(() => {
     if (currentGameMode === 'wordtango') {
       if (lastLang === 'id') return `Ketik kata dari Letter Pool di komentar!`;
       if (lastLang === 'mixed') return `Ketik kata dari Letter Pool! / Type words from Letter Pool!`;
@@ -868,19 +1293,37 @@ function getInstructionText(index) {
     if (lastLang === 'id') return `Ketik kata ${WORD_LENGTH} huruf di komentar untuk menebak!`;
     if (lastLang === 'mixed') return `Ketik kata ${WORD_LENGTH} huruf di komentar! / Type a ${WORD_LENGTH}-letter word!`;
     return `Type a ${WORD_LENGTH}-letter word in chat to guess!`;
-  } else if (index === 1) {
+  });
+  
+  // 2. Rank Check
+  steps.push(() => {
     if (lastLang === 'id') return `Ketik !myrank untuk cek rank & poin kamu!`;
     if (lastLang === 'mixed') return `Ketik !myrank untuk cek poin! / Type !myrank to check points!`;
     return `Type !myrank to check your rank and points!`;
-  } else if (index === 2) {
-    if (lastLang === 'id') return `Ketik !play&nbsp;<b>judul lagu</b>&nbsp;untuk request musik 🎵`;
-    if (lastLang === 'mixed') return `Ketik !play&nbsp;<b>judul</b>&nbsp;untuk musik! / Type !play&nbsp;<b>title</b>&nbsp;for music!`;
-    return `Type !play&nbsp;<b>song title</b>&nbsp;in chat to request music 🎵`;
-  } else {
+  });
+  
+  // 3. Request Music (only if enabled)
+  if (musicSettings.requestsEnabled !== false) {
+    steps.push(() => {
+      if (lastLang === 'id') return `Ketik !play&nbsp;<b>judul lagu</b>&nbsp;untuk request musik 🎵`;
+      if (lastLang === 'mixed') return `Ketik !play&nbsp;<b>judul</b>&nbsp;untuk musik! / Type !play&nbsp;<b>title</b>&nbsp;for music!`;
+      return `Type !play&nbsp;<b>song title</b>&nbsp;in chat to request music 🎵`;
+    });
+  }
+  
+  // 4. Social / Engagement
+  steps.push(() => {
     if (lastLang === 'id') return `Jangan lupa tap-tap layar, follow & share live ini ya! ❤️`;
     if (lastLang === 'mixed') return `Jangan lupa tap layar & follow! / Tap the screen & follow! ❤️`;
     return `Don't forget to tap the screen, follow & share this live! ❤️`;
-  }
+  });
+  
+  const stepIdx = currentInstructionIndex % steps.length;
+  const isFollowStep = (stepIdx === steps.length - 1);
+  return {
+    text: steps[stepIdx](),
+    isFollowStep: isFollowStep
+  };
 }
 
 function startInstructionRotation() {
@@ -888,15 +1331,15 @@ function startInstructionRotation() {
   
   const updateText = () => {
     if (isShowingRankMsg) return; // Don't override rank msg
-    const text = getInstructionText(currentInstructionIndex % 4);
+    const res = getInstructionText();
     const instEl = document.querySelector('.instruction');
     if (instEl) {
-      instEl.innerHTML = text;
+      instEl.innerHTML = res.text;
       instEl.style.color = 'var(--text-muted)';
     }
     
     // Play interaction sound sparingly when the instruction rotates to "Follow & Share"
-    if (currentInstructionIndex % 4 === 3 && Math.random() < 0.4) {
+    if (res.isFollowStep && Math.random() < 0.4) {
        if (window.playHostAudio) playHostAudio('interaction');
     }
     
@@ -958,6 +1401,7 @@ function handleMyRank(userData) {
   }
 
   const prefix = getPtsPrefix();
+  const dailyPrefix = prefix + 'daily_';
   const weeklyPts = parseInt(localStorage.getItem(prefix + username)) || 0;
   
   // Hitung rank mingguan
@@ -965,7 +1409,8 @@ function handleMyRank(userData) {
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key && key.startsWith(prefix)) {
-      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_'))) continue;
+      if (key.startsWith(dailyPrefix)) continue;
+      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_'))) continue;
       const uName = key.substring(prefix.length);
       const pts = parseInt(localStorage.getItem(key)) || 0;
       weeklyData.push({ uName, pts });
@@ -984,7 +1429,7 @@ function handleMyRank(userData) {
     nick = nick.substring(0, 9) + '..';
   }
   
-  const msg = `${nick} - Sesi: ${sessionPts} Pts (Rank ${sessionRank}) | Mingguan: ${weeklyPts} Pts (Rank ${weeklyRank})`;
+  const msg = `${nick} - Daily: ${sessionPts} Pts (Rank ${sessionRank}) | Weekly: ${weeklyPts} Pts (Rank ${weeklyRank})`;
   const avatar = userData.profilePictureUrl || 'assets/bg_nature.png';
   
   rankMessageQueue.push({ msg, avatar });
@@ -1030,7 +1475,17 @@ function startNewRound() {
   userGuessDedup = new Set(); // reset per ronde
   isGameOver = false;
   isProcessing = false;
+  isWaitingForLikes = false;
   roundNumber.textContent = round;
+  
+  // Reset like progress for new round
+  currentLikes = 0;
+  
+  // Hide progress bar on new round
+  const likeProgress = document.getElementById('likeProgressContainer');
+  if (likeProgress) likeProgress.style.display = 'none';
+  
+  updateLikeProgressBar();
   
   // Toggle background for visual delight (only if dynamic mode is on)
   if (isDynamicBg) {
@@ -1105,6 +1560,9 @@ function startNewRound() {
   if (currentGameMode === 'wordtango') {
     wordTangoTargets = [];
     wordTangoPool = [];
+    tangoGuessedWords.clear();
+    const tangoGuessFeed = document.getElementById('tangoGuessFeed');
+    if (tangoGuessFeed) tangoGuessFeed.innerHTML = '';
     const tangoPatterns = [
       [4, 4, 5, 6],
       [4, 5, 5, 6],
@@ -1329,6 +1787,15 @@ document.addEventListener('DOMContentLoaded', () => {
   if (toggle) toggle.checked = isDynamicBg;
   // Apply static bg immediately if needed
   if (!isDynamicBg) applyStaticBg();
+  
+  // Initialize like restart settings UI
+  const likeToggle = document.getElementById('likeRestartToggle');
+  if (likeToggle) likeToggle.checked = isLikeRestartEnabled;
+  const likeThresholdInput = document.getElementById('likeThresholdInput');
+  if (likeThresholdInput) likeThresholdInput.value = likeRestartThreshold;
+  const likeContainer = document.getElementById('likeThresholdContainer');
+  if (likeContainer) likeContainer.style.display = isLikeRestartEnabled ? 'block' : 'none';
+  updateLikeProgressBar();
 });
 
 // Dynamic / Static Background toggle
@@ -1499,26 +1966,63 @@ function attemptReconnect() {
   }, 5000);
 }
 
+window.handleBackendChange = function(val) {
+  const usernameGroup = document.getElementById('usernameInput').parentElement;
+  const sessionGroup = document.getElementById('sessionInput').parentElement;
+  const ipGroup = document.getElementById('indofinityIpGroup');
+  const loginSubtitle = document.getElementById('loginTitle').nextElementSibling;
+  if (val === 'indofinity') {
+    usernameGroup.style.display = 'none';
+    sessionGroup.style.display = 'none';
+    if (ipGroup) ipGroup.style.display = 'flex';
+    if (loginSubtitle) loginSubtitle.textContent = "Connect via IndoFinity to start";
+  } else {
+    usernameGroup.style.display = 'flex';
+    sessionGroup.style.display = 'flex';
+    if (ipGroup) ipGroup.style.display = 'none';
+    if (loginSubtitle) loginSubtitle.textContent = "Enter TikTok username to start";
+  }
+};
+
 function connectToLive() {
   const username = document.getElementById('usernameInput').value.trim();
   const lang = document.getElementById('languageSelect').value;
   const sessionInputElem = document.getElementById('sessionInput');
   const sessionId = sessionInputElem ? sessionInputElem.value.trim() : "";
+  const backendSelect = document.getElementById('backendSelect');
+  const backend = backendSelect ? backendSelect.value : 'socketio';
 
-  if (!username) {
+  if (backend !== 'indofinity' && !username) {
     loginStatus.textContent = "Enter a username first!";
     return;
   }
 
-  lastUsername = username;
+  // Destroy socket if it doesn't match current backend
+  if (socket) {
+    const isIndoFinity = socket instanceof IndoFinitySocket;
+    if ((backend === 'indofinity' && !isIndoFinity) || (backend === 'socketio' && isIndoFinity)) {
+      if (socket.ws) socket.ws.close();
+      if (socket.disconnect) socket.disconnect();
+      socket = null;
+    }
+  }
+
+  // Fallback username for IndoFinity so it doesn't break header/localStorage
+  lastUsername = backend === 'indofinity' ? 'IndoFinity_Host' : username;
   lastLang = lang;
   lastSessionId = sessionId;
+
+  // Read IndoFinity IP
+  const ipInput = document.getElementById('indofinityIpInput');
+  const indofinityIp = ipInput ? ipInput.value.trim() || 'localhost' : 'localhost';
 
   // Persist to localStorage for auto-reconnect on refresh
   try {
     localStorage.setItem('wordle_username', username);
     localStorage.setItem('wordle_lang', lang);
     localStorage.setItem('wordle_sessionid', sessionId);
+    localStorage.setItem('wordle_backend', backend);
+    localStorage.setItem('wordle_indofinity_ip', indofinityIp);
   } catch (e) {}
   connectBtn.disabled = true;
   connectBtn.textContent = "Connecting...";
@@ -1528,10 +2032,20 @@ function connectToLive() {
     loginStatus.textContent = "Connecting to server...";
 
     if (!socket) {
-      socket = io(SOCKET_URL);
+      if (backend === 'indofinity') {
+        socket = new IndoFinitySocket(`ws://${indofinityIp}:62024`);
+      } else {
+        socket = io(SOCKET_URL);
+      }
       setupSocketListeners();
     } else if (socket.connected) {
-      socket.emit('connect-tiktok', { uniqueId: username, sessionId });
+      if (backend === 'indofinity') {
+        if (socket.listeners['statusUpdate']) {
+          socket.listeners['statusUpdate'].forEach(cb => cb({ status: 'connected', uniqueId: 'IndoFinity' }));
+        }
+      } else {
+        socket.emit('connect-tiktok', { uniqueId: username, sessionId });
+      }
     } else {
       loginStatus.textContent = "Waiting for server connection...";
     }
@@ -1580,9 +2094,11 @@ function autoReconnect() {
     const savedUser = localStorage.getItem('wordle_username');
     const savedLang = localStorage.getItem('wordle_lang');
     const savedSession = localStorage.getItem('wordle_sessionid');
+    const savedBackend = localStorage.getItem('wordle_backend');
+    const savedIp = localStorage.getItem('wordle_indofinity_ip');
     const savedMode = sessionStorage.getItem('wordle_gameMode');
     
-    if (savedUser && savedMode) {
+    if ((savedUser || savedBackend === 'indofinity') && savedMode) {
       // Restore game mode
       currentGameMode = savedMode;
 
@@ -1591,11 +2107,19 @@ function autoReconnect() {
       loginOverlay.style.display = 'flex';
 
       // Pre-fill login fields
-      document.getElementById('usernameInput').value = savedUser;
+      document.getElementById('usernameInput').value = savedUser || '';
       const langSelect = document.getElementById('languageSelect');
       if (savedLang && langSelect) langSelect.value = savedLang;
+      const ipInput = document.getElementById('indofinityIpInput');
+      if (savedIp && ipInput) ipInput.value = savedIp;
       const sessionInput = document.getElementById('sessionInput');
       if (savedSession && sessionInput) sessionInput.value = savedSession;
+      const backendSelect = document.getElementById('backendSelect');
+      if (savedBackend && backendSelect) {
+        backendSelect.value = savedBackend;
+        if (typeof handleBackendChange === 'function') handleBackendChange(savedBackend);
+      }
+
       
       // Auto-connect
       connectToLive();
@@ -1604,7 +2128,88 @@ function autoReconnect() {
 }
 
 // Run auto-reconnect when page loads
-window.addEventListener('DOMContentLoaded', autoReconnect);
+window.addEventListener('DOMContentLoaded', () => {
+  // Smart IP detection: use the hostname the page was loaded from
+  const ipInput = document.getElementById('indofinityIpInput');
+  if (ipInput) {
+    const savedIp = localStorage.getItem('wordle_indofinity_ip');
+    if (savedIp) {
+      ipInput.value = savedIp;
+    } else {
+      // Auto-detect: if page is loaded via a LAN IP, use that same IP for IndoFinity
+      const host = window.location.hostname;
+      ipInput.value = (host && host !== '0.0.0.0') ? host : 'localhost';
+    }
+  }
+
+  autoReconnect();
+  const backendSelect = document.getElementById('backendSelect');
+  if (backendSelect && typeof handleBackendChange === 'function') {
+    handleBackendChange(backendSelect.value);
+  }
+
+  // Always establish local socket for music features
+  localSocket = io(SOCKET_URL);
+  
+  localSocket.on('music-request', (data) => {
+    console.log("Music Requested:", data);
+    
+    // Check banned keywords
+    const titleLower = data.title.toLowerCase();
+    const queryLower = (data.originalQuery || "").toLowerCase();
+    
+    if (musicSettings.bannedKeywords.length > 0) {
+      if (musicSettings.bannedKeywords.some(kw => titleLower.includes(kw) || queryLower.includes(kw))) {
+        console.log("Music rejected: Contains banned keyword");
+        if (data.requesterName === "Host") showToast("🚫 Lagu ditolak: Mengandung kata terlarang!");
+        return;
+      }
+    }
+    
+    // Check duration
+    let durMins = 0;
+    if (data.duration) {
+      const parts = data.duration.split(':').map(Number);
+      if (parts.length === 2) durMins = parts[0] + (parts[1]/60);
+      else if (parts.length === 3) durMins = (parts[0]*60) + parts[1] + (parts[2]/60);
+    }
+    if (musicSettings.maxDuration > 0 && durMins > musicSettings.maxDuration) {
+      console.log("Music rejected: Exceeds max duration");
+      if (data.requesterName === "Host") showToast(`🚫 Lagu ditolak: Durasi melebihi batas (${musicSettings.maxDuration} menit)!`);
+      return;
+    }
+    
+    // Check global limit
+    if (musicSettings.maxGlobal > 0 && musicQueue.length >= musicSettings.maxGlobal) {
+      console.log("Music rejected: Global queue full");
+      if (data.requesterName === "Host") showToast("🚫 Antrian penuh!");
+      return;
+    }
+    
+    // Check user limit
+    if (musicSettings.maxUser > 0 && data.requesterName !== "Host") {
+      const userReqs = musicQueue.filter(m => m.requesterName === data.requesterName).length;
+      if (userReqs >= musicSettings.maxUser) {
+        console.log(`Music rejected: User ${data.requesterName} hit queue limit`);
+        return;
+      }
+    }
+    
+    musicQueue.push(data);
+    updateMusicQueueUI();
+    
+    if (!isMusicPlaying && musicQueue.length === 1) {
+      playNextMusic();
+    }
+  });
+
+  localSocket.on('music-skip', () => {
+    console.log("Music skip requested via command");
+    if (isMusicPlaying) {
+      playNextMusic();
+    }
+  });
+});
 
 function setupSocketListeners() {
   // --- Socket.IO connection lifecycle (Bug 3 fix) ---
@@ -1718,6 +2323,21 @@ function setupSocketListeners() {
 
   // --- Game events ---
   socket.on('chat', (data) => {
+    // Check for music request when using IndoFinity (local server handles it otherwise)
+    if (socket instanceof IndoFinitySocket && data.comment && data.comment.toLowerCase().startsWith('!play ')) {
+      if (musicSettings.requestsEnabled !== false) {
+        const query = data.comment.substring(6).trim();
+        if (query && localSocket) {
+          localSocket.emit('chat-music-request', {
+            query: query,
+            requesterName: data.nickname || data.uniqueId,
+            requesterImg: data.profilePictureUrl
+          });
+        }
+      }
+      return;
+    }
+
     readTTS(data.nickname, data.comment, data.followRole, data.isFollower);
     handleChatGuess(data);
   });
@@ -1751,6 +2371,8 @@ function setupSocketListeners() {
       actionEl.textContent = 'BARU SAJA FOLLOW! 💖';
       actionEl.style.color = 'var(--primary)';
       container.style.borderColor = 'var(--primary)';
+      
+      playSocialAlertAudio(socialAudioSettings.followSound);
     } else if (actionType === 'gift') {
       const giftName = userData.giftName ? userData.giftName.toUpperCase() : 'GIFT';
       actionEl.textContent = `MENGIRIM ${giftName}! 🎁`;
@@ -1765,6 +2387,11 @@ function setupSocketListeners() {
         giftCount.textContent = `x${userData.repeatCount}`;
         giftCount.style.display = 'block';
       }
+      
+      const rawGiftName = userData.giftName ? userData.giftName.trim().toLowerCase() : '';
+      const customMatch = (socialAudioSettings.customGifts || []).find(item => item.giftName === rawGiftName);
+      const giftSoundUrl = customMatch ? customMatch.soundUrl : socialAudioSettings.defaultGiftSound;
+      playSocialAlertAudio(giftSoundUrl);
     }
 
     container.classList.add('show');
@@ -1777,6 +2404,12 @@ function setupSocketListeners() {
 
   socket.on('share', (data) => {
     showSocialAlert(data, 'share');
+    const username = data.nickname || data.uniqueId;
+    if (username) {
+      playerShares[username] = (playerShares[username] || 0) + 1;
+      localStorage.setItem(getPtsPrefix() + 'share_' + username, playerShares[username]);
+      updateMarqueeUI();
+    }
   });
 
   socket.on('follow', (data) => {
@@ -1787,6 +2420,40 @@ function setupSocketListeners() {
     // Only show alert when streak ends or it's a non-repeatable gift, to prevent spam
     if (data.giftType === 1 && !data.repeatEnd) return;
     showSocialAlert(data, 'gift');
+    const username = data.nickname || data.uniqueId;
+    if (username) {
+      const coins = data.totalDiamonds || ((data.diamondCount || 0) * (data.repeatCount || 1));
+      if (coins > 0) {
+        playerGifts[username] = (playerGifts[username] || 0) + coins;
+        localStorage.setItem(getPtsPrefix() + 'gift_' + username, playerGifts[username]);
+        updateMarqueeUI();
+      }
+    }
+  });
+
+  socket.on('like', (data) => {
+    const addedLikes = (typeof data.likeCount === 'number') ? data.likeCount : 1;
+    const username = data.nickname || data.uniqueId;
+    if (username) {
+      playerLikes[username] = (playerLikes[username] || 0) + addedLikes;
+      localStorage.setItem(getPtsPrefix() + 'like_' + username, playerLikes[username]);
+      updateMarqueeUI();
+    }
+    
+    // Always spawn heart animation + counter for visual feedback
+    spawnHeartFlurry(Math.min(addedLikes, 5));
+    updateLikeCounter(data, addedLikes);
+    
+    // Like-restart logic only when waiting
+    if (isLikeRestartEnabled && isWaitingForLikes) {
+      currentLikes += addedLikes;
+      updateLikeProgressBar();
+      
+      if (currentLikes >= likeRestartThreshold) {
+        if (window.playHostAudio) playHostAudio('interaction');
+        executeRestartTransition();
+      }
+    }
   });
 
   socket.on('music-request', (data) => {
@@ -2092,6 +2759,53 @@ function checkWordLoopPath(startPrefix, targetSuffix, stepsLeft) {
     return currentLevel.has(targetSuffix);
 }
 
+// Keep track of guessed words for the feed in Word Tango
+let tangoGuessedWords = new Set();
+
+// Function to add a guess to the Word Tango live feed
+function addTangoGuessToFeed(word, userData, isCorrect) {
+  const feed = document.getElementById('tangoGuessFeed');
+  if (!feed) return;
+  
+  const upperWord = word.toUpperCase();
+  // If already guessed and it's wrong, we can skip adding it again to prevent spamming the history
+  if (!isCorrect && tangoGuessedWords.has(upperWord)) return;
+  tangoGuessedWords.add(upperWord);
+  
+  const item = document.createElement('div');
+  item.className = `tango-guess-item ${isCorrect ? 'correct' : 'wrong'}`;
+  
+  const avatar = document.createElement('img');
+  avatar.className = 'tango-guess-avatar';
+  avatar.src = (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : 'assets/default_avatar.png';
+  // handle broken image link gracefully
+  avatar.onerror = function() { this.src = 'assets/default_avatar.png'; };
+  
+  const wordSpan = document.createElement('span');
+  wordSpan.className = 'tango-guess-word';
+  wordSpan.textContent = upperWord;
+  
+  const icon = document.createElement('span');
+  icon.className = 'tango-guess-icon';
+  icon.textContent = isCorrect ? '✅' : '❌';
+  
+  item.appendChild(avatar);
+  item.appendChild(wordSpan);
+  item.appendChild(icon);
+  
+  feed.appendChild(item);
+  
+  // Maintain max 3 visible items, sliding out the oldest
+  const activeItems = Array.from(feed.children).filter(child => !child.classList.contains('slide-out'));
+  if (activeItems.length > 3) {
+    const oldest = activeItems[0];
+    oldest.classList.add('slide-out');
+    setTimeout(() => {
+      if (oldest.parentNode) oldest.remove();
+    }, 300);
+  }
+}
+
 // Process a valid guess — optimized: no blocking delays
 function processGuess(guessWord, userData) {
   if (isBadWordsFilterOn) {
@@ -2104,15 +2818,49 @@ function processGuess(guessWord, userData) {
   }
 
   if (currentGameMode === 'wordtango') {
+    const validDict = allValidWords[guessWord.length];
+    let isValidWord = validDict && validDict.includes(guessWord);
+    if (!isValidWord) return;
+
     let matchedIndex = -1;
+    let matchedPatternIndex = -1;
+
     for (let i = 0; i < 4; i++) {
       const t = wordTangoTargets[i];
-      if (t && !t.solved && t.word === guessWord) {
-        matchedIndex = i;
-        break;
+      if (t && !t.solved) {
+        if (t.word === guessWord) {
+          matchedIndex = i;
+          break;
+        }
+        
+        // Check if guess matches the revealed pattern
+        if (guessWord.length === t.length) {
+          let fitsPattern = true;
+          for (let j = 0; j < t.length; j++) {
+             if (!t.missingIndices.includes(j)) {
+                if (guessWord[j] !== t.word[j]) {
+                   fitsPattern = false;
+                   break;
+                }
+             }
+          }
+          if (fitsPattern) {
+             matchedPatternIndex = i;
+          }
+        }
       }
     }
-    if (matchedIndex === -1) return;
+
+    if (matchedIndex === -1) {
+      // If it doesn't match the exact target, but matches a pattern, add to feed as wrong
+      if (matchedPatternIndex !== -1) {
+        addTangoGuessToFeed(guessWord, userData, false);
+      }
+      return;
+    }
+
+    // Add correct guess to the feed
+    addTangoGuessToFeed(guessWord, userData, true);
 
     const target = wordTangoTargets[matchedIndex];
     target.solved = true;
@@ -2178,34 +2926,27 @@ function processGuess(guessWord, userData) {
       if (mvp) mvpData = mvp.data;
 
       setTimeout(() => {
-        const winOverlay = document.getElementById('winOverlay');
-        const winAvatar = document.getElementById('winAvatar');
-        if (winAvatar) winAvatar.src = (mvpData && mvpData.profilePictureUrl) ? mvpData.profilePictureUrl : 'assets/bg_nature.png';
-        const winName = document.getElementById('winName');
-        if (winName) winName.textContent = (mvpData && mvpData.nickname) ? mvpData.nickname : 'MVP';
-        const winPts = document.getElementById('winPts');
-        if (winPts) winPts.innerHTML = `🪙 MVP (${maxScore} PTS)`;
-        const winWord = document.getElementById('winWord');
-        if (winWord) {
-          const solvedWords = wordTangoTargets.map(t => t.word).join(', ');
-          winWord.textContent = solvedWords;
-          if (solvedWords.length > 12) {
-            winWord.style.fontSize = 'clamp(18px, 4vw, 24px)';
-            winWord.style.letterSpacing = '2px';
-          } else {
-            winWord.style.fontSize = '';
-            winWord.style.letterSpacing = '';
-          }
+        const multiWinList = document.getElementById('multiWinList');
+        if (multiWinList) {
+          multiWinList.innerHTML = '';
+          wordTangoTargets.forEach((t) => {
+            const solverData = t.solver || { nickname: 'Unknown', profilePictureUrl: 'assets/bg_nature.png' };
+            const isMvp = (mvpData && solverData.uniqueId === mvpData.uniqueId);
+            
+            const item = document.createElement('div');
+            item.className = `multi-win-item ${isMvp ? 'mvp' : ''}`;
+            item.innerHTML = `
+              <img class="multi-win-avatar" src="${solverData.profilePictureUrl || 'assets/bg_nature.png'}" alt="Avatar">
+              <div class="multi-win-info">
+                <div class="multi-win-name">${solverData.nickname || 'Unknown'}</div>
+                <div class="multi-win-word">${t.word}</div>
+              </div>
+              <div class="multi-win-points">+${t.points || 15}</div>
+            `;
+            multiWinList.appendChild(item);
+          });
         }
-        if (winOverlay) winOverlay.classList.add('show');
-
-        if (window.playHostAudio) playHostAudio('win');
-
-        setTimeout(() => {
-          if (winOverlay) winOverlay.classList.remove('show');
-          round++;
-          startNewRound();
-        }, 5000);
+        triggerWinTransition(5000, true);
       }, 1000);
     }
     return;
@@ -2311,38 +3052,37 @@ function processGuess(guessWord, userData) {
           }
 
           setTimeout(() => {
-            const winOverlay = document.getElementById('winOverlay');
-            const winAvatar = document.getElementById('winAvatar');
-            if (winAvatar) winAvatar.src = (mvpData && mvpData.profilePictureUrl) ? mvpData.profilePictureUrl : 'assets/bg_nature.png';
-            const winName = document.getElementById('winName');
-            if (winName) winName.textContent = (mvpData && mvpData.nickname) ? mvpData.nickname : 'MVP';
-            const winPts = document.getElementById('winPts');
-            if (winPts) winPts.innerHTML = `🪙 MVP (${maxScore} PTS)`;
-            const winWord = document.getElementById('winWord');
-            if (winWord) {
-              winWord.textContent = "SEMUA KATA TERTEBAK!";
-              winWord.style.fontSize = 'clamp(18px, 4vw, 24px)';
-              winWord.style.letterSpacing = '2px';
+            const multiWinList = document.getElementById('multiWinList');
+            if (multiWinList) {
+              multiWinList.innerHTML = '';
+              fillBlanksTargets.forEach((t) => {
+                const solverData = t.solver || { nickname: 'Unknown', profilePictureUrl: 'assets/bg_nature.png' };
+                const isMvp = (mvpData && solverData.uniqueId === mvpData.uniqueId);
+                
+                const item = document.createElement('div');
+                item.className = `multi-win-item ${isMvp ? 'mvp' : ''}`;
+                item.innerHTML = `
+                  <img class="multi-win-avatar" src="${solverData.profilePictureUrl || 'assets/bg_nature.png'}" alt="Avatar">
+                  <div class="multi-win-info">
+                    <div class="multi-win-name">${solverData.nickname || 'Unknown'}</div>
+                    <div class="multi-win-word">${t.word}</div>
+                  </div>
+                  <div class="multi-win-points">+${t.points || 15}</div>
+                `;
+                multiWinList.appendChild(item);
+              });
             }
-            if (winOverlay) winOverlay.classList.add('show');
-            if (window.playHostAudio) playHostAudio('win');
-            setTimeout(() => {
-              if (winOverlay) winOverlay.classList.remove('show');
-              board.classList.add('board-transitioning');
-              setTimeout(() => {
-                round++;
-                startNewRound();
-                requestAnimationFrame(() => {
-                  board.classList.remove('board-transitioning');
-                });
-              }, 600);
-            }, 10000);
+            triggerWinTransition(10000, true);
           }, 1000);
         }
       } else {
         // Pattern matched but wrong target word
         fillBlanksTargets[matchedIndex].isAnimating = true;
         if (row) {
+          row.classList.remove('shake');
+          void row.offsetWidth; // Trigger reflow
+          row.classList.add('shake');
+          
           const avatar = row.querySelector('.guesser-avatar');
           const originalAvatarSrc = avatar ? avatar.src : '';
           const originalAvatarShow = avatar ? avatar.classList.contains('show') : false;
@@ -2370,6 +3110,8 @@ function processGuess(guessWord, userData) {
           }
           
           setTimeout(() => {
+            if (row) row.classList.remove('shake');
+            
             if (!fillBlanksTargets[matchedIndex].solved) {
                fillBlanksTargets[matchedIndex].isAnimating = false;
                if (avatar) {
@@ -2774,25 +3516,7 @@ function processGuess(guessWord, userData) {
     }
 
     setTimeout(() => {
-      winOverlay.classList.add('show');
-      if (window.playHostAudio) playHostAudio('win');
-      
-      setTimeout(() => {
-        // Fade out overlay smoothly
-        winOverlay.classList.remove('show');
-        // Fade out board selama overlay masih terlihat
-        board.classList.add('board-transitioning');
-        
-        // Tunggu transisi overlay selesai (500ms), baru reset board
-        setTimeout(() => {
-          round++;
-          startNewRound();
-          // Board sudah di-reset, tunggu 1 frame lalu fade-in board
-          requestAnimationFrame(() => {
-            board.classList.remove('board-transitioning');
-          });
-        }, 600);
-      }, 4000); // Durasi overlay dikurangi dari 10 detik menjadi 4 detik
+      triggerWinTransition(4000);
     }, 2400); // Tunggu wave selesai sebelum memunculkan overlay
   }
 }
@@ -2932,7 +3656,7 @@ if (hostMusicBtn) {
   hostMusicInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
       const query = hostMusicInput.value.trim();
-      if (query && socket) {
+      if (query && localSocket) {
         // Pre-warm YouTube player within user gesture context (mobile requires this)
         if (ytPlayer && ytPlayer.unMute) {
           try {
@@ -2944,7 +3668,7 @@ if (hostMusicBtn) {
             }
           } catch(ew) {}
         }
-        socket.emit('host-music-request', query.replace('!play ', ''));
+        localSocket.emit('host-music-request', query.replace('!play ', ''));
         hostMusicInput.value = '';
         hostMusicInputContainer.classList.remove('open');
       }
@@ -2952,20 +3676,56 @@ if (hostMusicBtn) {
   });
 }
 
+// ─── Custom Confirm Modal ───
+function showCustomConfirm(message, onConfirm) {
+  const overlay = document.getElementById('confirmModal');
+  const messageEl = document.getElementById('confirmModalMessage');
+  const yesBtn = document.getElementById('confirmModalYes');
+  const noBtn = document.getElementById('confirmModalNo');
+  
+  if (!overlay || !messageEl || !yesBtn || !noBtn) return;
+  
+  messageEl.textContent = message;
+  overlay.style.display = 'flex';
+  
+  // Clone nodes to clean up any previous click listeners
+  const newYes = yesBtn.cloneNode(true);
+  const newNo = noBtn.cloneNode(true);
+  yesBtn.parentNode.replaceChild(newYes, yesBtn);
+  noBtn.parentNode.replaceChild(newNo, noBtn);
+  
+  newYes.addEventListener('click', () => {
+    overlay.style.display = 'none';
+    if (typeof onConfirm === 'function') onConfirm();
+  });
+  
+  newNo.addEventListener('click', () => {
+    overlay.style.display = 'none';
+  });
+}
+
 // ─── Reset Leaderboard ───
-window.resetLeaderboard = function(e) {
+window.resetDailyLeaderboard = function(e) {
   if (e) e.stopPropagation();
-  if (confirm("Reset SEMUA poin Sesi dan Mingguan? Tindakan ini tidak bisa dibatalkan.")) {
-    // Clear session points
-    playerPoints = {};
+  showCustomConfirm("Reset HANYA poin Daily untuk mode ini? Tindakan ini tidak bisa dibatalkan.", () => {
+    // Reset daily points, likes, shares, and gifts in memory
+    for (const username in playerPoints) {
+      playerPoints[username].sessionPts = 0;
+    }
+    playerLikes = {};
+    playerShares = {};
+    playerGifts = {};
     
-    // Clear weekly points from localStorage
+    // Clear daily points, likes, shares, and gifts from localStorage
     const keysToRemove = [];
     const prefix = getPtsPrefix();
+    const dailyPrefix = prefix + 'daily_';
+    const likePrefix = prefix + 'like_';
+    const sharePrefix = prefix + 'share_';
+    const giftPrefix = prefix + 'gift_';
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith(prefix)) {
-        if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_'))) continue;
+      if (key && (key.startsWith(dailyPrefix) || key.startsWith(likePrefix) || key.startsWith(sharePrefix) || key.startsWith(giftPrefix))) {
         keysToRemove.push(key);
       }
     }
@@ -2973,12 +3733,45 @@ window.resetLeaderboard = function(e) {
     
     // Refresh UI
     renderLeaderboard();
-    showToast("Leaderboard telah di-reset!");
+    updateMarqueeUI(true);
+    showToast("Leaderboard Daily dan statistik keaktifan telah di-reset!");
     
     // Close settings dropdown if open
     const dropdown = document.getElementById('settingsDropdown');
     if (dropdown) dropdown.classList.remove('show');
-  }
+  });
+};
+
+window.resetLeaderboard = function(e) {
+  if (e) e.stopPropagation();
+  showCustomConfirm("Reset SEMUA poin Daily dan Weekly? Tindakan ini tidak bisa dibatalkan.", () => {
+    // Clear points, likes, shares, and gifts in memory
+    playerPoints = {};
+    playerLikes = {};
+    playerShares = {};
+    playerGifts = {};
+    
+    // Clear weekly and daily points, likes, shares, gifts from localStorage
+    const keysToRemove = [];
+    const prefix = getPtsPrefix();
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(prefix)) {
+        if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_'))) continue;
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    
+    // Refresh UI
+    renderLeaderboard();
+    updateMarqueeUI(true);
+    showToast("Leaderboard Daily dan Weekly telah di-reset!");
+    
+    // Close settings dropdown if open
+    const dropdown = document.getElementById('settingsDropdown');
+    if (dropdown) dropdown.classList.remove('show');
+  });
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -2987,6 +3780,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const noYellowToggle = document.getElementById('noYellowToggle');
   if (noYellowToggle) noYellowToggle.checked = isNoYellowMode;
+
+  const marqueeToggle = document.getElementById('marqueeToggle');
+  if (marqueeToggle) marqueeToggle.checked = isMarqueeEnabled;
+
+  const heartFlurryToggle = document.getElementById('heartFlurryToggle');
+  if (heartFlurryToggle) heartFlurryToggle.checked = isHeartFlurryEnabled;
 
   // Initialize length checkboxes
   try {
@@ -2999,6 +3798,19 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('len8Toggle')) document.getElementById('len8Toggle').checked = savedLengths.includes(8);
   } catch(e) {}
   if (typeof updateBoardScaleUI === 'function') updateBoardScaleUI();
+
+  // Handle smooth marquee updates when animation completes a cycle (off-screen)
+  const contentEl = document.getElementById('marqueeContent');
+  const marqueeContainer = document.getElementById('marqueeContainer');
+  if (contentEl && marqueeContainer) {
+    contentEl.addEventListener('animationiteration', () => {
+      if (pendingMarqueeHTML && pendingMarqueeHTML !== "") {
+        contentEl.innerHTML = pendingMarqueeHTML;
+        applyMarqueeAnimationProps(contentEl, marqueeContainer);
+        pendingMarqueeHTML = "";
+      }
+    });
+  }
 });
 
 window.updateAllowedLengths = function() {
@@ -3110,6 +3922,9 @@ window.openMusicSettings = function(e) {
   const dropdown = document.getElementById('settingsDropdown');
   if (dropdown) dropdown.classList.remove('open');
   
+  const reqToggle = document.getElementById('musicRequestsEnabled');
+  if (reqToggle) reqToggle.checked = musicSettings.requestsEnabled !== false;
+
   document.getElementById('musicMaxGlobal').value = musicSettings.maxGlobal;
   document.getElementById('musicMaxUser').value = musicSettings.maxUser;
   document.getElementById('musicMaxDuration').value = musicSettings.maxDuration;
@@ -3129,6 +3944,9 @@ window.updateMusicVolumeUI = function(val) {
 };
 
 window.saveMusicSettings = function() {
+  const reqToggle = document.getElementById('musicRequestsEnabled');
+  musicSettings.requestsEnabled = reqToggle ? reqToggle.checked : true;
+
   musicSettings.maxGlobal = parseInt(document.getElementById('musicMaxGlobal').value) || 20;
   musicSettings.maxUser = parseInt(document.getElementById('musicMaxUser').value) || 2;
   musicSettings.maxDuration = parseInt(document.getElementById('musicMaxDuration').value) || 6;
@@ -3144,7 +3962,161 @@ window.saveMusicSettings = function() {
     ytPlayer.setVolume(musicSettings.volume);
   }
   
+  // Re-start instruction rotation so the change in !play instruction is immediately reflected
+  startInstructionRotation();
+  
   showToast("✅ Pengaturan Musik disimpan!");
+};
+
+// ─── Social Audio Settings Functions ───
+let socialAudioSettings = {
+  enabled: true,
+  volume: 80,
+  followSound: "https://www.myinstants.com/media/sounds/anime-wow.mp3",
+  defaultGiftSound: "https://www.myinstants.com/media/sounds/coin-sound-effect.mp3",
+  customGifts: [
+    { giftName: "mawar", soundUrl: "https://www.myinstants.com/media/sounds/uwu.mp3" },
+    { giftName: "universe", soundUrl: "https://www.myinstants.com/media/sounds/tuturu.mp3" }
+  ]
+};
+try {
+  const savedSocialAudio = localStorage.getItem('social_audio_settings');
+  if (savedSocialAudio) {
+    socialAudioSettings = JSON.parse(savedSocialAudio);
+  }
+} catch(e) {}
+
+window.openSocialAudioSettings = function(e) {
+  if (e) e.stopPropagation();
+  const dropdown = document.getElementById('settingsDropdown');
+  if (dropdown) dropdown.classList.remove('open');
+  
+  document.getElementById('socialAudioEnabled').checked = socialAudioSettings.enabled !== false;
+  document.getElementById('socialAudioVolumeSlider').value = socialAudioSettings.volume;
+  document.getElementById('socialAudioVolumeLabel').textContent = `${socialAudioSettings.volume}%`;
+  document.getElementById('socialAudioFollowUrl').value = socialAudioSettings.followSound || '';
+  document.getElementById('socialAudioDefaultGiftUrl').value = socialAudioSettings.defaultGiftSound || '';
+  
+  // Format custom gifts mapping text: "Rose = URL"
+  const mappingLines = (socialAudioSettings.customGifts || []).map(item => {
+    return `${item.giftName} = ${item.soundUrl}`;
+  });
+  document.getElementById('socialAudioCustomGifts').value = mappingLines.join('\n');
+  
+  document.getElementById('socialAudioSettingsModal').style.display = 'flex';
+};
+
+window.saveSocialAudioSettings = function() {
+  socialAudioSettings.enabled = document.getElementById('socialAudioEnabled').checked;
+  socialAudioSettings.volume = parseInt(document.getElementById('socialAudioVolumeSlider').value) || 80;
+  socialAudioSettings.followSound = document.getElementById('socialAudioFollowUrl').value.trim();
+  socialAudioSettings.defaultGiftSound = document.getElementById('socialAudioDefaultGiftUrl').value.trim();
+  
+  const customGiftsText = document.getElementById('socialAudioCustomGifts').value;
+  const lines = customGiftsText.split('\n');
+  const customGifts = [];
+  lines.forEach(line => {
+    const parts = line.split('=');
+    if (parts.length === 2) {
+      const name = parts[0].trim().toLowerCase();
+      const url = parts[1].trim();
+      if (name && url) {
+        customGifts.push({ giftName: name, soundUrl: url });
+      }
+    }
+  });
+  socialAudioSettings.customGifts = customGifts;
+  
+  localStorage.setItem('social_audio_settings', JSON.stringify(socialAudioSettings));
+  document.getElementById('socialAudioSettingsModal').style.display = 'none';
+  
+  showToast("✅ Pengaturan Sound Alert disimpan!");
+};
+
+function playSocialAlertAudio(soundUrl) {
+  if (!socialAudioSettings.enabled || !soundUrl) return;
+  try {
+    const audio = new Audio(soundUrl);
+    audio.volume = (socialAudioSettings.volume / 100);
+    
+    // Duck music
+    duckMusicVolume();
+    audio.play().catch(e => console.log('[SocialAudio] Play blocked', e));
+    
+    audio.onended = () => {
+      restoreMusicVolume();
+    };
+    audio.onerror = () => {
+      restoreMusicVolume();
+    };
+  } catch (err) {
+    console.warn('[SocialAudio] Play error', err);
+  }
+}
+
+window.previewAlertSound = function(url) {
+  if (!url) {
+    showToast("⚠️ Masukkan URL sound alert terlebih dahulu!");
+    return;
+  }
+  
+  try {
+    const vol = parseInt(document.getElementById('socialAudioVolumeSlider').value) || 80;
+    const audio = new Audio(url);
+    audio.volume = vol / 100;
+    
+    duckMusicVolume();
+    audio.play().catch(e => {
+      showToast("🚫 Gagal memutar suara! Periksa kembali URL.");
+      restoreMusicVolume();
+    });
+    
+    audio.onended = () => {
+      restoreMusicVolume();
+    };
+    audio.onerror = () => {
+      showToast("🚫 Gagal memutar suara! Format URL salah atau diblokir.");
+      restoreMusicVolume();
+    };
+  } catch (err) {
+    showToast("🚫 Gagal memutar file audio!");
+    restoreMusicVolume();
+  }
+};
+
+window.testCustomGiftSound = function() {
+  const giftNameInput = document.getElementById('socialAudioTestGiftName');
+  if (!giftNameInput) return;
+  
+  const testName = giftNameInput.value.trim().toLowerCase();
+  if (!testName) {
+    showToast("⚠️ Ketik nama gift yang ingin ditest!");
+    return;
+  }
+  
+  const customGiftsText = document.getElementById('socialAudioCustomGifts').value;
+  const lines = customGiftsText.split('\n');
+  let matchedUrl = "";
+  
+  lines.forEach(line => {
+    const parts = line.split('=');
+    if (parts.length === 2) {
+      const name = parts[0].trim().toLowerCase();
+      const url = parts[1].trim();
+      if (name === testName) {
+        matchedUrl = url;
+      }
+    }
+  });
+  
+  if (matchedUrl) {
+    showToast(`🔊 Memutar suara kustom untuk gift "${testName}"...`);
+    previewAlertSound(matchedUrl);
+  } else {
+    const defaultUrl = document.getElementById('socialAudioDefaultGiftUrl').value.trim();
+    showToast(`🔊 Gift "${testName}" tidak terdaftar. Memutar suara umum...`);
+    previewAlertSound(defaultUrl);
+  }
 };
 
 // ─── TTS Settings Functions ───

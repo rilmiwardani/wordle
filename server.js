@@ -155,6 +155,31 @@ io.on("connection", (socket) => {
     }
   });
 
+  // Chat Music Request (for IndoFinity backend fallback)
+  socket.on("chat-music-request", async (data) => {
+    const { query, requesterName, requesterImg } = data;
+    console.log(`[Socket.IO] Chat requested music: ${query} by ${requesterName}`);
+    try {
+      const ytSearch = require("yt-search");
+      const r = await ytSearch(query);
+      if (r.videos.length > 0) {
+        const video = r.videos[0];
+        io.emit('music-request', {
+          videoId: video.videoId,
+          title: video.title,
+          author: video.author.name,
+          thumbnail: video.image,
+          duration: video.timestamp || "",
+          requesterName: requesterName || "Viewer",
+          requesterImg: requesterImg || "",
+          originalQuery: query
+        });
+      }
+    } catch (err) {
+      console.error("[Music] Error searching:", err);
+    }
+  });
+
   // Get status
   socket.on("getStatus", () => {
     socket.emit("statusUpdate", getStatusPayload());

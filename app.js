@@ -249,6 +249,12 @@ function applyMarqueeAnimationProps(contentEl, marqueeContainer) {
   contentEl.style.animation = `marquee-scroll ${duration}s linear infinite`;
 }
 
+function formatShortNumber(num) {
+  if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '').replace('.', ',') + 'M';
+  if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '').replace('.', ',') + 'K';
+  return num;
+}
+
 function updateMarqueeUI(forceImmediate = false) {
   const marqueeContainer = document.getElementById('marqueeContainer');
   if (!marqueeContainer) return;
@@ -264,21 +270,21 @@ function updateMarqueeUI(forceImmediate = false) {
   
   let likerText = "❤️ TOP LIKERS: ";
   if (topLikers.length > 0) {
-    likerText += topLikers.map((u, i) => `${i + 1}. <span class="highlight">${u.username}</span> (${u.count})`).join(" &nbsp;");
+    likerText += topLikers.map((u, i) => `${i + 1}. <span class="highlight">${u.username}</span> ${formatShortNumber(u.count)}💖`).join(" &nbsp;&nbsp;&nbsp;");
   } else {
     likerText += `<span class="highlight">-</span>`;
   }
   
   let sharerText = "🚀 TOP SHARERS: ";
   if (topSharers.length > 0) {
-    sharerText += topSharers.map((u, i) => `${i + 1}. <span class="highlight">${u.username}</span> (${u.count})`).join(" &nbsp;");
+    sharerText += topSharers.map((u, i) => `${i + 1}. <span class="highlight">${u.username}</span> ${formatShortNumber(u.count)}🚀`).join(" &nbsp;&nbsp;&nbsp;");
   } else {
     sharerText += `<span class="highlight">-</span>`;
   }
 
   let gifterText = "🎁 TOP GIFTERS: ";
   if (topGifters.length > 0) {
-    gifterText += topGifters.map((u, i) => `${i + 1}. <span class="highlight">${u.username}</span> (${u.count} COINS)`).join(" &nbsp;");
+    gifterText += topGifters.map((u, i) => `${i + 1}. <span class="highlight">${u.username}</span> ${formatShortNumber(u.count)}🪙`).join(" &nbsp;&nbsp;&nbsp;");
   } else {
     gifterText += `<span class="highlight">-</span>`;
   }
@@ -680,19 +686,105 @@ function onPlayerReady(event) {
 }
 
 let ytPlayAttempts = 0;
+let musicProgressInterval = null;
+let isManualPause = false;
+
+function formatMusicTime(seconds) {
+  if (!seconds || isNaN(seconds)) return "0:00";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s < 10 ? '0' : ''}${s}`;
+}
+
+function updateMusicQueueUI() {
+  const nextContainer = document.getElementById('musicNextSong');
+  const nextName = document.getElementById('musicNextSongName');
+  if (musicQueue.length > 0) {
+    if (nextContainer && nextName) {
+      nextName.textContent = musicQueue[0].title;
+      nextContainer.style.display = 'block';
+    }
+  } else {
+    if (nextContainer) nextContainer.style.display = 'none';
+  }
+}
+
+function showMusicNotif(requesterName, title) {
+  const container = document.getElementById('musicNotifContainer');
+  if (!container) return;
+  
+  const notif = document.createElement('div');
+  notif.className = 'music-notif';
+  
+  notif.innerHTML = `
+    <span class="music-notif-icon">🎵</span>
+    <div class="music-notif-content">
+      <span><span class="music-notif-user">@${requesterName}</span> requested:</span>
+      <span class="music-notif-title">${title}</span>
+    </div>
+  `;
+  
+  container.appendChild(notif);
+  
+  setTimeout(() => {
+    if (notif.parentNode === container) {
+      container.removeChild(notif);
+    }
+  }, 3000); // 3 seconds matches CSS animation timing
+}
+
 function onPlayerStateChange(event) {
+  const vinyl = document.getElementById('musicVinyl');
+  const eq = document.getElementById('musicEqualizer');
+  
   // If the video ends (state 0), play the next one
   if (event.data == YT.PlayerState.ENDED) {
     ytPlayAttempts = 0;
+    if (vinyl) vinyl.classList.remove('playing');
+    if (eq) eq.classList.remove('playing');
+    clearInterval(musicProgressInterval);
+    
+    const playPauseBtn = document.getElementById('musicPlayPauseBtn');
+    if (playPauseBtn) playPauseBtn.textContent = '▶️';
+    
     playNextMusic();
   }
   
   if (event.data == YT.PlayerState.PLAYING) {
     ytPlayAttempts = 0;
+    isManualPause = false;
+    if (vinyl) vinyl.classList.add('playing');
+    if (eq) eq.classList.add('playing');
+    
+    const playPauseBtn = document.getElementById('musicPlayPauseBtn');
+    if (playPauseBtn) playPauseBtn.textContent = '⏸️';
+    
+    clearInterval(musicProgressInterval);
+    musicProgressInterval = setInterval(() => {
+      if (ytPlayer && ytPlayer.getCurrentTime && ytPlayer.getDuration) {
+        const curr = ytPlayer.getCurrentTime();
+        const total = ytPlayer.getDuration();
+        const timeStr = `${formatMusicTime(curr)} / ${formatMusicTime(total)}`;
+        const progElem = document.getElementById('musicTimeProgress');
+        if (progElem) progElem.textContent = timeStr;
+        
+        const fill = document.getElementById('musicProgressFill');
+        if (fill && total > 0) {
+          fill.style.width = `${(curr / total) * 100}%`;
+        }
+      }
+    }, 1000);
+  } else {
+    if (vinyl) vinyl.classList.remove('playing');
+    if (eq) eq.classList.remove('playing');
+    clearInterval(musicProgressInterval);
+    
+    const playPauseBtn = document.getElementById('musicPlayPauseBtn');
+    if (playPauseBtn) playPauseBtn.textContent = '▶️';
   }
 
   // If video is cued but not playing (mobile autoplay blocked), force play (max 3 attempts)
-  if (event.data == YT.PlayerState.CUED || event.data == YT.PlayerState.PAUSED) {
+  if (event.data == YT.PlayerState.CUED || (event.data == YT.PlayerState.PAUSED && !isManualPause)) {
     if (ytPlayAttempts < 3) {
       ytPlayAttempts++;
       setTimeout(() => {
@@ -713,7 +805,26 @@ function onPlayerError(event) {
   setTimeout(() => playNextMusic(), 1000);
 }
 
+window.togglePlayPause = function() {
+  if (ytPlayer && ytPlayer.getPlayerState) {
+    const state = ytPlayer.getPlayerState();
+    if (state === YT.PlayerState.PLAYING) {
+      isManualPause = true;
+      ytPlayer.pauseVideo();
+    } else {
+      isManualPause = false;
+      ytPlayer.playVideo();
+    }
+  }
+};
+
 function playNextMusic() {
+  if (!ytPlayerReady || !ytPlayer || !ytPlayer.loadVideoById) {
+    // If API isn't ready yet, retry in 500ms
+    setTimeout(playNextMusic, 500);
+    return;
+  }
+
   const hostSkipBtn = document.getElementById('hostSkipBtn');
   
   if (musicQueue.length === 0) {
@@ -730,15 +841,18 @@ function playNextMusic() {
   if (hostSkipBtn) hostSkipBtn.style.display = 'flex';
   
   const currentMusic = musicQueue.shift();
+  updateMusicQueueUI();
   
   document.getElementById('musicThumb').src = currentMusic.thumbnail || 'assets/bg_nature.png';
   document.getElementById('musicTitle').textContent = currentMusic.title;
   document.getElementById('musicRequester').textContent = `@${currentMusic.requesterName}`;
-  const durSpan = document.getElementById('musicDuration');
-  if(durSpan) {
-    durSpan.textContent = currentMusic.duration || "";
-    document.querySelector('.music-dot').style.display = currentMusic.duration ? 'inline' : 'none';
-  }
+  
+  const progElem = document.getElementById('musicTimeProgress');
+  if (progElem) progElem.textContent = `0:00 / ${currentMusic.duration || '0:00'}`;
+  
+  const fill = document.getElementById('musicProgressFill');
+  if (fill) fill.style.width = '0%';
+  
   document.getElementById('musicWidget').classList.add('show');
   
   if (ytPlayer && ytPlayer.loadVideoById) {
@@ -2197,6 +2311,7 @@ window.addEventListener('DOMContentLoaded', () => {
     
     musicQueue.push(data);
     updateMusicQueueUI();
+    showMusicNotif(data.requesterName, data.title);
     
     if (!isMusicPlaying && musicQueue.length === 1) {
       playNextMusic();
@@ -2501,11 +2616,12 @@ function setupSocketListeners() {
     }
 
     musicQueue.push(data);
+    updateMusicQueueUI();
 
     if (!isMusicPlaying) {
       playNextMusic();
     } else {
-      showToast(`🎶 Added to queue: ${data.title}`, 3000);
+      showMusicNotif(data.requesterName, data.title);
     }
   });
 

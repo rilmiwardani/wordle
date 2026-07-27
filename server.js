@@ -139,12 +139,20 @@ io.on("connection", (socket) => {
       const r = await ytSearch(query);
       if (r.videos.length > 0) {
         const video = r.videos[0];
+        const candidates = r.videos.slice(0, 5).map(v => ({
+          videoId: v.videoId,
+          title: v.title,
+          author: v.author ? v.author.name : "",
+          thumbnail: v.image,
+          duration: v.timestamp || ""
+        }));
         io.emit('music-request', {
           videoId: video.videoId,
           title: video.title,
-          author: video.author.name,
+          author: video.author ? video.author.name : "",
           thumbnail: video.image,
           duration: video.timestamp || "",
+          candidates: candidates,
           requesterName: "Host",
           requesterImg: "https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/7339798436154310662~c5_100x100.jpeg",
           originalQuery: query
@@ -164,12 +172,20 @@ io.on("connection", (socket) => {
       const r = await ytSearch(query);
       if (r.videos.length > 0) {
         const video = r.videos[0];
+        const candidates = r.videos.slice(0, 5).map(v => ({
+          videoId: v.videoId,
+          title: v.title,
+          author: v.author ? v.author.name : "",
+          thumbnail: v.image,
+          duration: v.timestamp || ""
+        }));
         io.emit('music-request', {
           videoId: video.videoId,
           title: video.title,
-          author: video.author.name,
+          author: video.author ? video.author.name : "",
           thumbnail: video.image,
           duration: video.timestamp || "",
+          candidates: candidates,
           requesterName: requesterName || "Viewer",
           requesterImg: requesterImg || "",
           originalQuery: query

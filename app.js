@@ -509,6 +509,7 @@ let wordTangoTargets = []; // { word, length, missingIndices, solved, solver, po
 let wordTangoPool = []; // { id, char, used }
 let ytPlayer = null;
 let musicQueue = [];
+let activeMusic = null;
 let isMusicPlaying = false;
 let musicSettings = { maxGlobal: 20, maxUser: 2, maxDuration: 6, bannedKeywords: [], volume: 50, requestsEnabled: true };
 try {
@@ -548,6 +549,8 @@ function initWeeklyLeaderboard() {
     const key = localStorage.key(i);
     if (key && key.startsWith(prefix)) {
       if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_'))) continue;
+      
+      if (key.startsWith(prefix + 'like_')) continue;
       
       if (key.startsWith(dailyPrefix)) {
         const username = key.substring(dailyPrefix.length);
@@ -687,7 +690,6 @@ function onPlayerReady(event) {
 
 let ytPlayAttempts = 0;
 let musicProgressInterval = null;
-let isManualPause = false;
 
 function formatMusicTime(seconds) {
   if (!seconds || isNaN(seconds)) return "0:00";
@@ -747,20 +749,13 @@ function onPlayerStateChange(event) {
     if (eq) eq.classList.remove('playing');
     clearInterval(musicProgressInterval);
     
-    const playPauseBtn = document.getElementById('musicPlayPauseBtn');
-    if (playPauseBtn) playPauseBtn.textContent = '▶️';
-    
     playNextMusic();
   }
   
   if (event.data == YT.PlayerState.PLAYING) {
     ytPlayAttempts = 0;
-    isManualPause = false;
     if (vinyl) vinyl.classList.add('playing');
     if (eq) eq.classList.add('playing');
-    
-    const playPauseBtn = document.getElementById('musicPlayPauseBtn');
-    if (playPauseBtn) playPauseBtn.textContent = '⏸️';
     
     clearInterval(musicProgressInterval);
     musicProgressInterval = setInterval(() => {
@@ -781,13 +776,10 @@ function onPlayerStateChange(event) {
     if (vinyl) vinyl.classList.remove('playing');
     if (eq) eq.classList.remove('playing');
     clearInterval(musicProgressInterval);
-    
-    const playPauseBtn = document.getElementById('musicPlayPauseBtn');
-    if (playPauseBtn) playPauseBtn.textContent = '▶️';
   }
 
   // If video is cued but not playing (mobile autoplay blocked), force play (max 3 attempts)
-  if (event.data == YT.PlayerState.CUED || (event.data == YT.PlayerState.PAUSED && !isManualPause)) {
+  if (event.data == YT.PlayerState.CUED || event.data == YT.PlayerState.PAUSED) {
     if (ytPlayAttempts < 3) {
       ytPlayAttempts++;
       setTimeout(() => {
@@ -804,22 +796,30 @@ function onPlayerStateChange(event) {
 
 function onPlayerError(event) {
   console.warn('[Music] YouTube player error:', event.data);
+  
+  // Try fallback candidates if available (e.g. lyrics/covers instead of embed-restricted official videos)
+  if (activeMusic && activeMusic.candidates && activeMusic.candidates.length > 1) {
+    activeMusic.candidates.shift(); // Remove the failed one
+    const nextCandidate = activeMusic.candidates[0];
+    if (nextCandidate) {
+      console.log(`[Music] Trying fallback candidate: ${nextCandidate.title} (${nextCandidate.videoId})`);
+      document.getElementById('musicThumb').src = nextCandidate.thumbnail || 'assets/bg_nature.png';
+      document.getElementById('musicTitle').textContent = nextCandidate.title;
+      const progElem = document.getElementById('musicTimeProgress');
+      if (progElem) progElem.textContent = `0:00 / ${nextCandidate.duration || '0:00'}`;
+      const fill = document.getElementById('musicProgressFill');
+      if (fill) fill.style.width = '0%';
+      
+      if (ytPlayer && ytPlayer.loadVideoById) {
+        ytPlayer.loadVideoById(nextCandidate.videoId);
+      }
+      return;
+    }
+  }
+  
   // Skip to next song on error (e.g. restricted/unavailable video)
   setTimeout(() => playNextMusic(), 1000);
 }
-
-window.togglePlayPause = function() {
-  if (ytPlayer && ytPlayer.getPlayerState) {
-    const state = ytPlayer.getPlayerState();
-    if (state === YT.PlayerState.PLAYING) {
-      isManualPause = true;
-      ytPlayer.pauseVideo();
-    } else {
-      isManualPause = false;
-      ytPlayer.playVideo();
-    }
-  }
-};
 
 function playNextMusic() {
   if (!ytPlayerReady || !ytPlayer || !ytPlayer.loadVideoById) {
@@ -843,15 +843,15 @@ function playNextMusic() {
   isMusicPlaying = true;
   if (hostSkipBtn) hostSkipBtn.style.display = 'flex';
   
-  const currentMusic = musicQueue.shift();
+  activeMusic = musicQueue.shift();
   updateMusicQueueUI();
   
-  document.getElementById('musicThumb').src = currentMusic.thumbnail || 'assets/bg_nature.png';
-  document.getElementById('musicTitle').textContent = currentMusic.title;
-  document.getElementById('musicRequester').textContent = `@${currentMusic.requesterName}`;
+  document.getElementById('musicThumb').src = activeMusic.thumbnail || 'assets/bg_nature.png';
+  document.getElementById('musicTitle').textContent = activeMusic.title;
+  document.getElementById('musicRequester').textContent = `@${activeMusic.requesterName}`;
   
   const progElem = document.getElementById('musicTimeProgress');
-  if (progElem) progElem.textContent = `0:00 / ${currentMusic.duration || '0:00'}`;
+  if (progElem) progElem.textContent = `0:00 / ${activeMusic.duration || '0:00'}`;
   
   const fill = document.getElementById('musicProgressFill');
   if (fill) fill.style.width = '0%';
@@ -861,7 +861,7 @@ function playNextMusic() {
   if (ytPlayer && ytPlayer.loadVideoById) {
     ytPlayer.unMute();
     ytPlayer.setVolume(musicSettings.volume);
-    ytPlayer.loadVideoById(currentMusic.videoId);
+    ytPlayer.loadVideoById(activeMusic.videoId);
   }
 }
 
@@ -1528,6 +1528,7 @@ function handleMyRank(userData) {
     if (key && key.startsWith(prefix)) {
       if (key.startsWith(dailyPrefix)) continue;
       if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_'))) continue;
+      if (key.startsWith(prefix + 'like_')) continue;
       const uName = key.substring(prefix.length);
       const pts = parseInt(localStorage.getItem(key)) || 0;
       weeklyData.push({ uName, pts });

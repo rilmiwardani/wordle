@@ -1968,23 +1968,7 @@ function renderWordGridBoard() {
       } else {
         wordEl.textContent = '';
         playerEl.textContent = '';
-        
-        const cacheWords = wgDictionaryCache[`${r}-${c}`];
-        if (cacheWords) {
-          let rarityClass = 'wg-rarity-common';
-          let rarityText = 'COMMON';
-          let basePoints = 1;
-          if (cacheWords.length <= 10) { rarityClass = 'wg-rarity-legendary'; rarityText = 'LEGENDARY'; basePoints = 15; }
-          else if (cacheWords.length <= 50) { rarityClass = 'wg-rarity-epic'; rarityText = 'EPIC'; basePoints = 7; }
-          else if (cacheWords.length <= 200) { rarityClass = 'wg-rarity-rare'; rarityText = 'RARE'; basePoints = 3; }
-          
-          cell.classList.add(rarityClass);
-          rarityEl.style.display = 'block';
-          rarityEl.innerHTML = `${rarityText}<br><span style="font-size:0.6em;opacity:0.8">Base: +${basePoints}</span>`;
-          rarityEl.style.background = 'rgba(0,0,0,0.6)';
-        } else {
-          rarityEl.style.display = 'none';
-        }
+        rarityEl.style.display = 'none';
       }
     }
   }

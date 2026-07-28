@@ -636,6 +636,7 @@ function getPtsPrefix() {
   if (currentGameMode === 'wordloop') return 'pts_wloop_';
   if (currentGameMode === 'fillblanks') return 'pts_fill_';
   if (currentGameMode === 'wordtango') return 'pts_tango_';
+  if (currentGameMode === 'wordgrid') return 'pts_wgrid_';
   return 'pts_';
 }
 
@@ -647,7 +648,7 @@ function initWeeklyLeaderboard() {
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key && key.startsWith(prefix)) {
-      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_'))) continue;
+      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_'))) continue;
       
       if (key.startsWith(prefix + 'like_') || 
           key.startsWith(prefix + 'share_') || 
@@ -1655,7 +1656,7 @@ function handleMyRank(userData) {
     const key = localStorage.key(i);
     if (key && key.startsWith(prefix)) {
       if (key.startsWith(dailyPrefix)) continue;
-      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_'))) continue;
+      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_'))) continue;
       if (key.startsWith(prefix + 'like_') || 
           key.startsWith(prefix + 'share_') || 
           key.startsWith(prefix + 'gift_') || 
@@ -4428,7 +4429,7 @@ window.resetLeaderboard = function(e) {
       const key = localStorage.key(i);
       if (key && key.startsWith(prefix)) {
         if (key.includes('_like_') || key.includes('_share_') || key.includes('_gift_') || key.includes('_active_') || key.includes('_avatar_')) continue;
-        if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_'))) continue;
+        if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_'))) continue;
         keysToRemove.push(key);
       }
     }

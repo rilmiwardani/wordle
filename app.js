@@ -153,6 +153,11 @@ let wgCluesRow = [];
 let wgCluesCol = [];
 let wgGrid = []; // 3x3 array of { word, username, profilePic }
 let wgDictionaryCache = {}; // Cache of valid words per cell
+let wordUsageFreq = {};
+try {
+  const savedFreq = localStorage.getItem('wordle_wordUsageStats');
+  if (savedFreq) wordUsageFreq = JSON.parse(savedFreq);
+} catch(e) {}
 let isGameOver = false;
 let isProcessing = false;
 let round = 1;
@@ -1952,23 +1957,34 @@ function renderWordGridBoard() {
         `;
         rarityEl.style.display = 'block';
         
+        cell.classList.add(data.rarityClass);
+        if (data.breakdown) {
+          rarityEl.innerHTML = `+${data.points} Pts<br><span style="font-size:0.45em;opacity:0.85;line-height:1.1;display:block;margin-top:2px;">${data.breakdown}</span>`;
+          rarityEl.style.lineHeight = '1.2';
+        } else {
+          rarityEl.textContent = `${data.rarityName} (+${data.points})`;
+        }
+        rarityEl.style.background = 'rgba(0,0,0,0.7)';
+      } else {
+        wordEl.textContent = '';
+        playerEl.textContent = '';
+        
         const cacheWords = wgDictionaryCache[`${r}-${c}`];
         if (cacheWords) {
           let rarityClass = 'wg-rarity-common';
           let rarityText = 'COMMON';
-          let points = 2;
-          if (cacheWords.length <= 10) { rarityClass = 'wg-rarity-legendary'; rarityText = 'LEGENDARY'; points = 25; }
-          else if (cacheWords.length <= 50) { rarityClass = 'wg-rarity-epic'; rarityText = 'EPIC'; points = 10; }
-          else if (cacheWords.length <= 200) { rarityClass = 'wg-rarity-rare'; rarityText = 'RARE'; points = 5; }
+          let basePoints = 1;
+          if (cacheWords.length <= 10) { rarityClass = 'wg-rarity-legendary'; rarityText = 'LEGENDARY'; basePoints = 15; }
+          else if (cacheWords.length <= 50) { rarityClass = 'wg-rarity-epic'; rarityText = 'EPIC'; basePoints = 7; }
+          else if (cacheWords.length <= 200) { rarityClass = 'wg-rarity-rare'; rarityText = 'RARE'; basePoints = 3; }
           
           cell.classList.add(rarityClass);
-          rarityEl.textContent = `${rarityText} (+${points})`;
+          rarityEl.style.display = 'block';
+          rarityEl.innerHTML = `${rarityText}<br><span style="font-size:0.6em;opacity:0.8">Base: +${basePoints}</span>`;
           rarityEl.style.background = 'rgba(0,0,0,0.6)';
+        } else {
+          rarityEl.style.display = 'none';
         }
-      } else {
-        wordEl.textContent = '';
-        playerEl.textContent = '';
-        rarityEl.style.display = 'none';
       }
     }
   }
@@ -1991,17 +2007,63 @@ function checkWordGridGuess(word, username, profilePic) {
     for (let c=0; c<3; c++) {
       if (!wgGrid[r][c]) {
         if (checkWgClue(word, wgCluesRow[r]) && checkWgClue(word, wgCluesCol[c])) {
-          let points = 2;
-          // Gunakan cache untuk poin rarity, namun jika tidak ada (kata > 8 huruf), anggap Legendary (25)
-          let validCount = wgDictionaryCache[`${r}-${c}`]?.length || 0;
-          if (validCount < 10) points = 25;
-          else if (validCount < 50) points = 10;
-          else if (validCount < 200) points = 5;
           
-          wgGrid[r][c] = { word, username, profilePic, points };
+          let basePoints = 1;
+          let validCount = wgDictionaryCache[`${r}-${c}`]?.length || 0;
+          let rarityClass = 'wg-rarity-common';
+          let rarityName = 'COMMON';
+          if (validCount <= 10) { basePoints = 15; rarityClass = 'wg-rarity-legendary'; rarityName = 'LEGENDARY'; }
+          else if (validCount <= 50) { basePoints = 7; rarityClass = 'wg-rarity-epic'; rarityName = 'EPIC'; }
+          else if (validCount <= 200) { basePoints = 3; rarityClass = 'wg-rarity-rare'; rarityName = 'RARE'; }
+          
+          let usageCount = wordUsageFreq[word] || 0;
+          let usagePoints = 0;
+          let usageName = 'Mainstream';
+          if (usageCount === 0) { usagePoints = 10; usageName = 'First Time'; }
+          else if (usageCount <= 3) { usagePoints = 5; usageName = 'Rarely Used'; }
+          else if (usageCount <= 10) { usagePoints = 2; usageName = 'Sometimes Used'; }
+          
+          let lenPoints = 0;
+          let len = word.length;
+          if (len === 5) lenPoints = 1;
+          else if (len === 6) lenPoints = 2;
+          else if (len === 7) lenPoints = 4;
+          else if (len === 8) lenPoints = 6;
+          else if (len >= 9) lenPoints = 10;
+          
+          let obsPoints = 5;
+          let obsName = 'Rare Word';
+          if (allTargetWords[len] && allTargetWords[len].includes(word)) {
+            obsPoints = 0;
+            obsName = 'Common Word';
+          }
+          
+          let totalPoints = basePoints + usagePoints + lenPoints + obsPoints;
+          
+          let breakdown = `${rarityName}`;
+          if (usagePoints > 0) breakdown += ` | ${usageName}`;
+          if (lenPoints > 0) breakdown += ` | ${len} Letters`;
+          if (obsPoints > 0) breakdown += ` | ${obsName}`;
+          
+          wgGrid[r][c] = { 
+            word, 
+            username, 
+            profilePic, 
+            points: totalPoints, 
+            rarityClass,
+            rarityName,
+            breakdown 
+          };
+          
+          // Update usage frequency
+          wordUsageFreq[word] = (wordUsageFreq[word] || 0) + 1;
+          try {
+            localStorage.setItem('wordle_wordUsageStats', JSON.stringify(wordUsageFreq));
+          } catch(e) {}
+          
           renderWordGridBoard();
           checkWordGridWin();
-          return points; 
+          return totalPoints; 
         }
       }
     }

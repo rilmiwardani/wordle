@@ -2565,11 +2565,11 @@ header {
 /* --- Word Grid Styles --- */
 .word-grid-container {
   display: grid;
-  grid-template-columns: 80px 115px 115px 115px;
-  grid-template-rows: 60px 115px 115px 115px;
-  gap: 8px;
-  margin-top: 15px;
-  margin-bottom: 20px;
+  grid-template-columns: calc(75px * var(--board-scale, 1)) calc(100px * var(--board-scale, 1)) calc(100px * var(--board-scale, 1)) calc(100px * var(--board-scale, 1));
+  grid-template-rows: calc(60px * var(--board-scale, 1)) calc(100px * var(--board-scale, 1)) calc(100px * var(--board-scale, 1)) calc(100px * var(--board-scale, 1));
+  gap: calc(6px * var(--board-scale, 1));
+  margin-top: calc(15px * var(--board-scale, 1));
+  margin-bottom: calc(20px * var(--board-scale, 1));
 }
 .word-grid-cell {
   border-radius: 12px;
@@ -2589,9 +2589,9 @@ header {
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.25);
   color: #fff;
-  font-size: 15px;
+  font-size: calc(14px * var(--board-scale, 1));
   font-weight: 800;
-  padding: 5px;
+  padding: calc(5px * var(--board-scale, 1));
   text-shadow: 0px 2px 4px rgba(0,0,0,0.8);
 }
 .word-grid-ans {
@@ -2613,31 +2613,31 @@ header {
   display: none;
 }
 .wg-word {
-  font-size: 18px;
+  font-size: calc(18px * var(--board-scale, 1));
   font-weight: 800;
   letter-spacing: 1px;
   color: white;
   text-transform: uppercase;
   z-index: 2;
-  margin-bottom: 4px;
+  margin-bottom: calc(4px * var(--board-scale, 1));
 }
 .wg-player {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: calc(4px * var(--board-scale, 1));
   width: 100%;
   z-index: 2;
 }
 .wg-player-avatar {
-  width: 14px;
-  height: 14px;
+  width: calc(14px * var(--board-scale, 1));
+  height: calc(14px * var(--board-scale, 1));
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
 }
 .wg-player-name {
-  font-size: 10px;
+  font-size: calc(10px * var(--board-scale, 1));
   color: rgba(255,255,255,0.8);
   font-weight: 600;
   white-space: nowrap;

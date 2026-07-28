@@ -2493,6 +2493,22 @@ document.addEventListener('DOMContentLoaded', () => {
   // Apply static bg immediately if needed
   if (!isDynamicBg) applyStaticBg();
   
+  // Load background customization
+  const savedBgUrl = localStorage.getItem('custom_bg_url');
+  if (savedBgUrl) {
+    const inputEl = document.getElementById('bgUrlInput');
+    if (inputEl) inputEl.value = savedBgUrl;
+    if (!isDynamicBg) applyStaticBg(); // re-apply to load the image
+  }
+  
+  const savedBlur = localStorage.getItem('custom_bg_blur') || 12;
+  const savedDim = localStorage.getItem('custom_bg_dim') || 60;
+  const blurSlider = document.getElementById('bgBlurSlider');
+  const dimSlider = document.getElementById('bgDimSlider');
+  if (blurSlider) blurSlider.value = savedBlur;
+  if (dimSlider) dimSlider.value = savedDim;
+  if (typeof applyBgEffects === 'function') applyBgEffects(savedBlur, savedDim);
+  
   // Initialize like restart settings UI
   const likeToggle = document.getElementById('likeRestartToggle');
   if (likeToggle) likeToggle.checked = isLikeRestartEnabled;
@@ -2505,10 +2521,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Dynamic / Static Background toggle
 function applyStaticBg() {
-  // Warna background tab header Google Chrome: #202124
+  const customUrl = localStorage.getItem('custom_bg_url');
   bgLayer.className = 'bg-layer';
-  bgLayer.style.backgroundImage = 'none';
-  bgLayer.style.backgroundColor = '#202124';
+  if (customUrl) {
+    bgLayer.style.backgroundImage = `url('${customUrl}')`;
+    bgLayer.style.backgroundColor = '';
+  } else {
+    // Warna background tab header Google Chrome: #202124
+    bgLayer.style.backgroundImage = 'none';
+    bgLayer.style.backgroundColor = '#202124';
+  }
 }
 
 function applyDynamicBg() {
@@ -4466,6 +4488,93 @@ window.resetTopSupporters = function(e) {
     const dropdown = document.getElementById('settingsDropdown');
     if (dropdown) dropdown.classList.remove('show');
   });
+};
+
+window.changeBackground = function() {
+  const fileInput = document.getElementById('bgFileInput');
+  if (fileInput && fileInput.files && fileInput.files.length > 0) {
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 1280;
+        const MAX_HEIGHT = 720;
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        try {
+          localStorage.setItem('custom_bg_url', dataUrl);
+          const toggle = document.getElementById('dynamicBgToggle');
+          if (toggle) toggle.checked = false;
+          toggleDynamicBg(false);
+          applyStaticBg();
+          showToast("Background berhasil diubah!");
+          fileInput.value = '';
+        } catch(err) {
+          showToast("Error: File gambar masih terlalu besar!", 3000);
+        }
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+    return;
+  }
+
+  const url = document.getElementById('bgUrlInput').value.trim();
+  if (url) {
+    localStorage.setItem('custom_bg_url', url);
+    // Turn off dynamic bg if it's on
+    const toggle = document.getElementById('dynamicBgToggle');
+    if (toggle) toggle.checked = false;
+    toggleDynamicBg(false);
+    
+    applyStaticBg();
+    showToast("Background berhasil diubah!");
+  } else {
+    localStorage.removeItem('custom_bg_url');
+    applyStaticBg();
+    showToast("Background custom dihapus!");
+  }
+};
+
+window.updateBgEffects = function() {
+  const blurVal = document.getElementById('bgBlurSlider').value;
+  const dimVal = document.getElementById('bgDimSlider').value;
+  
+  localStorage.setItem('custom_bg_blur', blurVal);
+  localStorage.setItem('custom_bg_dim', dimVal);
+  
+  if (typeof applyBgEffects === 'function') applyBgEffects(blurVal, dimVal);
+};
+
+window.applyBgEffects = function(blurVal, dimVal) {
+  const overlay = document.querySelector('.glass-overlay');
+  if (overlay) {
+    overlay.style.backdropFilter = `blur(${blurVal}px)`;
+    overlay.style.webkitBackdropFilter = `blur(${blurVal}px)`;
+    const op = dimVal / 100;
+    overlay.style.background = `rgba(0, 0, 0, ${op})`;
+  }
 };
 
 document.addEventListener('DOMContentLoaded', () => {

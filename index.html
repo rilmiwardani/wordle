@@ -247,6 +247,24 @@
             <div class="settings-sep"></div>
             <div class="settings-title">Admin</div>
             <button class="lang-option" onclick="openMusicSettings(event)">🎵 Pengaturan Musik</button>
+            <!-- TAMPILAN LATAR -->
+            <div style="margin-bottom: 15px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px;">
+              <div style="font-size: 14px; color: #aaa; margin-bottom: 10px;">TAMPILAN LATAR (BACKGROUND)</div>
+              <input type="text" id="bgUrlInput" class="custom-input" placeholder="URL Gambar Latar..." style="width: 100%; margin-bottom: 5px; padding: 5px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff;">
+              <div style="font-size: 11px; color: #aaa; text-align: center; margin-bottom: 5px;">Atau pilih gambar dari komputer:</div>
+              <input type="file" id="bgFileInput" accept="image/*" style="width: 100%; margin-bottom: 5px; color: #ccc; font-size: 12px; background: #222; padding: 4px; border-radius: 4px; border: 1px solid #555;">
+              <button class="lang-option" onclick="changeBackground()" style="margin-bottom: 10px; width: 100%;">Terapkan Background</button>
+              
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label style="font-size: 12px; color: #ccc;">Efek Blur</label>
+                <input type="range" id="bgBlurSlider" min="0" max="30" value="12" oninput="updateBgEffects()" style="width: 60%;">
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
+                <label style="font-size: 12px; color: #ccc;">Kegelapan</label>
+                <input type="range" id="bgDimSlider" min="0" max="100" value="60" oninput="updateBgEffects()" style="width: 60%;">
+              </div>
+            </div>
+
             <button class="lang-option" onclick="openTTSSettings(event)">🗣️ Pengaturan Suara (TTS)</button>
             <button class="lang-option" onclick="openSocialAudioSettings(event)">🔊 Pengaturan Sound Alert</button>
             <button class="lang-option" onclick="resetDailyLeaderboard(event)" style="color: #ffa502;">🗑️ Reset Daily Only</button>

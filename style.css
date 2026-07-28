@@ -2562,3 +2562,122 @@ header {
   to { opacity: 0; transform: translateX(-30px) scale(0.5); width: 0; padding: 0; margin: 0; border: none; overflow: hidden; }
 }
 
+/* --- Word Grid Styles --- */
+.word-grid-container {
+  display: grid;
+  grid-template-columns: 80px 115px 115px 115px;
+  grid-template-rows: 60px 115px 115px 115px;
+  gap: 8px;
+  margin-top: 15px;
+  margin-bottom: 20px;
+}
+.word-grid-cell {
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s;
+}
+.word-grid-empty {
+  background: transparent;
+}
+.word-grid-clue {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  padding: 5px;
+  text-shadow: 0px 2px 4px rgba(0,0,0,0.8);
+}
+.word-grid-ans {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: default;
+}
+.wg-rarity {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  background: rgba(0,0,0,0.6);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  z-index: 2;
+  display: none;
+}
+.wg-word {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: white;
+  text-transform: uppercase;
+  z-index: 2;
+  margin-bottom: 4px;
+}
+.wg-player {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  z-index: 2;
+}
+.wg-player-avatar {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.wg-player-name {
+  font-size: 10px;
+  color: rgba(255,255,255,0.8);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 75%;
+}
+/* Rarity Colors */
+.wg-rarity-common {
+  background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+  border-color: #60a5fa;
+}
+.wg-rarity-rare {
+  background: linear-gradient(135deg, #db2777, #ec4899);
+  border-color: #f472b6;
+}
+.wg-rarity-epic {
+  background: linear-gradient(135deg, #7e22ce, #a855f7);
+  border-color: #c084fc;
+}
+.wg-rarity-legendary {
+  background: linear-gradient(135deg, #b45309, #f59e0b);
+  border-color: #fbbf24;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+}
+
+
+/* Confetti Animation */
+.confetti {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  z-index: 9999;
+  pointer-events: none;
+  animation: confettiExplode ease-out forwards;
+}
+@keyframes confettiExplode {
+  0% { transform: translate(0, 0) rotate(0deg) scale(0); opacity: 1; }
+  60% { opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) rotate(720deg) scale(1.2); opacity: 0; }
+}

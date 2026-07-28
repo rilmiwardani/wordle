@@ -70,6 +70,14 @@
           </div>
           <div class="game-card-arrow">→</div>
         </div>
+        <div class="game-card" onclick="selectGame('wordgrid')" id="cardWordGrid">
+          <div class="game-card-icon">🔠</div>
+          <div class="game-card-content">
+            <div class="game-card-name">WORD GRID</div>
+            <div class="game-card-desc">Tebak kata yang sesuai dengan kriteria baris dan kolom. 9 Kotak!</div>
+          </div>
+          <div class="game-card-arrow">→</div>
+        </div>
       </div>
     </div>
   </div>
@@ -333,6 +341,9 @@
       </div>
     </div>
 
+    <!-- Word Grid Info (Dihapus sesuai permintaan, dipindah ke notifikasi) -->
+    <div id="wordGridInfoContainer" style="display: none;"></div>
+
     <!-- Wordle Board -->
     <div class="board-container" style="flex-direction: column; align-items: center;">
       <div id="board"></div>
@@ -344,6 +355,69 @@
       <div id="tangoPoolContainer" class="tango-pool-container" style="display: none;">
         <div class="tango-pool-title">🔤 LETTER POOL (HURUF TERSEDIA)</div>
         <div id="tangoPoolChips" class="tango-pool-chips"></div>
+      </div>
+
+      <!-- Word Grid Container -->
+      <div id="wordGridContainer" class="word-grid-container" style="display: none;">
+        <!-- Header row (Empty + 3 column clues) -->
+        <div class="word-grid-cell word-grid-empty"></div>
+        <div class="word-grid-cell word-grid-clue col-clue" id="wg-col-0">Col 1</div>
+        <div class="word-grid-cell word-grid-clue col-clue" id="wg-col-1">Col 2</div>
+        <div class="word-grid-cell word-grid-clue col-clue" id="wg-col-2">Col 3</div>
+
+        <!-- Row 1 -->
+        <div class="word-grid-cell word-grid-clue row-clue" id="wg-row-0">Row 1</div>
+        <div class="word-grid-cell word-grid-ans" id="wg-cell-0-0">
+          <div class="wg-rarity"></div>
+          <div class="wg-word"></div>
+          <div class="wg-player"></div>
+        </div>
+        <div class="word-grid-cell word-grid-ans" id="wg-cell-0-1">
+          <div class="wg-rarity"></div>
+          <div class="wg-word"></div>
+          <div class="wg-player"></div>
+        </div>
+        <div class="word-grid-cell word-grid-ans" id="wg-cell-0-2">
+          <div class="wg-rarity"></div>
+          <div class="wg-word"></div>
+          <div class="wg-player"></div>
+        </div>
+
+        <!-- Row 2 -->
+        <div class="word-grid-cell word-grid-clue row-clue" id="wg-row-1">Row 2</div>
+        <div class="word-grid-cell word-grid-ans" id="wg-cell-1-0">
+          <div class="wg-rarity"></div>
+          <div class="wg-word"></div>
+          <div class="wg-player"></div>
+        </div>
+        <div class="word-grid-cell word-grid-ans" id="wg-cell-1-1">
+          <div class="wg-rarity"></div>
+          <div class="wg-word"></div>
+          <div class="wg-player"></div>
+        </div>
+        <div class="word-grid-cell word-grid-ans" id="wg-cell-1-2">
+          <div class="wg-rarity"></div>
+          <div class="wg-word"></div>
+          <div class="wg-player"></div>
+        </div>
+
+        <!-- Row 3 -->
+        <div class="word-grid-cell word-grid-clue row-clue" id="wg-row-2">Row 3</div>
+        <div class="word-grid-cell word-grid-ans" id="wg-cell-2-0">
+          <div class="wg-rarity"></div>
+          <div class="wg-word"></div>
+          <div class="wg-player"></div>
+        </div>
+        <div class="word-grid-cell word-grid-ans" id="wg-cell-2-1">
+          <div class="wg-rarity"></div>
+          <div class="wg-word"></div>
+          <div class="wg-player"></div>
+        </div>
+        <div class="word-grid-cell word-grid-ans" id="wg-cell-2-2">
+          <div class="wg-rarity"></div>
+          <div class="wg-word"></div>
+          <div class="wg-player"></div>
+        </div>
       </div>
 
       <!-- Marquee for Top Liker & Sharer -->

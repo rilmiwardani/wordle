@@ -148,6 +148,11 @@ let localSocket = null; // Dedicated connection to local node server for music f
 let currentWord = "";
 let guesses = [];
 let knownAbsentLetters = new Set();
+// Word Grid state
+let wgCluesRow = [];
+let wgCluesCol = [];
+let wgGrid = []; // 3x3 array of { word, username, profilePic }
+let wgDictionaryCache = {}; // Cache of valid words per cell
 let isGameOver = false;
 let isProcessing = false;
 let round = 1;
@@ -229,7 +234,8 @@ function initTrackers() {
         const count = parseInt(localStorage.getItem(key)) || 0;
         playerActivePresence[username] = {
           accumulatedTime: count,
-          lastActiveTime: null
+          lastEventTime: null,
+          lastUpdateTime: null
         };
       }
     }
@@ -280,25 +286,14 @@ function recordActivity(username, profilePictureUrl = null) {
     const savedTime = parseInt(localStorage.getItem('pts_active_' + username) || '0');
     playerActivePresence[username] = {
       accumulatedTime: savedTime,
-      lastActiveTime: now
+      lastEventTime: now,
+      lastUpdateTime: now
     };
   } else {
     const presence = playerActivePresence[username];
-    if (!presence.lastActiveTime) {
-      presence.lastActiveTime = now;
-    } else {
-      const elapsedMs = now - presence.lastActiveTime;
-      if (elapsedMs > 300000) { // 5 minutes inactivity gap
-        presence.lastActiveTime = now;
-      } else {
-        const elapsedSec = Math.round(elapsedMs / 1000);
-        if (elapsedSec > 0) {
-          presence.accumulatedTime += elapsedSec;
-          presence.lastActiveTime = now;
-          localStorage.setItem('pts_active_' + username, presence.accumulatedTime);
-          updateMarqueeUI();
-        }
-      }
+    presence.lastEventTime = now;
+    if (!presence.lastUpdateTime) {
+      presence.lastUpdateTime = now;
     }
   }
 }
@@ -309,16 +304,20 @@ setInterval(() => {
   let updated = false;
   for (const username in playerActivePresence) {
     const presence = playerActivePresence[username];
-    if (presence.lastActiveTime) {
-      const elapsedMs = now - presence.lastActiveTime;
-      if (elapsedMs > 0 && elapsedMs <= 300000) { // 5 minutes active window
-        const elapsedSec = Math.round(elapsedMs / 1000);
+    if (presence.lastEventTime && presence.lastUpdateTime) {
+      const timeSinceLastEvent = now - presence.lastEventTime;
+      const timeSinceLastUpdate = now - presence.lastUpdateTime;
+      
+      if (timeSinceLastEvent <= 300000) { // 5 minutes active window
+        const elapsedSec = Math.round(timeSinceLastUpdate / 1000);
         if (elapsedSec > 0) {
           presence.accumulatedTime += elapsedSec;
-          presence.lastActiveTime = now;
+          presence.lastUpdateTime = now;
           localStorage.setItem('pts_active_' + username, presence.accumulatedTime);
           updated = true;
         }
+      } else {
+        presence.lastUpdateTime = now;
       }
     }
   }
@@ -1104,6 +1103,7 @@ function switchGameMode(e) {
   else if (currentGameMode === 'word600') currentGameMode = 'wordloop';
   else if (currentGameMode === 'wordloop') currentGameMode = 'fillblanks';
   else if (currentGameMode === 'fillblanks') currentGameMode = 'wordtango';
+  else if (currentGameMode === 'wordtango') currentGameMode = 'wordgrid';
   else currentGameMode = 'wordle';
   try { sessionStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
 
@@ -1122,10 +1122,17 @@ function applyGameModeUI() {
   const tangoPoolContainer = document.getElementById('tangoPoolContainer');
   const tangoGuessFeed = document.getElementById('tangoGuessFeed');
 
+  const wordGridInfoContainer = document.getElementById('wordGridInfoContainer');
+  const wordGridContainer = document.getElementById('wordGridContainer');
+  const boardObj = document.getElementById('board');
+
   if (wordLoopInfoContainer) wordLoopInfoContainer.style.display = 'none';
   if (wordTangoInfoContainer) wordTangoInfoContainer.style.display = 'none';
   if (tangoPoolContainer) tangoPoolContainer.style.display = 'none';
   if (tangoGuessFeed) tangoGuessFeed.style.display = 'none';
+  if (wordGridInfoContainer) wordGridInfoContainer.style.display = 'none';
+  if (wordGridContainer) wordGridContainer.style.display = 'none';
+  if (boardObj) boardObj.style.display = '';
 
   if (currentGameMode === 'word500' || currentGameMode === 'word600') {
     if (headerTitle) {
@@ -1159,6 +1166,14 @@ function applyGameModeUI() {
     // wordTangoInfoContainer stays hidden — header already shows mode name
     if (tangoPoolContainer) tangoPoolContainer.style.display = 'flex';
     if (tangoGuessFeed) tangoGuessFeed.style.display = 'flex';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Word Grid';
+  } else if (currentGameMode === 'wordgrid') {
+    if (headerTitle) headerTitle.textContent = 'WORD GRID';
+    if (hintContainer) hintContainer.style.display = 'none';
+    if (bestGuessContainer) bestGuessContainer.style.display = 'none';
+    if (wordGridInfoContainer) wordGridInfoContainer.style.display = '';
+    if (wordGridContainer) wordGridContainer.style.display = 'grid';
+    if (boardObj) boardObj.style.display = 'none';
     if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
   } else {
     if (headerTitle) headerTitle.textContent = 'WORDLE';
@@ -1511,6 +1526,11 @@ function getInstructionText() {
       if (lastLang === 'mixed') return `Tebak kata untuk isi baris kosong! / Guess to fill the blanks!`;
       return `Guess a ${WORD_LENGTH}-letter word to fill the blanks!`;
     }
+    if (currentGameMode === 'wordgrid') {
+      if (lastLang === 'id') return `Ketik kata yang sesuai dengan kriteria baris & kolom!`;
+      if (lastLang === 'mixed') return `Ketik kata sesuai kriteria! / Type words matching clues!`;
+      return `Type a word that matches the row & column clues!`;
+    }
     if (lastLang === 'id') return `Ketik kata ${WORD_LENGTH} huruf di komentar untuk menebak!`;
     if (lastLang === 'mixed') return `Ketik kata ${WORD_LENGTH} huruf di komentar! / Type a ${WORD_LENGTH}-letter word!`;
     return `Type a ${WORD_LENGTH}-letter word in chat to guess!`;
@@ -1657,6 +1677,443 @@ function handleMyRank(userData) {
   rankMessageQueue.push({ msg, avatar });
   processRankQueue();
 }
+
+// --- WORD GRID LOGIC ---
+const WG_CLUE_EASY = [
+  { type: 'length', val: 4 },
+  { type: 'length', val: 5 },
+  { type: 'length', val: 6 },
+  { type: 'contains', val: 'A' },
+  { type: 'contains', val: 'E' },
+  { type: 'contains', val: 'I' },
+  { type: 'contains', val: 'O' },
+  { type: 'contains', val: 'U' },
+  { type: 'contains', val: 'R' },
+  { type: 'contains', val: 'N' },
+  { type: 'contains', val: 'T' },
+  { type: 'contains', val: 'S' },
+  { type: 'contains', val: 'M' },
+  { type: 'contains', val: 'K' },
+  { type: 'contains', val: 'AN' },
+  { type: 'contains', val: 'AR' },
+  { type: 'contains', val: 'RA' },
+  { type: 'contains', val: 'AK' },
+  { type: 'starts_with', val: 'B' },
+  { type: 'starts_with', val: 'M' },
+  { type: 'starts_with', val: 'P' },
+  { type: 'starts_with', val: 'S' },
+  { type: 'ends_with', val: 'A' },
+  { type: 'ends_with', val: 'I' },
+  { type: 'ends_with', val: 'N' },
+  { type: 'ends_with', val: 'R' },
+  { type: 'starts_vowel', val: true },
+  { type: 'ends_consonant', val: true }
+];
+
+const WG_CLUE_MEDIUM = [
+  { type: 'length', val: 7 },
+  { type: 'not_contains', val: 'O' },
+  { type: 'not_contains', val: 'U' },
+  { type: 'not_contains_multiple', val: ['A', 'E'] },
+  { type: 'not_contains_multiple', val: ['I', 'O'] },
+  { type: 'not_contains_multiple', val: ['U', 'E'] },
+  { type: 'not_contains_multiple', val: ['R', 'N'] },
+  { type: 'not_contains', val: 'R' },
+  { type: 'not_contains', val: 'N' },
+  { type: 'not_contains', val: 'T' },
+  { type: 'not_contains', val: 'S' },
+  { type: 'contains', val: 'B' },
+  { type: 'contains', val: 'P' },
+  { type: 'contains', val: 'D' },
+  { type: 'contains', val: 'G' },
+  { type: 'contains', val: 'L' },
+  { type: 'contains', val: 'EL' },
+  { type: 'contains', val: 'UM' },
+  { type: 'contains', val: 'IN' },
+  { type: 'contains', val: 'US' },
+  { type: 'contains', val: 'ER' },
+  { type: 'contains', val: 'ANG' },
+  { type: 'starts_with', val: 'K' },
+  { type: 'starts_with', val: 'T' },
+  { type: 'starts_with', val: 'D' },
+  { type: 'starts_with', val: 'L' },
+  { type: 'starts_with', val: 'R' },
+  { type: 'ends_with', val: 'K' },
+  { type: 'ends_with', val: 'T' },
+  { type: 'ends_with', val: 'S' },
+  { type: 'ends_with', val: 'M' },
+  { type: 'ends_with', val: 'L' },
+  { type: 'min_vowels', val: 3 }
+];
+
+const WG_CLUE_HARD = [
+  { type: 'length', val: 8 },
+  { type: 'not_contains', val: 'A' },
+  { type: 'not_contains', val: 'E' },
+  { type: 'not_contains', val: 'I' },
+  { type: 'not_contains_multiple', val: ['A', 'E', 'I'] },
+  { type: 'not_contains_multiple', val: ['U', 'O', 'A'] },
+  { type: 'not_contains_multiple', val: ['R', 'N', 'T'] },
+  { type: 'not_contains_multiple', val: ['M', 'K', 'S'] },
+  { type: 'not_contains', val: 'K' },
+  { type: 'not_contains', val: 'M' },
+  { type: 'not_contains', val: 'L' },
+  { type: 'not_contains', val: 'P' },
+  { type: 'contains', val: 'J' },
+  { type: 'contains', val: 'Y' },
+  { type: 'contains', val: 'C' },
+  { type: 'contains', val: 'V' },
+  { type: 'contains', val: 'W' },
+  { type: 'contains', val: 'F' },
+  { type: 'contains', val: 'Z' },
+  { type: 'contains', val: 'ALA' },
+  { type: 'contains', val: 'ERA' },
+  { type: 'contains', val: 'BEL' },
+  { type: 'contains', val: 'PAN' },
+  { type: 'starts_with', val: 'J' },
+  { type: 'starts_with', val: 'Y' },
+  { type: 'starts_with', val: 'G' },
+  { type: 'starts_with', val: 'W' },
+  { type: 'starts_with', val: 'C' },
+  { type: 'ends_with', val: 'G' },
+  { type: 'ends_with', val: 'P' },
+  { type: 'ends_with', val: 'D' },
+  { type: 'min_vowels', val: 4 },
+  { type: 'double_letter', val: true }
+];
+
+const WG_CLUE_EASY_EN = [
+  { type: 'length', val: 4 }, { type: 'length', val: 5 }, { type: 'length', val: 6 },
+  { type: 'contains', val: 'A' }, { type: 'contains', val: 'E' }, { type: 'contains', val: 'I' },
+  { type: 'contains', val: 'O' }, { type: 'contains', val: 'U' },
+  { type: 'contains', val: 'ER' }, { type: 'contains', val: 'ST' }, { type: 'contains', val: 'EA' },
+  { type: 'contains', val: 'OU' }, { type: 'contains', val: 'TH' }, { type: 'contains', val: 'CH' },
+  { type: 'starts_with', val: 'S' }, { type: 'starts_with', val: 'C' }, { type: 'starts_with', val: 'B' }, { type: 'starts_with', val: 'T' },
+  { type: 'ends_with', val: 'E' }, { type: 'ends_with', val: 'S' }, { type: 'ends_with', val: 'D' }, { type: 'ends_with', val: 'Y' },
+  { type: 'starts_vowel', val: true }, { type: 'ends_consonant', val: true }
+];
+
+const WG_CLUE_MEDIUM_EN = [
+  { type: 'length', val: 7 },
+  { type: 'not_contains', val: 'O' }, { type: 'not_contains', val: 'U' },
+  { type: 'not_contains_multiple', val: ['A', 'E'] }, { type: 'not_contains_multiple', val: ['I', 'O'] },
+  { type: 'contains', val: 'IGH' }, { type: 'contains', val: 'GHT' }, { type: 'contains', val: 'STA' },
+  { type: 'contains', val: 'REA' }, { type: 'contains', val: 'TER' }, { type: 'contains', val: 'AIN' },
+  { type: 'starts_with', val: 'P' }, { type: 'starts_with', val: 'M' }, { type: 'starts_with', val: 'A' }, { type: 'starts_with', val: 'R' },
+  { type: 'ends_with', val: 'N' }, { type: 'ends_with', val: 'R' }, { type: 'ends_with', val: 'T' }, { type: 'ends_with', val: 'L' },
+  { type: 'min_vowels', val: 3 }
+];
+
+const WG_CLUE_HARD_EN = [
+  { type: 'length', val: 8 },
+  { type: 'not_contains', val: 'A' }, { type: 'not_contains', val: 'E' }, { type: 'not_contains', val: 'I' },
+  { type: 'not_contains_multiple', val: ['A', 'E', 'I'] }, { type: 'not_contains_multiple', val: ['U', 'O', 'A'] },
+  { type: 'not_contains_multiple', val: ['S', 'T', 'R'] }, { type: 'not_contains_multiple', val: ['L', 'N', 'E'] },
+  { type: 'contains', val: 'J' }, { type: 'contains', val: 'Q' }, { type: 'contains', val: 'Z' }, { type: 'contains', val: 'X' },
+  { type: 'contains', val: 'V' }, { type: 'contains', val: 'W' },
+  { type: 'starts_with', val: 'J' }, { type: 'starts_with', val: 'K' }, { type: 'starts_with', val: 'V' }, { type: 'starts_with', val: 'Z' }, { type: 'starts_with', val: 'Q' },
+  { type: 'ends_with', val: 'K' }, { type: 'ends_with', val: 'M' }, { type: 'ends_with', val: 'P' },
+  { type: 'min_vowels', val: 4 }, { type: 'double_letter', val: true }
+];
+
+function getWgClueDesc(clue) {
+  const isEn = lastLang === 'en' || lastLang === 'mixed';
+  switch (clue.type) {
+    case 'length': return isEn ? `${clue.val} Letters` : `${clue.val} Huruf`;
+    case 'contains': return isEn ? `Contains ${clue.val}` : `Ada ${clue.val}`;
+    case 'not_contains': return isEn ? `No ${clue.val}` : `Tanpa ${clue.val}`;
+    case 'not_contains_multiple': return isEn ? `No ${clue.val.join(', ')}` : `Tanpa ${clue.val.join(', ')}`;
+    case 'starts_with': return isEn ? `Starts ${clue.val}` : `Awalan ${clue.val}`;
+    case 'ends_with': return isEn ? `Ends ${clue.val}` : `Akhiran ${clue.val}`;
+    case 'starts_vowel': return isEn ? `Starts w/ Vowel` : `Awalan Vokal`;
+    case 'ends_consonant': return isEn ? `Ends w/ Consonant` : `Akhiran Konsonan`;
+    case 'min_vowels': return isEn ? `Min ${clue.val} Vowels` : `Min ${clue.val} Vokal`;
+    case 'double_letter': return isEn ? `Double Letter` : `Huruf Ganda`;
+    default: return '';
+  }
+}
+
+function getValidWordsForWgCell(rowClue, colClue) {
+  let valid = [];
+  const allWords = [];
+  [3, 4, 5, 6, 7, 8].forEach(len => {
+    if (allTargetWords[len]) allWords.push(...allTargetWords[len]);
+  });
+  
+  for (const w of allWords) {
+    if (checkWgClue(w, rowClue) && checkWgClue(w, colClue)) {
+      valid.push(w);
+    }
+  }
+  return valid;
+}
+
+function checkWgClue(word, clue) {
+  if (clue.type === 'length') return word.length === clue.val;
+  if (clue.type === 'contains') return word.includes(clue.val);
+  if (clue.type === 'not_contains') return !word.includes(clue.val);
+  if (clue.type === 'not_contains_multiple') return clue.val.every(letter => !word.includes(letter));
+  if (clue.type === 'starts_with') return word.startsWith(clue.val);
+  if (clue.type === 'ends_with') return word.endsWith(clue.val);
+  if (clue.type === 'starts_vowel') return /^[AEIOU]/.test(word);
+  if (clue.type === 'ends_consonant') return /[^AEIOU]$/.test(word);
+  if (clue.type === 'min_vowels') return (word.match(/[AEIOU]/g) || []).length >= clue.val;
+  if (clue.type === 'double_letter') return /(.)\1/.test(word);
+  return false;
+}
+
+function generateWordGridBoard() {
+  let attempts = 0;
+  let validBoardFound = false;
+  
+  while (!validBoardFound && attempts < 200) {
+    attempts++;
+    wgCluesRow = [];
+    wgCluesCol = [];
+    
+    const isEn = lastLang === 'en' || lastLang === 'mixed';
+    let easyPool = isEn ? [...WG_CLUE_EASY_EN] : [...WG_CLUE_EASY];
+    let mediumPool = isEn ? [...WG_CLUE_MEDIUM_EN] : [...WG_CLUE_MEDIUM];
+    let hardPool = isEn ? [...WG_CLUE_HARD_EN] : [...WG_CLUE_HARD];
+    shuffleArray(easyPool);
+    shuffleArray(mediumPool);
+    shuffleArray(hardPool);
+    
+    let selectedClues = [];
+    if (hardModeState === 'ultra') {
+      selectedClues.push(mediumPool.pop(), mediumPool.pop(), mediumPool.pop());
+      selectedClues.push(hardPool.pop(), hardPool.pop(), hardPool.pop());
+    } else if (hardModeState === 'hard') {
+      selectedClues.push(easyPool.pop(), easyPool.pop(), easyPool.pop(), easyPool.pop());
+      selectedClues.push(mediumPool.pop(), mediumPool.pop());
+    } else {
+      selectedClues.push(easyPool.pop(), easyPool.pop(), easyPool.pop(), easyPool.pop(), easyPool.pop(), easyPool.pop());
+    }
+    
+    shuffleArray(selectedClues);
+    for (let i=0; i<3; i++) wgCluesRow.push(selectedClues.pop());
+    for (let i=0; i<3; i++) wgCluesCol.push(selectedClues.pop());
+    
+    let isValid = true;
+    wgDictionaryCache = {};
+    for (let r=0; r<3; r++) {
+      for (let c=0; c<3; c++) {
+        const words = getValidWordsForWgCell(wgCluesRow[r], wgCluesCol[c]);
+        if (words.length === 0) {
+          isValid = false;
+          break;
+        }
+        wgDictionaryCache[`${r}-${c}`] = words;
+      }
+      if (!isValid) break;
+    }
+    
+    if (isValid) validBoardFound = true;
+  }
+  
+  wgGrid = [
+    [null, null, null],
+    [null, null, null],
+    [null, null, null]
+  ];
+  
+  renderWordGridBoard();
+}
+
+function renderWordGridBoard() {
+  for (let i=0; i<3; i++) {
+    document.getElementById(`wg-row-${i}`).textContent = wgCluesRow[i] ? getWgClueDesc(wgCluesRow[i]) : '';
+    document.getElementById(`wg-col-${i}`).textContent = wgCluesCol[i] ? getWgClueDesc(wgCluesCol[i]) : '';
+  }
+  
+  for (let r=0; r<3; r++) {
+    for (let c=0; c<3; c++) {
+      const cell = document.getElementById(`wg-cell-${r}-${c}`);
+      const data = wgGrid[r][c];
+      
+      const rarityEl = cell.querySelector('.wg-rarity');
+      const wordEl = cell.querySelector('.wg-word');
+      const playerEl = cell.querySelector('.wg-player');
+      
+      cell.className = 'word-grid-cell word-grid-ans'; 
+      
+      if (data) {
+        wordEl.textContent = data.word;
+        playerEl.innerHTML = `
+          <img class="wg-player-avatar" src="${data.avatar || 'assets/bg_nature.png'}">
+          <span class="wg-player-name">${data.username}</span>
+        `;
+        rarityEl.style.display = 'block';
+        
+        const cacheWords = wgDictionaryCache[`${r}-${c}`];
+        if (cacheWords) {
+          let rarityClass = 'wg-rarity-common';
+          let rarityText = 'COMMON';
+          let points = 2;
+          if (cacheWords.length <= 10) { rarityClass = 'wg-rarity-legendary'; rarityText = 'LEGENDARY'; points = 25; }
+          else if (cacheWords.length <= 50) { rarityClass = 'wg-rarity-epic'; rarityText = 'EPIC'; points = 10; }
+          else if (cacheWords.length <= 200) { rarityClass = 'wg-rarity-rare'; rarityText = 'RARE'; points = 5; }
+          
+          cell.classList.add(rarityClass);
+          rarityEl.textContent = `${rarityText} (+${points})`;
+          rarityEl.style.background = 'rgba(0,0,0,0.6)';
+        }
+      } else {
+        wordEl.textContent = '';
+        playerEl.textContent = '';
+        rarityEl.style.display = 'none';
+      }
+    }
+  }
+}
+
+function checkWordGridGuess(word, username, profilePic) {
+  if (isGameOver) return false;
+  word = word.toUpperCase();
+  
+  // Validasi apakah kata ada di kamus lengkap (kamus.txt)
+  const validDict = allValidWords[word.length];
+  if (!validDict || !validDict.includes(word)) return false;
+  
+  for (let r=0; r<3; r++) {
+    for (let c=0; c<3; c++) {
+      if (wgGrid[r][c] && wgGrid[r][c].word === word) return false;
+    }
+  }
+  
+  for (let r=0; r<3; r++) {
+    for (let c=0; c<3; c++) {
+      if (!wgGrid[r][c]) {
+        if (checkWgClue(word, wgCluesRow[r]) && checkWgClue(word, wgCluesCol[c])) {
+          let points = 2;
+          let validCount = wgDictionaryCache[`${r}-${c}`]?.length || 0;
+          if (validCount < 10) points = 25;
+          else if (validCount < 50) points = 10;
+          else if (validCount < 200) points = 5;
+          
+          wgGrid[r][c] = { word, username, profilePic, points };
+          renderWordGridBoard();
+          checkWordGridWin();
+          return points; 
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function triggerConfetti() {
+  const colors = ['#a855f7', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#fde047'];
+  for (let i = 0; i < 100; i++) {
+    const confetti = document.createElement('div');
+    confetti.className = 'confetti';
+    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    
+    // Spread in a circle
+    const angle = Math.random() * Math.PI * 2;
+    const velocity = 150 + Math.random() * 400; 
+    const tx = Math.cos(angle) * velocity;
+    const ty = Math.sin(angle) * velocity + (Math.random() * 200);
+    const duration = 1 + Math.random();
+    
+    confetti.style.setProperty('--tx', `${tx}px`);
+    confetti.style.setProperty('--ty', `${ty}px`);
+    confetti.style.animationDuration = `${duration}s`;
+    
+    if (Math.random() > 0.5) confetti.style.borderRadius = '50%';
+    
+    document.body.appendChild(confetti);
+    setTimeout(() => confetti.remove(), duration * 1000);
+  }
+}
+
+function checkWordGridWin() {
+  let allFilled = true;
+  for (let r=0; r<3; r++) {
+    for (let c=0; c<3; c++) {
+      if (!wgGrid[r][c]) allFilled = false;
+    }
+  }
+  
+  if (allFilled) {
+    isGameOver = true;
+    setTimeout(() => {
+      triggerConfetti();
+      showWordGridWinOverlay();
+    }, 1000);
+  }
+}
+
+function showWordGridWinOverlay() {
+  const overlay = document.getElementById('multiWinOverlay');
+  const list = document.getElementById('multiWinList');
+  const title = document.getElementById('multiWinTitle');
+  
+  title.textContent = 'LEADERBOARD WORD GRID';
+  list.innerHTML = '';
+  
+  const scores = {};
+  for (let r=0; r<3; r++) {
+    for (let c=0; c<3; c++) {
+      const solver = wgGrid[r][c];
+      if (solver) {
+        if (!scores[solver.username]) {
+          scores[solver.username] = {
+            username: solver.username,
+            profilePic: solver.profilePic,
+            points: 0,
+            words: []
+          };
+        }
+        scores[solver.username].points += (solver.points || 10);
+        scores[solver.username].words.push(`${solver.word}`);
+      }
+    }
+  }
+  
+  const sortedPlayers = Object.values(scores).sort((a, b) => b.points - a.points);
+  
+  let delay = 0;
+  sortedPlayers.forEach((player, index) => {
+    setTimeout(() => {
+      const item = document.createElement('div');
+      item.className = 'multi-win-item';
+      
+      let avHTML = `<div class="multi-win-letter">${player.username.charAt(0).toUpperCase()}</div>`;
+      if (player.profilePic) {
+         avHTML = `<img src="${player.profilePic}" alt="Avatar" class="multi-win-avatar" crossorigin="anonymous" referrerpolicy="no-referrer" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div class="multi-win-letter" style="display:none;">${player.username.charAt(0).toUpperCase()}</div>`;
+      }
+      
+      let rankText = index === 0 ? 'MVP' : `#${index + 1}`;
+      let rankColor = index === 0 ? '#ffd700' : (index === 1 ? '#c0c0c0' : (index === 2 ? '#cd7f32' : '#ffffff'));
+      
+      // Truncate words list to keep it compact
+      let wordsDisplay = player.words.slice(0, 3).join(', ');
+      if (player.words.length > 3) {
+        wordsDisplay += `, dan ${player.words.length - 3} lainnya`;
+      }
+      
+      item.innerHTML = `
+        <div style="font-weight:900; color:${rankColor}; width: 50px; text-align:center; flex-shrink: 0; font-size: 14px;">${rankText}</div>
+        ${avHTML}
+        <div class="multi-win-details" style="flex: 1; padding: 0 10px; min-width: 0;">
+          <div class="multi-win-name" style="font-size: 15px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff;">${player.username}</div>
+          <div class="multi-win-word" style="font-size: 11px; color: #bbb; margin-top: 2px; line-height: 1.3;">Menjawab: ${wordsDisplay}</div>
+        </div>
+        <div class="multi-win-pts" style="font-size: 18px; color: #ffd700; font-weight: 900; flex-shrink: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">+${player.points}</div>
+      `;
+      list.appendChild(item);
+      item.style.animation = 'slideInRight 0.3s ease-out forwards';
+    }, delay);
+    delay += 300;
+  });
+  
+  // Gunakan fungsi bawaan untuk transisi menang (mengurus Like, timer otomatis, dan audio)
+  setTimeout(() => {
+    triggerWinTransition(7000, true);
+  }, delay + 1000);
+}
+// --- END WORD GRID LOGIC ---
 
 // Start Game
 function startNewRound() {
@@ -1827,6 +2284,10 @@ function startNewRound() {
     shuffleArray(wordTangoPool);
   }
 
+  if (currentGameMode === 'wordgrid') {
+    generateWordGridBoard();
+  }
+
   // Apply mode-specific UI
   applyGameModeUI();
   initBoard();
@@ -1987,6 +2448,10 @@ function toggleHardMode(e) {
   if (hardModeState === 'hard') msg = '🔥 Hard Mode Diaktifkan';
   if (hardModeState === 'ultra') msg = '☠️ Ultra Hard Mode Diaktifkan';
   showToast(msg, 2000);
+  
+  if (currentGameMode === 'wordgrid') {
+    generateWordGridBoard();
+  }
 }
 
 function updateHardModeUI() {
@@ -2780,6 +3245,8 @@ function handleChatGuess(data) {
   let isAllowedLength = (msg.length === WORD_LENGTH);
   if (currentGameMode === 'wordtango') {
     isAllowedLength = (msg.length >= 3 && msg.length <= 6);
+  } else if (currentGameMode === 'wordgrid') {
+    isAllowedLength = (msg.length >= 3 && msg.length <= 8);
   }
 
   if (isAllowedLength) {
@@ -2992,6 +3459,14 @@ function processGuess(guessWord, userData) {
         return; // Reject silently from the board
       }
     }
+  }
+
+  if (currentGameMode === 'wordgrid') {
+    const pointsWon = checkWordGridGuess(guessWord, userData.uniqueId || userData.nickname, userData.profilePictureUrl);
+    if (pointsWon) {
+      addPoints(userData, pointsWon);
+    }
+    return;
   }
 
   if (currentGameMode === 'wordtango') {

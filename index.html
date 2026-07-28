@@ -156,7 +156,16 @@
 
             <div class="settings-sep"></div>
             <div class="settings-title">Game</div>
-            <button class="lang-option" id="switchGameBtn" onclick="switchGameMode(event)">🔄 Switch Game</button>
+            <select class="lang-option" id="switchGameSelect" onchange="changeGameModeDirect(this.value, event)" onclick="event.stopPropagation()" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; width: 100%; padding: 10px; margin-bottom: 5px; border-radius: 8px; font-weight: 600; cursor: pointer; text-align: left; appearance: none;">
+              <option value="" disabled selected style="color: black;">🔄 Pilih Game Mode...</option>
+              <option value="wordle" style="color: black;">🟩 Wordle (5/6 Huruf)</option>
+              <option value="word500" style="color: black;">🔢 Word500 (Mastermind 5)</option>
+              <option value="word600" style="color: black;">🔠 Word600 (Mastermind 6)</option>
+              <option value="wordloop" style="color: black;">🔁 Word Loop (Sambung Kata)</option>
+              <option value="fillblanks" style="color: black;">🧩 Fill The Blanks</option>
+              <option value="wordtango" style="color: black;">💃 Word Tango</option>
+              <option value="wordgrid" style="color: black;">🔠 Word Grid (TTS)</option>
+            </select>
             <button class="lang-option" id="hardModeBtn" onclick="toggleHardMode(event)">🔥 Hard Mode: OFF</button>
             <button class="lang-option" id="recapBtn" onclick="event.stopPropagation(); window.open('recap.html', '_blank')">📊 Supporter Recap</button>
             <label class="settings-toggle-row" onclick="event.stopPropagation()">
@@ -177,6 +186,13 @@
               <span class="settings-toggle-label">❤️ Restart dari Like</span>
               <div class="toggle-switch">
                 <input type="checkbox" id="likeRestartToggle" onchange="toggleLikeRestart(this.checked)">
+                <div class="toggle-track"></div>
+              </div>
+            </label>
+            <label class="settings-toggle-row" onclick="event.stopPropagation()" title="Mainkan suara gift untuk setiap ketukan beruntun">
+              <span class="settings-toggle-label">🎁 Bunyi Tiap Combo Gift</span>
+              <div class="toggle-switch">
+                <input type="checkbox" id="playEveryGiftSoundToggle" onchange="togglePlayEveryGiftSound(this.checked)">
                 <div class="toggle-track"></div>
               </div>
             </label>

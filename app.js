@@ -153,6 +153,7 @@ let wgCluesRow = [];
 let wgCluesCol = [];
 let wgGrid = []; // 3x3 array of { word, username, profilePic }
 let wgDictionaryCache = {}; // Cache of valid words per cell
+let wgHints = {}; // Cache of hints
 let wordUsageFreq = {};
 try {
   const savedFreq = localStorage.getItem('wordle_wordUsageStats');
@@ -631,6 +632,12 @@ let lastSessionId = "";
 let reconnectTimer = null;
 let isConnectedToTikTok = false;
 let hasPlayedCloseAudio = false;
+let isPlayEveryGiftSound = localStorage.getItem('wordle_playEveryGiftSound') === 'true';
+
+window.togglePlayEveryGiftSound = function(val) {
+  isPlayEveryGiftSound = val;
+  localStorage.setItem('wordle_playEveryGiftSound', val);
+};
 
 // Leaderboard State
 let playerPoints = {};
@@ -1142,6 +1149,33 @@ function switchGameMode(e) {
   startNewRound();
 }
 
+function changeGameModeDirect(mode, e) {
+  if (e) e.stopPropagation();
+  const dropdown = document.getElementById('settingsDropdown');
+  if (dropdown) dropdown.classList.remove('open');
+  
+  if (!mode) return;
+
+  if (!isConnectedToTikTok && gameContainer.style.display === 'none') {
+    currentGameMode = mode;
+    try { sessionStorage.setItem('wordle_gameMode', mode); } catch(e) {}
+    loginOverlay.style.display = 'none';
+    gameContainer.style.display = 'none';
+    gameSelectOverlay.style.display = 'flex';
+    return;
+  }
+
+  currentGameMode = mode;
+  try { sessionStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
+
+  const selectElement = document.getElementById('switchGameSelect');
+  if (selectElement) selectElement.value = "";
+
+  applyGameModeUI();
+  initWeeklyLeaderboard();
+  startNewRound();
+}
+
 function applyGameModeUI() {
   const headerTitle = document.getElementById('headerTitle');
   const hintContainer = document.getElementById('hintContainer');
@@ -1322,6 +1356,17 @@ function createEmptyW500Row(idx) {
   for (let j = 0; j < WORD_LENGTH; j++) {
     const tile = document.createElement('div');
     tile.className = 'tile';
+    tile.style.cursor = 'pointer';
+    tile.onclick = function() {
+      if (!currentWord) return;
+      if (tile.textContent === '') {
+        tile.textContent = currentWord[j];
+        tile.classList.add('present');
+        tile.style.transform = 'scale(1.1)';
+        setTimeout(() => tile.style.transform = 'scale(1)', 200);
+        if (window.playHostAudio) playHostAudio('click');
+      }
+    };
     row.appendChild(tile);
   }
   if (window.w500UseMastermind) {
@@ -1487,6 +1532,23 @@ function initBoard() {
       const tile = document.createElement('div');
       tile.className = 'tile';
       tile.id = `tile-empty-${i}-${j}`;
+      
+      tile.style.cursor = 'pointer';
+      tile.onclick = function() {
+        if (!currentWord || currentGameMode === 'wordgrid' || currentGameMode === 'wordtango') return;
+        let targetWord = currentWord;
+        if (currentGameMode === 'fillblanks' && fillBlanksTargets[i]) {
+          targetWord = fillBlanksTargets[i].word;
+        }
+        if (targetWord && targetWord[j] && tile.textContent === '') {
+          tile.textContent = targetWord[j];
+          tile.classList.add('present'); // Hint color
+          tile.style.transform = 'scale(1.1)';
+          setTimeout(() => tile.style.transform = 'scale(1)', 200);
+          if (window.playHostAudio) playHostAudio('click');
+        }
+      };
+
       if (currentGameMode === 'fillblanks' && fillBlanksTargets[i]) {
         const clue = fillBlanksTargets[i].clues[j];
         if (clue) {
@@ -1902,6 +1964,7 @@ function generateWordGridBoard() {
     
     let isValid = true;
     wgDictionaryCache = {};
+    wgHints = {};
     for (let r=0; r<3; r++) {
       for (let c=0; c<3; c++) {
         const words = getValidWordsForWgCell(wgCluesRow[r], wgCluesCol[c]);
@@ -1942,14 +2005,19 @@ function renderWordGridBoard() {
       const playerEl = cell.querySelector('.wg-player');
       
       cell.className = 'word-grid-cell word-grid-ans'; 
+      wordEl.style.color = ''; // reset hint color
       
       if (data) {
         let dynSize = 18;
-        if (data.word.length >= 9) dynSize = 11;
-        else if (data.word.length >= 7) dynSize = 13;
-        else if (data.word.length === 6) dynSize = 15;
+        let lSpace = 1;
+        if (data.word.length >= 14) { dynSize = 8; lSpace = -0.5; }
+        else if (data.word.length >= 12) { dynSize = 9.5; lSpace = 0; }
+        else if (data.word.length >= 9) { dynSize = 11; lSpace = 0.5; }
+        else if (data.word.length >= 7) { dynSize = 13; lSpace = 0.5; }
+        else if (data.word.length === 6) { dynSize = 15; lSpace = 1; }
         
         wordEl.style.fontSize = `calc(${dynSize}px * var(--board-scale, 1))`;
+        wordEl.style.letterSpacing = `${lSpace}px`;
         wordEl.textContent = data.word;
         playerEl.innerHTML = `
           <img class="wg-player-avatar" src="${data.profilePic || 'assets/bg_nature.png'}">
@@ -1966,10 +2034,53 @@ function renderWordGridBoard() {
         }
         rarityEl.style.background = 'rgba(0,0,0,0.7)';
       } else {
-        wordEl.textContent = '';
+        let hintData = wgHints[`${r}-${c}`];
+        if (hintData && hintData.targetWord) {
+          let dynSize = 18;
+          let lSpace = 1;
+          if (hintData.targetWord.length >= 14) { dynSize = 8; lSpace = -0.5; }
+          else if (hintData.targetWord.length >= 12) { dynSize = 9.5; lSpace = 0; }
+          else if (hintData.targetWord.length >= 9) { dynSize = 11; lSpace = 0.5; }
+          else if (hintData.targetWord.length >= 7) { dynSize = 13; lSpace = 0.5; }
+          else if (hintData.targetWord.length === 6) { dynSize = 15; lSpace = 1; }
+          
+          wordEl.style.fontSize = `calc(${dynSize}px * var(--board-scale, 1))`;
+          wordEl.style.letterSpacing = `${lSpace}px`;
+        } else {
+          wordEl.style.fontSize = ''; // reset font size
+          wordEl.style.letterSpacing = ''; // reset letter spacing
+        }
+        
+        wordEl.textContent = hintData ? hintData.currentHint : '';
+        if (hintData) wordEl.style.color = '#ffd54f';
+        
         playerEl.textContent = '';
         rarityEl.style.display = 'none';
       }
+
+      // Hint click handler for Word Grid
+      cell.style.cursor = 'pointer';
+      cell.onclick = function() {
+        if (currentGameMode !== 'wordgrid') return;
+        if (wgGrid[r][c]) return; // already solved
+        
+        let hintData = wgHints[`${r}-${c}`];
+        if (!hintData) {
+          const validWords = wgDictionaryCache[`${r}-${c}`];
+          if (!validWords || validWords.length === 0) return;
+          const targetWord = validWords[Math.floor(Math.random() * validWords.length)];
+          hintData = { targetWord, currentHint: '' };
+          wgHints[`${r}-${c}`] = hintData;
+        }
+        
+        if (hintData.currentHint.length < hintData.targetWord.length) {
+           hintData.currentHint += hintData.targetWord[hintData.currentHint.length];
+           renderWordGridBoard();
+           cell.style.transform = 'scale(1.05)';
+           setTimeout(() => cell.style.transform = 'scale(1)', 200);
+           if (window.playHostAudio) playHostAudio('click');
+        }
+      };
     }
   }
 }
@@ -2553,6 +2664,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof applyBgEffects === 'function') applyBgEffects(savedBlur, savedDim);
   
   // Initialize like restart settings UI
+  const playEveryGiftSoundToggle = document.getElementById('playEveryGiftSoundToggle');
+  if (playEveryGiftSoundToggle) playEveryGiftSoundToggle.checked = isPlayEveryGiftSound;
+
   const likeToggle = document.getElementById('likeRestartToggle');
   if (likeToggle) likeToggle.checked = isLikeRestartEnabled;
   const likeThresholdInput = document.getElementById('likeThresholdInput');
@@ -3211,7 +3325,9 @@ function setupSocketListeners() {
 
   socket.on('gift', (data) => {
     // Only show alert when streak ends or it's a non-repeatable gift, to prevent spam
-    if (data.giftType === 1 && !data.repeatEnd) return;
+    if (!isPlayEveryGiftSound) {
+      if (data.giftType === 1 && !data.repeatEnd) return;
+    }
     showSocialAlert(data, 'gift');
     const username = data.nickname || data.uniqueId;
     if (username) {

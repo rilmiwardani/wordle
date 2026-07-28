@@ -172,6 +172,7 @@ window.toggleBadWords = function(checked) {
 
 let isLikeRestartEnabled = localStorage.getItem('wordle_likeRestart') === 'true';
 let likeRestartThreshold = parseInt(localStorage.getItem('wordle_likeThreshold')) || 1000;
+let isAutoFullscreen = localStorage.getItem('wordle_autoFullscreen') !== 'false';
 let currentLikes = 0;
 
 window.toggleLikeRestart = function(checked) {
@@ -2517,7 +2518,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const likeContainer = document.getElementById('likeThresholdContainer');
   if (likeContainer) likeContainer.style.display = isLikeRestartEnabled ? 'block' : 'none';
   updateLikeProgressBar();
+  
+  // Load auto fullscreen pref
+  const savedFs = localStorage.getItem('tiktok_auto_fullscreen');
+  if (savedFs !== null) {
+    isAutoFullscreen = savedFs === 'true';
+  }
+  const fsToggle = document.getElementById('autoFullscreenToggle');
+  if (fsToggle) fsToggle.checked = isAutoFullscreen;
 });
+
+window.toggleAutoFullscreen = function(enabled) {
+  isAutoFullscreen = enabled;
+  localStorage.setItem('tiktok_auto_fullscreen', enabled);
+  showToast(enabled ? '🔲 Auto Fullscreen Aktif' : '🔲 Auto Fullscreen Nonaktif', 1500);
+};
 
 // Dynamic / Static Background toggle
 function applyStaticBg() {
@@ -4246,6 +4261,7 @@ bgLayer.className = `bg-layer ${currentBg}`;
 
 // Fullscreen / Immersive Mode Support
 document.addEventListener('click', () => {
+  if (!isAutoFullscreen) return;
   const docElm = document.documentElement;
   if (!document.fullscreenElement && !document.webkitFullscreenElement) {
     if (docElm.requestFullscreen) {

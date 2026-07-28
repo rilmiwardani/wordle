@@ -2040,6 +2040,11 @@ function checkWordGridGuess(word, username, profilePic) {
           
           let totalPoints = basePoints + usagePoints + lenPoints + obsPoints;
           
+          let finalRarityClass = 'wg-rarity-common';
+          if (totalPoints >= 20) finalRarityClass = 'wg-rarity-legendary';
+          else if (totalPoints >= 13) finalRarityClass = 'wg-rarity-epic';
+          else if (totalPoints >= 6) finalRarityClass = 'wg-rarity-rare';
+          
           let breakdown = `${rarityName}`;
           if (usagePoints > 0) breakdown += ` | ${usageName}`;
           if (lenPoints > 0) breakdown += ` | ${len} Letters`;
@@ -2050,7 +2055,7 @@ function checkWordGridGuess(word, username, profilePic) {
             username, 
             profilePic, 
             points: totalPoints, 
-            rarityClass,
+            rarityClass: finalRarityClass,
             rarityName,
             breakdown 
           };

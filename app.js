@@ -201,7 +201,7 @@ function initTrackers() {
   playerLikes = {};
   playerShares = {};
   playerGifts = {};
-  const prefix = getPtsPrefix();
+  const prefix = 'pts_'; // Selalu gunakan prefix global agar Top Liker tidak terreset saat ganti game mode
   const likePrefix = prefix + 'like_';
   const sharePrefix = prefix + 'share_';
   const giftPrefix = prefix + 'gift_';
@@ -1135,7 +1135,6 @@ function createWord500RowEl(guessData, isLatest, revealAllColors = false) {
         tile.style.backgroundColor = 'rgba(220, 38, 38, 0.25)';
         tile.style.borderColor = 'rgba(220, 38, 38, 0.4)';
         tile.style.color = 'rgba(255, 255, 255, 0.4)';
-        tile.style.textDecoration = 'line-through';
       }
     }
     tile.textContent = letter;
@@ -1185,9 +1184,10 @@ function createEmptyW500Row(idx) {
     }
     row.appendChild(mmContainer);
   } else {
+    const classes = ['green', 'yellow', 'red'];
     for (let k = 0; k < 3; k++) {
       const clue = document.createElement('div');
-      clue.className = 'w500-count empty-clue';
+      clue.className = `w500-count ${classes[k]}`;
       row.appendChild(clue);
     }
   }
@@ -1362,9 +1362,10 @@ function initBoard() {
         }
         row.appendChild(mmContainer);
       } else {
+        const classes = ['green', 'yellow', 'red'];
         for (let k = 0; k < 3; k++) {
           const clue = document.createElement('div');
-          clue.className = 'w500-count empty-clue';
+          clue.className = `w500-count ${classes[k]}`;
           row.appendChild(clue);
         }
       }
@@ -1862,6 +1863,9 @@ if (localStorage.getItem('wordle_hardMode') === 'true') {
 function toggleNoYellow(checked) {
   isNoYellowMode = checked;
   try { localStorage.setItem('wordle_noYellow', checked); } catch(e) {}
+  if (currentGameMode === 'word500' || currentGameMode === 'word600') {
+    renderWord500Board();
+  }
 }
 
 function toggleHardMode(e) {
@@ -2526,7 +2530,7 @@ function setupSocketListeners() {
     const username = data.nickname || data.uniqueId;
     if (username) {
       playerShares[username] = (playerShares[username] || 0) + 1;
-      localStorage.setItem(getPtsPrefix() + 'share_' + username, playerShares[username]);
+      localStorage.setItem('pts_share_' + username, playerShares[username]);
       updateMarqueeUI();
     }
   });
@@ -2544,7 +2548,7 @@ function setupSocketListeners() {
       const coins = data.totalDiamonds || ((data.diamondCount || 0) * (data.repeatCount || 1));
       if (coins > 0) {
         playerGifts[username] = (playerGifts[username] || 0) + coins;
-        localStorage.setItem(getPtsPrefix() + 'gift_' + username, playerGifts[username]);
+        localStorage.setItem('pts_gift_' + username, playerGifts[username]);
         updateMarqueeUI();
       }
     }
@@ -2555,7 +2559,7 @@ function setupSocketListeners() {
     const username = data.nickname || data.uniqueId;
     if (username) {
       playerLikes[username] = (playerLikes[username] || 0) + addedLikes;
-      localStorage.setItem(getPtsPrefix() + 'like_' + username, playerLikes[username]);
+      localStorage.setItem('pts_like_' + username, playerLikes[username]);
       updateMarqueeUI();
     }
     
@@ -3266,18 +3270,23 @@ function processGuess(guessWord, userData) {
     lastInvalidTime = now;
   }
 
+  const isWord500 = currentGameMode === 'word500' || currentGameMode === 'word600';
+
   // Hapus baris invalid sebelumnya dari layar (saat ada tebakan baru masuk)
-  if (word500PendingInvalidRow) {
-    if (word500PendingInvalidRow.parentNode) word500PendingInvalidRow.remove();
-    word500PendingInvalidRow = null;
+  if (isWord500 && word500PendingInvalidRow) {
+    renderWord500Board();
+  } else {
+    if (word500PendingInvalidRow) {
+      if (word500PendingInvalidRow.parentNode) word500PendingInvalidRow.remove();
+      word500PendingInvalidRow = null;
+    }
+    const invalidRows = document.querySelectorAll('.is-invalid-row');
+    invalidRows.forEach(el => el.remove());
   }
-  const invalidRows = document.querySelectorAll('.is-invalid-row');
-  invalidRows.forEach(el => el.remove());
   const invalidTooltips = document.querySelectorAll('.is-invalid-tooltip');
   invalidTooltips.forEach(el => el.remove());
 
   const currentRow = guesses.length;
-  const isWord500 = currentGameMode === 'word500' || currentGameMode === 'word600';
   
   // 1. Create a new row and attach to top of grid
   const row = document.createElement('div');
@@ -3475,12 +3484,14 @@ function processGuess(guessWord, userData) {
     guesses.push(guessWord);
     renderWord500Board();
   } else if (isWord500 && !isValidWord) {
-    // Word500 invalid: masukkan ke dalam board di posisi terbaru (atas),
+    // Word500 invalid: masukkan ke dalam board di posisi terbaru (atas) menggantikan tebakan terbaru,
     // tetap terlihat sampai digantikan oleh tebakan berikutnya.
     row.classList.add('w500-latest-row', 'is-invalid-row');
-    board.insertBefore(row, board.firstChild);
-    // Trim jika melebihi jumlah baris tampil
-    while (board.children.length > getDisplayRows()) board.removeChild(board.lastChild);
+    if (board.firstChild) {
+      board.replaceChild(row, board.firstChild);
+    } else {
+      board.appendChild(row);
+    }
     // Simpan referensi agar bisa dihapus tepat saat tebakan berikutnya masuk
     word500PendingInvalidRow = row;
   } else {
@@ -3780,9 +3791,9 @@ window.resetDailyLeaderboard = function(e) {
     const keysToRemove = [];
     const prefix = getPtsPrefix();
     const dailyPrefix = prefix + 'daily_';
-    const likePrefix = prefix + 'like_';
-    const sharePrefix = prefix + 'share_';
-    const giftPrefix = prefix + 'gift_';
+    const likePrefix = 'pts_like_';
+    const sharePrefix = 'pts_share_';
+    const giftPrefix = 'pts_gift_';
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && (key.startsWith(dailyPrefix) || key.startsWith(likePrefix) || key.startsWith(sharePrefix) || key.startsWith(giftPrefix))) {
@@ -3816,8 +3827,12 @@ window.resetLeaderboard = function(e) {
     const prefix = getPtsPrefix();
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith(prefix)) {
-        if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_'))) continue;
+      if (key && (key.startsWith(prefix) || key.startsWith('pts_like_') || key.startsWith('pts_share_') || key.startsWith('pts_gift_'))) {
+        if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_'))) {
+          if (!key.startsWith('pts_like_') && !key.startsWith('pts_share_') && !key.startsWith('pts_gift_')) {
+            continue;
+          }
+        }
         keysToRemove.push(key);
       }
     }
@@ -3967,7 +3982,7 @@ window.toggleW500Style = function(checked) {
   if (typeof applyGameModeUI === 'function') applyGameModeUI();
   updateBestGuessUI();
   if (currentGameMode === 'word500' || currentGameMode === 'word600') {
-    renderSortedW500Board();
+    renderWord500Board();
   }
 };
 

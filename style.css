@@ -196,17 +196,14 @@ body {
 
 .w500-count.green {
   background: var(--correct);
-  box-shadow: 0 0 12px rgba(22, 163, 74, 0.5);
 }
 
 .w500-count.yellow {
   background: var(--present);
-  box-shadow: 0 0 12px rgba(217, 119, 6, 0.5);
 }
 
 .w500-count.red {
   background: #dc2626;
-  box-shadow: 0 0 12px rgba(220, 38, 38, 0.5);
 }
 
 /* Blind tile for Word500 — no color feedback */

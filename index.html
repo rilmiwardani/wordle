@@ -250,9 +250,9 @@
             <!-- TAMPILAN LATAR -->
             <div style="margin-bottom: 15px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px;">
               <div style="font-size: 14px; color: #aaa; margin-bottom: 10px;">TAMPILAN LATAR (BACKGROUND)</div>
-              <input type="text" id="bgUrlInput" class="custom-input" placeholder="URL Gambar Latar..." style="width: 100%; margin-bottom: 5px; padding: 5px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff;">
+              <input type="text" id="bgUrlInput" class="custom-input" placeholder="URL Gambar Latar..." oninput="const fi = document.getElementById('bgFileInput'); if(fi) fi.value = '';" style="width: 100%; margin-bottom: 5px; padding: 5px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff;">
               <div style="font-size: 11px; color: #aaa; text-align: center; margin-bottom: 5px;">Atau pilih gambar dari komputer:</div>
-              <input type="file" id="bgFileInput" accept="image/*" style="width: 100%; margin-bottom: 5px; color: #ccc; font-size: 12px; background: #222; padding: 4px; border-radius: 4px; border: 1px solid #555;">
+              <input type="file" id="bgFileInput" accept="image/*" onchange="const ui = document.getElementById('bgUrlInput'); if(ui) ui.value = '';" style="width: 100%; margin-bottom: 5px; color: #ccc; font-size: 12px; background: #222; padding: 4px; border-radius: 4px; border: 1px solid #555;">
               <button class="lang-option" onclick="changeBackground()" style="margin-bottom: 10px; width: 100%;">Terapkan Background</button>
               
               <div style="display: flex; justify-content: space-between; align-items: center;">

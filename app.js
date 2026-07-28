@@ -2524,7 +2524,7 @@ function applyStaticBg() {
   const customUrl = localStorage.getItem('custom_bg_url');
   bgLayer.className = 'bg-layer';
   if (customUrl) {
-    bgLayer.style.backgroundImage = `url('${customUrl}')`;
+    bgLayer.style.backgroundImage = `url("${customUrl}")`;
     bgLayer.style.backgroundColor = '';
   } else {
     // Warna background tab header Google Chrome: #202124
@@ -4494,6 +4494,7 @@ window.changeBackground = function() {
   const fileInput = document.getElementById('bgFileInput');
   if (fileInput && fileInput.files && fileInput.files.length > 0) {
     const file = fileInput.files[0];
+    console.log("Memulai proses upload file background:", file.name, "Ukuran:", file.size);
     const reader = new FileReader();
     reader.onload = function(e) {
       const img = new Image();
@@ -4530,11 +4531,21 @@ window.changeBackground = function() {
           applyStaticBg();
           showToast("Background berhasil diubah!");
           fileInput.value = '';
+          console.log("Background file lokal berhasil disimpan dan diterapkan!");
         } catch(err) {
-          showToast("Error: File gambar masih terlalu besar!", 3000);
+          console.error("Gagal menyimpan gambar ke localStorage:", err);
+          showToast("Error: Memori penuh atau file terlalu besar!", 4000);
         }
       };
+      img.onerror = function(err) {
+        console.error("Gagal memuat elemen gambar:", err);
+        showToast("Error: File gambar tidak valid!", 3000);
+      };
       img.src = e.target.result;
+    };
+    reader.onerror = function(err) {
+      console.error("FileReader error:", err);
+      showToast("Error membaca file!", 3000);
     };
     reader.readAsDataURL(file);
     return;
@@ -4542,14 +4553,19 @@ window.changeBackground = function() {
 
   const url = document.getElementById('bgUrlInput').value.trim();
   if (url) {
-    localStorage.setItem('custom_bg_url', url);
-    // Turn off dynamic bg if it's on
-    const toggle = document.getElementById('dynamicBgToggle');
-    if (toggle) toggle.checked = false;
-    toggleDynamicBg(false);
-    
-    applyStaticBg();
-    showToast("Background berhasil diubah!");
+    console.log("Terapkan custom background URL:", url);
+    try {
+      localStorage.setItem('custom_bg_url', url);
+      const toggle = document.getElementById('dynamicBgToggle');
+      if (toggle) toggle.checked = false;
+      toggleDynamicBg(false);
+      
+      applyStaticBg();
+      showToast("Background berhasil diubah!");
+    } catch(err) {
+      console.error("Gagal menyimpan URL ke localStorage:", err);
+      showToast("Error: Memori penyimpanan penuh!", 4000);
+    }
   } else {
     localStorage.removeItem('custom_bg_url');
     applyStaticBg();
@@ -4564,7 +4580,9 @@ window.updateBgEffects = function() {
   localStorage.setItem('custom_bg_blur', blurVal);
   localStorage.setItem('custom_bg_dim', dimVal);
   
-  if (typeof applyBgEffects === 'function') applyBgEffects(blurVal, dimVal);
+  if (typeof window.applyBgEffects === 'function') {
+    window.applyBgEffects(blurVal, dimVal);
+  }
 };
 
 window.applyBgEffects = function(blurVal, dimVal) {

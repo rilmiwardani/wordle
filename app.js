@@ -1362,8 +1362,8 @@ function renderWord500Board(revealAllColors = false) {
   const latest = word500History[word500History.length - 1];
   board.appendChild(createWord500RowEl(latest, true, revealAllColors));
 
-  // Di bawahnya: semua tebakan sebelumnya, diurutkan dari skor tertinggi
-  const previous = word500History.slice(0, -1)
+  // Di bawahnya: semua tebakan, diurutkan dari skor tertinggi
+  const previous = word500History
     .slice() // copy
     .sort((a, b) => b.c - a.c || b.p - a.p || a.a - b.a);
 

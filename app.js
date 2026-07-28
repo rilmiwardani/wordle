@@ -1043,7 +1043,7 @@ function loadWordLists(lang) {
       const fullDictText = results[results.length - 1] || "";
       fullValidDictionary.clear();
       fullDictText.split('\n').forEach(w => {
-         const word = w.trim().toUpperCase();
+         const word = w.trim().replace(/"/g, '').toUpperCase();
          if (word.length >= 3) fullValidDictionary.add(word);
       });
       console.log(`Loaded FULL dictionary: ${fullValidDictionary.size} words`);
@@ -1709,167 +1709,137 @@ function handleMyRank(userData) {
 
 // --- WORD GRID LOGIC ---
 const WG_CLUE_EASY = [
-  { type: 'length', val: 4 },
-  { type: 'length', val: 5 },
-  { type: 'length', val: 6 },
-  { type: 'contains', val: 'A' },
-  { type: 'contains', val: 'E' },
-  { type: 'contains', val: 'I' },
-  { type: 'contains', val: 'O' },
-  { type: 'contains', val: 'U' },
-  { type: 'contains', val: 'R' },
-  { type: 'contains', val: 'N' },
-  { type: 'contains', val: 'T' },
-  { type: 'contains', val: 'S' },
-  { type: 'contains', val: 'M' },
-  { type: 'contains', val: 'K' },
-  { type: 'contains', val: 'AN' },
-  { type: 'contains', val: 'AR' },
-  { type: 'contains', val: 'RA' },
-  { type: 'contains', val: 'AK' },
-  { type: 'starts_with', val: 'B' },
-  { type: 'starts_with', val: 'M' },
-  { type: 'starts_with', val: 'P' },
-  { type: 'starts_with', val: 'S' },
-  { type: 'ends_with', val: 'A' },
-  { type: 'ends_with', val: 'I' },
-  { type: 'ends_with', val: 'N' },
-  { type: 'ends_with', val: 'R' },
-  { type: 'starts_vowel', val: true },
-  { type: 'ends_consonant', val: true }
+  { type: 'length', val: 4 }, { type: 'length', val: 5 }, { type: 'length', val: 6 }, { type: 'length', val: 7 },
+  { type: 'contains', val: 'A' }, { type: 'contains', val: 'E' }, { type: 'contains', val: 'I' },
+  { type: 'contains', val: 'O' }, { type: 'contains', val: 'U' }, { type: 'contains', val: 'R' },
+  { type: 'contains', val: 'N' }, { type: 'contains', val: 'T' }, { type: 'contains', val: 'S' },
+  { type: 'contains', val: 'M' }, { type: 'contains', val: 'K' }, { type: 'contains', val: 'AN' },
+  { type: 'contains', val: 'AR' }, { type: 'contains', val: 'RA' }, { type: 'contains', val: 'AK' },
+  { type: 'contains', val: 'KA' }, { type: 'contains', val: 'TA' }, { type: 'contains', val: 'SA' },
+  { type: 'starts_with', val: 'B' }, { type: 'starts_with', val: 'M' }, { type: 'starts_with', val: 'P' },
+  { type: 'starts_with', val: 'S' }, { type: 'starts_with', val: 'K' }, { type: 'starts_with', val: 'T' },
+  { type: 'ends_with', val: 'A' }, { type: 'ends_with', val: 'I' }, { type: 'ends_with', val: 'N' },
+  { type: 'ends_with', val: 'R' }, { type: 'ends_with', val: 'S' }, { type: 'ends_with', val: 'H' },
+  { type: 'starts_vowel', val: true }, { type: 'ends_consonant', val: true }
 ];
 
 const WG_CLUE_MEDIUM = [
-  { type: 'length', val: 7 },
-  { type: 'not_contains', val: 'O' },
-  { type: 'not_contains', val: 'U' },
-  { type: 'not_contains_multiple', val: ['A', 'E'] },
-  { type: 'not_contains_multiple', val: ['I', 'O'] },
-  { type: 'not_contains_multiple', val: ['U', 'E'] },
-  { type: 'not_contains_multiple', val: ['R', 'N'] },
-  { type: 'not_contains', val: 'R' },
-  { type: 'not_contains', val: 'N' },
-  { type: 'not_contains', val: 'T' },
-  { type: 'not_contains', val: 'S' },
-  { type: 'contains', val: 'B' },
-  { type: 'contains', val: 'P' },
-  { type: 'contains', val: 'D' },
-  { type: 'contains', val: 'G' },
-  { type: 'contains', val: 'L' },
-  { type: 'contains', val: 'EL' },
-  { type: 'contains', val: 'UM' },
-  { type: 'contains', val: 'IN' },
-  { type: 'contains', val: 'US' },
-  { type: 'contains', val: 'ER' },
-  { type: 'contains', val: 'ANG' },
-  { type: 'starts_with', val: 'K' },
-  { type: 'starts_with', val: 'T' },
-  { type: 'starts_with', val: 'D' },
-  { type: 'starts_with', val: 'L' },
-  { type: 'starts_with', val: 'R' },
-  { type: 'ends_with', val: 'K' },
-  { type: 'ends_with', val: 'T' },
-  { type: 'ends_with', val: 'S' },
-  { type: 'ends_with', val: 'M' },
-  { type: 'ends_with', val: 'L' },
-  { type: 'min_vowels', val: 3 }
+  { type: 'length', val: 8 }, { type: 'length', val: 9 }, { type: 'length', val: 10 }, { type: 'length', val: 11 },
+  { type: 'not_contains', val: 'O' }, { type: 'not_contains', val: 'U' }, { type: 'not_contains', val: 'R' },
+  { type: 'not_contains', val: 'N' }, { type: 'not_contains', val: 'T' }, { type: 'not_contains', val: 'S' },
+  { type: 'not_contains_multiple', val: ['A', 'E'] }, { type: 'not_contains_multiple', val: ['I', 'O'] },
+  { type: 'not_contains_multiple', val: ['U', 'E'] }, { type: 'not_contains_multiple', val: ['R', 'N'] },
+  { type: 'contains', val: 'B' }, { type: 'contains', val: 'P' }, { type: 'contains', val: 'D' }, { type: 'contains', val: 'G' },
+  { type: 'contains', val: 'L' }, { type: 'contains', val: 'EL' }, { type: 'contains', val: 'UM' },
+  { type: 'contains', val: 'IN' }, { type: 'contains', val: 'US' }, { type: 'contains', val: 'ER' },
+  { type: 'contains', val: 'ANG' }, { type: 'contains', val: 'TER' }, { type: 'contains', val: 'BER' },
+  { type: 'contains', val: 'KAN' }, { type: 'contains', val: 'PER' }, { type: 'contains', val: 'NYA' },
+  { type: 'starts_with', val: 'K' }, { type: 'starts_with', val: 'T' }, { type: 'starts_with', val: 'D' },
+  { type: 'starts_with', val: 'L' }, { type: 'starts_with', val: 'R' }, { type: 'starts_with', val: 'C' },
+  { type: 'ends_with', val: 'K' }, { type: 'ends_with', val: 'T' }, { type: 'ends_with', val: 'S' },
+  { type: 'ends_with', val: 'M' }, { type: 'ends_with', val: 'L' }, { type: 'ends_with', val: 'NG' },
+  { type: 'min_vowels', val: 3 }, { type: 'no_repeat_letter', val: true }
 ];
 
 const WG_CLUE_HARD = [
-  { type: 'length', val: 8 },
-  { type: 'not_contains', val: 'A' },
-  { type: 'not_contains', val: 'E' },
-  { type: 'not_contains', val: 'I' },
-  { type: 'not_contains_multiple', val: ['A', 'E', 'I'] },
-  { type: 'not_contains_multiple', val: ['U', 'O', 'A'] },
-  { type: 'not_contains_multiple', val: ['R', 'N', 'T'] },
-  { type: 'not_contains_multiple', val: ['M', 'K', 'S'] },
-  { type: 'not_contains', val: 'K' },
-  { type: 'not_contains', val: 'M' },
-  { type: 'not_contains', val: 'L' },
-  { type: 'not_contains', val: 'P' },
-  { type: 'contains', val: 'J' },
-  { type: 'contains', val: 'Y' },
-  { type: 'contains', val: 'C' },
-  { type: 'contains', val: 'V' },
-  { type: 'contains', val: 'W' },
-  { type: 'contains', val: 'F' },
-  { type: 'contains', val: 'Z' },
-  { type: 'contains', val: 'ALA' },
-  { type: 'contains', val: 'ERA' },
-  { type: 'contains', val: 'BEL' },
-  { type: 'contains', val: 'PAN' },
-  { type: 'starts_with', val: 'J' },
-  { type: 'starts_with', val: 'Y' },
-  { type: 'starts_with', val: 'G' },
-  { type: 'starts_with', val: 'W' },
-  { type: 'starts_with', val: 'C' },
-  { type: 'ends_with', val: 'G' },
-  { type: 'ends_with', val: 'P' },
-  { type: 'ends_with', val: 'D' },
-  { type: 'min_vowels', val: 4 },
-  { type: 'double_letter', val: true }
+  { type: 'length', val: 12 }, { type: 'length', val: 13 }, { type: 'length', val: 14 }, { type: 'length', val: 15 },
+  { type: 'not_contains', val: 'A' }, { type: 'not_contains', val: 'E' }, { type: 'not_contains', val: 'I' },
+  { type: 'not_contains', val: 'K' }, { type: 'not_contains', val: 'M' }, { type: 'not_contains', val: 'L' }, { type: 'not_contains', val: 'P' },
+  { type: 'not_contains_multiple', val: ['A', 'E', 'I'] }, { type: 'not_contains_multiple', val: ['U', 'O', 'A'] },
+  { type: 'not_contains_multiple', val: ['R', 'N', 'T'] }, { type: 'not_contains_multiple', val: ['M', 'K', 'S'] },
+  { type: 'not_contains_multiple', val: ['B', 'P', 'D'] }, { type: 'not_contains_multiple', val: ['C', 'J', 'Y'] },
+  { type: 'contains', val: 'J' }, { type: 'contains', val: 'Y' }, { type: 'contains', val: 'C' },
+  { type: 'contains', val: 'V' }, { type: 'contains', val: 'W' }, { type: 'contains', val: 'F' }, { type: 'contains', val: 'Z' },
+  { type: 'contains', val: 'X' }, { type: 'contains', val: 'Q' },
+  { type: 'contains', val: 'ALA' }, { type: 'contains', val: 'ERA' }, { type: 'contains', val: 'BEL' }, { type: 'contains', val: 'PAN' },
+  { type: 'contains', val: 'PRO' }, { type: 'contains', val: 'EKS' }, { type: 'contains', val: 'NYA' },
+  { type: 'starts_with', val: 'J' }, { type: 'starts_with', val: 'Y' }, { type: 'starts_with', val: 'G' },
+  { type: 'starts_with', val: 'W' }, { type: 'starts_with', val: 'C' }, { type: 'starts_with', val: 'F' },
+  { type: 'starts_with', val: 'Z' }, { type: 'starts_with', val: 'V' }, { type: 'starts_with', val: 'SY' },
+  { type: 'ends_with', val: 'G' }, { type: 'ends_with', val: 'P' }, { type: 'ends_with', val: 'D' },
+  { type: 'ends_with', val: 'V' }, { type: 'ends_with', val: 'Z' }, { type: 'ends_with', val: 'F' },
+  { type: 'min_vowels', val: 4 }, { type: 'double_letter', val: true }, { type: 'no_repeat_letter', val: true }
 ];
 
 const WG_CLUE_EASY_EN = [
-  { type: 'length', val: 4 }, { type: 'length', val: 5 }, { type: 'length', val: 6 },
+  { type: 'length', val: 4 }, { type: 'length', val: 5 }, { type: 'length', val: 6 }, { type: 'length', val: 7 },
   { type: 'contains', val: 'A' }, { type: 'contains', val: 'E' }, { type: 'contains', val: 'I' },
   { type: 'contains', val: 'O' }, { type: 'contains', val: 'U' },
   { type: 'contains', val: 'ER' }, { type: 'contains', val: 'ST' }, { type: 'contains', val: 'EA' },
   { type: 'contains', val: 'OU' }, { type: 'contains', val: 'TH' }, { type: 'contains', val: 'CH' },
+  { type: 'contains', val: 'IN' }, { type: 'contains', val: 'ON' }, { type: 'contains', val: 'AN' },
   { type: 'starts_with', val: 'S' }, { type: 'starts_with', val: 'C' }, { type: 'starts_with', val: 'B' }, { type: 'starts_with', val: 'T' },
+  { type: 'starts_with', val: 'M' }, { type: 'starts_with', val: 'P' }, { type: 'starts_with', val: 'D' },
   { type: 'ends_with', val: 'E' }, { type: 'ends_with', val: 'S' }, { type: 'ends_with', val: 'D' }, { type: 'ends_with', val: 'Y' },
+  { type: 'ends_with', val: 'T' }, { type: 'ends_with', val: 'N' },
   { type: 'starts_vowel', val: true }, { type: 'ends_consonant', val: true }
 ];
 
 const WG_CLUE_MEDIUM_EN = [
-  { type: 'length', val: 7 },
+  { type: 'length', val: 8 }, { type: 'length', val: 9 }, { type: 'length', val: 10 }, { type: 'length', val: 11 },
   { type: 'not_contains', val: 'O' }, { type: 'not_contains', val: 'U' },
   { type: 'not_contains_multiple', val: ['A', 'E'] }, { type: 'not_contains_multiple', val: ['I', 'O'] },
   { type: 'contains', val: 'IGH' }, { type: 'contains', val: 'GHT' }, { type: 'contains', val: 'STA' },
   { type: 'contains', val: 'REA' }, { type: 'contains', val: 'TER' }, { type: 'contains', val: 'AIN' },
+  { type: 'contains', val: 'ING' }, { type: 'contains', val: 'TION' }, { type: 'contains', val: 'ATE' },
+  { type: 'contains', val: 'PRO' }, { type: 'contains', val: 'PRE' }, { type: 'contains', val: 'CON' },
   { type: 'starts_with', val: 'P' }, { type: 'starts_with', val: 'M' }, { type: 'starts_with', val: 'A' }, { type: 'starts_with', val: 'R' },
+  { type: 'starts_with', val: 'F' }, { type: 'starts_with', val: 'H' }, { type: 'starts_with', val: 'L' },
   { type: 'ends_with', val: 'N' }, { type: 'ends_with', val: 'R' }, { type: 'ends_with', val: 'T' }, { type: 'ends_with', val: 'L' },
-  { type: 'min_vowels', val: 3 }
+  { type: 'ends_with', val: 'LY' }, { type: 'ends_with', val: 'ER' },
+  { type: 'min_vowels', val: 3 }, { type: 'no_repeat_letter', val: true }
 ];
 
 const WG_CLUE_HARD_EN = [
-  { type: 'length', val: 8 },
+  { type: 'length', val: 12 }, { type: 'length', val: 13 }, { type: 'length', val: 14 }, { type: 'length', val: 15 },
   { type: 'not_contains', val: 'A' }, { type: 'not_contains', val: 'E' }, { type: 'not_contains', val: 'I' },
   { type: 'not_contains_multiple', val: ['A', 'E', 'I'] }, { type: 'not_contains_multiple', val: ['U', 'O', 'A'] },
   { type: 'not_contains_multiple', val: ['S', 'T', 'R'] }, { type: 'not_contains_multiple', val: ['L', 'N', 'E'] },
+  { type: 'not_contains_multiple', val: ['C', 'H', 'P'] }, { type: 'not_contains_multiple', val: ['M', 'D', 'G'] },
   { type: 'contains', val: 'J' }, { type: 'contains', val: 'Q' }, { type: 'contains', val: 'Z' }, { type: 'contains', val: 'X' },
-  { type: 'contains', val: 'V' }, { type: 'contains', val: 'W' },
+  { type: 'contains', val: 'V' }, { type: 'contains', val: 'W' }, { type: 'contains', val: 'BB' }, { type: 'contains', val: 'ZZ' },
   { type: 'starts_with', val: 'J' }, { type: 'starts_with', val: 'K' }, { type: 'starts_with', val: 'V' }, { type: 'starts_with', val: 'Z' }, { type: 'starts_with', val: 'Q' },
+  { type: 'starts_with', val: 'Y' }, { type: 'starts_with', val: 'U' }, { type: 'starts_with', val: 'O' },
   { type: 'ends_with', val: 'K' }, { type: 'ends_with', val: 'M' }, { type: 'ends_with', val: 'P' },
-  { type: 'min_vowels', val: 4 }, { type: 'double_letter', val: true }
+  { type: 'ends_with', val: 'Z' }, { type: 'ends_with', val: 'X' }, { type: 'ends_with', val: 'W' },
+  { type: 'min_vowels', val: 4 }, { type: 'double_letter', val: true }, { type: 'no_repeat_letter', val: true }
 ];
 
 function getWgClueDesc(clue) {
   const isEn = lastLang === 'en' || lastLang === 'mixed';
   switch (clue.type) {
-    case 'length': return isEn ? `${clue.val} Letters` : `${clue.val} Huruf`;
-    case 'contains': return isEn ? `Contains ${clue.val}` : `Ada ${clue.val}`;
-    case 'not_contains': return isEn ? `No ${clue.val}` : `Tanpa ${clue.val}`;
-    case 'not_contains_multiple': return isEn ? `No ${clue.val.join(', ')}` : `Tanpa ${clue.val.join(', ')}`;
-    case 'starts_with': return isEn ? `Starts ${clue.val}` : `Awalan ${clue.val}`;
-    case 'ends_with': return isEn ? `Ends ${clue.val}` : `Akhiran ${clue.val}`;
-    case 'starts_vowel': return isEn ? `Starts w/ Vowel` : `Awalan Vokal`;
-    case 'ends_consonant': return isEn ? `Ends w/ Consonant` : `Akhiran Konsonan`;
-    case 'min_vowels': return isEn ? `Min ${clue.val} Vowels` : `Min ${clue.val} Vokal`;
-    case 'double_letter': return isEn ? `Double Letter` : `Huruf Ganda`;
+    case 'length': return isEn ? `${clue.val}<br>Letters` : `${clue.val}<br>Huruf`;
+    case 'contains': return isEn ? `Contains<br>${clue.val}` : `Ada<br>${clue.val}`;
+    case 'not_contains': return isEn ? `No<br>${clue.val}` : `Tanpa<br>${clue.val}`;
+    case 'not_contains_multiple': return isEn ? `No<br>${clue.val.join(', ')}` : `Tanpa<br>${clue.val.join(', ')}`;
+    case 'starts_with': return isEn ? `Starts<br>${clue.val}` : `Awalan<br>${clue.val}`;
+    case 'ends_with': return isEn ? `Ends<br>${clue.val}` : `Akhiran<br>${clue.val}`;
+    case 'starts_vowel': return isEn ? `Starts w/<br>Vowel` : `Awalan<br>Vokal`;
+    case 'ends_consonant': return isEn ? `Ends w/<br>Consonant` : `Akhiran<br>Konsonan`;
+    case 'min_vowels': return isEn ? `Min ${clue.val}<br>Vowels` : `Min ${clue.val}<br>Vokal`;
+    case 'double_letter': return isEn ? `Double<br>Letter` : `Huruf<br>Ganda`;
+    case 'no_repeat_letter': return isEn ? `No Repeat<br>Letters` : `Tanpa Huruf<br>Berulang`;
     default: return '';
   }
 }
 
+let wgAllWordsCache = null;
+
 function getValidWordsForWgCell(rowClue, colClue) {
   let valid = [];
-  const allWords = [];
-  [3, 4, 5, 6, 7, 8].forEach(len => {
-    if (allTargetWords[len]) allWords.push(...allTargetWords[len]);
-  });
+  if (!wgAllWordsCache) {
+    wgAllWordsCache = [];
+    [3, 4, 5, 6, 7, 8].forEach(len => {
+      if (allTargetWords[len]) wgAllWordsCache.push(...allTargetWords[len]);
+    });
+    fullValidDictionary.forEach(w => {
+      if (w.length >= 9 && w.length <= 15) {
+        wgAllWordsCache.push(w);
+      }
+    });
+  }
   
-  for (const w of allWords) {
+  for (const w of wgAllWordsCache) {
     if (checkWgClue(w, rowClue) && checkWgClue(w, colClue)) {
       valid.push(w);
     }
@@ -1888,10 +1858,12 @@ function checkWgClue(word, clue) {
   if (clue.type === 'ends_consonant') return /[^AEIOU]$/.test(word);
   if (clue.type === 'min_vowels') return (word.match(/[AEIOU]/g) || []).length >= clue.val;
   if (clue.type === 'double_letter') return /(.)\1/.test(word);
+  if (clue.type === 'no_repeat_letter') return new Set(word).size === word.length;
   return false;
 }
 
 function generateWordGridBoard() {
+  wgAllWordsCache = null;
   let attempts = 0;
   let validBoardFound = false;
   
@@ -1951,8 +1923,8 @@ function generateWordGridBoard() {
 
 function renderWordGridBoard() {
   for (let i=0; i<3; i++) {
-    document.getElementById(`wg-row-${i}`).textContent = wgCluesRow[i] ? getWgClueDesc(wgCluesRow[i]) : '';
-    document.getElementById(`wg-col-${i}`).textContent = wgCluesCol[i] ? getWgClueDesc(wgCluesCol[i]) : '';
+    document.getElementById(`wg-row-${i}`).innerHTML = wgCluesRow[i] ? getWgClueDesc(wgCluesRow[i]) : '';
+    document.getElementById(`wg-col-${i}`).innerHTML = wgCluesCol[i] ? getWgClueDesc(wgCluesCol[i]) : '';
   }
   
   for (let r=0; r<3; r++) {
@@ -1975,7 +1947,7 @@ function renderWordGridBoard() {
         wordEl.style.fontSize = `calc(${dynSize}px * var(--board-scale, 1))`;
         wordEl.textContent = data.word;
         playerEl.innerHTML = `
-          <img class="wg-player-avatar" src="${data.avatar || 'assets/bg_nature.png'}">
+          <img class="wg-player-avatar" src="${data.profilePic || 'assets/bg_nature.png'}">
           <span class="wg-player-name">${data.username}</span>
         `;
         rarityEl.style.display = 'block';
@@ -3533,7 +3505,7 @@ function processGuess(guessWord, userData) {
   }
 
   if (currentGameMode === 'wordgrid') {
-    const pointsWon = checkWordGridGuess(guessWord, userData.uniqueId || userData.nickname, userData.profilePictureUrl);
+    const pointsWon = checkWordGridGuess(guessWord, userData.nickname || userData.uniqueId, userData.profilePictureUrl);
     if (pointsWon) {
       addPoints(userData, pointsWon);
     }

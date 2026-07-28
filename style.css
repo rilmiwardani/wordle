@@ -2589,10 +2589,11 @@ header {
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.25);
   color: #fff;
-  font-size: calc(14px * var(--board-scale, 1));
+  font-size: calc(12.5px * var(--board-scale, 1));
   font-weight: 800;
   padding: calc(5px * var(--board-scale, 1));
   text-shadow: 0px 2px 4px rgba(0,0,0,0.8);
+  line-height: 1.2;
 }
 .word-grid-ans {
   background: rgba(0, 0, 0, 0.4);
@@ -2601,16 +2602,17 @@ header {
 }
 .wg-rarity {
   position: absolute;
-  top: 4px;
-  left: 4px;
+  top: calc(4px * var(--board-scale, 1));
+  left: calc(4px * var(--board-scale, 1));
   background: rgba(0,0,0,0.6);
-  padding: 2px 6px;
-  border-radius: 6px;
-  font-size: 10px;
+  padding: calc(2px * var(--board-scale, 1)) calc(4px * var(--board-scale, 1));
+  border-radius: calc(6px * var(--board-scale, 1));
+  font-size: calc(7.5px * var(--board-scale, 1));
   font-weight: 700;
   color: white;
   z-index: 2;
   display: none;
+  white-space: nowrap;
 }
 .wg-word {
   font-size: calc(18px * var(--board-scale, 1));

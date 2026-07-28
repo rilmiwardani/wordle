@@ -978,6 +978,7 @@ let wordsLoaded = false;
 let allTargetWords = { 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] };
 let allValidWords = { 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] };
 let allAvailableWords = { 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] };
+let fullValidDictionary = new Set();
 
 function loadWordLists(lang) {
   return new Promise((resolve, reject) => {
@@ -1014,6 +1015,15 @@ function loadWordLists(lang) {
         fetch(`wordlist/valid_words${suffix}_8.txt`).then(r => r.text()).catch(() => "")
       ];
     }
+    
+    // FETCH FULL DICTIONARY FOR UNLIMITED LENGTH IN WORD GRID
+    if (lang === 'mixed') {
+      fetches.push(Promise.all([fetch('wordlist/dictionary.txt').then(r=>r.text()).catch(()=>""), fetch('wordlist/kamus.txt').then(r=>r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]));
+    } else if (lang === 'id') {
+      fetches.push(fetch('wordlist/kamus.txt').then(r=>r.text()).catch(()=>""));
+    } else {
+      fetches.push(fetch('wordlist/dictionary.txt').then(r=>r.text()).catch(()=>""));
+    }
 
     Promise.all(fetches).then((results) => {
       const lengths = [3, 4, 5, 6, 7, 8];
@@ -1029,6 +1039,15 @@ function loadWordLists(lang) {
 
       wordsLoaded = true;
       console.log(`Loaded target words - Length 3: ${allTargetWords[3].length}, 4: ${allTargetWords[4].length}, 5: ${allTargetWords[5].length}, 6: ${allTargetWords[6].length}, 7: ${allTargetWords[7].length}, 8: ${allTargetWords[8].length}`);
+      
+      const fullDictText = results[results.length - 1] || "";
+      fullValidDictionary.clear();
+      fullDictText.split('\n').forEach(w => {
+         const word = w.trim().toUpperCase();
+         if (word.length >= 3) fullValidDictionary.add(word);
+      });
+      console.log(`Loaded FULL dictionary: ${fullValidDictionary.size} words`);
+      
       resolve();
     }).catch(err => {
       console.error("Failed to load wordlists:", err);
@@ -1987,9 +2006,8 @@ function checkWordGridGuess(word, username, profilePic) {
   if (isGameOver) return false;
   word = word.toUpperCase();
   
-  // Validasi apakah kata ada di kamus lengkap (kamus.txt)
-  const validDict = allValidWords[word.length];
-  if (!validDict || !validDict.includes(word)) return false;
+  // Validasi apakah kata ada di kamus lengkap
+  if (!fullValidDictionary.has(word)) return false;
   
   for (let r=0; r<3; r++) {
     for (let c=0; c<3; c++) {
@@ -2002,6 +2020,7 @@ function checkWordGridGuess(word, username, profilePic) {
       if (!wgGrid[r][c]) {
         if (checkWgClue(word, wgCluesRow[r]) && checkWgClue(word, wgCluesCol[c])) {
           let points = 2;
+          // Gunakan cache untuk poin rarity, namun jika tidak ada (kata > 8 huruf), anggap Legendary (25)
           let validCount = wgDictionaryCache[`${r}-${c}`]?.length || 0;
           if (validCount < 10) points = 25;
           else if (validCount < 50) points = 10;

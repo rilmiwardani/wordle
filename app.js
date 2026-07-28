@@ -268,9 +268,14 @@ function formatActiveTime(seconds) {
   return `${hours}j ${remainingMinutes}m`;
 }
 
-function recordActivity(username) {
+function recordActivity(username, profilePictureUrl = null) {
   if (!username) return;
   const now = Date.now();
+  
+  if (profilePictureUrl) {
+    try { localStorage.setItem('pts_avatar_' + username, profilePictureUrl); } catch(e) {}
+  }
+
   if (!playerActivePresence[username]) {
     const savedTime = parseInt(localStorage.getItem('pts_active_' + username) || '0');
     playerActivePresence[username] = {
@@ -696,6 +701,9 @@ function saveDailyPts(username, pts) {
 function addPoints(userData, points) {
   if (!userData || !userData.nickname) return;
   const username = userData.nickname;
+  if (userData.profilePictureUrl) {
+    try { localStorage.setItem('pts_avatar_' + username, userData.profilePictureUrl); } catch(e) {}
+  }
   if (!playerPoints[username]) {
     playerPoints[username] = {
       avatar: userData.profilePictureUrl || 'assets/bg_nature.png',
@@ -3901,9 +3909,10 @@ window.resetDailyLeaderboard = function(e) {
     const sharePrefix = 'pts_share_';
     const giftPrefix = 'pts_gift_';
     const activePrefix = 'pts_active_';
+    const avatarPrefix = 'pts_avatar_';
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && (key.startsWith(dailyPrefix) || key.startsWith(likePrefix) || key.startsWith(sharePrefix) || key.startsWith(giftPrefix) || key.startsWith(activePrefix))) {
+      if (key && (key.startsWith(dailyPrefix) || key.startsWith(likePrefix) || key.startsWith(sharePrefix) || key.startsWith(giftPrefix) || key.startsWith(activePrefix) || key.startsWith(avatarPrefix))) {
         keysToRemove.push(key);
       }
     }
@@ -3935,9 +3944,9 @@ window.resetLeaderboard = function(e) {
     const prefix = getPtsPrefix();
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && (key.startsWith(prefix) || key.startsWith('pts_like_') || key.startsWith('pts_share_') || key.startsWith('pts_gift_') || key.startsWith('pts_active_'))) {
+      if (key && (key.startsWith(prefix) || key.startsWith('pts_like_') || key.startsWith('pts_share_') || key.startsWith('pts_gift_') || key.startsWith('pts_active_') || key.startsWith('pts_avatar_'))) {
         if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_'))) {
-          if (!key.startsWith('pts_like_') && !key.startsWith('pts_share_') && !key.startsWith('pts_gift_') && !key.startsWith('pts_active_')) {
+          if (!key.startsWith('pts_like_') && !key.startsWith('pts_share_') && !key.startsWith('pts_gift_') && !key.startsWith('pts_active_') && !key.startsWith('pts_avatar_')) {
             continue;
           }
         }

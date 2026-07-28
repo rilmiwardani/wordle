@@ -292,7 +292,18 @@
     .rank-2 { color: #e5e5e5; }
     .rank-3 { color: #cd7f32; }
 
-    /* Circular Letter Avatar */
+    /* Circular TikTok Avatar style */
+    .leader-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
+      display: block;
+    }
+
+    /* Circular Letter Avatar Fallback */
     .letter-avatar {
       width: 24px;
       height: 24px;
@@ -453,11 +464,13 @@
     const sharePrefix = prefix + 'share_';
     const giftPrefix = prefix + 'gift_';
     const activePrefix = prefix + 'active_';
+    const avatarPrefix = prefix + 'avatar_';
 
     const playerLikes = {};
     const playerShares = {};
     const playerGifts = {};
     const playerActive = {};
+    const playerAvatars = {};
 
     // 1. Fetch values from local storage
     for (let i = 0; i < localStorage.length; i++) {
@@ -475,6 +488,9 @@
         } else if (key.startsWith(activePrefix)) {
           const username = key.substring(activePrefix.length);
           playerActive[username] = parseInt(localStorage.getItem(key)) || 0;
+        } else if (key.startsWith(avatarPrefix)) {
+          const username = key.substring(avatarPrefix.length);
+          playerAvatars[username] = localStorage.getItem(key);
         }
       }
     }
@@ -526,7 +542,19 @@
         row.className = 'leader-row';
 
         const initial = user.username.substring(0, 1).toUpperCase();
+        const avatarUrl = playerAvatars[user.username];
         
+        let avatarHTML = '';
+        if (avatarUrl) {
+          avatarHTML = `
+            <div style="position: relative; width: 24px; height: 24px;">
+              <img src="${avatarUrl}" class="leader-avatar" alt="" crossorigin="anonymous" referrerpolicy="no-referrer" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+              <div class="letter-avatar ${typeClass}" style="display: none; position: absolute; top:0; left:0;">${initial}</div>
+            </div>`;
+        } else {
+          avatarHTML = `<div class="letter-avatar ${typeClass}">${initial}</div>`;
+        }
+
         let scoreText = '';
         if (suffix === '🪙') {
           scoreText = `${formatNumber(user.count)} koin`;
@@ -541,7 +569,7 @@
         row.innerHTML = `
           <div class="leader-info">
             <span class="leader-rank rank-${idx + 1}">#${idx + 1}</span>
-            <div class="letter-avatar ${typeClass}">${initial}</div>
+            ${avatarHTML}
             <span class="leader-name">${user.username}</span>
           </div>
           <span class="leader-score">${scoreText}</span>
@@ -587,7 +615,7 @@
       const options = {
         scale: 3, // scale up for high-res output
         useCORS: true,
-        allowTaint: true,
+        allowTaint: false, // Set to false to avoid SecurityErrors if some images block CORS
         backgroundColor: '#0c081d'
       };
 

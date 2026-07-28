@@ -649,7 +649,11 @@ function initWeeklyLeaderboard() {
     if (key && key.startsWith(prefix)) {
       if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_'))) continue;
       
-      if (key.startsWith(prefix + 'like_')) continue;
+      if (key.startsWith(prefix + 'like_') || 
+          key.startsWith(prefix + 'share_') || 
+          key.startsWith(prefix + 'gift_') || 
+          key.startsWith(prefix + 'active_') || 
+          key.startsWith(prefix + 'avatar_')) continue;
       
       if (key.startsWith(dailyPrefix)) {
         const username = key.substring(dailyPrefix.length);
@@ -1652,7 +1656,11 @@ function handleMyRank(userData) {
     if (key && key.startsWith(prefix)) {
       if (key.startsWith(dailyPrefix)) continue;
       if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_'))) continue;
-      if (key.startsWith(prefix + 'like_')) continue;
+      if (key.startsWith(prefix + 'like_') || 
+          key.startsWith(prefix + 'share_') || 
+          key.startsWith(prefix + 'gift_') || 
+          key.startsWith(prefix + 'active_') || 
+          key.startsWith(prefix + 'avatar_')) continue;
       const uName = key.substring(prefix.length);
       const pts = parseInt(localStorage.getItem(key)) || 0;
       weeklyData.push({ uName, pts });
@@ -1938,6 +1946,12 @@ function renderWordGridBoard() {
       cell.className = 'word-grid-cell word-grid-ans'; 
       
       if (data) {
+        let dynSize = 18;
+        if (data.word.length >= 9) dynSize = 11;
+        else if (data.word.length >= 7) dynSize = 13;
+        else if (data.word.length === 6) dynSize = 15;
+        
+        wordEl.style.fontSize = `calc(${dynSize}px * var(--board-scale, 1))`;
         wordEl.textContent = data.word;
         playerEl.innerHTML = `
           <img class="wg-player-avatar" src="${data.avatar || 'assets/bg_nature.png'}">
@@ -3246,7 +3260,7 @@ function handleChatGuess(data) {
   if (currentGameMode === 'wordtango') {
     isAllowedLength = (msg.length >= 3 && msg.length <= 6);
   } else if (currentGameMode === 'wordgrid') {
-    isAllowedLength = (msg.length >= 3 && msg.length <= 8);
+    isAllowedLength = (msg.length >= 3);
   }
 
   if (isAllowedLength) {
@@ -4406,36 +4420,48 @@ window.resetDailyLeaderboard = function(e) {
 
 window.resetLeaderboard = function(e) {
   if (e) e.stopPropagation();
-  showCustomConfirm("Reset SEMUA poin Daily dan Weekly? Tindakan ini tidak bisa dibatalkan.", () => {
-    // Clear points, likes, shares, and gifts in memory
+  showCustomConfirm("Reset Poin Daily dan Weekly (Tebakan Game)? Tindakan ini tidak bisa dibatalkan.", () => {
     playerPoints = {};
-    playerLikes = {};
-    playerShares = {};
-    playerGifts = {};
-    playerActivePresence = {};
-    
-    // Clear weekly and daily points, likes, shares, gifts from localStorage
     const keysToRemove = [];
     const prefix = getPtsPrefix();
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && (key.startsWith(prefix) || key.startsWith('pts_like_') || key.startsWith('pts_share_') || key.startsWith('pts_gift_') || key.startsWith('pts_active_') || key.startsWith('pts_avatar_'))) {
-        if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_'))) {
-          if (!key.startsWith('pts_like_') && !key.startsWith('pts_share_') && !key.startsWith('pts_gift_') && !key.startsWith('pts_active_') && !key.startsWith('pts_avatar_')) {
-            continue;
-          }
-        }
+      if (key && key.startsWith(prefix)) {
+        if (key.includes('_like_') || key.includes('_share_') || key.includes('_gift_') || key.includes('_active_') || key.includes('_avatar_')) continue;
+        if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_'))) continue;
         keysToRemove.push(key);
       }
     }
     keysToRemove.forEach(k => localStorage.removeItem(k));
     
-    // Refresh UI
     renderLeaderboard();
-    updateMarqueeUI(true);
-    showToast("Leaderboard Daily dan Weekly telah di-reset!");
+    showToast("Peringkat Game (Daily/Weekly) telah di-reset!");
     
-    // Close settings dropdown if open
+    const dropdown = document.getElementById('settingsDropdown');
+    if (dropdown) dropdown.classList.remove('show');
+  });
+};
+
+window.resetTopSupporters = function(e) {
+  if (e) e.stopPropagation();
+  showCustomConfirm("Reset Statistik Top Supporters (Likes, Shares, Gifts, Active)? Tindakan ini tidak bisa dibatalkan.", () => {
+    playerLikes = {};
+    playerShares = {};
+    playerGifts = {};
+    playerActivePresence = {};
+    
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.includes('_like_') || key.includes('_share_') || key.includes('_gift_') || key.includes('_active_') || key.includes('_avatar_'))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    
+    updateMarqueeUI(true);
+    showToast("Statistik Top Supporters telah di-reset!");
+    
     const dropdown = document.getElementById('settingsDropdown');
     if (dropdown) dropdown.classList.remove('show');
   });

@@ -189,6 +189,7 @@ let isMarqueeEnabled = localStorage.getItem('wordle_marqueeEnabled') !== 'false'
 let playerLikes = {};
 let playerShares = {};
 let playerGifts = {};
+let playerActivePresence = {}; // { username: { accumulatedTime: seconds, lastActiveTime: ms } }
 let pendingMarqueeHTML = "";
 
 window.toggleMarquee = function(checked) {
@@ -201,10 +202,12 @@ function initTrackers() {
   playerLikes = {};
   playerShares = {};
   playerGifts = {};
+  playerActivePresence = {};
   const prefix = 'pts_'; // Selalu gunakan prefix global agar Top Liker tidak terreset saat ganti game mode
   const likePrefix = prefix + 'like_';
   const sharePrefix = prefix + 'share_';
   const giftPrefix = prefix + 'gift_';
+  const activePrefix = prefix + 'active_';
   
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
@@ -221,6 +224,13 @@ function initTrackers() {
         const username = key.substring(giftPrefix.length);
         const count = parseInt(localStorage.getItem(key)) || 0;
         playerGifts[username] = count;
+      } else if (key.startsWith(activePrefix)) {
+        const username = key.substring(activePrefix.length);
+        const count = parseInt(localStorage.getItem(key)) || 0;
+        playerActivePresence[username] = {
+          accumulatedTime: count,
+          lastActiveTime: null
+        };
       }
     }
   }
@@ -234,6 +244,83 @@ function getTop3(trackerObject) {
     .slice(0, 3)
     .map(([username, count]) => ({ username, count }));
 }
+
+function getTopActiveViewers() {
+  const data = [];
+  for (const username in playerActivePresence) {
+    const time = playerActivePresence[username].accumulatedTime;
+    if (time > 0) {
+      data.push({ username, count: time });
+    }
+  }
+  return data
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3);
+}
+
+function formatActiveTime(seconds) {
+  if (seconds < 60) return `${seconds}d`; // detik
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`; // menit
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  if (remainingMinutes === 0) return `${hours}j`; // jam
+  return `${hours}j ${remainingMinutes}m`;
+}
+
+function recordActivity(username) {
+  if (!username) return;
+  const now = Date.now();
+  if (!playerActivePresence[username]) {
+    const savedTime = parseInt(localStorage.getItem('pts_active_' + username) || '0');
+    playerActivePresence[username] = {
+      accumulatedTime: savedTime,
+      lastActiveTime: now
+    };
+  } else {
+    const presence = playerActivePresence[username];
+    if (!presence.lastActiveTime) {
+      presence.lastActiveTime = now;
+    } else {
+      const elapsedMs = now - presence.lastActiveTime;
+      if (elapsedMs > 300000) { // 5 minutes inactivity gap
+        presence.lastActiveTime = now;
+      } else {
+        const elapsedSec = Math.round(elapsedMs / 1000);
+        if (elapsedSec > 0) {
+          presence.accumulatedTime += elapsedSec;
+          presence.lastActiveTime = now;
+          localStorage.setItem('pts_active_' + username, presence.accumulatedTime);
+          updateMarqueeUI();
+        }
+      }
+    }
+  }
+}
+
+// Background timer to periodically update active presence
+setInterval(() => {
+  const now = Date.now();
+  let updated = false;
+  for (const username in playerActivePresence) {
+    const presence = playerActivePresence[username];
+    if (presence.lastActiveTime) {
+      const elapsedMs = now - presence.lastActiveTime;
+      if (elapsedMs > 0 && elapsedMs <= 300000) { // 5 minutes active window
+        const elapsedSec = Math.round(elapsedMs / 1000);
+        if (elapsedSec > 0) {
+          presence.accumulatedTime += elapsedSec;
+          presence.lastActiveTime = now;
+          localStorage.setItem('pts_active_' + username, presence.accumulatedTime);
+          updated = true;
+        }
+      }
+    }
+  }
+  if (updated) {
+    updateMarqueeUI();
+  }
+}, 10000);
 
 function applyMarqueeAnimationProps(contentEl, marqueeContainer) {
   const speed = 65; // pixels/sec
@@ -267,6 +354,7 @@ function updateMarqueeUI(forceImmediate = false) {
   const topLikers = getTop3(playerLikes);
   const topSharers = getTop3(playerShares);
   const topGifters = getTop3(playerGifts);
+  const topActiveViewers = getTopActiveViewers();
   
   let likerText = "❤️ TOP LIKERS: ";
   if (topLikers.length > 0) {
@@ -288,8 +376,15 @@ function updateMarqueeUI(forceImmediate = false) {
   } else {
     gifterText += `<span class="highlight">-</span>`;
   }
+
+  let activeViewerText = "👑 TOP ACTIVE VIEWERS: ";
+  if (topActiveViewers.length > 0) {
+    activeViewerText += topActiveViewers.map((u, i) => `${i + 1}. <span class="highlight">${u.username}</span> ${formatActiveTime(u.count)}`).join(" &nbsp;&nbsp;&nbsp;");
+  } else {
+    activeViewerText += `<span class="highlight">-</span>`;
+  }
   
-  const newHTML = `${gifterText} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${likerText} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${sharerText}`;
+  const newHTML = `${gifterText} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${likerText} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${sharerText} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${activeViewerText}`;
   
   const contentEl = document.getElementById('marqueeContent');
   if (!contentEl) return;
@@ -2446,6 +2541,9 @@ function setupSocketListeners() {
 
   // --- Game events ---
   socket.on('chat', (data) => {
+    const username = data.nickname || data.uniqueId;
+    if (username) recordActivity(username);
+
     // Check for music request when using IndoFinity (local server handles it otherwise)
     if (socket instanceof IndoFinitySocket && data.comment && data.comment.toLowerCase().startsWith('!play ')) {
       if (musicSettings.requestsEnabled !== false) {
@@ -2466,6 +2564,8 @@ function setupSocketListeners() {
   });
 
   socket.on('member', (data) => {
+    const username = data.nickname || data.uniqueId;
+    if (username) recordActivity(username);
     if (typeof handleAutoGuessOnJoin === 'function') handleAutoGuessOnJoin(data);
   });
 
@@ -2529,6 +2629,7 @@ function setupSocketListeners() {
     showSocialAlert(data, 'share');
     const username = data.nickname || data.uniqueId;
     if (username) {
+      recordActivity(username);
       playerShares[username] = (playerShares[username] || 0) + 1;
       localStorage.setItem('pts_share_' + username, playerShares[username]);
       updateMarqueeUI();
@@ -2537,6 +2638,8 @@ function setupSocketListeners() {
 
   socket.on('follow', (data) => {
     showSocialAlert(data, 'follow');
+    const username = data.nickname || data.uniqueId;
+    if (username) recordActivity(username);
   });
 
   socket.on('gift', (data) => {
@@ -2545,6 +2648,7 @@ function setupSocketListeners() {
     showSocialAlert(data, 'gift');
     const username = data.nickname || data.uniqueId;
     if (username) {
+      recordActivity(username);
       const coins = data.totalDiamonds || ((data.diamondCount || 0) * (data.repeatCount || 1));
       if (coins > 0) {
         playerGifts[username] = (playerGifts[username] || 0) + coins;
@@ -2558,6 +2662,7 @@ function setupSocketListeners() {
     const addedLikes = (typeof data.likeCount === 'number') ? data.likeCount : 1;
     const username = data.nickname || data.uniqueId;
     if (username) {
+      recordActivity(username);
       playerLikes[username] = (playerLikes[username] || 0) + addedLikes;
       localStorage.setItem('pts_like_' + username, playerLikes[username]);
       updateMarqueeUI();
@@ -3786,6 +3891,7 @@ window.resetDailyLeaderboard = function(e) {
     playerLikes = {};
     playerShares = {};
     playerGifts = {};
+    playerActivePresence = {};
     
     // Clear daily points, likes, shares, and gifts from localStorage
     const keysToRemove = [];
@@ -3794,9 +3900,10 @@ window.resetDailyLeaderboard = function(e) {
     const likePrefix = 'pts_like_';
     const sharePrefix = 'pts_share_';
     const giftPrefix = 'pts_gift_';
+    const activePrefix = 'pts_active_';
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && (key.startsWith(dailyPrefix) || key.startsWith(likePrefix) || key.startsWith(sharePrefix) || key.startsWith(giftPrefix))) {
+      if (key && (key.startsWith(dailyPrefix) || key.startsWith(likePrefix) || key.startsWith(sharePrefix) || key.startsWith(giftPrefix) || key.startsWith(activePrefix))) {
         keysToRemove.push(key);
       }
     }
@@ -3821,15 +3928,16 @@ window.resetLeaderboard = function(e) {
     playerLikes = {};
     playerShares = {};
     playerGifts = {};
+    playerActivePresence = {};
     
     // Clear weekly and daily points, likes, shares, gifts from localStorage
     const keysToRemove = [];
     const prefix = getPtsPrefix();
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && (key.startsWith(prefix) || key.startsWith('pts_like_') || key.startsWith('pts_share_') || key.startsWith('pts_gift_'))) {
+      if (key && (key.startsWith(prefix) || key.startsWith('pts_like_') || key.startsWith('pts_share_') || key.startsWith('pts_gift_') || key.startsWith('pts_active_'))) {
         if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_'))) {
-          if (!key.startsWith('pts_like_') && !key.startsWith('pts_share_') && !key.startsWith('pts_gift_')) {
+          if (!key.startsWith('pts_like_') && !key.startsWith('pts_share_') && !key.startsWith('pts_gift_') && !key.startsWith('pts_active_')) {
             continue;
           }
         }

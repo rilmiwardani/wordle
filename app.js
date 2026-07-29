@@ -5799,22 +5799,32 @@ setTimeout(() => {
 // --- Header Alternator for Mobile ---
 let headerAlternatorState = 0;
 setInterval(() => {
-  const indicators = document.getElementById('headerIndicators');
+  const noRep = document.getElementById('noRepeatBadge');
+  const lang = document.getElementById('currentLangBadge');
   const roundBadge = document.getElementById('headerRoundBadge');
-  if (!indicators || !roundBadge) return;
+  if (!lang || !roundBadge) return;
   
   if (window.innerWidth > 600) {
-    indicators.style.display = 'flex';
+    if (isNoRepeatMode && noRep) noRep.style.display = 'inline-block';
+    lang.style.display = 'inline-block';
     roundBadge.style.display = 'inline-block';
     return;
   }
   
-  if (headerAlternatorState === 0) {
-    indicators.style.display = 'flex';
-    roundBadge.style.display = 'none';
+  if (noRep) noRep.style.display = 'none';
+  lang.style.display = 'none';
+  roundBadge.style.display = 'none';
+
+  const hasNoRep = (isNoRepeatMode && noRep);
+  const maxState = hasNoRep ? 3 : 2;
+  
+  if (hasNoRep && headerAlternatorState === 0) {
+    noRep.style.display = 'inline-block';
+  } else if ((hasNoRep && headerAlternatorState === 1) || (!hasNoRep && headerAlternatorState === 0)) {
+    lang.style.display = 'inline-block';
   } else {
-    indicators.style.display = 'none';
     roundBadge.style.display = 'inline-block';
   }
-  headerAlternatorState = 1 - headerAlternatorState;
+  
+  headerAlternatorState = (headerAlternatorState + 1) % maxState;
 }, 3000);

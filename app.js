@@ -3582,20 +3582,50 @@ function setupSocketListeners() {
     if (username) recordActivity(username);
   });
 
+  const lastGiftAlerts = {};
   socket.on('gift', (data) => {
-    // Only show alert when streak ends or it's a non-repeatable gift, to prevent spam
-    if (!isPlayEveryGiftSound) {
-      if (data.giftType === 1 && !data.repeatEnd) return;
+    const comboKey = data.groupId ? data.groupId : (data.uniqueId + '_' + data.giftId);
+    let shouldAlert = false;
+
+    if (data.giftType === 1) {
+      if (isPlayEveryGiftSound) {
+        // If play every sound is enabled, alert if we haven't alerted this count yet
+        if (lastGiftAlerts[comboKey] !== data.repeatCount) {
+          shouldAlert = true;
+          lastGiftAlerts[comboKey] = data.repeatCount;
+        }
+      } else {
+        // If disabled, only alert on the final end event
+        if (data.repeatEnd) {
+          shouldAlert = true;
+        }
+      }
+    } else {
+      // Non-repeatable gifts always alert
+      shouldAlert = true;
     }
-    showSocialAlert(data, 'gift');
+
+    if (shouldAlert) {
+      showSocialAlert(data, 'gift');
+    }
+
     const username = data.nickname || data.uniqueId;
     if (username) {
       recordActivity(username);
+      
+      // Points should ONLY be added on the final event to avoid double/inflated counting!
+      if (data.giftType === 1 && !data.repeatEnd) return;
+
       const coins = data.totalDiamonds || ((data.diamondCount || 0) * (data.repeatCount || 1));
       if (coins > 0) {
         playerGifts[username] = (playerGifts[username] || 0) + coins;
         localStorage.setItem('pts_gift_' + username, playerGifts[username]);
         updateMarqueeUI();
+      }
+      
+      // Cleanup tracking to prevent memory leak
+      if (data.giftType === 1 && data.repeatEnd) {
+        setTimeout(() => { delete lastGiftAlerts[comboKey]; }, 5000);
       }
     }
   });

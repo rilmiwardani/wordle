@@ -1,18 +1,20 @@
 // Auto-detect hostname so it works on other devices in the same WiFi
 const SOCKET_URL = window.location.protocol + "//" + window.location.hostname + ":9200";
 // Max visible rows on board — per mode, configurable via Settings
-const DISPLAY_ROWS_DEFAULT = { wordle: 6, word500: 8, word600: 8 };
+const DISPLAY_ROWS_DEFAULT = { wordle: 6, word500: 8, word600: 8, wordfit: 8 };
 const DISPLAY_ROWS_MIN = 3;
 const DISPLAY_ROWS_MAX = 12;
 let displayRowsWordle  = parseInt(localStorage.getItem('displayRows_wordle'))  || DISPLAY_ROWS_DEFAULT.wordle;
 let displayRowsWord500 = parseInt(localStorage.getItem('displayRows_word500')) || DISPLAY_ROWS_DEFAULT.word500;
 let displayRowsWord600 = parseInt(localStorage.getItem('displayRows_word600')) || DISPLAY_ROWS_DEFAULT.word600;
+let displayRowsWordfit = parseInt(localStorage.getItem('displayRows_wordfit')) || DISPLAY_ROWS_DEFAULT.wordfit;
 
 function getDisplayRows() {
   if (currentGameMode === 'fillblanks') return 6;
   if (currentGameMode === 'wordtango') return 4;
   if (currentGameMode === 'word500') return displayRowsWord500;
   if (currentGameMode === 'word600') return displayRowsWord600;
+  if (currentGameMode === 'wordfit') return displayRowsWordfit;
   if (currentGameMode === 'wordloop') return 6;
   return displayRowsWordle;
 }
@@ -25,6 +27,9 @@ function changeDisplayRows(delta, e) {
   } else if (currentGameMode === 'word600') {
     displayRowsWord600 = Math.min(DISPLAY_ROWS_MAX, Math.max(DISPLAY_ROWS_MIN, displayRowsWord600 + delta));
     localStorage.setItem('displayRows_word600', displayRowsWord600);
+  } else if (currentGameMode === 'wordfit') {
+    displayRowsWordfit = Math.min(DISPLAY_ROWS_MAX, Math.max(DISPLAY_ROWS_MIN, displayRowsWordfit + delta));
+    localStorage.setItem('displayRows_wordfit', displayRowsWordfit);
   } else {
     displayRowsWordle = Math.min(DISPLAY_ROWS_MAX, Math.max(DISPLAY_ROWS_MIN, displayRowsWordle + delta));
     localStorage.setItem('displayRows_wordle', displayRowsWordle);
@@ -33,6 +38,8 @@ function changeDisplayRows(delta, e) {
   // Re-render board immediately
   if (currentGameMode === 'word500' || currentGameMode === 'word600') {
     renderWord500Board();
+  } else if (currentGameMode === 'wordfit') {
+    renderWordFitBoard();
   } else {
     initBoard();
   }
@@ -59,6 +66,9 @@ function updateBoardScaleUI() {
   let baseWidth = 420;
   if (currentGameMode === 'word500' || currentGameMode === 'word600') {
     baseWidth = 540;
+  } else if (currentGameMode === 'wordfit') {
+    const baseWidths = { 3: 280, 4: 350, 5: 420, 6: 460, 7: 500, 8: 540 };
+    baseWidth = (baseWidths[WORD_LENGTH] || 420) + 80; // slightly wider for the two indicators
   } else {
     const baseWidths = { 3: 280, 4: 350, 5: 420, 6: 460, 7: 500, 8: 540 };
     baseWidth = baseWidths[WORD_LENGTH] || 420;
@@ -76,7 +86,7 @@ document.documentElement.style.setProperty('--word-length', WORD_LENGTH);
 let currentGameMode = sessionStorage.getItem('wordle_gameMode') || '';
 
 function getMaxGuesses() {
-  return (currentGameMode === 'word500' || currentGameMode === 'word600') ? Infinity : 6;
+  return (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit') ? Infinity : 6;
 }
 
 class IndoFinitySocket {
@@ -1109,6 +1119,7 @@ function selectGame(mode) {
   if (loginTitle) {
     if (mode === 'word500') loginTitle.textContent = window.w500UseMastermind ? 'TIKTOK WORD PEGS 5' : 'TIKTOK WORD500';
     else if (mode === 'word600') loginTitle.textContent = window.w500UseMastermind ? 'TIKTOK WORD PEGS 6' : 'TIKTOK WORD600';
+    else if (mode === 'wordfit') loginTitle.textContent = 'TIKTOK WORDFIT';
     else if (mode === 'fillblanks') loginTitle.textContent = 'FILL THE BLANKS';
     else if (mode === 'wordtango') loginTitle.textContent = 'WORD TANGO';
     else loginTitle.textContent = 'TIKTOK WORDLE';
@@ -1135,9 +1146,11 @@ function switchGameMode(e) {
   }
 
   // Seamless switch
+  // Seamless switch
   if (currentGameMode === 'wordle') currentGameMode = 'word500';
   else if (currentGameMode === 'word500') currentGameMode = 'word600';
-  else if (currentGameMode === 'word600') currentGameMode = 'wordloop';
+  else if (currentGameMode === 'word600') currentGameMode = 'wordfit';
+  else if (currentGameMode === 'wordfit') currentGameMode = 'wordloop';
   else if (currentGameMode === 'wordloop') currentGameMode = 'fillblanks';
   else if (currentGameMode === 'fillblanks') currentGameMode = 'wordtango';
   else if (currentGameMode === 'wordtango') currentGameMode = 'wordgrid';
@@ -1198,19 +1211,22 @@ function applyGameModeUI() {
   if (wordGridContainer) wordGridContainer.style.display = 'none';
   if (boardObj) boardObj.style.display = '';
 
-  if (currentGameMode === 'word500' || currentGameMode === 'word600') {
+  if (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit') {
     if (headerTitle) {
       if (currentGameMode === 'word500') {
         headerTitle.textContent = window.w500UseMastermind ? 'WORD PEGS 5' : 'WORD500';
-      } else {
+      } else if (currentGameMode === 'word600') {
         headerTitle.textContent = window.w500UseMastermind ? 'WORD PEGS 6' : 'WORD600';
+      } else {
+        headerTitle.textContent = 'WORDFIT';
       }
     }
     if (hintContainer) hintContainer.style.display = 'none';
     if (bestGuessContainer) bestGuessContainer.style.display = 'none'; // replaced by sorted board
     if (switchBtn) {
-      const nextName = window.w500UseMastermind ? 'Word Pegs 6' : 'Word600';
-      switchBtn.textContent = currentGameMode === 'word500' ? `🔄 Switch to ${nextName}` : '🔄 Switch to Word Loop';
+      if (currentGameMode === 'word500') switchBtn.textContent = window.w500UseMastermind ? '🔄 Switch to Word Pegs 6' : '🔄 Switch to Word600';
+      else if (currentGameMode === 'word600') switchBtn.textContent = '🔄 Switch to WordFit';
+      else switchBtn.textContent = '🔄 Switch to Word Loop';
     }
   } else if (currentGameMode === 'wordloop') {
     if (headerTitle) headerTitle.textContent = 'WORD LOOP';
@@ -1423,6 +1439,129 @@ function renderWord500Board(revealAllColors = false) {
 
   // Isi sisa dengan baris kosong
   for (let i = toShow.length; i < DISPLAY_ROWS - 1; i++) board.appendChild(createEmptyW500Row(i));
+}
+
+// ─── WordFit Board ───
+function createWordFitRowEl(guessData, isLatest, revealAllColors = false) {
+  const row = document.createElement('div');
+  row.className = 'board-row wordfit-row' + (isLatest ? ' wordfit-latest-row' : '');
+  const avatar = document.createElement('img');
+  avatar.className = 'guesser-avatar';
+  if (guessData.userData && guessData.userData.profilePictureUrl) {
+    avatar.src = guessData.userData.profilePictureUrl;
+    avatar.classList.add('show');
+  }
+  row.appendChild(avatar);
+  const isAllRed = guessData.a === guessData.word.length;
+  
+  let statuses = null;
+  if (revealAllColors) {
+    statuses = getWordleFeedback(guessData.word, currentWord);
+  }
+
+  for (let j = 0; j < guessData.word.length; j++) {
+    const tile = document.createElement('div');
+    const letter = guessData.word[j];
+    
+    if (revealAllColors && statuses) {
+      tile.className = `tile ${statuses[j]}`;
+    } else {
+      tile.className = 'tile blind';
+      if (isAllRed || knownAbsentLetters.has(letter)) {
+        tile.style.backgroundColor = 'rgba(220, 38, 38, 0.25)';
+        tile.style.borderColor = 'rgba(220, 38, 38, 0.4)';
+        tile.style.color = 'rgba(255, 255, 255, 0.4)';
+      }
+    }
+    tile.textContent = letter;
+    row.appendChild(tile);
+  }
+  
+  // Exact matches indicator
+  const greenClue = document.createElement('div');
+  greenClue.className = 'wordfit-count ' + (guessData.c > 0 ? 'green' : 'zero');
+  greenClue.textContent = guessData.c;
+  
+  // Partial matches indicator
+  const yellowClue = document.createElement('div');
+  yellowClue.className = 'wordfit-count ' + (guessData.p > 0 ? 'yellow' : 'zero');
+  yellowClue.textContent = guessData.p;
+  
+  row.appendChild(greenClue);
+  row.appendChild(yellowClue);
+
+  return row;
+}
+
+function createEmptyWordFitRow(idx) {
+  const row = document.createElement('div');
+  row.className = 'board-row wordfit-row';
+  row.id = `row-empty-wf-${idx}`;
+  const avatar = document.createElement('img');
+  avatar.className = 'guesser-avatar';
+  row.appendChild(avatar);
+  
+  for (let j = 0; j < WORD_LENGTH; j++) {
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    tile.style.cursor = 'pointer';
+    tile.onclick = function() {
+      if (!currentWord) return;
+      if (tile.textContent === '') {
+        tile.textContent = currentWord[j];
+        tile.classList.add('present');
+        tile.style.transform = 'scale(1.1)';
+        setTimeout(() => tile.style.transform = 'scale(1)', 200);
+        if (window.playHostAudio) playHostAudio('click');
+      }
+    };
+    row.appendChild(tile);
+  }
+  
+  const exactClue = document.createElement('div');
+  exactClue.className = 'wordfit-count empty-clue';
+  const partialClue = document.createElement('div');
+  partialClue.className = 'wordfit-count empty-clue';
+  
+  row.appendChild(exactClue);
+  row.appendChild(partialClue);
+  
+  return row;
+}
+
+function renderWordFitBoard(revealAllColors = false) {
+  document.querySelectorAll('.is-invalid-tooltip').forEach(el => el.remove());
+  board.innerHTML = '';
+  word500PendingInvalidRow = null; // Reusing word500 logic for invalid row
+  board.classList.add('w500-board'); // Use same general board styling
+
+  const DISPLAY_ROWS = getDisplayRows();
+  document.documentElement.style.setProperty('--display-rows', DISPLAY_ROWS);
+  
+  knownAbsentLetters.clear();
+  for (const g of word500History) {
+      if (g.a === g.word.length) {
+          for (const char of g.word) knownAbsentLetters.add(char);
+      }
+  }
+
+  if (word500History.length === 0) {
+    for (let i = 0; i < DISPLAY_ROWS; i++) board.appendChild(createEmptyWordFitRow(i));
+    return;
+  }
+
+  const latest = word500History[word500History.length - 1];
+  board.appendChild(createWordFitRowEl(latest, true, revealAllColors));
+
+  const previous = word500History
+    .slice()
+    .sort((a, b) => b.c - a.c || b.p - a.p || a.a - b.a);
+
+  const slots = DISPLAY_ROWS - 1;
+  const toShow = previous.slice(0, slots);
+  for (const g of toShow) board.appendChild(createWordFitRowEl(g, false, revealAllColors));
+
+  for (let i = toShow.length; i < DISPLAY_ROWS - 1; i++) board.appendChild(createEmptyWordFitRow(i));
 }
 
 // Render Word Tango Letter Pool in a 2-row pyramid, hiding used letters
@@ -2596,8 +2735,9 @@ if (localStorage.getItem('wordle_hardMode') === 'true') {
 function toggleNoYellow(checked) {
   isNoYellowMode = checked;
   try { localStorage.setItem('wordle_noYellow', checked); } catch(e) {}
-  if (currentGameMode === 'word500' || currentGameMode === 'word600') {
-    renderWord500Board();
+  if (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit') {
+    if (currentGameMode === 'wordfit') renderWordFitBoard();
+    else renderWord500Board();
   }
 }
 
@@ -2762,7 +2902,7 @@ function validateHardMode(guessWord) {
   const validPastGuesses = guesses.filter(g => VALID_WORDS.includes(g));
 
   for (const past of validPastGuesses) {
-    if (currentGameMode === 'word500' || currentGameMode === 'word600') {
+    if (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit') {
       const actual = getScore(past, currentWord);
       const simulated = getScore(past, guessWord);
       if (actual.c !== simulated.c || actual.p !== simulated.p) {
@@ -2772,13 +2912,13 @@ function validateHardMode(guessWord) {
         const simC = simulated.c, simP = simulated.p;
 
         if (simC + simP < actC + actP) {
-           reason = `Clue '${past}' ada ${actC}🟩${actP}🟨 — jumlah huruf cocok di tebakanmu kurang!`;
+           reason = `Kurang mirip dengan clue "${past}" (Harusnya ${actC}🟩 ${actP}🟨)`;
         } else if (simC + simP > actC + actP) {
-           reason = `Clue '${past}' cuma ${actC}🟩${actP}🟨 — tebakanmu bawa terlalu banyak huruf dari kata ini!`;
+           reason = `Terlalu mirip dengan clue "${past}" (Padahal cuma ${actC}🟩 ${actP}🟨)`;
         } else if (simC !== actC) {
-           reason = `Clue '${past}' harusnya ${actC}🟩${actP}🟨 — letak/posisi huruf di tebakanmu salah!`;
+           reason = `Posisi huruf kurang pas dengan clue "${past}" (Harusnya ${actC}🟩 ${actP}🟨)`;
         } else {
-           reason = `Tidak cocok dengan clue '${past}' (${actC}🟩${actP}🟨)`;
+           reason = `Tidak cocok dengan clue "${past}" (${actC}🟩 ${actP}🟨)`;
         }
         return { 
           valid: false, 
@@ -2863,6 +3003,18 @@ function attemptReconnect() {
     }
   }, 5000);
 }
+
+window.toggleAdvancedSettings = function() {
+  const container = document.getElementById('advancedSettingsContainer');
+  const btn = document.getElementById('advancedToggleBtn');
+  if (container.style.display === 'none') {
+    container.style.display = 'block';
+    btn.textContent = 'Advanced Settings ▲';
+  } else {
+    container.style.display = 'none';
+    btn.textContent = 'Advanced Settings ▼';
+  }
+};
 
 window.handleBackendChange = function(val) {
   const usernameGroup = document.getElementById('usernameInput').parentElement;
@@ -4061,6 +4213,13 @@ function processGuess(guessWord, userData) {
   }
 
   if (!isValidWord) {
+    // Hapus dari dedup jika tebakan tidak valid (misal salah ejaan atau melanggar Hard Mode)
+    // Supaya user bisa memperbaikinya atau menebak lagi setelah Hard Mode dimatikan
+    if (userData) {
+      const userId = userData.uniqueId || userData.nickname || 'anon';
+      userGuessDedup.delete(`${userId}:${guessWord}`);
+    }
+
     const now = Date.now();
     if (now - lastInvalidTime < 6000) {
       return false; // Skip to prevent flooding & flickering
@@ -4069,10 +4228,13 @@ function processGuess(guessWord, userData) {
   }
 
   const isWord500 = currentGameMode === 'word500' || currentGameMode === 'word600';
+  const isWordFit = currentGameMode === 'wordfit';
+  const isAnySortedMode = isWord500 || isWordFit;
 
   // Hapus baris invalid sebelumnya dari layar (saat ada tebakan baru masuk)
-  if (isWord500 && word500PendingInvalidRow) {
-    renderWord500Board();
+  if (isAnySortedMode && word500PendingInvalidRow) {
+    if (isWordFit) renderWordFitBoard();
+    else renderWord500Board();
   } else {
     if (word500PendingInvalidRow) {
       if (word500PendingInvalidRow.parentNode) word500PendingInvalidRow.remove();
@@ -4088,7 +4250,7 @@ function processGuess(guessWord, userData) {
   
   // 1. Create a new row and attach to top of grid
   const row = document.createElement('div');
-  row.className = 'board-row' + (isWord500 ? ' w500-row' : '');
+  row.className = 'board-row' + (isWordFit ? ' wordfit-row' : (isWord500 ? ' w500-row' : ''));
   row.id = `row-${currentRow}`;
   row.style.position = 'relative';
   if (!isValidWord) {
@@ -4163,7 +4325,7 @@ function processGuess(guessWord, userData) {
         correctCount++;
         
         // Wordle mode: hint discovery + assist points
-        if (!isWord500 && !discoveredLetters[i]) {
+        if (!isAnySortedMode && !discoveredLetters[i]) {
           if (guessWord !== currentWord) {
             addPoints(userData, 2);
             showFloatingPoints(2, `tile-${currentRow}-${i}`);
@@ -4196,8 +4358,8 @@ function processGuess(guessWord, userData) {
     
     absentCount = WORD_LENGTH - correctCount - presentCount;
     
-    // Update Best Guess for Word500
-    if (isWord500 && guessWord !== currentWord) {
+    // Update Best Guess for Word500/WordFit
+    if (isAnySortedMode && guessWord !== currentWord) {
       const score = (correctCount * 2) + presentCount;
       if (!bestGuess || score > bestGuess.score) {
         bestGuess = {
@@ -4218,8 +4380,8 @@ function processGuess(guessWord, userData) {
     if (!isValidWord) {
       // Beda warna: oranye untuk "tidak cocok clue", pink untuk "bukan kata"
       tiles[i].classList.add(hardModeConflictWord ? 'clue-conflict' : 'invalid');
-    } else if (isWord500) {
-      // Word500: all tiles are blind (no color feedback)
+    } else if (isAnySortedMode) {
+      // Word500 / WordFit: all tiles are blind (no color feedback)
       tiles[i].classList.add('blind');
     } else {
       // Wordle: normal colored feedback
@@ -4227,7 +4389,7 @@ function processGuess(guessWord, userData) {
     }
   }
 
-  // 4. Word500: append feedback counters
+  // 4. Word500 / WordFit: append feedback counters
   if (isWord500) {
     if (window.w500UseMastermind) {
       const mmContainer = document.createElement('div');
@@ -4267,6 +4429,17 @@ function processGuess(guessWord, userData) {
       row.appendChild(yellowClue);
       row.appendChild(redClue);
     }
+  } else if (isWordFit) {
+    const exactClue = document.createElement('div');
+    exactClue.className = 'wordfit-count ' + (isValidWord ? (correctCount > 0 ? 'green' : 'zero') : 'empty-clue');
+    exactClue.textContent = isValidWord ? correctCount : '';
+
+    const partialClue = document.createElement('div');
+    partialClue.className = 'wordfit-count ' + (isValidWord ? (presentCount > 0 ? 'yellow' : 'zero') : 'empty-clue');
+    partialClue.textContent = isValidWord ? presentCount : '';
+
+    row.appendChild(exactClue);
+    row.appendChild(partialClue);
   }
 
   if (isValidWord && guessWord !== currentWord && (correctCount + presentCount >= Math.floor(WORD_LENGTH / 2) + 1)) {
@@ -4276,15 +4449,16 @@ function processGuess(guessWord, userData) {
     }
   }
 
-  if (isWord500 && isValidWord) {
-    // Word500 valid: tambah ke history lalu render ulang terurut
+  if (isAnySortedMode && isValidWord) {
+    // Word500/WordFit valid: tambah ke history lalu render ulang terurut
     word500History.push({ word: guessWord, c: correctCount, p: presentCount, a: absentCount, score: (correctCount * 2) + presentCount, userData });
     guesses.push(guessWord);
-    renderWord500Board();
-  } else if (isWord500 && !isValidWord) {
-    // Word500 invalid: masukkan ke dalam board di posisi terbaru (atas) menggantikan tebakan terbaru,
+    if (isWordFit) renderWordFitBoard();
+    else renderWord500Board();
+  } else if (isAnySortedMode && !isValidWord) {
+    // Word500/WordFit invalid: masukkan ke dalam board di posisi terbaru (atas) menggantikan tebakan terbaru,
     // tetap terlihat sampai digantikan oleh tebakan berikutnya.
-    row.classList.add('w500-latest-row', 'is-invalid-row');
+    row.classList.add(isWordFit ? 'wordfit-latest-row' : 'w500-latest-row', 'is-invalid-row');
     if (board.firstChild) {
       board.replaceChild(row, board.firstChild);
     } else {
@@ -4344,7 +4518,7 @@ function processGuess(guessWord, userData) {
   } else {
     if (guessWord === currentWord) {
       isWin = true;
-      winPts = isWord500 ? 15 : 10;
+      winPts = (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit') ? 15 : 10;
     }
   }
 
@@ -4368,13 +4542,14 @@ function processGuess(guessWord, userData) {
       winWordEl.style.letterSpacing = '';
     }
     
-    // Jika di mode Word500/Word600, reveal seluruh grid sebelum overlay muncul
-    if (currentGameMode === 'word500' || currentGameMode === 'word600') {
-        renderWord500Board(true);
+    // Jika di mode Word500/Word600/WordFit, reveal seluruh grid sebelum overlay muncul
+    if (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit') {
+        if (currentGameMode === 'wordfit') renderWordFitBoard(true);
+        else renderWord500Board(true);
     }
     
     // Tunggu 2 detik dulu agar jawaban di grid (dan efek reveal) terlihat, baru tampilkan overlay
-    const winningRow = (currentGameMode === 'word500' || currentGameMode === 'word600') ? board.firstChild : row;
+    const winningRow = (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit') ? board.firstChild : row;
     if (winningRow) {
       const winningTiles = winningRow.querySelectorAll('.tile');
       setTimeout(() => {
@@ -4835,7 +5010,7 @@ window.updateAllowedLengths = function() {
 
 // Word500/600 manual hint marking
 document.addEventListener('click', (e) => {
-  if (currentGameMode !== 'word500' && currentGameMode !== 'word600') return;
+  if (currentGameMode !== 'word500' && currentGameMode !== 'word600' && currentGameMode !== 'wordfit') return;
   const tile = e.target.closest('.tile');
   if (!tile || !tile.textContent.trim()) return;
   
@@ -4901,8 +5076,9 @@ window.toggleW500Style = function(checked) {
   if (window.updateMastermindNames) window.updateMastermindNames();
   if (typeof applyGameModeUI === 'function') applyGameModeUI();
   updateBestGuessUI();
-  if (currentGameMode === 'word500' || currentGameMode === 'word600') {
-    renderWord500Board();
+  if (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit') {
+    if (currentGameMode === 'wordfit') renderWordFitBoard();
+    else renderWord500Board();
   }
 };
 

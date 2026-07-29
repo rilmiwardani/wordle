@@ -100,22 +100,24 @@ body {
 }
 
 .game-cards {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
 }
 
 .game-card {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 14px;
+  justify-content: center;
+  gap: 10px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
-  padding: 18px 16px;
+  padding: 20px 12px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  text-align: left;
+  text-align: center;
 }
 
 .game-card:hover {
@@ -130,10 +132,10 @@ body {
 }
 
 .game-card-icon {
-  font-size: 36px;
+  font-size: 32px;
   flex-shrink: 0;
-  width: 50px;
-  height: 50px;
+  width: 54px;
+  height: 54px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -147,29 +149,23 @@ body {
 }
 
 .game-card-name {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 800;
   color: white;
-  letter-spacing: 1px;
-  margin-bottom: 4px;
+  letter-spacing: 0.5px;
+  margin-bottom: 0;
 }
 
 .game-card-desc {
-  font-size: 12px;
-  color: var(--text-muted);
-  line-height: 1.4;
+  display: none;
 }
 
 .game-card-arrow {
-  font-size: 20px;
-  color: rgba(255, 255, 255, 0.3);
-  flex-shrink: 0;
-  transition: all 0.3s;
+  display: none;
 }
 
 .game-card:hover .game-card-arrow {
-  color: var(--primary);
-  transform: translateX(4px);
+  display: none;
 }
 
 /* =========================================
@@ -224,6 +220,54 @@ body {
   border-radius: 12px;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35), 0 0 16px rgba(255, 255, 255, 0.08);
 }
+
+/* =========================================
+   WORDFIT FEEDBACK COUNTERS
+   ========================================= */
+.wordfit-count {
+  width: 100%;
+  aspect-ratio: 1/1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  box-sizing: border-box;
+}
+
+.wordfit-count.zero {
+  background: transparent;
+  color: #a1a1aa;
+  border: 2px solid #52525b;
+  text-shadow: none;
+}
+
+.wordfit-count.green {
+  background: var(--correct);
+}
+
+.wordfit-count.yellow {
+  background: var(--present);
+}
+
+.wordfit-count.empty-clue {
+  background: transparent;
+  border: 2px dashed rgba(255,255,255,0.2);
+}
+
+.board-row.wordfit-row {
+  grid-template-columns: 1fr repeat(var(--word-length, 5), 1fr) repeat(2, 1fr);
+}
+
+.board-row.wordfit-latest-row {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35), 0 0 16px rgba(255, 255, 255, 0.08);
+}
+
 
 /* Login Overlay */
 .login-overlay {

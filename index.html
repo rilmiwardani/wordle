@@ -46,6 +46,14 @@
           </div>
           <div class="game-card-arrow">→</div>
         </div>
+        <div class="game-card" onclick="selectGame('wordfit')" id="cardWordFit">
+          <div class="game-card-icon">🎯</div>
+          <div class="game-card-content">
+            <div class="game-card-name">WORDFIT</div>
+            <div class="game-card-desc">Tebak kata dengan 2 indikator: benar (hijau) & hampir benar (kuning). Panjang kata fleksibel!</div>
+          </div>
+          <div class="game-card-arrow">→</div>
+        </div>
         <div class="game-card" onclick="selectGame('wordloop')" id="cardWordLoop">
           <div class="game-card-icon">🔁</div>
           <div class="game-card-content">
@@ -99,20 +107,24 @@
           <option value="mixed">Campuran (EN + ID)</option>
         </select>
       </div>
-      <div class="input-group" style="margin-top: 15px;" title="Optional. Used to fix connection errors. Get it from your TikTok cookies.">
-        <span class="at-symbol">🔑</span>
-        <input type="password" id="sessionInput" placeholder="Session ID (Opsional)" autocomplete="off">
-      </div>
-      <div class="input-group" style="margin-top: 15px;">
-        <span class="at-symbol">🔌</span>
-        <select id="backendSelect" class="lang-select" onchange="handleBackendChange(this.value)" style="background: transparent; border: none; color: white; width: 100%; padding: 16px 12px; font-size: 16px; font-weight: 600; outline: none; appearance: none;">
-          <option value="socketio" style="color: black;">Local Server (Socket.IO)</option>
-          <option value="indofinity" style="color: black;">IndoFinity (ws://localhost:62024)</option>
-        </select>
-      </div>
-      <div class="input-group" id="indofinityIpGroup" style="margin-top: 15px; display: none;">
-        <span class="at-symbol">🌐</span>
-        <input type="text" id="indofinityIpInput" placeholder="IP IndoFinity (misal: 192.168.1.10)" autocomplete="off" style="width: 100%;">
+      <div id="advancedToggleBtn" onclick="toggleAdvancedSettings()" style="color: var(--text-muted); font-size: 12px; cursor: pointer; text-decoration: underline; margin-bottom: 20px; display: inline-block;">Advanced Settings ▼</div>
+
+      <div id="advancedSettingsContainer" style="display: none;">
+        <div class="input-group" title="Optional. Used to fix connection errors. Get it from your TikTok cookies.">
+          <span class="at-symbol">🔑</span>
+          <input type="password" id="sessionInput" placeholder="Session ID (Opsional)" autocomplete="off">
+        </div>
+        <div class="input-group">
+          <span class="at-symbol">🔌</span>
+          <select id="backendSelect" class="lang-select" onchange="handleBackendChange(this.value)" style="background: transparent; border: none; color: white; width: 100%; padding: 16px 12px; font-size: 16px; font-weight: 600; outline: none; appearance: none;">
+            <option value="socketio" style="color: black;">Local Server (Socket.IO)</option>
+            <option value="indofinity" style="color: black;">IndoFinity (ws://localhost:62024)</option>
+          </select>
+        </div>
+        <div class="input-group" id="indofinityIpGroup" style="display: none;">
+          <span class="at-symbol">🌐</span>
+          <input type="text" id="indofinityIpInput" placeholder="IP IndoFinity (misal: 192.168.1.10)" autocomplete="off" style="width: 100%;">
+        </div>
       </div>
       <button id="connectBtn" onclick="connectToLive()">Connect to Live</button>
       <button id="offlineBtn" onclick="startOfflineMode()" style="margin-top: 10px; background: #3b82f6; border: none; padding: 12px; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; transition: all 0.2s;">Main Offline (Host)</button>

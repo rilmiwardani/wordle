@@ -5795,3 +5795,26 @@ setTimeout(() => {
 // (Removed originalSaveTTS override as it was merged above)
 
 // (Removed originalOpenTTS override as it was merged above)
+
+// --- Header Alternator for Mobile ---
+let headerAlternatorState = 0;
+setInterval(() => {
+  const indicators = document.getElementById('headerIndicators');
+  const roundBadge = document.getElementById('headerRoundBadge');
+  if (!indicators || !roundBadge) return;
+  
+  if (window.innerWidth > 600) {
+    indicators.style.display = 'flex';
+    roundBadge.style.display = 'inline-block';
+    return;
+  }
+  
+  if (headerAlternatorState === 0) {
+    indicators.style.display = 'flex';
+    roundBadge.style.display = 'none';
+  } else {
+    indicators.style.display = 'none';
+    roundBadge.style.display = 'inline-block';
+  }
+  headerAlternatorState = 1 - headerAlternatorState;
+}, 3000);

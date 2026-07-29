@@ -165,9 +165,11 @@
       </div>
       <div class="header-title" id="headerTitle">WORDLE</div>
       <div class="header-right">
-        <div class="lang-badge" id="noRepeatBadge" title="Mode Tanpa Huruf Ganda (Isogram)" style="display: none; background: rgba(52, 152, 219, 0.2); border-color: rgba(52, 152, 219, 0.4);">🔠 1x</div>
-        <div class="lang-badge" id="currentLangBadge" title="Bahasa yang digunakan">🇮🇩 ID</div>
-        <div class="round-badge">Round <span id="roundNumber">1</span></div>
+        <div id="headerIndicators" style="display: flex; gap: 8px; align-items: center;">
+          <div class="lang-badge" id="noRepeatBadge" title="Mode Tanpa Huruf Ganda (Isogram)" style="display: none; background: rgba(52, 152, 219, 0.2); border-color: rgba(52, 152, 219, 0.4);">🔠 1x</div>
+          <div class="lang-badge" id="currentLangBadge" title="Bahasa yang digunakan">🇮🇩 ID</div>
+        </div>
+        <div class="round-badge" id="headerRoundBadge">Round <span id="roundNumber">1</span></div>
         <div class="settings-wrapper">
           <button id="settingsBtn" class="settings-btn" onclick="toggleSettings(event)">⚙</button>
           <div class="settings-dropdown" id="settingsDropdown">

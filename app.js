@@ -656,6 +656,7 @@ let currentLbTab = 'session';
 function getPtsPrefix() {
   if (currentGameMode === 'word500') return 'pts_w500_';
   if (currentGameMode === 'word600') return 'pts_w600_';
+  if (currentGameMode === 'wordfit') return 'pts_wfit_';
   if (currentGameMode === 'wordloop') return 'pts_wloop_';
   if (currentGameMode === 'fillblanks') return 'pts_fill_';
   if (currentGameMode === 'wordtango') return 'pts_tango_';
@@ -671,7 +672,7 @@ function initWeeklyLeaderboard() {
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key && key.startsWith(prefix)) {
-      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_'))) continue;
+      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wfit_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_'))) continue;
       
       if (key.startsWith(prefix + 'like_') || 
           key.startsWith(prefix + 'share_') || 
@@ -683,8 +684,9 @@ function initWeeklyLeaderboard() {
         const username = key.substring(dailyPrefix.length);
         const pts = parseInt(localStorage.getItem(key)) || 0;
         if (!playerPoints[username]) {
+          const savedAvatar = localStorage.getItem('pts_avatar_' + username) || 'assets/bg_nature.png';
           playerPoints[username] = {
-            avatar: 'assets/bg_nature.png',
+            avatar: savedAvatar,
             sessionPts: pts,
             weeklyPts: 0
           };
@@ -695,8 +697,9 @@ function initWeeklyLeaderboard() {
         const username = key.substring(prefix.length);
         const pts = parseInt(localStorage.getItem(key)) || 0;
         if (!playerPoints[username]) {
+          const savedAvatar = localStorage.getItem('pts_avatar_' + username) || 'assets/bg_nature.png';
           playerPoints[username] = {
-            avatar: 'assets/bg_nature.png',
+            avatar: savedAvatar,
             sessionPts: 0,
             weeklyPts: pts
           };
@@ -1882,7 +1885,7 @@ function handleMyRank(userData) {
     const key = localStorage.key(i);
     if (key && key.startsWith(prefix)) {
       if (key.startsWith(dailyPrefix)) continue;
-      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_'))) continue;
+      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wfit_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_'))) continue;
       if (key.startsWith(prefix + 'like_') || 
           key.startsWith(prefix + 'share_') || 
           key.startsWith(prefix + 'gift_') || 
@@ -4800,7 +4803,7 @@ window.resetLeaderboard = function(e) {
       const key = localStorage.key(i);
       if (key && key.startsWith(prefix)) {
         if (key.includes('_like_') || key.includes('_share_') || key.includes('_gift_') || key.includes('_active_') || key.includes('_avatar_')) continue;
-        if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_'))) continue;
+        if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wfit_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_'))) continue;
         keysToRemove.push(key);
       }
     }

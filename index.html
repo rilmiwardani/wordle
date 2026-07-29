@@ -86,6 +86,14 @@
           </div>
           <div class="game-card-arrow">→</div>
         </div>
+        <div class="game-card" onclick="selectGame('colorfit')" id="cardColorFit">
+          <div class="game-card-icon">🎨</div>
+          <div class="game-card-content">
+            <div class="game-card-name">COLOR FIT</div>
+            <div class="game-card-desc">Tebak urutan warna (Merah, Hijau, Biru, Kuning, Ungu, Oranye) yang benar!</div>
+          </div>
+          <div class="game-card-arrow">→</div>
+        </div>
       </div>
     </div>
   </div>
@@ -157,6 +165,8 @@
       </div>
       <div class="header-title" id="headerTitle">WORDLE</div>
       <div class="header-right">
+        <div class="lang-badge" id="noRepeatBadge" title="Mode Tanpa Huruf Ganda (Isogram)" style="display: none; background: rgba(52, 152, 219, 0.2); border-color: rgba(52, 152, 219, 0.4);">🔠 1x</div>
+        <div class="lang-badge" id="currentLangBadge" title="Bahasa yang digunakan">🇮🇩 ID</div>
         <div class="round-badge">Round <span id="roundNumber">1</span></div>
         <div class="settings-wrapper">
           <button id="settingsBtn" class="settings-btn" onclick="toggleSettings(event)">⚙</button>
@@ -173,10 +183,12 @@
               <option value="wordle" style="color: black;">🟩 Wordle (5/6 Huruf)</option>
               <option value="word500" style="color: black;">🔢 Word500 (Mastermind 5)</option>
               <option value="word600" style="color: black;">🔠 Word600 (Mastermind 6)</option>
+              <option value="wordfit" style="color: black;">🎯 WordFit</option>
               <option value="wordloop" style="color: black;">🔁 Word Loop (Sambung Kata)</option>
               <option value="fillblanks" style="color: black;">🧩 Fill The Blanks</option>
               <option value="wordtango" style="color: black;">💃 Word Tango</option>
               <option value="wordgrid" style="color: black;">🔠 Word Grid (TTS)</option>
+              <option value="colorfit" style="color: black;">🎨 Color Fit</option>
             </select>
             <button class="lang-option" id="hardModeBtn" onclick="toggleHardMode(event)">🔥 Hard Mode: OFF</button>
             <button class="lang-option" id="recapBtn" onclick="event.stopPropagation(); document.getElementById('recapIframe').src='recap.html'; document.getElementById('recapOverlay').style.display='block';">🏆 Supporter Recap</button>
@@ -194,6 +206,14 @@
                 <div class="toggle-track"></div>
               </div>
             </label>
+            <label class="settings-toggle-row" onclick="event.stopPropagation()">
+              <span class="settings-toggle-label">🔡 Tanpa Huruf Ganda (Isogram)</span>
+              <div class="toggle-switch">
+                <input type="checkbox" id="noRepeatToggle" onchange="toggleNoRepeat(this.checked)">
+                <div class="toggle-track"></div>
+              </div>
+            </label>
+
             <label class="settings-toggle-row" onclick="event.stopPropagation()">
               <span class="settings-toggle-label">❤️ Restart dari Like</span>
               <div class="toggle-switch">
@@ -402,6 +422,16 @@
     <!-- Wordle Board -->
     <div class="board-container" style="flex-direction: column; align-items: center;">
       <div id="board"></div>
+      
+      <!-- Color Fit Legend -->
+      <div id="colorFitLegend" style="display: none; justify-content: center; align-items: center; gap: 8px; margin-top: 15px; flex-wrap: wrap;">
+        <div class="color-legend-item"><div class="color-box color-r"></div>R=Merah</div>
+        <div class="color-legend-item"><div class="color-box color-g"></div>G=Hijau</div>
+        <div class="color-legend-item"><div class="color-box color-b"></div>B=Biru</div>
+        <div class="color-legend-item"><div class="color-box color-y"></div>Y=Kuning</div>
+        <div class="color-legend-item"><div class="color-box color-p"></div>P=Ungu</div>
+        <div class="color-legend-item"><div class="color-box color-o"></div>O=Oranye</div>
+      </div>
       
       <!-- Word Tango Guess Feed -->
       <div id="tangoGuessFeed" class="tango-guess-feed" style="display: none;"></div>

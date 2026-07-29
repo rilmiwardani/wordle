@@ -657,6 +657,7 @@ function getPtsPrefix() {
   if (currentGameMode === 'word500') return 'pts_w500_';
   if (currentGameMode === 'word600') return 'pts_w600_';
   if (currentGameMode === 'wordfit') return 'pts_wfit_';
+  if (currentGameMode === 'colorfit') return 'pts_colorfit_';
   if (currentGameMode === 'wordloop') return 'pts_wloop_';
   if (currentGameMode === 'fillblanks') return 'pts_fill_';
   if (currentGameMode === 'wordtango') return 'pts_tango_';
@@ -1089,13 +1090,50 @@ function shuffleArray(array) {
 }
 
 function getRandomWord() {
+  if (currentGameMode === 'colorfit') {
+    const colors = ['R', 'G', 'B', 'Y', 'P', 'O'];
+    let result = '';
+    let availableColors = [...colors];
+    for (let i = 0; i < WORD_LENGTH; i++) {
+      if (isNoRepeatMode) {
+        if (availableColors.length === 0) availableColors = [...colors];
+        const idx = Math.floor(Math.random() * availableColors.length);
+        result += availableColors[idx];
+        availableColors.splice(idx, 1);
+      } else {
+        result += colors[Math.floor(Math.random() * colors.length)];
+      }
+    }
+    return result;
+  }
+
   if (TARGET_WORDS.length === 0) return WORD_LENGTH === 5 ? "HELLO" : "RANDOM"; // fallback
+
+  let pool = TARGET_WORDS;
+  if (isNoRepeatMode) {
+    pool = TARGET_WORDS.filter(w => new Set(w).size === w.length);
+    if (pool.length === 0) pool = TARGET_WORDS; // fallback
+  }
+
   if (availableWords.length === 0) {
-    availableWords = [...TARGET_WORDS];
+    availableWords = [...pool];
     shuffleArray(availableWords);
     allAvailableWords[WORD_LENGTH] = availableWords;
   }
-  return availableWords.pop();
+  
+  let word = availableWords.pop();
+  if (isNoRepeatMode && new Set(word).size !== word.length) {
+    // If somehow a non-isogram got in, keep searching
+    while (word && new Set(word).size !== word.length) {
+      if (availableWords.length === 0) {
+        availableWords = [...pool];
+        shuffleArray(availableWords);
+        allAvailableWords[WORD_LENGTH] = availableWords;
+      }
+      word = availableWords.pop();
+    }
+  }
+  return word || "HELLO";
 }
 
 // DOM Elements
@@ -1153,7 +1191,8 @@ function switchGameMode(e) {
   if (currentGameMode === 'wordle') currentGameMode = 'word500';
   else if (currentGameMode === 'word500') currentGameMode = 'word600';
   else if (currentGameMode === 'word600') currentGameMode = 'wordfit';
-  else if (currentGameMode === 'wordfit') currentGameMode = 'wordloop';
+  else if (currentGameMode === 'wordfit') currentGameMode = 'colorfit';
+  else if (currentGameMode === 'colorfit') currentGameMode = 'wordloop';
   else if (currentGameMode === 'wordloop') currentGameMode = 'fillblanks';
   else if (currentGameMode === 'fillblanks') currentGameMode = 'wordtango';
   else if (currentGameMode === 'wordtango') currentGameMode = 'wordgrid';
@@ -1214,12 +1253,14 @@ function applyGameModeUI() {
   if (wordGridContainer) wordGridContainer.style.display = 'none';
   if (boardObj) boardObj.style.display = '';
 
-  if (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit') {
+  if (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit') {
     if (headerTitle) {
       if (currentGameMode === 'word500') {
         headerTitle.textContent = window.w500UseMastermind ? 'WORD PEGS 5' : 'WORD500';
       } else if (currentGameMode === 'word600') {
         headerTitle.textContent = window.w500UseMastermind ? 'WORD PEGS 6' : 'WORD600';
+      } else if (currentGameMode === 'colorfit') {
+        headerTitle.textContent = 'COLOR FIT';
       } else {
         headerTitle.textContent = 'WORDFIT';
       }
@@ -1229,6 +1270,7 @@ function applyGameModeUI() {
     if (switchBtn) {
       if (currentGameMode === 'word500') switchBtn.textContent = window.w500UseMastermind ? '🔄 Switch to Word Pegs 6' : '🔄 Switch to Word600';
       else if (currentGameMode === 'word600') switchBtn.textContent = '🔄 Switch to WordFit';
+      else if (currentGameMode === 'wordfit') switchBtn.textContent = '🔄 Switch to Color Fit';
       else switchBtn.textContent = '🔄 Switch to Word Loop';
     }
   } else if (currentGameMode === 'wordloop') {
@@ -1339,6 +1381,9 @@ function createWord500RowEl(guessData, isLatest, revealAllColors = false) {
       }
     }
     tile.textContent = letter;
+    if (currentGameMode === 'colorfit') {
+      tile.classList.add(`color-${letter.toLowerCase()}`);
+    }
     row.appendChild(tile);
   }
   if (window.w500UseMastermind) {
@@ -1477,6 +1522,9 @@ function createWordFitRowEl(guessData, isLatest, revealAllColors = false) {
       }
     }
     tile.textContent = letter;
+    if (currentGameMode === 'colorfit') {
+      tile.classList.add(`color-${letter.toLowerCase()}`);
+    }
     row.appendChild(tile);
   }
   
@@ -1613,9 +1661,17 @@ function initBoard() {
   document.querySelectorAll('.is-invalid-tooltip').forEach(el => el.remove());
   board.innerHTML = '';
   board.className = '';
+  const colorLegend = document.getElementById('colorFitLegend');
+  if (colorLegend) colorLegend.style.display = (currentGameMode === 'colorfit') ? 'flex' : 'none';
+  if (currentGameMode === 'colorfit') board.parentElement.classList.add('colorfit-mode');
+  else board.parentElement.classList.remove('colorfit-mode');
 
-  if (currentGameMode === 'word500' || currentGameMode === 'word600') {
-    board.classList.add('w500-board');
+  if (currentGameMode === 'wordfit' || currentGameMode === 'colorfit') {
+    renderWordFitBoard();
+    return;
+  } else if (currentGameMode === 'word500' || currentGameMode === 'word600') {
+    renderWord500Board();
+    return;
   } else if (currentGameMode === 'wordtango') {
     board.classList.add('tango-board');
     for (let i = 0; i < 4; i++) {
@@ -2441,6 +2497,9 @@ function startNewRound() {
     if (!allowedLengths || allowedLengths.length === 0) allowedLengths = [5];
     const rIdx = Math.floor(Math.random() * allowedLengths.length);
     WORD_LENGTH = allowedLengths[rIdx];
+    if (currentGameMode === 'colorfit' && WORD_LENGTH > 6) {
+      WORD_LENGTH = 6;
+    }
   }
   document.documentElement.style.setProperty('--word-length', WORD_LENGTH);
   updateBoardScaleUI();
@@ -2708,6 +2767,8 @@ function changeLang(lang, e) {
   lastLang = lang;
   try { localStorage.setItem('wordle_lang', lang); } catch (e) {}
 
+  updateLangBadgeUI(lang);
+
   // Close dropdown
   document.getElementById('settingsDropdown').classList.remove('open');
 
@@ -2717,6 +2778,19 @@ function changeLang(lang, e) {
     startNewRound();
   });
 }
+
+function updateLangBadgeUI(lang) {
+  const badge = document.getElementById('currentLangBadge');
+  if (!badge) return;
+  if (lang === 'id') {
+    badge.innerHTML = '🇮🇩 ID';
+  } else if (lang === 'en') {
+    badge.innerHTML = '🇬🇧 EN';
+  } else {
+    badge.innerHTML = '🌐 MIX';
+  }
+}
+
 
 // Close settings dropdown when clicking elsewhere
 document.addEventListener('click', () => {
@@ -2743,6 +2817,32 @@ function toggleNoYellow(checked) {
     else renderWord500Board();
   }
 }
+
+let isNoRepeatMode = localStorage.getItem('wordle_noRepeat') === 'true';
+
+window.toggleNoRepeat = function(checked) {
+  isNoRepeatMode = checked;
+  try { localStorage.setItem('wordle_noRepeat', checked); } catch(e) {}
+  
+  // Clear available words pool to force generation using the new filter
+  for (let key in allAvailableWords) {
+    allAvailableWords[key] = [];
+  }
+
+  updateNoRepeatBadgeUI();
+  
+  // Restart round for puzzle modes so the new rule applies immediately
+  if (currentGameMode === 'wordfit' || currentGameMode === 'word500' || currentGameMode === 'word600') {
+    startNewRound();
+  }
+};
+
+function updateNoRepeatBadgeUI() {
+  const badge = document.getElementById('noRepeatBadge');
+  if (!badge) return;
+  badge.style.display = isNoRepeatMode ? 'inline-block' : 'none';
+}
+
 
 function toggleHardMode(e) {
   if (e) e.stopPropagation();
@@ -2783,6 +2883,10 @@ function updateHardModeUI() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  updateLangBadgeUI(lastLang);
+  const nrToggle = document.getElementById('noRepeatToggle');
+  if (nrToggle) nrToggle.checked = isNoRepeatMode;
+  updateNoRepeatBadgeUI();
   updateHardModeUI();
   // Sync dynamic bg toggle state
   const toggle = document.getElementById('dynamicBgToggle');
@@ -2905,7 +3009,7 @@ function validateHardMode(guessWord) {
   const validPastGuesses = guesses.filter(g => VALID_WORDS.includes(g));
 
   for (const past of validPastGuesses) {
-    if (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit') {
+    if (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit') {
       const actual = getScore(past, currentWord);
       const simulated = getScore(past, guessWord);
       if (actual.c !== simulated.c || actual.p !== simulated.p) {
@@ -3970,6 +4074,9 @@ function processGuess(guessWord, userData) {
   }
 
   let isValidWord = VALID_WORDS.includes(guessWord);
+  if (currentGameMode === 'colorfit') {
+    isValidWord = /^[RGBYPO]+$/.test(guessWord) && guessWord.length === WORD_LENGTH;
+  }
 
   if (currentGameMode === 'fillblanks') {
     if (!isValidWord) return;
@@ -4170,6 +4277,15 @@ function processGuess(guessWord, userData) {
     else hardModeMsg = `Kata sudah ditebak di ronde ini`;
   }
   
+  if (isValidWord && isNoRepeatMode) {
+    if (new Set(guessWord).size !== guessWord.length) {
+      isValidWord = false;
+      if (lastLang === 'en') hardModeMsg = `No repeat letters allowed`;
+      else if (lastLang === 'mixed') hardModeMsg = `Tidak boleh huruf ganda / No repeat letters`;
+      else hardModeMsg = `Tidak boleh ada huruf ganda`;
+    }
+  }
+  
   // Word Loop logic
   if (currentGameMode === 'wordloop' && isValidWord) {
     if (isValidWord && guesses.length > 0) {
@@ -4231,7 +4347,7 @@ function processGuess(guessWord, userData) {
   }
 
   const isWord500 = currentGameMode === 'word500' || currentGameMode === 'word600';
-  const isWordFit = currentGameMode === 'wordfit';
+  const isWordFit = currentGameMode === 'wordfit' || currentGameMode === 'colorfit';
   const isAnySortedMode = isWord500 || isWordFit;
 
   // Hapus baris invalid sebelumnya dari layar (saat ada tebakan baru masuk)

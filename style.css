@@ -500,6 +500,19 @@ header {
   white-space: nowrap;
 }
 
+.lang-badge {
+  display: inline-block;
+  background: rgba(254, 44, 85, 0.2);
+  border: 1px solid rgba(254, 44, 85, 0.4);
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  color: white;
+  backdrop-filter: blur(10px);
+  white-space: nowrap;
+}
+
 /* Music Widget */
 .music-widget {
   position: absolute;
@@ -1124,6 +1137,8 @@ header {
   transition: transform 0.1s, background-color 0.4s, border-color 0.4s;
   box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
   aspect-ratio: 1/1;
+  width: 100%;
+  min-width: 0;
   /* Mencegah teks mendorong tinggi tile melebihi lebarnya */
   min-height: 0;
   overflow: hidden;
@@ -2727,3 +2742,44 @@ header {
   60% { opacity: 1; }
   100% { transform: translate(var(--tx), var(--ty)) rotate(720deg) scale(1.2); opacity: 0; }
 }
+
+/* Color Fit Styles */
+.tile.color-r { background-color: #fe2c55 !important; border-color: #fe2c55 !important; }
+.tile.color-g { background-color: #2ecc71 !important; border-color: #2ecc71 !important; }
+.tile.color-b { background-color: #3498db !important; border-color: #3498db !important; }
+.tile.color-y { background-color: #f1c40f !important; border-color: #f1c40f !important; }
+.tile.color-p { background-color: #9b59b6 !important; border-color: #9b59b6 !important; }
+.tile.color-o { background-color: #e67e22 !important; border-color: #e67e22 !important; }
+
+/* Show faint text for colorblind support */
+.colorfit-mode .tile {
+  color: transparent !important; 
+  text-shadow: none !important;
+  font-size: 1.2rem;
+}
+
+.color-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.color-box {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.color-box.color-r { background-color: #fe2c55; }
+.color-box.color-g { background-color: #2ecc71; }
+.color-box.color-b { background-color: #3498db; }
+.color-box.color-y { background-color: #f1c40f; }
+.color-box.color-p { background-color: #9b59b6; }
+.color-box.color-o { background-color: #e67e22; }

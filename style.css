@@ -2135,13 +2135,13 @@ header {
   left: 50%;
   transform: translate(-50%, -50%) scale(0.5);
   background: rgba(20, 20, 30, 0.95);
-  border: 2px solid var(--primary);
-  box-shadow: 0 0 40px rgba(254, 44, 85, 0.6), inset 0 0 20px rgba(254, 44, 85, 0.3);
-  border-radius: 30px;
-  padding: 12px 24px;
+  border: 1.5px solid var(--primary);
+  box-shadow: 0 0 25px rgba(254, 44, 85, 0.4), inset 0 0 10px rgba(254, 44, 85, 0.2);
+  border-radius: 20px;
+  padding: 8px 16px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   z-index: 10000;
   opacity: 0;
   pointer-events: none;
@@ -2155,11 +2155,11 @@ header {
 }
 
 .social-alert-avatar {
-  width: 50px;
-  height: 50px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  border: 3px solid white;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+  border: 2px solid white;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
   object-fit: cover;
 }
 
@@ -2169,37 +2169,37 @@ header {
 }
 
 .social-alert-name {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 900;
   color: white;
-  text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
   white-space: nowrap;
 }
 
 .social-alert-action {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 800;
   color: var(--primary);
-  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
   text-transform: uppercase;
   letter-spacing: 1px;
   white-space: nowrap;
 }
 
 .social-alert-gift-img {
-  width: 50px;
-  height: 50px;
+  width: 36px;
+  height: 36px;
   object-fit: contain;
-  margin-left: 8px;
-  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+  margin-left: 6px;
+  filter: drop-shadow(0 3px 5px rgba(0,0,0,0.3));
 }
 
 .social-alert-gift-count {
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 900;
   color: #FFD700;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(255, 215, 0, 0.5);
-  margin-left: 4px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(255, 215, 0, 0.5);
+  margin-left: 2px;
 }
 
 @keyframes pulseAlert {

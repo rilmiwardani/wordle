@@ -442,8 +442,8 @@
           const username = key.substring(avatarPrefix.length);
           playerAvatars[username] = localStorage.getItem(key);
         } else if (key.startsWith('pts_')) {
-          // Exclude metadata/social metrics prefixes
-          if (key.startsWith('pts_active_') || key.startsWith('pts_like_') || key.startsWith('pts_share_') || key.startsWith('pts_gift_') || key.startsWith('pts_avatar_')) {
+          // Exclude metadata/social metrics prefixes and daily reset records
+          if (key.startsWith('pts_active_') || key.startsWith('pts_like_') || key.startsWith('pts_share_') || key.startsWith('pts_gift_') || key.startsWith('pts_avatar_') || key.includes('daily_')) {
             continue;
           }
 

@@ -1756,7 +1756,7 @@ function initBoard() {
         }
         if (targetWord && targetWord[j] && tile.textContent === '') {
           tile.textContent = targetWord[j];
-          tile.classList.add('present'); // Hint color
+          tile.classList.add('correct'); // Hint color (green)
           tile.style.transform = 'scale(1.1)';
           setTimeout(() => tile.style.transform = 'scale(1)', 200);
           if (window.playHostAudio) playHostAudio('click');
@@ -3445,7 +3445,8 @@ function startNewRound() {
     if (TARGET_WORDS.length >= 6) {
       const shuffled = [...TARGET_WORDS];
       shuffleArray(shuffled);
-      const yellowRowIndex = Math.floor(Math.random() * 6);
+      const isHard = (hardModeState !== 'off');
+      
       for (let i = 0; i < 6; i++) {
         const word = shuffled[i];
         const numClues = WORD_LENGTH === 5 ? 2 : Math.floor(WORD_LENGTH / 2);
@@ -3453,53 +3454,50 @@ function startNewRound() {
         const allIndices = Array.from({length: WORD_LENGTH}, (_, k) => k);
         shuffleArray(allIndices);
         
-        const greenSources = [];
-        const yellowSources = [];
-        
-        let hasYellow = false;
-        
-        for (let c = 0; c < numClues; c++) {
-          let isGreen = true;
-          if (i === yellowRowIndex) {
-             isGreen = Math.random() < 0.5; 
-          }
-          if (isGreen) greenSources.push(allIndices[c]);
-          else yellowSources.push(allIndices[c]);
-        }
-        
-        // Place green clues first
-        for (const idx of greenSources) {
-          clues[idx] = { char: word[idx], status: 'correct' };
-        }
-        
-        // Place yellow clues
-        for (const idx of yellowSources) {
-          const letter = word[idx];
-          let validSpots = [];
-          for (let k = 0; k < WORD_LENGTH; k++) {
-            if (clues[k] === null && word[k] !== letter) {
-              validSpots.push(k);
-            }
-          }
-          if (validSpots.length > 0) {
-            const placeIdx = validSpots[Math.floor(Math.random() * validSpots.length)];
-            clues[placeIdx] = { char: letter, status: 'present' };
-            hasYellow = true;
-          } else {
-            // Fallback to any empty spot
-            let emptySpots = [];
+        if (isHard) {
+          // Place yellow clues: correct letters in wrong positions
+          let placedClues = 0;
+          for (let c = 0; c < WORD_LENGTH && placedClues < numClues; c++) {
+            const letterIdx = allIndices[c];
+            const letter = word[letterIdx];
+            // Find an empty spot k such that word[k] !== letter
+            let validSpots = [];
             for (let k = 0; k < WORD_LENGTH; k++) {
-              if (clues[k] === null) emptySpots.push(k);
+              if (clues[k] === null && word[k] !== letter) {
+                validSpots.push(k);
+              }
             }
-            if (emptySpots.length > 0) {
-              const placeIdx = emptySpots[Math.floor(Math.random() * emptySpots.length)];
-              const status = (word[placeIdx] === letter) ? 'correct' : 'present';
-              clues[placeIdx] = { char: letter, status: status };
-              if (status === 'present') hasYellow = true;
+            if (validSpots.length > 0) {
+              const placeIdx = validSpots[Math.floor(Math.random() * validSpots.length)];
+              clues[placeIdx] = { char: letter, status: 'present' };
+              placedClues++;
+            } else {
+              // Fallback to any empty spot
+              let emptySpots = [];
+              for (let k = 0; k < WORD_LENGTH; k++) {
+                if (clues[k] === null) emptySpots.push(k);
+              }
+              if (emptySpots.length > 0) {
+                const placeIdx = emptySpots[Math.floor(Math.random() * emptySpots.length)];
+                const status = (word[placeIdx] === letter) ? 'correct' : 'present';
+                clues[placeIdx] = { char: letter, status: status };
+                placedClues++;
+              }
             }
           }
+          fillBlanksTargets.push({ word, clues, solved: false, solver: null, isAnimating: false, isYellowRow: true });
+        } else {
+          // Place green clues (Hard Mode is OFF)
+          const greenSources = [];
+          for (let c = 0; c < numClues; c++) {
+            greenSources.push(allIndices[c]);
+          }
+          // Place green clues
+          for (const idx of greenSources) {
+            clues[idx] = { char: word[idx], status: 'correct' };
+          }
+          fillBlanksTargets.push({ word, clues, solved: false, solver: null, isAnimating: false, isYellowRow: false });
         }
-        fillBlanksTargets.push({ word, clues, solved: false, solver: null, isAnimating: false, isYellowRow: hasYellow });
       }
     }
   }
@@ -3640,6 +3638,49 @@ function switchAccount() {
   document.getElementById('usernameInput').focus();
 }
 
+// Kembali ke Daftar Game (Menu Utama)
+function backToGameList(e) {
+  if (e) e.stopPropagation();
+
+  // Hentikan auto-reconnect timer
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+
+  // Putuskan koneksi dari TikTok jika terhubung
+  if (socket && socket.connected) {
+    socket.emit('disconnect-tiktok');
+  }
+
+  // Hapus mode game saat ini dari sessionStorage
+  try {
+    sessionStorage.removeItem('wordle_gameMode');
+  } catch (ex) {}
+
+  // Reset status game
+  currentGameMode = "";
+  currentWord = "";
+  isConnectedToTikTok = false;
+  isGameOver = false;
+  guesses = [];
+  round = 1;
+  playerPoints = {};
+
+  // Sembunyikan container game & login overlay, tampilkan game selection
+  gameContainer.style.display = 'none';
+  loginOverlay.style.display = 'none';
+  document.getElementById('hostMusicControl').style.display = 'none';
+  hideDisconnectBanner();
+  
+  const gameSelectOverlay = document.getElementById('gameSelectOverlay');
+  if (gameSelectOverlay) {
+    gameSelectOverlay.style.display = 'flex';
+  }
+
+  // Tutup dropdown pengaturan
+  const dropdown = document.getElementById('settingsDropdown');
+  if (dropdown) dropdown.classList.remove('open');
+}
+window.backToGameList = backToGameList;
+
 // Settings — language picker
 function toggleSettings(e) {
   e.stopPropagation();
@@ -3766,6 +3807,9 @@ function toggleHardMode(e) {
   if (hardModeState === 'hard') msg = '🔥 Hard Mode Diaktifkan';
   if (hardModeState === 'ultra') msg = '☠️ Ultra Hard Mode Diaktifkan';
   showToast(msg, 2000);
+
+  // Restart round so the new mode is applied immediately
+  startNewRound();
 }
 
 window.toggleWgDifficulty = function(e) {
@@ -4260,6 +4304,11 @@ window.addEventListener('DOMContentLoaded', () => {
   localSocket = io(SOCKET_URL);
   
   localSocket.on('music-request', (data) => {
+    // If music requests are disabled, only allow the Host to request music
+    if (musicSettings.requestsEnabled === false && data.requesterName !== "Host") {
+      console.log("[Music] Request ignored: requests are disabled for audience.");
+      return;
+    }
     console.log("Music Requested:", data);
     
     // Check banned keywords

@@ -84,6 +84,10 @@ document.documentElement.style.setProperty('--word-length', WORD_LENGTH);
 
 // Game Mode State: 'wordle' or 'word500'
 let currentGameMode = sessionStorage.getItem('wordle_gameMode') || '';
+let isWgTakeoverMode = localStorage.getItem('wordle_wgTakeover') === 'true';
+let wgHintDelay = parseInt(localStorage.getItem('wordle_wgHintDelay')) || 45; // in seconds
+let wgDifficulty = localStorage.getItem('wordle_wgDifficulty') || 'easy'; // 'easy', 'medium', 'hard'
+let wgHintInterval = null;
 
 function getMaxGuesses() {
   return (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit') ? Infinity : 6;
@@ -1091,7 +1095,7 @@ function shuffleArray(array) {
 
 function getRandomWord() {
   if (currentGameMode === 'colorfit') {
-    const colors = ['R', 'G', 'B', 'Y', 'P', 'O'];
+    const colors = ['R', 'G', 'B', 'Y', 'P', 'O', 'C', 'W'];
     let result = '';
     let availableColors = [...colors];
     for (let i = 0; i < WORD_LENGTH; i++) {
@@ -1110,7 +1114,8 @@ function getRandomWord() {
   if (TARGET_WORDS.length === 0) return WORD_LENGTH === 5 ? "HELLO" : "RANDOM"; // fallback
 
   let pool = TARGET_WORDS;
-  if (isNoRepeatMode) {
+  const isNoRepeatActive = isNoRepeatMode && (currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'word600');
+  if (isNoRepeatActive) {
     pool = TARGET_WORDS.filter(w => new Set(w).size === w.length);
     if (pool.length === 0) pool = TARGET_WORDS; // fallback
   }
@@ -1122,7 +1127,7 @@ function getRandomWord() {
   }
   
   let word = availableWords.pop();
-  if (isNoRepeatMode && new Set(word).size !== word.length) {
+  if (isNoRepeatActive && new Set(word).size !== word.length) {
     // If somehow a non-isogram got in, keep searching
     while (word && new Set(word).size !== word.length) {
       if (availableWords.length === 0) {
@@ -1209,6 +1214,11 @@ function changeGameModeDirect(mode, e) {
   const dropdown = document.getElementById('settingsDropdown');
   if (dropdown) dropdown.classList.remove('open');
   
+  if (wgHintInterval) {
+    clearInterval(wgHintInterval);
+    wgHintInterval = null;
+  }
+  
   if (!mode) return;
 
   if (!isConnectedToTikTok && gameContainer.style.display === 'none') {
@@ -1225,6 +1235,11 @@ function changeGameModeDirect(mode, e) {
 
   const selectElement = document.getElementById('switchGameSelect');
   if (selectElement) selectElement.value = "";
+
+  const triggerSpan = document.querySelector('#customGameSelect .custom-select-trigger span');
+  if (triggerSpan) triggerSpan.innerHTML = '🔄 Pilih Game Mode...';
+  const customOptions = document.querySelectorAll('#customGameSelect .custom-option');
+  customOptions.forEach(opt => opt.classList.remove('selected'));
 
   applyGameModeUI();
   initWeeklyLeaderboard();
@@ -1262,14 +1277,14 @@ function applyGameModeUI() {
       } else if (currentGameMode === 'colorfit') {
         headerTitle.textContent = 'COLOR FIT';
       } else {
-        headerTitle.textContent = 'WORDFIT';
+        headerTitle.textContent = 'WORD FIT';
       }
     }
     if (hintContainer) hintContainer.style.display = 'none';
     if (bestGuessContainer) bestGuessContainer.style.display = 'none'; // replaced by sorted board
     if (switchBtn) {
       if (currentGameMode === 'word500') switchBtn.textContent = window.w500UseMastermind ? '🔄 Switch to Word Pegs 6' : '🔄 Switch to Word600';
-      else if (currentGameMode === 'word600') switchBtn.textContent = '🔄 Switch to WordFit';
+      else if (currentGameMode === 'word600') switchBtn.textContent = '🔄 Switch to Word Fit';
       else if (currentGameMode === 'wordfit') switchBtn.textContent = '🔄 Switch to Color Fit';
       else switchBtn.textContent = '🔄 Switch to Word Loop';
     }
@@ -1308,6 +1323,7 @@ function applyGameModeUI() {
     if (switchBtn) switchBtn.textContent = `🔄 Switch to ${nextName}`;
   }
   updateBoardScaleUI();
+  updateNoRepeatBadgeUI();
 }
 
 function updateBestGuessUI() {
@@ -1974,107 +1990,835 @@ function handleMyRank(userData) {
 
 // --- WORD GRID LOGIC ---
 const WG_CLUE_EASY = [
-  { type: 'length', val: 4 }, { type: 'length', val: 5 }, { type: 'length', val: 6 }, { type: 'length', val: 7 },
-  { type: 'contains', val: 'A' }, { type: 'contains', val: 'E' }, { type: 'contains', val: 'I' },
-  { type: 'contains', val: 'O' }, { type: 'contains', val: 'U' }, { type: 'contains', val: 'R' },
-  { type: 'contains', val: 'N' }, { type: 'contains', val: 'T' }, { type: 'contains', val: 'S' },
-  { type: 'contains', val: 'M' }, { type: 'contains', val: 'K' }, { type: 'contains', val: 'AN' },
-  { type: 'contains', val: 'AR' }, { type: 'contains', val: 'RA' }, { type: 'contains', val: 'AK' },
-  { type: 'contains', val: 'KA' }, { type: 'contains', val: 'TA' }, { type: 'contains', val: 'SA' },
-  { type: 'starts_with', val: 'B' }, { type: 'starts_with', val: 'M' }, { type: 'starts_with', val: 'P' },
-  { type: 'starts_with', val: 'S' }, { type: 'starts_with', val: 'K' }, { type: 'starts_with', val: 'T' },
-  { type: 'ends_with', val: 'A' }, { type: 'ends_with', val: 'I' }, { type: 'ends_with', val: 'N' },
-  { type: 'ends_with', val: 'R' }, { type: 'ends_with', val: 'S' }, { type: 'ends_with', val: 'H' },
-  { type: 'starts_vowel', val: true }, { type: 'ends_consonant', val: true }
+  {'type':'length','val':4},
+  {'type':'length','val':5},
+  {'type':'length','val':6},
+  {'type':'length','val':7},
+  {'type':'length_max','val':7},
+  {'type':'length_min','val':4},
+  {'type':'contains','val':'A'},
+  {'type':'contains','val':'E'},
+  {'type':'contains','val':'I'},
+  {'type':'contains','val':'O'},
+  {'type':'contains','val':'U'},
+  {'type':'contains','val':'R'},
+  {'type':'contains','val':'N'},
+  {'type':'contains','val':'T'},
+  {'type':'contains','val':'S'},
+  {'type':'contains','val':'M'},
+  {'type':'contains','val':'K'},
+  {'type':'contains','val':'AN'},
+  {'type':'contains','val':'AR'},
+  {'type':'contains','val':'RA'},
+  {'type':'contains','val':'AK'},
+  {'type':'contains','val':'KA'},
+  {'type':'contains','val':'TA'},
+  {'type':'contains','val':'SA'},
+  {'type':'contains','val':'OB'},
+  {'type':'contains','val':'IM'},
+  {'type':'contains_multiple','val':['A','I']},
+  {'type':'contains_multiple','val':['A','E']},
+  {'type':'starts_with','val':'B'},
+  {'type':'starts_with','val':'M'},
+  {'type':'starts_with','val':'P'},
+  {'type':'starts_with','val':'S'},
+  {'type':'starts_with','val':'K'},
+  {'type':'starts_with','val':'T'},
+  {'type':'ends_with','val':'A'},
+  {'type':'ends_with','val':'I'},
+  {'type':'ends_with','val':'N'},
+  {'type':'ends_with','val':'R'},
+  {'type':'ends_with','val':'S'},
+  {'type':'ends_with','val':'H'},
+  {'type':'starts_vowel','val':true},
+  {'type':'ends_consonant','val':true},
+  {'type':'length_max','val':5},
+  {'type':'length_max','val':6},
+  {'type':'contains','val':'D'},
+  {'type':'contains','val':'F'},
+  {'type':'contains','val':'G'},
+  {'type':'contains','val':'L'},
+  {'type':'contains','val':'P'},
+  {'type':'contains','val':'X'},
+  {'type':'contains','val':'Y'},
+  {'type':'ends_with','val':'D'},
+  {'type':'ends_with','val':'G'},
+  {'type':'ends_with','val':'K'},
+  {'type':'ends_with','val':'L'},
+  {'type':'ends_with','val':'P'},
+  {'type':'ends_with','val':'T'},
+  {'type':'starts_with','val':'A'},
+  {'type':'starts_with','val':'C'},
+  {'type':'starts_with','val':'D'},
+  {'type':'starts_with','val':'E'},
+  {'type':'starts_with','val':'F'},
+  {'type':'starts_with','val':'G'},
+  {'type':'starts_with','val':'I'},
+  {'type':'starts_with','val':'J'},
+  {'type':'starts_with','val':'L'},
+  {'type':'starts_with','val':'N'},
+  {'type':'starts_with','val':'O'},
+  {'type':'starts_with','val':'R'},
+  {'type':'starts_with','val':'U'},
+  {'type':'starts_with','val':'V'},
+  {'type':'starts_with','val':'Z'}
 ];
 
 const WG_CLUE_MEDIUM = [
-  { type: 'length', val: 8 }, { type: 'length', val: 9 }, { type: 'length', val: 10 }, { type: 'length', val: 11 },
-  { type: 'not_contains', val: 'O' }, { type: 'not_contains', val: 'U' }, { type: 'not_contains', val: 'R' },
-  { type: 'not_contains', val: 'N' }, { type: 'not_contains', val: 'T' }, { type: 'not_contains', val: 'S' },
-  { type: 'not_contains_multiple', val: ['A', 'E'] }, { type: 'not_contains_multiple', val: ['I', 'O'] },
-  { type: 'not_contains_multiple', val: ['U', 'E'] }, { type: 'not_contains_multiple', val: ['R', 'N'] },
-  { type: 'contains', val: 'B' }, { type: 'contains', val: 'P' }, { type: 'contains', val: 'D' }, { type: 'contains', val: 'G' },
-  { type: 'contains', val: 'L' }, { type: 'contains', val: 'EL' }, { type: 'contains', val: 'UM' },
-  { type: 'contains', val: 'IN' }, { type: 'contains', val: 'US' }, { type: 'contains', val: 'ER' },
-  { type: 'contains', val: 'ANG' }, { type: 'contains', val: 'TER' }, { type: 'contains', val: 'BER' },
-  { type: 'contains', val: 'KAN' }, { type: 'contains', val: 'PER' }, { type: 'contains', val: 'NYA' },
-  { type: 'starts_with', val: 'K' }, { type: 'starts_with', val: 'T' }, { type: 'starts_with', val: 'D' },
-  { type: 'starts_with', val: 'L' }, { type: 'starts_with', val: 'R' }, { type: 'starts_with', val: 'C' },
-  { type: 'ends_with', val: 'K' }, { type: 'ends_with', val: 'T' }, { type: 'ends_with', val: 'S' },
-  { type: 'ends_with', val: 'M' }, { type: 'ends_with', val: 'L' }, { type: 'ends_with', val: 'NG' },
-  { type: 'min_vowels', val: 3 }, { type: 'no_repeat_letter', val: true }
+  {'type':'length','val':8},
+  {'type':'length','val':9},
+  {'type':'length','val':10},
+  {'type':'length','val':11},
+  {'type':'length_range','min':4,'max':6},
+  {'type':'length_range','min':5,'max':7},
+  {'type':'length_either','vals':[4,5]},
+  {'type':'length_either','vals':[5,6]},
+  {'type':'length_either','vals':[6,7]},
+  {'type':'not_contains','val':'O'},
+  {'type':'not_contains','val':'U'},
+  {'type':'not_contains','val':'R'},
+  {'type':'not_contains','val':'N'},
+  {'type':'not_contains','val':'T'},
+  {'type':'not_contains','val':'S'},
+  {'type':'not_contains_multiple','val':['A','E']},
+  {'type':'not_contains_multiple','val':['I','O']},
+  {'type':'not_contains_multiple','val':['U','E']},
+  {'type':'not_contains_multiple','val':['R','N']},
+  {'type':'not_contains_multiple','val':['G','S','U']},
+  {'type':'contains','val':'B'},
+  {'type':'contains','val':'P'},
+  {'type':'contains','val':'D'},
+  {'type':'contains','val':'G'},
+  {'type':'contains','val':'L'},
+  {'type':'contains','val':'EL'},
+  {'type':'contains','val':'UM'},
+  {'type':'contains','val':'IN'},
+  {'type':'contains','val':'US'},
+  {'type':'contains','val':'ER'},
+  {'type':'contains','val':'ANG'},
+  {'type':'contains','val':'TER'},
+  {'type':'contains','val':'BER'},
+  {'type':'contains','val':'KAN'},
+  {'type':'contains','val':'PER'},
+  {'type':'contains','val':'NYA'},
+  {'type':'contains_multiple','val':['K','N']},
+  {'type':'contains_multiple','val':['A','U']},
+  {'type':'starts_with','val':'K'},
+  {'type':'starts_with','val':'T'},
+  {'type':'starts_with','val':'D'},
+  {'type':'starts_with','val':'L'},
+  {'type':'starts_with','val':'R'},
+  {'type':'starts_with','val':'C'},
+  {'type':'ends_with','val':'K'},
+  {'type':'ends_with','val':'T'},
+  {'type':'ends_with','val':'S'},
+  {'type':'ends_with','val':'M'},
+  {'type':'ends_with','val':'L'},
+  {'type':'ends_with','val':'NG'},
+  {'type':'min_vowels','val':3},
+  {'type':'multiple_letter','val':'A'},
+  {'type':'multiple_letter','val':'E'},
+  {'type':'multiple_letter','val':'I'},
+  {'type':'no_repeat_letter','val':true},
+  {'type':'contains_multiple','val':['A','E']},
+  {'type':'contains_multiple','val':['A','O']},
+  {'type':'contains','val':'AB'},
+  {'type':'contains','val':'AD'},
+  {'type':'contains','val':'AL'},
+  {'type':'contains','val':'AM'},
+  {'type':'contains','val':'AN'},
+  {'type':'contains','val':'AP'},
+  {'type':'contains','val':'AR'},
+  {'type':'contains','val':'AS'},
+  {'type':'contains','val':'AT'},
+  {'type':'contains_multiple','val':['B','I']},
+  {'type':'contains_multiple','val':['B','P']},
+  {'type':'contains','val':'BL'},
+  {'type':'contains','val':'BO'},
+  {'type':'contains_multiple','val':['C','K']},
+  {'type':'contains_multiple','val':['D','T']},
+  {'type':'contains_multiple','val':['E','G']},
+  {'type':'contains_multiple','val':['E','I']},
+  {'type':'contains_multiple','val':['E','L']},
+  {'type':'contains_multiple','val':['E','U']},
+  {'type':'contains','val':'EG'},
+  {'type':'contains','val':'EM'},
+  {'type':'contains','val':'EN'},
+  {'type':'contains','val':'EP'},
+  {'type':'contains','val':'ES'},
+  {'type':'contains','val':'ET'},
+  {'type':'contains','val':'EX'},
+  {'type':'contains_multiple','val':['F','E']},
+  {'type':'contains_multiple','val':['F','L']},
+  {'type':'contains_multiple','val':['G','E']},
+  {'type':'contains_multiple','val':['H','R']},
+  {'type':'contains_multiple','val':['H','S']},
+  {'type':'contains_multiple','val':['H','Y']},
+  {'type':'contains','val':'ID'},
+  {'type':'contains','val':'IG'},
+  {'type':'contains','val':'IL'},
+  {'type':'contains','val':'IS'},
+  {'type':'contains_multiple','val':['K','C']},
+  {'type':'contains_multiple','val':['K','N']},
+  {'type':'contains_multiple','val':['K','T']},
+  {'type':'contains_multiple','val':['L','I']},
+  {'type':'contains_multiple','val':['L','M']},
+  {'type':'contains_multiple','val':['L','R']},
+  {'type':'contains_multiple','val':['L','T']},
+  {'type':'contains','val':'LI'},
+  {'type':'contains_multiple','val':['M','N']},
+  {'type':'contains_multiple','val':['M','O']},
+  {'type':'contains_multiple','val':['N','P']},
+  {'type':'contains_multiple','val':['O','D']},
+  {'type':'contains_multiple','val':['O','P']},
+  {'type':'contains_multiple','val':['O','U']},
+  {'type':'contains_multiple','val':['O','R']},
+  {'type':'contains','val':'OB'},
+  {'type':'contains','val':'OG'},
+  {'type':'contains','val':'OL'},
+  {'type':'contains','val':'OM'},
+  {'type':'contains','val':'ON'},
+  {'type':'contains','val':'OO'},
+  {'type':'contains','val':'OS'},
+  {'type':'contains','val':'OT'},
+  {'type':'contains_multiple','val':['P','H']},
+  {'type':'contains_multiple','val':['P','O']},
+  {'type':'contains','val':'PL'},
+  {'type':'contains','val':'RI'},
+  {'type':'contains_multiple','val':['S','T']},
+  {'type':'contains_multiple','val':['S','Z']},
+  {'type':'contains','val':'SL'},
+  {'type':'contains','val':'SM'},
+  {'type':'contains','val':'SU'},
+  {'type':'contains_multiple','val':['T','S']},
+  {'type':'contains_multiple','val':['U','G']},
+  {'type':'contains_multiple','val':['U','Y']},
+  {'type':'contains','val':'UL'},
+  {'type':'contains','val':'UN'},
+  {'type':'contains','val':'UP'},
+  {'type':'contains','val':'UR'},
+  {'type':'contains','val':'UT'},
+  {'type':'contains_multiple','val':['W','A']},
+  {'type':'not_contains','val':'A'},
+  {'type':'not_contains_multiple','val':['A','N']},
+  {'type':'not_contains_multiple','val':['A','P']},
+  {'type':'not_contains_multiple','val':['A','S']},
+  {'type':'not_contains_multiple','val':['A','U']},
+  {'type':'not_contains_multiple','val':['E','G']},
+  {'type':'not_contains_multiple','val':['E','I']},
+  {'type':'not_contains_multiple','val':['E','N']},
+  {'type':'not_contains_multiple','val':['E','P']},
+  {'type':'not_contains_multiple','val':['E','R']},
+  {'type':'not_contains_multiple','val':['E','S']},
+  {'type':'not_contains_multiple','val':['E','T']},
+  {'type':'not_contains_multiple','val':['I','O']},
+  {'type':'not_contains_multiple','val':['I','P']},
+  {'type':'not_contains_multiple','val':['I','R']},
+  {'type':'not_contains_multiple','val':['I','T']},
+  {'type':'not_contains_multiple','val':['P','U']},
+  {'type':'not_contains_multiple','val':['T','U']},
+  {'type':'not_contains_multiple','val':['U','L']},
+  {'type':'ends_with','val':'AL'},
+  {'type':'ends_with','val':'AR'},
+  {'type':'ends_with','val':'AS'},
+  {'type':'ends_with','val':'ER'},
+  {'type':'ends_with','val':'ID'},
+  {'type':'ends_with','val':'IS'},
+  {'type':'ends_with','val':'ON'},
+  {'type':'ends_with','val':'OR'},
+  {'type':'ends_with','val':'OS'},
+  {'type':'ends_with','val':'US'},
+  {'type':'multiple_letter','val':'C'},
+  {'type':'multiple_letter','val':'L'},
+  {'type':'multiple_letter','val':'M'},
+  {'type':'multiple_letter','val':'N'},
+  {'type':'multiple_letter','val':'O'},
+  {'type':'multiple_letter','val':'R'},
+  {'type':'multiple_letter','val':'S'},
+  {'type':'multiple_letter','val':'T'},
+  {'type':'starts_with','val':'BA'},
+  {'type':'starts_with','val':'BE'},
+  {'type':'starts_with','val':'BO'},
+  {'type':'starts_with','val':'CA'},
+  {'type':'starts_with','val':'CO'},
+  {'type':'starts_with','val':'DE'},
+  {'type':'starts_with','val':'DO'},
+  {'type':'starts_with','val':'DR'},
+  {'type':'starts_with','val':'FO'},
+  {'type':'starts_with','val':'GL'},
+  {'type':'starts_with','val':'HE'},
+  {'type':'starts_with','val':'IN'},
+  {'type':'starts_with','val':'MA'},
+  {'type':'starts_with','val':'MI'},
+  {'type':'starts_with','val':'MO'},
+  {'type':'starts_with','val':'PA'},
+  {'type':'starts_with','val':'RA'},
+  {'type':'starts_with','val':'SA'},
+  {'type':'starts_with','val':'SC'},
+  {'type':'starts_with','val':'SE'},
+  {'type':'starts_with','val':'SL'},
+  {'type':'starts_with','val':'UN'},
+  {'type':'starts_with','val':'WA'}
 ];
 
 const WG_CLUE_HARD = [
-  { type: 'length', val: 12 }, { type: 'length', val: 13 }, { type: 'length', val: 14 }, { type: 'length', val: 15 },
-  { type: 'not_contains', val: 'A' }, { type: 'not_contains', val: 'E' }, { type: 'not_contains', val: 'I' },
-  { type: 'not_contains', val: 'K' }, { type: 'not_contains', val: 'M' }, { type: 'not_contains', val: 'L' }, { type: 'not_contains', val: 'P' },
-  { type: 'not_contains_multiple', val: ['A', 'E', 'I'] }, { type: 'not_contains_multiple', val: ['U', 'O', 'A'] },
-  { type: 'not_contains_multiple', val: ['R', 'N', 'T'] }, { type: 'not_contains_multiple', val: ['M', 'K', 'S'] },
-  { type: 'not_contains_multiple', val: ['B', 'P', 'D'] }, { type: 'not_contains_multiple', val: ['C', 'J', 'Y'] },
-  { type: 'contains', val: 'J' }, { type: 'contains', val: 'Y' }, { type: 'contains', val: 'C' },
-  { type: 'contains', val: 'V' }, { type: 'contains', val: 'W' }, { type: 'contains', val: 'F' }, { type: 'contains', val: 'Z' },
-  { type: 'contains', val: 'X' }, { type: 'contains', val: 'Q' },
-  { type: 'contains', val: 'ALA' }, { type: 'contains', val: 'ERA' }, { type: 'contains', val: 'BEL' }, { type: 'contains', val: 'PAN' },
-  { type: 'contains', val: 'PRO' }, { type: 'contains', val: 'EKS' }, { type: 'contains', val: 'NYA' },
-  { type: 'starts_with', val: 'J' }, { type: 'starts_with', val: 'Y' }, { type: 'starts_with', val: 'G' },
-  { type: 'starts_with', val: 'W' }, { type: 'starts_with', val: 'C' }, { type: 'starts_with', val: 'F' },
-  { type: 'starts_with', val: 'Z' }, { type: 'starts_with', val: 'V' }, { type: 'starts_with', val: 'SY' },
-  { type: 'ends_with', val: 'G' }, { type: 'ends_with', val: 'P' }, { type: 'ends_with', val: 'D' },
-  { type: 'ends_with', val: 'V' }, { type: 'ends_with', val: 'Z' }, { type: 'ends_with', val: 'F' },
-  { type: 'min_vowels', val: 4 }, { type: 'double_letter', val: true }, { type: 'no_repeat_letter', val: true }
+  {'type':'length','val':12},
+  {'type':'length','val':13},
+  {'type':'length','val':14},
+  {'type':'length','val':15},
+  {'type':'length_range','min':7,'max':9},
+  {'type':'not_contains','val':'A'},
+  {'type':'not_contains','val':'E'},
+  {'type':'not_contains','val':'I'},
+  {'type':'not_contains','val':'K'},
+  {'type':'not_contains','val':'M'},
+  {'type':'not_contains','val':'L'},
+  {'type':'not_contains','val':'P'},
+  {'type':'not_contains_multiple','val':['A','E','I']},
+  {'type':'not_contains_multiple','val':['U','O','A']},
+  {'type':'not_contains_multiple','val':['R','N','T']},
+  {'type':'not_contains_multiple','val':['M','K','S']},
+  {'type':'not_contains_multiple','val':['B','P','D']},
+  {'type':'not_contains_multiple','val':['C','J','Y']},
+  {'type':'not_contains_multiple','val':['E','O','T']},
+  {'type':'contains','val':'J'},
+  {'type':'contains','val':'Y'},
+  {'type':'contains','val':'C'},
+  {'type':'contains','val':'V'},
+  {'type':'contains','val':'W'},
+  {'type':'contains','val':'F'},
+  {'type':'contains','val':'Z'},
+  {'type':'contains','val':'X'},
+  {'type':'contains','val':'Q'},
+  {'type':'contains','val':'ALA'},
+  {'type':'contains','val':'ERA'},
+  {'type':'contains','val':'BEL'},
+  {'type':'contains','val':'PAN'},
+  {'type':'contains','val':'PRO'},
+  {'type':'contains','val':'EKS'},
+  {'type':'contains','val':'NYA'},
+  {'type':'contains_multiple','val':['S','T']},
+  {'type':'contains_multiple','val':['N','G']},
+  {'type':'starts_with','val':'J'},
+  {'type':'starts_with','val':'Y'},
+  {'type':'starts_with','val':'G'},
+  {'type':'starts_with','val':'W'},
+  {'type':'starts_with','val':'C'},
+  {'type':'starts_with','val':'F'},
+  {'type':'starts_with','val':'Z'},
+  {'type':'starts_with','val':'V'},
+  {'type':'starts_with','val':'SY'},
+  {'type':'ends_with','val':'G'},
+  {'type':'ends_with','val':'P'},
+  {'type':'ends_with','val':'D'},
+  {'type':'ends_with','val':'V'},
+  {'type':'ends_with','val':'Z'},
+  {'type':'ends_with','val':'F'},
+  {'type':'min_vowels','val':4},
+  {'type':'multiple_letter','val':'O'},
+  {'type':'multiple_letter','val':'U'},
+  {'type':'multiple_letter','val':'R'},
+  {'type':'double_letter','val':true},
+  {'type':'no_repeat_letter','val':true},
+  {'type':'not_contains_multiple','val':['A','C','E']},
+  {'type':'not_contains_multiple','val':['A','C','R']},
+  {'type':'not_contains_multiple','val':['A','C','U']},
+  {'type':'not_contains_multiple','val':['A','D','S']},
+  {'type':'not_contains_multiple','val':['A','E','I']},
+  {'type':'not_contains_multiple','val':['A','E','O']},
+  {'type':'not_contains_multiple','val':['A','E','P']},
+  {'type':'not_contains_multiple','val':['A','E','S']},
+  {'type':'not_contains_multiple','val':['A','E','T']},
+  {'type':'not_contains_multiple','val':['A','G','R']},
+  {'type':'not_contains_multiple','val':['A','I','L']},
+  {'type':'not_contains_multiple','val':['A','I','M']},
+  {'type':'not_contains_multiple','val':['A','I','O']},
+  {'type':'not_contains_multiple','val':['A','L','N']},
+  {'type':'not_contains_multiple','val':['A','L','P']},
+  {'type':'not_contains_multiple','val':['A','L','R']},
+  {'type':'not_contains_multiple','val':['A','M','D']},
+  {'type':'not_contains_multiple','val':['A','M','O']},
+  {'type':'not_contains_multiple','val':['A','M','S']},
+  {'type':'not_contains_multiple','val':['A','N','D']},
+  {'type':'not_contains_multiple','val':['A','N','S','R']},
+  {'type':'not_contains_multiple','val':['A','P','S']},
+  {'type':'not_contains_multiple','val':['A','R','S']},
+  {'type':'not_contains_multiple','val':['A','S','T']},
+  {'type':'not_contains_multiple','val':['A','T','S','N']},
+  {'type':'not_contains_multiple','val':['C','E','S']},
+  {'type':'not_contains_multiple','val':['C','G','I']},
+  {'type':'not_contains_multiple','val':['C','O','P']},
+  {'type':'not_contains_multiple','val':['C','T','U']},
+  {'type':'not_contains_multiple','val':['D','E','N']},
+  {'type':'not_contains_multiple','val':['D','G','I']},
+  {'type':'not_contains_multiple','val':['D','I','M']},
+  {'type':'not_contains_multiple','val':['D','I','S']},
+  {'type':'not_contains_multiple','val':['D','O','S']},
+  {'type':'not_contains_multiple','val':['E','A','C']},
+  {'type':'not_contains_multiple','val':['E','G','I']},
+  {'type':'not_contains_multiple','val':['E','I','L']},
+  {'type':'not_contains_multiple','val':['E','I','N']},
+  {'type':'not_contains_multiple','val':['E','I','S']},
+  {'type':'not_contains_multiple','val':['E','I','T']},
+  {'type':'not_contains_multiple','val':['E','L','N']},
+  {'type':'not_contains_multiple','val':['E','M','N']},
+  {'type':'not_contains_multiple','val':['E','M','O']},
+  {'type':'not_contains_multiple','val':['E','N','A']},
+  {'type':'not_contains_multiple','val':['E','O','P']},
+  {'type':'not_contains_multiple','val':['E','O','S']},
+  {'type':'not_contains_multiple','val':['E','R','T']},
+  {'type':'not_contains_multiple','val':['E','T','R']},
+  {'type':'not_contains_multiple','val':['G','I','A']},
+  {'type':'not_contains_multiple','val':['G','I','R']},
+  {'type':'not_contains_multiple','val':['G','N','U']},
+  {'type':'not_contains_multiple','val':['G','O','A']},
+  {'type':'not_contains_multiple','val':['G','P','U']},
+  {'type':'not_contains_multiple','val':['I','C','N','G']},
+  {'type':'not_contains_multiple','val':['I','N','O']},
+  {'type':'not_contains_multiple','val':['I','N','T']},
+  {'type':'not_contains_multiple','val':['I','R','U']},
+  {'type':'not_contains_multiple','val':['L','O','R']},
+  {'type':'not_contains_multiple','val':['L','P','U']},
+  {'type':'not_contains_multiple','val':['M','A','N','G','O']},
+  {'type':'not_contains_multiple','val':['M','E','R','G']},
+  {'type':'not_contains_multiple','val':['M','O','P']},
+  {'type':'not_contains_multiple','val':['M','O','S']},
+  {'type':'not_contains_multiple','val':['N','B','S']},
+  {'type':'not_contains_multiple','val':['O','E','D','M']},
+  {'type':'not_contains_multiple','val':['O','P','R']},
+  {'type':'not_contains_multiple','val':['O','R','L']},
+  {'type':'not_contains_multiple','val':['R','A','N']},
+  {'type':'not_contains_multiple','val':['R','D','E']},
+  {'type':'not_contains_multiple','val':['R','E','D']},
+  {'type':'not_contains_multiple','val':['R','E','M']},
+  {'type':'not_contains_multiple','val':['S','A','O','D']},
+  {'type':'not_contains_multiple','val':['S','D','R','T']},
+  {'type':'not_contains_multiple','val':['S','G','I','N']},
+  {'type':'not_contains_multiple','val':['T','M','R','E']},
+  {'type':'not_contains_multiple','val':['T','S','L','O']},
+  {'type':'not_contains_multiple','val':['U','S','D']},
+  {'type':'not_contains_multiple','val':['U','S','D','L','C','M']}
 ];
 
 const WG_CLUE_EASY_EN = [
-  { type: 'length', val: 4 }, { type: 'length', val: 5 }, { type: 'length', val: 6 }, { type: 'length', val: 7 },
-  { type: 'contains', val: 'A' }, { type: 'contains', val: 'E' }, { type: 'contains', val: 'I' },
-  { type: 'contains', val: 'O' }, { type: 'contains', val: 'U' },
-  { type: 'contains', val: 'ER' }, { type: 'contains', val: 'ST' }, { type: 'contains', val: 'EA' },
-  { type: 'contains', val: 'OU' }, { type: 'contains', val: 'TH' }, { type: 'contains', val: 'CH' },
-  { type: 'contains', val: 'IN' }, { type: 'contains', val: 'ON' }, { type: 'contains', val: 'AN' },
-  { type: 'starts_with', val: 'S' }, { type: 'starts_with', val: 'C' }, { type: 'starts_with', val: 'B' }, { type: 'starts_with', val: 'T' },
-  { type: 'starts_with', val: 'M' }, { type: 'starts_with', val: 'P' }, { type: 'starts_with', val: 'D' },
-  { type: 'ends_with', val: 'E' }, { type: 'ends_with', val: 'S' }, { type: 'ends_with', val: 'D' }, { type: 'ends_with', val: 'Y' },
-  { type: 'ends_with', val: 'T' }, { type: 'ends_with', val: 'N' },
-  { type: 'starts_vowel', val: true }, { type: 'ends_consonant', val: true }
+  {'type':'length','val':4},
+  {'type':'length','val':5},
+  {'type':'length','val':6},
+  {'type':'length','val':7},
+  {'type':'length_max','val':7},
+  {'type':'length_min','val':4},
+  {'type':'contains','val':'A'},
+  {'type':'contains','val':'E'},
+  {'type':'contains','val':'I'},
+  {'type':'contains','val':'O'},
+  {'type':'contains','val':'U'},
+  {'type':'contains','val':'ER'},
+  {'type':'contains','val':'ST'},
+  {'type':'contains','val':'EA'},
+  {'type':'contains','val':'OU'},
+  {'type':'contains','val':'TH'},
+  {'type':'contains','val':'CH'},
+  {'type':'contains','val':'IN'},
+  {'type':'contains','val':'ON'},
+  {'type':'contains','val':'AN'},
+  {'type':'contains','val':'OB'},
+  {'type':'contains','val':'IM'},
+  {'type':'contains_multiple','val':['A','I']},
+  {'type':'contains_multiple','val':['A','E']},
+  {'type':'starts_with','val':'S'},
+  {'type':'starts_with','val':'C'},
+  {'type':'starts_with','val':'B'},
+  {'type':'starts_with','val':'T'},
+  {'type':'starts_with','val':'M'},
+  {'type':'starts_with','val':'P'},
+  {'type':'starts_with','val':'D'},
+  {'type':'ends_with','val':'E'},
+  {'type':'ends_with','val':'S'},
+  {'type':'ends_with','val':'D'},
+  {'type':'ends_with','val':'Y'},
+  {'type':'ends_with','val':'T'},
+  {'type':'ends_with','val':'N'},
+  {'type':'starts_vowel','val':true},
+  {'type':'ends_consonant','val':true},
+  {'type':'length_max','val':5},
+  {'type':'length_max','val':6},
+  {'type':'contains','val':'D'},
+  {'type':'contains','val':'F'},
+  {'type':'contains','val':'G'},
+  {'type':'contains','val':'K'},
+  {'type':'contains','val':'L'},
+  {'type':'contains','val':'N'},
+  {'type':'contains','val':'P'},
+  {'type':'contains','val':'T'},
+  {'type':'contains','val':'X'},
+  {'type':'contains','val':'Y'},
+  {'type':'ends_with','val':'G'},
+  {'type':'ends_with','val':'H'},
+  {'type':'ends_with','val':'K'},
+  {'type':'ends_with','val':'L'},
+  {'type':'ends_with','val':'P'},
+  {'type':'ends_with','val':'R'},
+  {'type':'starts_with','val':'A'},
+  {'type':'starts_with','val':'E'},
+  {'type':'starts_with','val':'F'},
+  {'type':'starts_with','val':'G'},
+  {'type':'starts_with','val':'I'},
+  {'type':'starts_with','val':'J'},
+  {'type':'starts_with','val':'K'},
+  {'type':'starts_with','val':'L'},
+  {'type':'starts_with','val':'N'},
+  {'type':'starts_with','val':'O'},
+  {'type':'starts_with','val':'R'},
+  {'type':'starts_with','val':'U'},
+  {'type':'starts_with','val':'V'},
+  {'type':'starts_with','val':'Z'}
 ];
 
 const WG_CLUE_MEDIUM_EN = [
-  { type: 'length', val: 8 }, { type: 'length', val: 9 }, { type: 'length', val: 10 }, { type: 'length', val: 11 },
-  { type: 'not_contains', val: 'O' }, { type: 'not_contains', val: 'U' },
-  { type: 'not_contains_multiple', val: ['A', 'E'] }, { type: 'not_contains_multiple', val: ['I', 'O'] },
-  { type: 'contains', val: 'IGH' }, { type: 'contains', val: 'GHT' }, { type: 'contains', val: 'STA' },
-  { type: 'contains', val: 'REA' }, { type: 'contains', val: 'TER' }, { type: 'contains', val: 'AIN' },
-  { type: 'contains', val: 'ING' }, { type: 'contains', val: 'TION' }, { type: 'contains', val: 'ATE' },
-  { type: 'contains', val: 'PRO' }, { type: 'contains', val: 'PRE' }, { type: 'contains', val: 'CON' },
-  { type: 'starts_with', val: 'P' }, { type: 'starts_with', val: 'M' }, { type: 'starts_with', val: 'A' }, { type: 'starts_with', val: 'R' },
-  { type: 'starts_with', val: 'F' }, { type: 'starts_with', val: 'H' }, { type: 'starts_with', val: 'L' },
-  { type: 'ends_with', val: 'N' }, { type: 'ends_with', val: 'R' }, { type: 'ends_with', val: 'T' }, { type: 'ends_with', val: 'L' },
-  { type: 'ends_with', val: 'LY' }, { type: 'ends_with', val: 'ER' },
-  { type: 'min_vowels', val: 3 }, { type: 'no_repeat_letter', val: true }
+  {'type':'length','val':8},
+  {'type':'length','val':9},
+  {'type':'length','val':10},
+  {'type':'length','val':11},
+  {'type':'length_range','min':4,'max':6},
+  {'type':'length_range','min':5,'max':7},
+  {'type':'length_either','vals':[4,5]},
+  {'type':'length_either','vals':[5,6]},
+  {'type':'length_either','vals':[6,7]},
+  {'type':'not_contains','val':'O'},
+  {'type':'not_contains','val':'U'},
+  {'type':'not_contains_multiple','val':['A','E']},
+  {'type':'not_contains_multiple','val':['I','O']},
+  {'type':'not_contains_multiple','val':['G','S','U']},
+  {'type':'contains','val':'IGH'},
+  {'type':'contains','val':'GHT'},
+  {'type':'contains','val':'STA'},
+  {'type':'contains','val':'REA'},
+  {'type':'contains','val':'TER'},
+  {'type':'contains','val':'AIN'},
+  {'type':'contains','val':'ING'},
+  {'type':'contains','val':'TION'},
+  {'type':'contains','val':'ATE'},
+  {'type':'contains','val':'PRO'},
+  {'type':'contains','val':'PRE'},
+  {'type':'contains','val':'CON'},
+  {'type':'contains_multiple','val':['K','N']},
+  {'type':'contains_multiple','val':['A','U']},
+  {'type':'starts_with','val':'P'},
+  {'type':'starts_with','val':'M'},
+  {'type':'starts_with','val':'A'},
+  {'type':'starts_with','val':'R'},
+  {'type':'starts_with','val':'F'},
+  {'type':'starts_with','val':'H'},
+  {'type':'starts_with','val':'L'},
+  {'type':'ends_with','val':'N'},
+  {'type':'ends_with','val':'R'},
+  {'type':'ends_with','val':'T'},
+  {'type':'ends_with','val':'L'},
+  {'type':'ends_with','val':'LY'},
+  {'type':'ends_with','val':'ER'},
+  {'type':'min_vowels','val':3},
+  {'type':'multiple_letter','val':'A'},
+  {'type':'multiple_letter','val':'E'},
+  {'type':'multiple_letter','val':'I'},
+  {'type':'no_repeat_letter','val':true},
+  {'type':'contains_multiple','val':['A','E']},
+  {'type':'contains_multiple','val':['A','O']},
+  {'type':'contains','val':'AB'},
+  {'type':'contains','val':'AD'},
+  {'type':'contains','val':'AL'},
+  {'type':'contains','val':'AM'},
+  {'type':'contains','val':'AN'},
+  {'type':'contains','val':'AP'},
+  {'type':'contains','val':'AR'},
+  {'type':'contains','val':'AS'},
+  {'type':'contains','val':'AT'},
+  {'type':'contains_multiple','val':['B','I']},
+  {'type':'contains_multiple','val':['B','P']},
+  {'type':'contains','val':'BL'},
+  {'type':'contains','val':'BO'},
+  {'type':'contains','val':'BR'},
+  {'type':'contains_multiple','val':['C','K']},
+  {'type':'contains_multiple','val':['D','T']},
+  {'type':'contains_multiple','val':['E','G']},
+  {'type':'contains_multiple','val':['E','I']},
+  {'type':'contains_multiple','val':['E','L']},
+  {'type':'contains_multiple','val':['E','U']},
+  {'type':'contains','val':'ED'},
+  {'type':'contains','val':'EE'},
+  {'type':'contains','val':'EG'},
+  {'type':'contains','val':'EL'},
+  {'type':'contains','val':'EM'},
+  {'type':'contains','val':'EN'},
+  {'type':'contains','val':'EP'},
+  {'type':'contains','val':'ER'},
+  {'type':'contains','val':'ES'},
+  {'type':'contains','val':'ET'},
+  {'type':'contains','val':'EX'},
+  {'type':'contains_multiple','val':['F','E']},
+  {'type':'contains_multiple','val':['F','L']},
+  {'type':'contains_multiple','val':['G','E']},
+  {'type':'contains_multiple','val':['H','R']},
+  {'type':'contains_multiple','val':['H','S']},
+  {'type':'contains_multiple','val':['H','Y']},
+  {'type':'contains','val':'ID'},
+  {'type':'contains','val':'IG'},
+  {'type':'contains','val':'IL'},
+  {'type':'contains','val':'IN'},
+  {'type':'contains','val':'IS'},
+  {'type':'contains_multiple','val':['K','C']},
+  {'type':'contains_multiple','val':['K','N']},
+  {'type':'contains_multiple','val':['K','T']},
+  {'type':'contains_multiple','val':['L','I']},
+  {'type':'contains_multiple','val':['L','M']},
+  {'type':'contains_multiple','val':['L','R']},
+  {'type':'contains_multiple','val':['L','T']},
+  {'type':'contains','val':'LI'},
+  {'type':'contains_multiple','val':['M','N']},
+  {'type':'contains_multiple','val':['M','O']},
+  {'type':'contains_multiple','val':['N','P']},
+  {'type':'contains_multiple','val':['O','D']},
+  {'type':'contains_multiple','val':['O','P']},
+  {'type':'contains_multiple','val':['O','U']},
+  {'type':'contains_multiple','val':['O','R']},
+  {'type':'contains','val':'OB'},
+  {'type':'contains','val':'OG'},
+  {'type':'contains','val':'OL'},
+  {'type':'contains','val':'OM'},
+  {'type':'contains','val':'ON'},
+  {'type':'contains','val':'OO'},
+  {'type':'contains','val':'OS'},
+  {'type':'contains','val':'OT'},
+  {'type':'contains','val':'OU'},
+  {'type':'contains_multiple','val':['P','H']},
+  {'type':'contains_multiple','val':['P','O']},
+  {'type':'contains','val':'PH'},
+  {'type':'contains','val':'PL'},
+  {'type':'contains','val':'RI'},
+  {'type':'contains_multiple','val':['S','T']},
+  {'type':'contains_multiple','val':['S','Z']},
+  {'type':'contains','val':'SH'},
+  {'type':'contains','val':'SL'},
+  {'type':'contains','val':'SM'},
+  {'type':'contains','val':'ST'},
+  {'type':'contains','val':'SU'},
+  {'type':'contains_multiple','val':['T','S']},
+  {'type':'contains','val':'TH'},
+  {'type':'contains_multiple','val':['U','G']},
+  {'type':'contains_multiple','val':['U','Y']},
+  {'type':'contains','val':'UL'},
+  {'type':'contains','val':'UM'},
+  {'type':'contains','val':'UN'},
+  {'type':'contains','val':'UP'},
+  {'type':'contains','val':'UR'},
+  {'type':'contains','val':'US'},
+  {'type':'contains','val':'UT'},
+  {'type':'contains_multiple','val':['W','A']},
+  {'type':'not_contains','val':'A'},
+  {'type':'not_contains_multiple','val':['A','N']},
+  {'type':'not_contains_multiple','val':['A','P']},
+  {'type':'not_contains_multiple','val':['A','S']},
+  {'type':'not_contains_multiple','val':['A','U']},
+  {'type':'not_contains_multiple','val':['E','G']},
+  {'type':'not_contains_multiple','val':['E','I']},
+  {'type':'not_contains_multiple','val':['E','N']},
+  {'type':'not_contains_multiple','val':['E','P']},
+  {'type':'not_contains_multiple','val':['E','R']},
+  {'type':'not_contains_multiple','val':['E','S']},
+  {'type':'not_contains_multiple','val':['E','T']},
+  {'type':'not_contains_multiple','val':['I','O']},
+  {'type':'not_contains_multiple','val':['I','P']},
+  {'type':'not_contains_multiple','val':['I','R']},
+  {'type':'not_contains_multiple','val':['I','T']},
+  {'type':'not_contains_multiple','val':['P','U']},
+  {'type':'not_contains_multiple','val':['T','U']},
+  {'type':'not_contains_multiple','val':['U','L']},
+  {'type':'ends_with','val':'AL'},
+  {'type':'ends_with','val':'AR'},
+  {'type':'ends_with','val':'AS'},
+  {'type':'ends_with','val':'ED'},
+  {'type':'ends_with','val':'ID'},
+  {'type':'ends_with','val':'IS'},
+  {'type':'ends_with','val':'ON'},
+  {'type':'ends_with','val':'OR'},
+  {'type':'ends_with','val':'OS'},
+  {'type':'ends_with','val':'US'},
+  {'type':'multiple_letter','val':'C'},
+  {'type':'multiple_letter','val':'L'},
+  {'type':'multiple_letter','val':'M'},
+  {'type':'multiple_letter','val':'N'},
+  {'type':'multiple_letter','val':'O'},
+  {'type':'multiple_letter','val':'R'},
+  {'type':'multiple_letter','val':'S'},
+  {'type':'multiple_letter','val':'T'},
+  {'type':'starts_with','val':'BA'},
+  {'type':'starts_with','val':'BE'},
+  {'type':'starts_with','val':'BO'},
+  {'type':'starts_with','val':'BR'},
+  {'type':'starts_with','val':'CA'},
+  {'type':'starts_with','val':'CH'},
+  {'type':'starts_with','val':'CL'},
+  {'type':'starts_with','val':'CO'},
+  {'type':'starts_with','val':'CR'},
+  {'type':'starts_with','val':'DE'},
+  {'type':'starts_with','val':'DO'},
+  {'type':'starts_with','val':'DR'},
+  {'type':'starts_with','val':'FO'},
+  {'type':'starts_with','val':'GL'},
+  {'type':'starts_with','val':'HE'},
+  {'type':'starts_with','val':'IN'},
+  {'type':'starts_with','val':'MA'},
+  {'type':'starts_with','val':'MI'},
+  {'type':'starts_with','val':'MO'},
+  {'type':'starts_with','val':'PA'},
+  {'type':'starts_with','val':'RA'},
+  {'type':'starts_with','val':'SA'},
+  {'type':'starts_with','val':'SC'},
+  {'type':'starts_with','val':'SE'},
+  {'type':'starts_with','val':'SL'},
+  {'type':'starts_with','val':'ST'},
+  {'type':'starts_with','val':'UN'},
+  {'type':'starts_with','val':'WA'}
 ];
 
 const WG_CLUE_HARD_EN = [
-  { type: 'length', val: 12 }, { type: 'length', val: 13 }, { type: 'length', val: 14 }, { type: 'length', val: 15 },
-  { type: 'not_contains', val: 'A' }, { type: 'not_contains', val: 'E' }, { type: 'not_contains', val: 'I' },
-  { type: 'not_contains_multiple', val: ['A', 'E', 'I'] }, { type: 'not_contains_multiple', val: ['U', 'O', 'A'] },
-  { type: 'not_contains_multiple', val: ['S', 'T', 'R'] }, { type: 'not_contains_multiple', val: ['L', 'N', 'E'] },
-  { type: 'not_contains_multiple', val: ['C', 'H', 'P'] }, { type: 'not_contains_multiple', val: ['M', 'D', 'G'] },
-  { type: 'contains', val: 'J' }, { type: 'contains', val: 'Q' }, { type: 'contains', val: 'Z' }, { type: 'contains', val: 'X' },
-  { type: 'contains', val: 'V' }, { type: 'contains', val: 'W' }, { type: 'contains', val: 'BB' }, { type: 'contains', val: 'ZZ' },
-  { type: 'starts_with', val: 'J' }, { type: 'starts_with', val: 'K' }, { type: 'starts_with', val: 'V' }, { type: 'starts_with', val: 'Z' }, { type: 'starts_with', val: 'Q' },
-  { type: 'starts_with', val: 'Y' }, { type: 'starts_with', val: 'U' }, { type: 'starts_with', val: 'O' },
-  { type: 'ends_with', val: 'K' }, { type: 'ends_with', val: 'M' }, { type: 'ends_with', val: 'P' },
-  { type: 'ends_with', val: 'Z' }, { type: 'ends_with', val: 'X' }, { type: 'ends_with', val: 'W' },
-  { type: 'min_vowels', val: 4 }, { type: 'double_letter', val: true }, { type: 'no_repeat_letter', val: true }
+  {'type':'length','val':12},
+  {'type':'length','val':13},
+  {'type':'length','val':14},
+  {'type':'length','val':15},
+  {'type':'length_range','min':7,'max':9},
+  {'type':'not_contains','val':'A'},
+  {'type':'not_contains','val':'E'},
+  {'type':'not_contains','val':'I'},
+  {'type':'not_contains_multiple','val':['A','E','I']},
+  {'type':'not_contains_multiple','val':['U','O','A']},
+  {'type':'not_contains_multiple','val':['S','T','R']},
+  {'type':'not_contains_multiple','val':['L','N','E']},
+  {'type':'not_contains_multiple','val':['C','H','P']},
+  {'type':'not_contains_multiple','val':['M','D','G']},
+  {'type':'not_contains_multiple','val':['E','O','T']},
+  {'type':'contains','val':'J'},
+  {'type':'contains','val':'Q'},
+  {'type':'contains','val':'Z'},
+  {'type':'contains','val':'X'},
+  {'type':'contains','val':'V'},
+  {'type':'contains','val':'W'},
+  {'type':'contains','val':'BB'},
+  {'type':'contains','val':'ZZ'},
+  {'type':'contains_multiple','val':['S','T']},
+  {'type':'contains_multiple','val':['N','G']},
+  {'type':'starts_with','val':'J'},
+  {'type':'starts_with','val':'K'},
+  {'type':'starts_with','val':'V'},
+  {'type':'starts_with','val':'Z'},
+  {'type':'starts_with','val':'Q'},
+  {'type':'starts_with','val':'Y'},
+  {'type':'starts_with','val':'U'},
+  {'type':'starts_with','val':'O'},
+  {'type':'ends_with','val':'K'},
+  {'type':'ends_with','val':'M'},
+  {'type':'ends_with','val':'P'},
+  {'type':'ends_with','val':'Z'},
+  {'type':'ends_with','val':'X'},
+  {'type':'ends_with','val':'W'},
+  {'type':'min_vowels','val':4},
+  {'type':'multiple_letter','val':'O'},
+  {'type':'multiple_letter','val':'U'},
+  {'type':'multiple_letter','val':'R'},
+  {'type':'double_letter','val':true},
+  {'type':'no_repeat_letter','val':true},
+  {'type':'contains','val':'CH'},
+  {'type':'contains','val':'CL'},
+  {'type':'contains','val':'CR'},
+  {'type':'not_contains_multiple','val':['A','C','E']},
+  {'type':'not_contains_multiple','val':['A','C','R']},
+  {'type':'not_contains_multiple','val':['A','C','U']},
+  {'type':'not_contains_multiple','val':['A','D','S']},
+  {'type':'not_contains_multiple','val':['A','E','I']},
+  {'type':'not_contains_multiple','val':['A','E','O']},
+  {'type':'not_contains_multiple','val':['A','E','P']},
+  {'type':'not_contains_multiple','val':['A','E','S']},
+  {'type':'not_contains_multiple','val':['A','E','T']},
+  {'type':'not_contains_multiple','val':['A','G','R']},
+  {'type':'not_contains_multiple','val':['A','I','L']},
+  {'type':'not_contains_multiple','val':['A','I','M']},
+  {'type':'not_contains_multiple','val':['A','I','O']},
+  {'type':'not_contains_multiple','val':['A','L','N']},
+  {'type':'not_contains_multiple','val':['A','L','P']},
+  {'type':'not_contains_multiple','val':['A','L','R']},
+  {'type':'not_contains_multiple','val':['A','M','D']},
+  {'type':'not_contains_multiple','val':['A','M','O']},
+  {'type':'not_contains_multiple','val':['A','M','S']},
+  {'type':'not_contains_multiple','val':['A','N','D']},
+  {'type':'not_contains_multiple','val':['A','N','S','R']},
+  {'type':'not_contains_multiple','val':['A','P','S']},
+  {'type':'not_contains_multiple','val':['A','R','S']},
+  {'type':'not_contains_multiple','val':['A','S','T']},
+  {'type':'not_contains_multiple','val':['A','T','S','N']},
+  {'type':'not_contains_multiple','val':['C','E','S']},
+  {'type':'not_contains_multiple','val':['C','G','I']},
+  {'type':'not_contains_multiple','val':['C','O','P']},
+  {'type':'not_contains_multiple','val':['C','T','U']},
+  {'type':'not_contains_multiple','val':['D','E','N']},
+  {'type':'not_contains_multiple','val':['D','G','I']},
+  {'type':'not_contains_multiple','val':['D','I','M']},
+  {'type':'not_contains_multiple','val':['D','I','S']},
+  {'type':'not_contains_multiple','val':['D','O','S']},
+  {'type':'not_contains_multiple','val':['E','A','C']},
+  {'type':'not_contains_multiple','val':['E','G','I']},
+  {'type':'not_contains_multiple','val':['E','I','L']},
+  {'type':'not_contains_multiple','val':['E','I','N']},
+  {'type':'not_contains_multiple','val':['E','I','S']},
+  {'type':'not_contains_multiple','val':['E','I','T']},
+  {'type':'not_contains_multiple','val':['E','L','N']},
+  {'type':'not_contains_multiple','val':['E','M','N']},
+  {'type':'not_contains_multiple','val':['E','M','O']},
+  {'type':'not_contains_multiple','val':['E','N','A']},
+  {'type':'not_contains_multiple','val':['E','O','P']},
+  {'type':'not_contains_multiple','val':['E','O','S']},
+  {'type':'not_contains_multiple','val':['E','R','T']},
+  {'type':'not_contains_multiple','val':['E','T','R']},
+  {'type':'not_contains_multiple','val':['G','I','A']},
+  {'type':'not_contains_multiple','val':['G','I','R']},
+  {'type':'not_contains_multiple','val':['G','N','U']},
+  {'type':'not_contains_multiple','val':['G','O','A']},
+  {'type':'not_contains_multiple','val':['G','P','U']},
+  {'type':'not_contains_multiple','val':['I','C','N','G']},
+  {'type':'not_contains_multiple','val':['I','N','O']},
+  {'type':'not_contains_multiple','val':['I','N','T']},
+  {'type':'not_contains_multiple','val':['I','R','U']},
+  {'type':'not_contains_multiple','val':['L','O','R']},
+  {'type':'not_contains_multiple','val':['L','P','U']},
+  {'type':'not_contains_multiple','val':['M','A','N','G','O']},
+  {'type':'not_contains_multiple','val':['M','E','R','G']},
+  {'type':'not_contains_multiple','val':['M','O','P']},
+  {'type':'not_contains_multiple','val':['M','O','S']},
+  {'type':'not_contains_multiple','val':['N','B','S']},
+  {'type':'not_contains_multiple','val':['O','E','D','M']},
+  {'type':'not_contains_multiple','val':['O','P','R']},
+  {'type':'not_contains_multiple','val':['O','R','L']},
+  {'type':'not_contains_multiple','val':['R','A','N']},
+  {'type':'not_contains_multiple','val':['R','D','E']},
+  {'type':'not_contains_multiple','val':['R','E','D']},
+  {'type':'not_contains_multiple','val':['R','E','M']},
+  {'type':'not_contains_multiple','val':['S','A','O','D']},
+  {'type':'not_contains_multiple','val':['S','D','R','T']},
+  {'type':'not_contains_multiple','val':['S','G','I','N']},
+  {'type':'not_contains_multiple','val':['T','M','R','E']},
+  {'type':'not_contains_multiple','val':['T','S','L','O']},
+  {'type':'not_contains_multiple','val':['U','S','D']},
+  {'type':'not_contains_multiple','val':['U','S','D','L','C','M']}
 ];
 
 function getWgClueDesc(clue) {
   const isEn = lastLang === 'en' || lastLang === 'mixed';
   switch (clue.type) {
     case 'length': return isEn ? `${clue.val}<br>Letters` : `${clue.val}<br>Huruf`;
+    case 'length_range': return isEn ? `${clue.min}-${clue.max}<br>Letters` : `${clue.min}-${clue.max}<br>Huruf`;
+    case 'length_max': return isEn ? `Max ${clue.val}<br>Letters` : `Maks ${clue.val}<br>Huruf`;
+    case 'length_min': return isEn ? `Min ${clue.val}<br>Letters` : `Min ${clue.val}<br>Huruf`;
+    case 'length_either': return isEn ? `${clue.vals.join(' or ')}<br>Letters` : `${clue.vals.join(' atau ')}<br>Huruf`;
     case 'contains': return isEn ? `Contains<br>${clue.val}` : `Ada<br>${clue.val}`;
+    case 'contains_multiple': return isEn ? `Contains<br>${clue.val.join(' & ')}` : `Ada<br>${clue.val.join(' & ')}`;
     case 'not_contains': return isEn ? `No<br>${clue.val}` : `Tanpa<br>${clue.val}`;
     case 'not_contains_multiple': return isEn ? `No<br>${clue.val.join(', ')}` : `Tanpa<br>${clue.val.join(', ')}`;
     case 'starts_with': return isEn ? `Starts<br>${clue.val}` : `Awalan<br>${clue.val}`;
@@ -2083,6 +2827,7 @@ function getWgClueDesc(clue) {
     case 'ends_consonant': return isEn ? `Ends w/<br>Consonant` : `Akhiran<br>Konsonan`;
     case 'min_vowels': return isEn ? `Min ${clue.val}<br>Vowels` : `Min ${clue.val}<br>Vokal`;
     case 'double_letter': return isEn ? `Double<br>Letter` : `Huruf<br>Ganda`;
+    case 'multiple_letter': return isEn ? `Multiple<br>${clue.val}'s` : `Lebih dari<br>Satu ${clue.val}`;
     case 'no_repeat_letter': return isEn ? `No Repeat<br>Letters` : `Tanpa Huruf<br>Berulang`;
     default: return '';
   }
@@ -2114,7 +2859,12 @@ function getValidWordsForWgCell(rowClue, colClue) {
 
 function checkWgClue(word, clue) {
   if (clue.type === 'length') return word.length === clue.val;
+  if (clue.type === 'length_range') return word.length >= clue.min && word.length <= clue.max;
+  if (clue.type === 'length_max') return word.length <= clue.val;
+  if (clue.type === 'length_min') return word.length >= clue.val;
+  if (clue.type === 'length_either') return clue.vals.includes(word.length);
   if (clue.type === 'contains') return word.includes(clue.val);
+  if (clue.type === 'contains_multiple') return clue.val.every(letter => word.includes(letter));
   if (clue.type === 'not_contains') return !word.includes(clue.val);
   if (clue.type === 'not_contains_multiple') return clue.val.every(letter => !word.includes(letter));
   if (clue.type === 'starts_with') return word.startsWith(clue.val);
@@ -2123,6 +2873,7 @@ function checkWgClue(word, clue) {
   if (clue.type === 'ends_consonant') return /[^AEIOU]$/.test(word);
   if (clue.type === 'min_vowels') return (word.match(/[AEIOU]/g) || []).length >= clue.val;
   if (clue.type === 'double_letter') return /(.)\1/.test(word);
+  if (clue.type === 'multiple_letter') return (word.match(new RegExp(clue.val, 'g')) || []).length >= 2;
   if (clue.type === 'no_repeat_letter') return new Set(word).size === word.length;
   return false;
 }
@@ -2146,10 +2897,14 @@ function generateWordGridBoard() {
     shuffleArray(hardPool);
     
     let selectedClues = [];
-    if (hardModeState === 'ultra') {
+    if (wgDifficulty === 'hard') {
       selectedClues.push(mediumPool.pop(), mediumPool.pop(), mediumPool.pop());
       selectedClues.push(hardPool.pop(), hardPool.pop(), hardPool.pop());
-    } else if (hardModeState === 'hard') {
+    } else if (wgDifficulty === 'mixed') {
+      selectedClues.push(easyPool.pop(), easyPool.pop());
+      selectedClues.push(mediumPool.pop(), mediumPool.pop());
+      selectedClues.push(hardPool.pop(), hardPool.pop());
+    } else if (wgDifficulty === 'medium') {
       selectedClues.push(easyPool.pop(), easyPool.pop(), easyPool.pop(), easyPool.pop());
       selectedClues.push(mediumPool.pop(), mediumPool.pop());
     } else {
@@ -2185,6 +2940,7 @@ function generateWordGridBoard() {
   ];
   
   renderWordGridBoard();
+  resetWgHintTimer();
 }
 
 function renderWordGridBoard() {
@@ -2296,77 +3052,219 @@ function checkWordGridGuess(word, username, profilePic) {
     }
   }
   
+  let bestCell = null;
+  let bestScore = -1;
+  
   for (let r=0; r<3; r++) {
     for (let c=0; c<3; c++) {
-      if (!wgGrid[r][c]) {
-        if (checkWgClue(word, wgCluesRow[r]) && checkWgClue(word, wgCluesCol[c])) {
-          
-          let basePoints = 1;
-          let validCount = wgDictionaryCache[`${r}-${c}`]?.length || 0;
-          let rarityClass = 'wg-rarity-common';
-          let rarityName = 'COMMON';
-          if (validCount <= 10) { basePoints = 15; rarityClass = 'wg-rarity-legendary'; rarityName = 'LEGENDARY'; }
-          else if (validCount <= 50) { basePoints = 7; rarityClass = 'wg-rarity-epic'; rarityName = 'EPIC'; }
-          else if (validCount <= 200) { basePoints = 3; rarityClass = 'wg-rarity-rare'; rarityName = 'RARE'; }
-          
-          let usageCount = wordUsageFreq[word] || 0;
-          let usagePoints = 0;
-          let usageName = 'Mainstream';
-          if (usageCount === 0) { usagePoints = 10; usageName = 'First Time'; }
-          else if (usageCount <= 3) { usagePoints = 5; usageName = 'Rarely Used'; }
-          else if (usageCount <= 10) { usagePoints = 2; usageName = 'Sometimes Used'; }
-          
-          let lenPoints = 0;
-          let len = word.length;
-          if (len === 5) lenPoints = 1;
-          else if (len === 6) lenPoints = 2;
-          else if (len === 7) lenPoints = 4;
-          else if (len === 8) lenPoints = 6;
-          else if (len >= 9) lenPoints = 10;
-          
-          let obsPoints = 5;
-          let obsName = 'Rare Word';
-          if (allTargetWords[len] && allTargetWords[len].includes(word)) {
-            obsPoints = 0;
-            obsName = 'Common Word';
+      if (checkWgClue(word, wgCluesRow[r]) && checkWgClue(word, wgCluesCol[c])) {
+        const existing = wgGrid[r][c];
+        
+        let basePoints = 1;
+        let validCount = wgDictionaryCache[`${r}-${c}`]?.length || 0;
+        let rarityClass = 'wg-rarity-common';
+        let rarityName = 'COMMON';
+        if (validCount <= 10) { basePoints = 15; rarityClass = 'wg-rarity-legendary'; rarityName = 'LEGENDARY'; }
+        else if (validCount <= 50) { basePoints = 7; rarityClass = 'wg-rarity-epic'; rarityName = 'EPIC'; }
+        else if (validCount <= 200) { basePoints = 3; rarityClass = 'wg-rarity-rare'; rarityName = 'RARE'; }
+        
+        let usageCount = wordUsageFreq[word] || 0;
+        let usagePoints = 0;
+        let usageName = 'Mainstream';
+        if (usageCount === 0) { usagePoints = 10; usageName = 'First Time'; }
+        else if (usageCount <= 3) { usagePoints = 5; usageName = 'Rarely Used'; }
+        else if (usageCount <= 10) { usagePoints = 2; usageName = 'Sometimes Used'; }
+        
+        let lenPoints = 0;
+        let len = word.length;
+        if (len === 5) lenPoints = 1;
+        else if (len === 6) lenPoints = 2;
+        else if (len === 7) lenPoints = 4;
+        else if (len === 8) lenPoints = 6;
+        else if (len >= 9) lenPoints = 10;
+        
+        let obsPoints = 5;
+        let obsName = 'Rare Word';
+        if (allTargetWords[len] && allTargetWords[len].includes(word)) {
+          obsPoints = 0;
+          obsName = 'Common Word';
+        }
+        
+        let totalPoints = basePoints + usagePoints + lenPoints + obsPoints;
+        
+        if (!existing) {
+          if (totalPoints > bestScore) {
+            bestScore = totalPoints;
+            bestCell = { r, c, totalPoints, basePoints, rarityClass, rarityName, usagePoints, usageName, lenPoints, obsPoints, obsName, isTakeover: false };
           }
-          
-          let totalPoints = basePoints + usagePoints + lenPoints + obsPoints;
-          
-          let finalRarityClass = 'wg-rarity-common';
-          if (totalPoints >= 20) finalRarityClass = 'wg-rarity-legendary';
-          else if (totalPoints >= 13) finalRarityClass = 'wg-rarity-epic';
-          else if (totalPoints >= 6) finalRarityClass = 'wg-rarity-rare';
-          
-          let breakdown = `${rarityName}`;
-          if (usagePoints > 0) breakdown += ` | ${usageName}`;
-          if (lenPoints > 0) breakdown += ` | ${len} Letters`;
-          if (obsPoints > 0) breakdown += ` | ${obsName}`;
-          
-          wgGrid[r][c] = { 
-            word, 
-            username, 
-            profilePic, 
-            points: totalPoints, 
-            rarityClass: finalRarityClass,
-            rarityName,
-            breakdown 
-          };
-          
-          // Update usage frequency
-          wordUsageFreq[word] = (wordUsageFreq[word] || 0) + 1;
-          try {
-            localStorage.setItem('wordle_wordUsageStats', JSON.stringify(wordUsageFreq));
-          } catch(e) {}
-          
-          renderWordGridBoard();
-          checkWordGridWin();
-          return totalPoints; 
+        } else if (isWgTakeoverMode) {
+          if (totalPoints > existing.points) {
+            if (totalPoints > bestScore) {
+              bestScore = totalPoints;
+              bestCell = { r, c, totalPoints, basePoints, rarityClass, rarityName, usagePoints, usageName, lenPoints, obsPoints, obsName, isTakeover: true };
+            }
+          }
         }
       }
     }
   }
+  
+  if (bestCell) {
+    const { r, c, totalPoints, basePoints, rarityClass, rarityName, usagePoints, usageName, lenPoints, obsPoints, obsName, isTakeover } = bestCell;
+    let finalRarityClass = 'wg-rarity-common';
+    if (totalPoints >= 20) finalRarityClass = 'wg-rarity-legendary';
+    else if (totalPoints >= 13) finalRarityClass = 'wg-rarity-epic';
+    else if (totalPoints >= 6) finalRarityClass = 'wg-rarity-rare';
+    
+    let len = word.length;
+    let finalBreakdown = `${rarityName}`;
+    if (usagePoints > 0) finalBreakdown += ` | ${usageName}`;
+    if (lenPoints > 0) finalBreakdown += ` | ${len} Letters`;
+    if (obsPoints > 0) finalBreakdown += ` | ${obsName}`;
+    if (isTakeover) finalBreakdown += ` (TAKEOVER)`;
+    
+    wgGrid[r][c] = { 
+      word, 
+      username, 
+      profilePic, 
+      points: totalPoints, 
+      rarityClass: finalRarityClass,
+      rarityName,
+      breakdown: finalBreakdown 
+    };
+    
+    // Update usage frequency
+    wordUsageFreq[word] = (wordUsageFreq[word] || 0) + 1;
+    try {
+      localStorage.setItem('wordle_wordUsageStats', JSON.stringify(wordUsageFreq));
+    } catch(e) {}
+    
+    renderWordGridBoard();
+    triggerCellParticleEffect(r, c, totalPoints);
+    resetWgHintTimer();
+    checkWordGridWin();
+    return totalPoints; 
+  }
   return false;
+}
+
+window.toggleWgTakeover = function(checked) {
+  isWgTakeoverMode = checked;
+  localStorage.setItem('wordle_wgTakeover', checked);
+};
+
+window.updateWgHintDelay = function(value) {
+  wgHintDelay = parseInt(value);
+  localStorage.setItem('wordle_wgHintDelay', wgHintDelay);
+  const label = document.getElementById('wgHintDelayLabel');
+  if (label) label.textContent = `${wgHintDelay} Detik`;
+  resetWgHintTimer();
+};
+
+// Reset auto-hint timer for Word Grid
+function resetWgHintTimer() {
+  if (wgHintInterval) clearInterval(wgHintInterval);
+  if (currentGameMode !== 'wordgrid' || isGameOver) return;
+  wgHintInterval = setInterval(() => {
+    triggerWgAutoHint();
+  }, wgHintDelay * 1000);
+}
+
+// Trigger auto-hint for an unsolved cell
+function triggerWgAutoHint() {
+  if (currentGameMode !== 'wordgrid' || isGameOver) return;
+  
+  const unsolved = [];
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 3; c++) {
+      if (!wgGrid[r][c]) unsolved.push({ r, c });
+    }
+  }
+  
+  if (unsolved.length === 0) return;
+  
+  const targetCell = unsolved[Math.floor(Math.random() * unsolved.length)];
+  const r = targetCell.r;
+  const c = targetCell.c;
+  const key = `${r}-${c}`;
+  
+  let hintData = wgHints[key];
+  if (!hintData) {
+    const validWords = wgDictionaryCache[key];
+    if (!validWords || validWords.length === 0) return;
+    const targetWord = validWords[Math.floor(Math.random() * validWords.length)];
+    hintData = { targetWord, currentHint: '' };
+    wgHints[key] = hintData;
+  }
+  
+  if (hintData.currentHint.length < hintData.targetWord.length) {
+    hintData.currentHint += hintData.targetWord[hintData.currentHint.length];
+    renderWordGridBoard();
+    
+    const cell = document.getElementById(`wg-cell-${r}-${c}`);
+    if (cell) {
+      cell.style.transform = 'scale(1.05)';
+      setTimeout(() => cell.style.transform = 'scale(1)', 200);
+    }
+  }
+}
+
+// Particle explosion effect inside a grid cell
+function triggerCellParticleEffect(row, col, score) {
+  const cell = document.getElementById(`wg-cell-${row}-${col}`);
+  if (!cell) return;
+  
+  const rect = cell.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  
+  let count = 8;
+  let colors = ['#2ecc71', '#3498db', '#ffffff'];
+  
+  if (score >= 20) {
+    count = 35;
+    colors = ['#f1c40f', '#f39c12', '#e67e22', '#ffffff', '#ffed4a'];
+  } else if (score >= 13) {
+    count = 22;
+    colors = ['#9b59b6', '#8e44ad', '#ec4899', '#ffffff'];
+  } else if (score >= 6) {
+    count = 14;
+    colors = ['#3498db', '#2980b9', '#1abc9c', '#ffffff'];
+  }
+  
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    p.style.position = 'fixed';
+    p.style.pointerEvents = 'none';
+    p.style.zIndex = '9999';
+    p.style.backgroundColor = color;
+    p.style.boxShadow = `0 0 8px ${color}`;
+    p.style.borderRadius = '50%';
+    
+    // Set random sizing
+    const size = (score >= 13 ? 6 : 4) + Math.random() * 4;
+    p.style.width = `${size}px`;
+    p.style.height = `${size}px`;
+    
+    p.style.left = `${centerX}px`;
+    p.style.top = `${centerY}px`;
+    
+    const angle = Math.random() * Math.PI * 2;
+    const velocity = 30 + Math.random() * (score >= 13 ? 90 : 50);
+    const tx = Math.cos(angle) * velocity;
+    const ty = Math.sin(angle) * velocity;
+    
+    document.body.appendChild(p);
+    
+    p.animate([
+      { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
+      { transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(0)`, opacity: 0 }
+    ], {
+      duration: 600 + Math.random() * 600,
+      easing: 'cubic-bezier(0.1, 0.8, 0.3, 1)'
+    }).onfinish = () => p.remove();
+  }
 }
 
 function triggerConfetti() {
@@ -2820,6 +3718,14 @@ function toggleNoYellow(checked) {
 
 let isNoRepeatMode = localStorage.getItem('wordle_noRepeat') === 'true';
 
+window.isNoRepeatActiveForMode = function() {
+  if (!isNoRepeatMode) return false;
+  return currentGameMode === 'wordle' || 
+         currentGameMode === 'word500' || 
+         currentGameMode === 'word600' || 
+         currentGameMode === 'colorfit';
+};
+
 window.toggleNoRepeat = function(checked) {
   isNoRepeatMode = checked;
   try { localStorage.setItem('wordle_noRepeat', checked); } catch(e) {}
@@ -2840,7 +3746,7 @@ window.toggleNoRepeat = function(checked) {
 function updateNoRepeatBadgeUI() {
   const badge = document.getElementById('noRepeatBadge');
   if (!badge) return;
-  badge.style.display = isNoRepeatMode ? 'inline-block' : 'none';
+  badge.style.display = window.isNoRepeatActiveForMode() ? 'inline-block' : 'none';
 }
 
 
@@ -2860,9 +3766,49 @@ function toggleHardMode(e) {
   if (hardModeState === 'hard') msg = '🔥 Hard Mode Diaktifkan';
   if (hardModeState === 'ultra') msg = '☠️ Ultra Hard Mode Diaktifkan';
   showToast(msg, 2000);
+}
+
+window.toggleWgDifficulty = function(e) {
+  if (e) e.stopPropagation();
+  if (wgDifficulty === 'easy') {
+    wgDifficulty = 'medium';
+  } else if (wgDifficulty === 'medium') {
+    wgDifficulty = 'hard';
+  } else if (wgDifficulty === 'hard') {
+    wgDifficulty = 'mixed';
+  } else {
+    wgDifficulty = 'easy';
+  }
+  try { localStorage.setItem('wordle_wgDifficulty', wgDifficulty); } catch(e) {}
+  updateWgDifficultyUI();
+  
+  let msg = 'Kesulitan Word Grid: MUDAH';
+  if (wgDifficulty === 'medium') msg = '🧩 Kesulitan Word Grid: SEDANG';
+  if (wgDifficulty === 'hard') msg = '🧩 Kesulitan Word Grid: SULIT';
+  if (wgDifficulty === 'mixed') msg = '🧩 Kesulitan Word Grid: CAMPURAN';
+  showToast(msg, 2000);
   
   if (currentGameMode === 'wordgrid') {
     generateWordGridBoard();
+  }
+};
+
+function updateWgDifficultyUI() {
+  const btn = document.getElementById('wgDifficultyBtn');
+  if (btn) {
+    if (wgDifficulty === 'easy') {
+      btn.innerHTML = '🧩 Kesulitan Board: MUDAH';
+      btn.style.color = '';
+    } else if (wgDifficulty === 'medium') {
+      btn.innerHTML = '🧩 Kesulitan Board: SEDANG';
+      btn.style.color = '#ff9f43';
+    } else if (wgDifficulty === 'hard') {
+      btn.innerHTML = '🧩 Kesulitan Board: SULIT';
+      btn.style.color = '#ee5253';
+    } else if (wgDifficulty === 'mixed') {
+      btn.innerHTML = '🧩 Kesulitan Board: CAMPURAN';
+      btn.style.color = '#a855f7'; // matching purple theme
+    }
   }
 }
 
@@ -3006,7 +3952,12 @@ function getWordleFeedback(guess, target) {
 function validateHardMode(guessWord) {
   if (hardModeState === 'off' || guesses.length === 0) return { valid: true };
 
-  const validPastGuesses = guesses.filter(g => VALID_WORDS.includes(g));
+  let validPastGuesses;
+  if (currentGameMode === 'colorfit') {
+    validPastGuesses = guesses.filter(g => /^[RGBYPOCW]+$/.test(g));
+  } else {
+    validPastGuesses = guesses.filter(g => VALID_WORDS.includes(g));
+  }
 
   for (const past of validPastGuesses) {
     if (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit') {
@@ -4105,7 +5056,7 @@ function processGuess(guessWord, userData) {
 
   let isValidWord = VALID_WORDS.includes(guessWord);
   if (currentGameMode === 'colorfit') {
-    isValidWord = /^[RGBYPO]+$/.test(guessWord) && guessWord.length === WORD_LENGTH;
+    isValidWord = /^[RGBYPOCW]+$/.test(guessWord) && guessWord.length === WORD_LENGTH;
   }
 
   if (currentGameMode === 'fillblanks') {
@@ -4307,7 +5258,8 @@ function processGuess(guessWord, userData) {
     else hardModeMsg = `Kata sudah ditebak di ronde ini`;
   }
   
-  if (isValidWord && isNoRepeatMode) {
+  const isNoRepeatActive = isNoRepeatMode && (currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'word600');
+  if (isValidWord && isNoRepeatActive) {
     if (new Set(guessWord).size !== guessWord.length) {
       isValidWord = false;
       if (lastLang === 'en') hardModeMsg = `No repeat letters allowed`;
@@ -4446,6 +5398,11 @@ function processGuess(guessWord, userData) {
     tile.className = 'tile';
     tile.id = `tile-${currentRow}-${j}`;
     tile.textContent = guessWord[j];
+    
+    if (currentGameMode === 'colorfit') {
+      tile.classList.add(`color-${guessWord[j].toLowerCase()}`);
+    }
+    
     row.appendChild(tile);
     tiles.push(tile);
   }
@@ -4686,9 +5643,32 @@ function processGuess(guessWord, userData) {
     document.getElementById('winPts').innerHTML = `🪙 +${winPts} Bonus`;
     const winWordEl = document.getElementById('winWord');
     if (winWordEl) {
-      winWordEl.textContent = currentGameMode === 'wordloop' ? "LOOP COMPLETED!" : currentWord;
-      winWordEl.style.fontSize = '';
-      winWordEl.style.letterSpacing = '';
+      if (currentGameMode === 'colorfit') {
+        winWordEl.innerHTML = '';
+        winWordEl.style.display = 'flex';
+        winWordEl.style.justifyContent = 'center';
+        winWordEl.style.gap = '8px';
+        winWordEl.style.marginTop = '10px';
+        
+        for (let i = 0; i < currentWord.length; i++) {
+          const letter = currentWord[i];
+          const box = document.createElement('div');
+          box.className = `color-box color-${letter.toLowerCase()}`;
+          box.textContent = letter;
+          box.style.width = '32px';
+          box.style.height = '32px';
+          box.style.fontSize = '18px';
+          box.style.textShadow = 'none'; 
+          winWordEl.appendChild(box);
+        }
+      } else {
+        winWordEl.innerHTML = '';
+        winWordEl.textContent = currentGameMode === 'wordloop' ? "LOOP COMPLETED!" : currentWord;
+        winWordEl.style.display = 'block';
+        winWordEl.style.fontSize = '';
+        winWordEl.style.letterSpacing = '';
+        winWordEl.style.marginTop = '';
+      }
     }
     
     // Jika di mode Word500/Word600/WordFit, reveal seluruh grid sebelum overlay muncul
@@ -5097,6 +6077,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const badWordsToggle = document.getElementById('badWordsToggle');
   if (badWordsToggle) badWordsToggle.checked = isBadWordsFilterOn;
 
+  const wgTakeoverToggle = document.getElementById('wgTakeoverToggle');
+  if (wgTakeoverToggle) wgTakeoverToggle.checked = isWgTakeoverMode;
+
+  updateWgDifficultyUI();
+
+  const wgHintDelayInput = document.getElementById('wgHintDelayInput');
+  if (wgHintDelayInput) {
+    wgHintDelayInput.value = wgHintDelay;
+    const label = document.getElementById('wgHintDelayLabel');
+    if (label) label.textContent = `${wgHintDelay} Detik`;
+  }
+
   const noYellowToggle = document.getElementById('noYellowToggle');
   if (noYellowToggle) noYellowToggle.checked = isNoYellowMode;
 
@@ -5195,11 +6187,15 @@ window.updateMastermindNames = function() {
 
   if (nameW500) nameW500.textContent = isMM ? 'WORD PEGS 5' : 'WORD500';
   if (descW500) descW500.textContent = isMM ? 'Clue balok warna: berapa huruf hijau & kuning tanpa posisi pasti. Unlimited!' : 'Hanya dapat angka: berapa huruf benar & hampir benar. Unlimited!';
-  if (iconW500) iconW500.textContent = isMM ? '🧩' : '🔢';
+  const w500PegsSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="3"></circle><circle cx="12" cy="12" r="3"></circle><circle cx="18" cy="12" r="3"></circle></svg>';
+  const w500LockSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
+  const w600KeySvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>';
+
+  if (iconW500) iconW500.innerHTML = isMM ? w500PegsSvg : w500LockSvg;
 
   if (nameW600) nameW600.textContent = isMM ? 'WORD PEGS 6' : 'WORD600';
   if (descW600) descW600.textContent = isMM ? 'Sama seperti Word Pegs 5 tapi dengan tebakan 6 huruf.' : 'Sama seperti Word500 tapi dengan tebakan 6 huruf.';
-  if (iconW600) iconW600.textContent = isMM ? '🧩' : '🔠';
+  if (iconW600) iconW600.innerHTML = isMM ? w500PegsSvg : w600KeySvg;
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -5835,7 +6831,7 @@ setInterval(() => {
   if (!lang || !roundBadge) return;
   
   if (window.innerWidth > 600) {
-    if (isNoRepeatMode && noRep) noRep.style.display = 'inline-block';
+    if (window.isNoRepeatActiveForMode() && noRep) noRep.style.display = 'inline-block';
     lang.style.display = 'inline-block';
     roundBadge.style.display = 'inline-block';
     return;
@@ -5845,7 +6841,7 @@ setInterval(() => {
   lang.style.display = 'none';
   roundBadge.style.display = 'none';
 
-  const hasNoRep = (isNoRepeatMode && noRep);
+  const hasNoRep = (window.isNoRepeatActiveForMode() && noRep);
   const maxState = hasNoRep ? 3 : 2;
   
   if (hasNoRep && headerAlternatorState === 0) {
@@ -5858,3 +6854,56 @@ setInterval(() => {
   
   headerAlternatorState = (headerAlternatorState + 1) % maxState;
 }, 3000);
+
+// --- Custom Select Dropdown logic for Switch Game ---
+window.toggleCustomSelect = function(e) {
+  if (e) e.stopPropagation();
+  const select = document.getElementById('customGameSelect');
+  if (select) {
+    select.classList.toggle('open');
+  }
+};
+
+window.selectCustomGame = function(value, e) {
+  if (e) e.stopPropagation();
+  const select = document.getElementById('customGameSelect');
+  if (select) {
+    select.classList.remove('open');
+    
+    const options = select.querySelectorAll('.custom-option');
+    options.forEach(opt => opt.classList.remove('selected'));
+    
+    const activeOpt = select.querySelector(`.custom-option[data-value="${value}"]`);
+    if (activeOpt) {
+      activeOpt.classList.add('selected');
+      const triggerSpan = select.querySelector('.custom-select-trigger span');
+      if (triggerSpan) triggerSpan.innerHTML = activeOpt.innerHTML;
+    }
+    
+    changeGameModeDirect(value, e);
+  }
+};
+
+// Close select if user clicks outside
+document.addEventListener('click', function() {
+  const select = document.getElementById('customGameSelect');
+  if (select) select.classList.remove('open');
+});
+
+// Accordion toggle logic for Settings groups
+window.toggleSettingsGroup = function(headerElement, e) {
+  if (e) e.stopPropagation();
+  const group = headerElement.parentElement;
+  const dropdown = document.getElementById('settingsDropdown');
+  
+  // Collapse other groups (accordion effect)
+  const allGroups = dropdown.querySelectorAll('.settings-group');
+  allGroups.forEach(g => {
+    if (g !== group) {
+      g.classList.remove('open');
+    }
+  });
+  
+  // Toggle the clicked group
+  group.classList.toggle('open');
+};

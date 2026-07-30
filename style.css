@@ -2978,7 +2978,7 @@ header {
   min-width: 250px !important;
   max-width: 320px !important;
   padding: 0 !important;
-  overflow: hidden !important;
+  overflow-y: auto !important;
 }
 
 .settings-group {

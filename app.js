@@ -1166,7 +1166,7 @@ function selectGame(mode) {
     if (mode === 'word500') loginTitle.textContent = window.w500UseMastermind ? 'TIKTOK WORD PEGS 5' : 'TIKTOK WORD500';
     else if (mode === 'word600') loginTitle.textContent = window.w500UseMastermind ? 'TIKTOK WORD PEGS 6' : 'TIKTOK WORD600';
     else if (mode === 'wordfit') loginTitle.textContent = 'TIKTOK WORDFIT';
-    else if (mode === 'fillblanks') loginTitle.textContent = 'FILL THE BLANKS';
+    else if (mode === 'fillblanks') loginTitle.textContent = 'WORD FILL';
     else if (mode === 'wordtango') loginTitle.textContent = 'WORD TANGO';
     else loginTitle.textContent = 'TIKTOK WORDLE';
   }
@@ -1293,9 +1293,9 @@ function applyGameModeUI() {
     if (hintContainer) hintContainer.style.display = 'none';
     if (bestGuessContainer) bestGuessContainer.style.display = 'none';
     if (wordLoopInfoContainer) wordLoopInfoContainer.style.display = '';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Fill Blanks';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Word Fill';
   } else if (currentGameMode === 'fillblanks') {
-    if (headerTitle) headerTitle.textContent = 'FILL THE BLANKS';
+    if (headerTitle) headerTitle.textContent = 'WORD FILL';
     if (hintContainer) hintContainer.style.display = 'none';
     if (bestGuessContainer) bestGuessContainer.style.display = 'none';
     if (switchBtn) switchBtn.textContent = '🔄 Switch to Word Tango';
@@ -3566,7 +3566,7 @@ function startNewRound() {
   startInstructionRotation();
   const getW500Name = () => window.w500UseMastermind ? 'Word Pegs 5' : 'Word500';
   const getW600Name = () => window.w500UseMastermind ? 'Word Pegs 6' : 'Word600';
-  const gameName = currentGameMode === 'wordtango' ? 'Word Tango' : (currentGameMode === 'fillblanks' ? 'Fill Blanks' : (currentGameMode === 'word500' ? getW500Name() : (currentGameMode === 'word600' ? getW600Name() : (currentGameMode === 'wordloop' ? 'Word Loop' : 'Wordle'))));
+  const gameName = currentGameMode === 'wordtango' ? 'Word Tango' : (currentGameMode === 'fillblanks' ? 'Word Fill' : (currentGameMode === 'word500' ? getW500Name() : (currentGameMode === 'word600' ? getW600Name() : (currentGameMode === 'wordloop' ? 'Word Loop' : 'Wordle'))));
   showToast(`${gameName} Round ${round} Started!`, 2000);
   
   if (window.playHostAudio) playHostAudio('start');

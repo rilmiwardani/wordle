@@ -1373,6 +1373,21 @@ header {
   .w500-count { font-size: 1.2rem; border-radius: 15%; }
 }
 
+/* Align front menus higher up on mobile screens */
+@media (max-width: 480px) {
+  .game-select-overlay,
+  .login-overlay {
+    align-items: flex-start;
+    padding-top: 30px;
+  }
+  .game-select-container {
+    padding: 25px 20px;
+  }
+  .login-card {
+    padding: 30px 20px;
+  }
+}
+
 /* Pastikan baris board selalu bisa membagi tinggi secara rata — fix mobile tile menjadi persegi panjang */
 .board-row {
   min-height: 0;

@@ -547,7 +547,7 @@
     document.getElementById('currentDate').textContent = new Date().toLocaleDateString('id-ID', dateOptions).toUpperCase();
     
     // Read room host from localStorage or fallback
-    const savedRoom = localStorage.getItem('wordle_host_username') || '';
+    const savedRoom = localStorage.getItem('wordle_host_username') || localStorage.getItem('wordle_username') || '';
     if (savedRoom) {
       document.getElementById('footerHost').textContent = `ROOM HOST: @${savedRoom.replace('@', '')}`;
       const badge = document.querySelector('.live-badge');

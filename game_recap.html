@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Game Solvers Recap - TikTok Live</title>
+  <!-- Google Fonts: Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <!-- html2canvas for screenshot generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #07050f;
+      --card-bg: #130f2b; /* Solid rich dark purple-blue, avoids html2canvas blur bugs */
+      --border-color: rgba(255, 255, 255, 0.08);
+      --highlight-pink: #fe2c55;
+      --highlight-cyan: #25f4ee;
+      --highlight-gold: #ffbe0b;
+      --highlight-purple: #8338ec;
+      --text-white: #ffffff;
+      --text-gray: #a0a0c0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(254, 44, 85, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(37, 244, 238, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(131, 56, 236, 0.1) 0%, transparent 60%);
+      color: var(--text-white);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      overflow: hidden;
+    }
+
+    /* Page container with controls and the preview card */
+    .page-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      width: 100%;
+      max-width: 500px;
+      height: 100%;
+    }
+
+    /* Floating Control Bar */
+    .controls-bar {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 10px 18px;
+      border-radius: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      z-index: 99;
+    }
+
+    .controls-bar h1 {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      background: linear-gradient(90deg, var(--highlight-pink), var(--highlight-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .btn-download {
+      background: linear-gradient(135deg, var(--highlight-pink) 0%, var(--highlight-purple) 100%);
+      border: none;
+      color: white;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 8px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 15px rgba(254, 44, 85, 0.3);
+    }
+
+    .btn-download:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(254, 44, 85, 0.5);
+    }
+
+    /* TikTok Story Canvas wrapper - holds scaled card */
+    .story-card-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      overflow: hidden;
+      border-radius: 24px;
+    }
+
+    /* Target card for screenshots */
+    .story-card {
+      width: 400px;
+      height: 711px; /* 9:16 ratio */
+      background-color: #0c081d;
+      background-image: 
+        radial-gradient(circle at 10% 10%, rgba(254, 44, 85, 0.22) 0%, transparent 60%),
+        radial-gradient(circle at 90% 90%, rgba(37, 244, 238, 0.18) 0%, transparent 60%),
+        radial-gradient(circle at 50% 50%, rgba(131, 56, 236, 0.12) 0%, transparent 70%);
+      border-radius: 24px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: 24px 22px 18px 22px; /* Compact padding */
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+    }
+
+    /* Grid lines */
+    .story-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        linear-gradient(rgba(255,255,255,0.005) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.005) 1px, transparent 1px);
+      background-size: 20px 20px;
+      pointer-events: none;
+    }
+
+    /* Header Section */
+    .card-header {
+      text-align: center;
+      margin-bottom: 16px;
+      z-index: 2;
+    }
+
+    .card-header .live-badge {
+      display: inline-block;
+      background: var(--highlight-pink);
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+      box-shadow: 0 0 10px rgba(254, 44, 85, 0.4);
+    }
+
+    .card-header h2 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+      color: #ffffff; /* Solid color fixes the html2canvas white highlight bug */
+      margin-bottom: 2px;
+    }
+
+    .card-header p {
+      font-size: 0.75rem;
+      color: var(--text-gray);
+      font-weight: 400;
+    }
+
+    /* Main Content - Categories list (very compact) */
+    .categories-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px; /* Reduced gap */
+      flex-grow: 1;
+      justify-content: center;
+      z-index: 2;
+    }
+
+    .category-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 8px 12px; /* Compact padding */
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+      position: relative;
+    }
+
+    .category-box::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      border-radius: 14px 0 0 14px;
+    }
+
+    /* Border indicators for each style theme */
+    .border-pink::after { background: var(--highlight-pink); }
+    .border-cyan::after { background: var(--highlight-cyan); }
+    .border-purple::after { background: var(--highlight-purple); }
+    .border-gold::after { background: var(--highlight-gold); }
+    .border-orange::after { background: #ff9f43; }
+    .border-green::after { background: #1dd1a1; }
+    .border-blue::after { background: #54a0ff; }
+    .border-magenta::after { background: #ff9ff3; }
+    .border-teal::after { background: #00d2d3; }
+
+    .category-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Leaders entries list */
+    .entries-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .leader-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      padding: 2px 0;
+    }
+
+    .leader-info {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .leader-rank {
+      font-weight: 800;
+      font-size: 0.75rem;
+      width: 14px;
+      text-align: center;
+    }
+
+    .rank-1 { color: var(--highlight-gold); }
+    .rank-2 { color: #e5e5e5; }
+    .rank-3 { color: #cd7f32; }
+
+    /* Circular TikTok Avatar style */
+    .leader-avatar {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      display: block;
+    }
+
+    /* Circular Letter Avatar Fallbacks */
+    .letter-avatar {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.7rem;
+      color: white;
+    }
+
+    .avatar-wordle { background: linear-gradient(135deg, #ff0844, #ffb199); }
+    .avatar-wgrid { background: linear-gradient(135deg, #00f2fe, #4facfe); }
+    .avatar-wloop { background: linear-gradient(135deg, #b184ff, #8338ec); }
+    .avatar-w500 { background: linear-gradient(135deg, #ffd000, #ff8c00); }
+    .avatar-w600 { background: linear-gradient(135deg, #ff9f43, #ff5252); }
+    .avatar-wfit { background: linear-gradient(135deg, #1dd1a1, #10ac84); }
+    .avatar-fill { background: linear-gradient(135deg, #54a0ff, #2e86de); }
+    .avatar-tango { background: linear-gradient(135deg, #ff9ff3, #f368e0); }
+    .avatar-colorfit { background: linear-gradient(135deg, #00d2d3, #01a3a4); }
+
+    .leader-name {
+      font-weight: 600;
+      color: #e2e1e9;
+      max-width: 140px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .leader-score {
+      font-weight: 700;
+      color: white;
+      font-size: 0.75rem;
+    }
+
+    .no-data {
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.25);
+      text-align: center;
+      padding: 4px 0;
+      font-style: italic;
+    }
+
+    /* Footer Section */
+    .card-footer {
+      text-align: center;
+      margin-top: 10px;
+      z-index: 2;
+    }
+
+    .card-footer p {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-gray);
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+
+    .card-footer span {
+      font-size: 0.6rem;
+      color: rgba(255,255,255,0.25);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Fullscreen styling adjustments */
+    :fullscreen .page-wrapper {
+      justify-content: center;
+      height: 100vh;
+      max-width: 100%;
+      padding: 0;
+    }
+    :fullscreen .controls-bar {
+      display: none !important;
+    }
+    :fullscreen body {
+      background: black;
+      padding: 0;
+    }
+
+    /* Safari iOS fallback fullscreen wrapper check */
+    :-webkit-full-screen .page-wrapper {
+      justify-content: center;
+      height: 100vh;
+      max-width: 100%;
+      padding: 0;
+    }
+    :-webkit-full-screen .controls-bar {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page-wrapper">
+    <!-- Action Panel -->
+    <div class="controls-bar">
+      <h1>Game Solvers Recap</h1>
+      <button class="btn-download" onclick="downloadRecap()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Download Story
+      </button>
+    </div>
+
+    <!-- The aesthetic story card -->
+    <div class="story-card-wrapper">
+      <div class="story-card" id="recapCard">
+        <!-- Header -->
+        <div class="card-header">
+          <span class="live-badge">TIDAK AKTIF / OFFLINE</span>
+          <h2>TOP GAME SOLVERS</h2>
+          <p id="currentDate">REKAP PERMAINAN HARI INI</p>
+        </div>
+
+        <!-- Body / Categories List (Dynamic top 4 categories loaded via JS) -->
+        <div class="categories-list" id="categoriesWrapper">
+          <!-- Dynamically generated boxes go here -->
+        </div>
+
+        <!-- Footer -->
+        <div class="card-footer">
+          <p>Luar biasa tebakan kalian hari ini! 🧠✨</p>
+          <span id="footerHost">ROOM HOST: @username</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Config for all 9 game modes ---
+    const allModes = [
+      { id: 'wordle', name: 'Wordle Masters', prefix: 'pts_', emoji: '🏆', borderClass: 'border-pink', avatarClass: 'avatar-wordle', titleColor: '#fe2c55' },
+      { id: 'wgrid', name: 'Grid Geniuses', prefix: 'pts_wgrid_', emoji: '🧩', borderClass: 'border-cyan', avatarClass: 'avatar-wgrid', titleColor: '#25f4ee' },
+      { id: 'wloop', name: 'Loop Connectors', prefix: 'pts_wloop_', emoji: '🔄', borderClass: 'border-purple', avatarClass: 'avatar-wloop', titleColor: '#a855f7' },
+      { id: 'w500', name: 'Word Pegs 5', prefix: 'pts_w500_', emoji: '🎯', borderClass: 'border-gold', avatarClass: 'avatar-w500', titleColor: '#ffbe0b' },
+      { id: 'w600', name: 'Word Pegs 6', prefix: 'pts_w600_', emoji: '⚔️', borderClass: 'border-orange', avatarClass: 'avatar-w600', titleColor: '#ff9f43' },
+      { id: 'wfit', name: 'Word Fit Solvers', prefix: 'pts_wfit_', emoji: '📏', borderClass: 'border-green', avatarClass: 'avatar-wfit', titleColor: '#1dd1a1' },
+      { id: 'fill', name: 'Blank Fillers', prefix: 'pts_fill_', emoji: '✏️', borderClass: 'border-blue', avatarClass: 'avatar-fill', titleColor: '#54a0ff' },
+      { id: 'tango', name: 'Tango Masters', prefix: 'pts_tango_', emoji: '💃', borderClass: 'border-magenta', avatarClass: 'avatar-tango', titleColor: '#ff9ff3' },
+      { id: 'colorfit', name: 'Color Fit Solvers', prefix: 'pts_colorfit_', emoji: '🎨', borderClass: 'border-teal', avatarClass: 'avatar-colorfit', titleColor: '#00d2d3' }
+    ];
+
+    const playerScores = {};
+    const playerAvatars = {};
+    allModes.forEach(m => { playerScores[m.id] = {}; });
+
+    // Load data from localStorage
+    const avatarPrefix = 'pts_avatar_';
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key) {
+        if (key.startsWith(avatarPrefix)) {
+          const username = key.substring(avatarPrefix.length);
+          playerAvatars[username] = localStorage.getItem(key);
+        } else if (key.startsWith('pts_')) {
+          // Exclude metadata/social metrics prefixes
+          if (key.startsWith('pts_active_') || key.startsWith('pts_like_') || key.startsWith('pts_share_') || key.startsWith('pts_gift_') || key.startsWith('pts_avatar_')) {
+            continue;
+          }
+
+          // Match specific game prefixes
+          let matchedMode = 'wordle';
+          for (const m of allModes) {
+            if (m.prefix !== 'pts_' && key.startsWith(m.prefix)) {
+              matchedMode = m.id;
+              break;
+            }
+          }
+
+          const prefixToStrip = matchedMode === 'wordle' ? 'pts_' : allModes.find(m => m.id === matchedMode).prefix;
+          const username = key.substring(prefixToStrip.length);
+          const score = parseInt(localStorage.getItem(key)) || 0;
+          if (score > 0) {
+            playerScores[matchedMode][username] = score;
+          }
+        }
+      }
+    }
+
+    // Process and sort modes by popularity (active solvers count)
+    const activeModes = allModes.map(m => {
+      const players = Object.entries(playerScores[m.id])
+        .map(([username, score]) => ({ username, score }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3); // Take top 3
+      return {
+        ...m,
+        players,
+        count: players.length
+      };
+    });
+
+    // Sort: most active game modes first, fall back to default order if equal
+    activeModes.sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      return allModes.findIndex(m => m.id === a.id) - allModes.findIndex(m => m.id === b.id);
+    });
+
+    // Pick top 4 modes to display on card
+    const modesToDisplay = activeModes.slice(0, 4);
+
+    // Render logic
+    const wrapper = document.getElementById('categoriesWrapper');
+    wrapper.innerHTML = ''; // clear
+
+    modesToDisplay.forEach(mode => {
+      const box = document.createElement('div');
+      box.className = `category-box ${mode.borderClass}`;
+      
+      const title = document.createElement('div');
+      title.className = 'category-title';
+      title.style.color = mode.titleColor;
+      title.innerHTML = `${mode.emoji} ${mode.name}`;
+      box.appendChild(title);
+
+      const entries = document.createElement('div');
+      entries.className = 'entries-grid';
+
+      if (mode.players.length === 0) {
+        entries.innerHTML = `<div class="no-data">Belum ada tebakan valid</div>`;
+      } else {
+        mode.players.forEach((player, idx) => {
+          const row = document.createElement('div');
+          row.className = 'leader-row';
+
+          const initial = player.username.substring(0, 1).toUpperCase();
+          const avatarUrl = playerAvatars[player.username];
+          
+          let avatarHTML = '';
+          if (avatarUrl) {
+            avatarHTML = `
+              <div style="position: relative; width: 20px; height: 20px;">
+                <img src="${avatarUrl}" class="leader-avatar" alt="" crossorigin="anonymous" referrerpolicy="no-referrer" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="letter-avatar ${mode.avatarClass}" style="display: none; position: absolute; top:0; left:0;">${initial}</div>
+              </div>`;
+          } else {
+            avatarHTML = `<div class="letter-avatar ${mode.avatarClass}">${initial}</div>`;
+          }
+
+          row.innerHTML = `
+            <div class="leader-info">
+              <span class="leader-rank rank-${idx + 1}">#${idx + 1}</span>
+              ${avatarHTML}
+              <span class="leader-name">${player.username}</span>
+            </div>
+            <span class="leader-score">${player.score} Poin</span>
+          `;
+          entries.appendChild(row);
+        });
+      }
+
+      box.appendChild(entries);
+      wrapper.appendChild(box);
+    });
+
+    // Formatting date
+    const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('id-ID', dateOptions).toUpperCase();
+    
+    // Read room host from localStorage or fallback
+    const savedRoom = localStorage.getItem('wordle_host_username') || '';
+    if (savedRoom) {
+      document.getElementById('footerHost').textContent = `ROOM HOST: @${savedRoom.replace('@', '')}`;
+      const badge = document.querySelector('.live-badge');
+      if (badge) {
+        badge.textContent = `LIVE @${savedRoom.replace('@', '').toUpperCase()}`;
+        badge.style.background = '#00f2fe';
+        badge.style.color = '#0c081d';
+        badge.style.boxShadow = '0 0 10px rgba(0, 242, 254, 0.5)';
+      }
+    }
+
+    // --- Responsive Scale Auto Adjust ---
+    function adjustScale() {
+      const card = document.getElementById('recapCard');
+      const wrap = document.querySelector('.story-card-wrapper');
+      if (!card || !wrap) return;
+      
+      const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+      
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      const cardWidth = 400;
+      const cardHeight = 711;
+      
+      const gapHeight = isFullscreen ? 10 : 120;
+      const scaleX = (viewportWidth - 24) / cardWidth;
+      const scaleY = (viewportHeight - gapHeight) / cardHeight;
+      const scale = Math.min(scaleX, scaleY, 1.2); 
+      
+      card.style.transform = `scale(${scale})`;
+      card.style.transformOrigin = 'center center';
+      
+      wrap.style.height = `${cardHeight * scale}px`;
+      wrap.style.width = `${cardWidth * scale}px`;
+    }
+
+    window.addEventListener('resize', adjustScale);
+    window.addEventListener('load', adjustScale);
+    setTimeout(adjustScale, 100);
+
+    // --- Click/Touch to Fullscreen ---
+    const cardElement = document.getElementById('recapCard');
+    cardElement.addEventListener('click', (e) => {
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        const docEl = document.documentElement;
+        if (docEl.requestFullscreen) docEl.requestFullscreen();
+        else if (docEl.webkitRequestFullscreen) docEl.webkitRequestFullscreen();
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      }
+      setTimeout(adjustScale, 150);
+    });
+
+    // --- html2canvas Download Logic ---
+    function downloadRecap() {
+      const card = document.getElementById('recapCard');
+      if (!card) return;
+
+      const btn = document.querySelector('.btn-download');
+      btn.disabled = true;
+      btn.textContent = 'Menyiapkan...';
+
+      const scrollPos = window.scrollY;
+      window.scrollTo(0, 0);
+
+      card.style.transform = 'none';
+      const wrap = document.querySelector('.story-card-wrapper');
+      wrap.style.width = '400px';
+      wrap.style.height = '711px';
+
+      document.fonts.ready.then(() => {
+        const options = {
+          scale: 3, 
+          useCORS: true,
+          allowTaint: false, 
+          backgroundColor: '#0c081d'
+        };
+
+        html2canvas(card, options).then(canvas => {
+          window.scrollTo(0, scrollPos);
+          adjustScale();
+
+          const image = canvas.toDataURL('image/png');
+          
+          const link = document.createElement('a');
+          link.download = `Top_Game_Solvers_Recap_${new Date().toISOString().slice(0, 10)}.png`;
+          link.href = image;
+          link.click();
+
+          btn.disabled = false;
+          btn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            Download Story
+          `;
+        }).catch(err => {
+          window.scrollTo(0, scrollPos);
+          adjustScale();
+          console.error(err);
+          btn.disabled = false;
+          btn.textContent = 'Gagal';
+        });
+      });
+    }
+  </script>
+</body>
+</html>

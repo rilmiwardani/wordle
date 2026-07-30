@@ -6198,6 +6198,13 @@ window.updateAllowedLengths = function() {
   localStorage.setItem('allowed_lengths', JSON.stringify(lengths));
 };
 
+window.applyAllowedLengths = function(e) {
+  if (e) e.stopPropagation();
+  updateAllowedLengths();
+  startNewRound();
+  showToast("⚡ Panjang kata diterapkan & ronde baru dimulai!");
+};
+
 // Word500/600 manual hint marking
 document.addEventListener('click', (e) => {
   if (currentGameMode !== 'word500' && currentGameMode !== 'word600' && currentGameMode !== 'wordfit') return;

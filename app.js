@@ -1156,8 +1156,10 @@ const roundNumber = document.getElementById('roundNumber');
 // ─── Game Selection ───
 function selectGame(mode) {
   currentGameMode = mode;
-  try { sessionStorage.setItem('wordle_gameMode', mode); } catch(e) {}
-  
+  // NOTE: Do NOT persist gameMode to sessionStorage here.
+  // It is saved after successful TikTok connection to prevent
+  // autoReconnect from firing when the user hasn't logged in yet.
+
   initWeeklyLeaderboard();
 
   // Update login title
@@ -4435,6 +4437,10 @@ function setupSocketListeners() {
       hideDisconnectBanner();
       if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
 
+      // Persist gameMode to sessionStorage NOW (after successful connection),
+      // so autoReconnect works correctly on page refresh while in-game.
+      try { if (currentGameMode) sessionStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
+
       loginOverlay.style.display = 'none';
       gameContainer.style.display = 'flex';
       document.getElementById('hostMusicControl').style.display = 'flex';
@@ -4473,6 +4479,9 @@ function setupSocketListeners() {
     console.log('[TikTok] Connected event received', data);
     isConnectedToTikTok = true;
     hideDisconnectBanner();
+
+    // Persist gameMode to sessionStorage after successful connection
+    try { if (currentGameMode) sessionStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
 
     if (gameContainer.style.display === 'none') {
       loginOverlay.style.display = 'none';

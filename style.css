@@ -275,8 +275,8 @@ body {
 }
 
 .wordfit-count.empty-clue {
-  background: transparent;
-  border: 2px dashed rgba(255,255,255,0.2);
+  background: var(--empty);
+  border: 2px solid rgba(255,255,255,0.15);
 }
 
 .board-row.wordfit-row {

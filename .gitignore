@@ -1,2 +1,5 @@
 node_modules/
 *.exe
+old_app.js
+scratch/
+.env

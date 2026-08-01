@@ -1114,7 +1114,7 @@ function getRandomWord() {
   if (TARGET_WORDS.length === 0) return WORD_LENGTH === 5 ? "HELLO" : "RANDOM"; // fallback
 
   let pool = TARGET_WORDS;
-  const isNoRepeatActive = isNoRepeatMode && (currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'word600');
+  const isNoRepeatActive = isNoRepeatMode && (currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit');
   if (isNoRepeatActive) {
     pool = TARGET_WORDS.filter(w => new Set(w).size === w.length);
     if (pool.length === 0) pool = TARGET_WORDS; // fallback
@@ -3764,6 +3764,7 @@ window.isNoRepeatActiveForMode = function() {
   return currentGameMode === 'wordle' || 
          currentGameMode === 'word500' || 
          currentGameMode === 'word600' || 
+         currentGameMode === 'wordfit' || 
          currentGameMode === 'colorfit';
 };
 
@@ -5307,7 +5308,7 @@ function processGuess(guessWord, userData) {
     else hardModeMsg = `Kata sudah ditebak di ronde ini`;
   }
   
-  const isNoRepeatActive = isNoRepeatMode && (currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'word600');
+  const isNoRepeatActive = isNoRepeatMode && (currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit');
   if (isValidWord && isNoRepeatActive) {
     if (new Set(guessWord).size !== guessWord.length) {
       isValidWord = false;

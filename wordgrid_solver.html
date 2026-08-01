@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Word Grid Solver - TikTok Live Games</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --bg-card: rgba(30, 41, 59, 0.45);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --accent-color: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.15);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      
+      --rarity-legendary: #fbbf24;
+      --rarity-epic: #c084fc;
+      --rarity-rare: #60a5fa;
+      --rarity-common: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Background Gradients */
+    .bg-layer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      background: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+                  radial-gradient(circle at 90% 80%, rgba(192, 132, 252, 0.15) 0%, transparent 40%),
+                  #0a0f1d;
+    }
+
+    .glass-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      backdrop-filter: blur(10px);
+      background: rgba(10, 15, 29, 0.2);
+    }
+
+    header {
+      padding: 24px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(8px);
+    }
+
+    .header-logo-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-logo {
+      font-size: 28px;
+    }
+
+    .header-title-wrapper h1 {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      background: linear-gradient(135deg, #a5b4fc 0%, #c084fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-title-wrapper p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .btn {
+      background: var(--accent-color);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px var(--accent-glow);
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      box-shadow: none;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: none;
+    }
+
+    select, input {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    select:focus, input:focus {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .loader-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.03);
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+
+    .status-dot.loading {
+      background: #f59e0b;
+      animation: pulse 1.5s infinite;
+    }
+
+    .status-dot.success {
+      background: #10b981;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.3; }
+      50% { opacity: 1; }
+      100% { opacity: 0.3; }
+    }
+
+    main {
+      flex: 1;
+      padding: 30px 40px;
+      display: grid;
+      grid-template-columns: 350px 1fr;
+      gap: 30px;
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 24px;
+      backdrop-filter: blur(16px);
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #a5b4fc;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 10px;
+    }
+
+    .clue-group {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .clue-row {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .clue-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .clue-inputs {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .clue-inputs select {
+      width: 100%;
+    }
+
+    .clue-inputs input {
+      width: 100%;
+    }
+
+    .content-area {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Result Grid */
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 20px;
+      flex: 1;
+      min-height: 550px;
+    }
+
+    .grid-cell {
+      background: rgba(30, 41, 59, 0.3);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      backdrop-filter: blur(12px);
+      transition: all 0.3s ease;
+      min-height: 180px;
+      position: relative;
+    }
+
+    .grid-cell.active-solve {
+      border-color: rgba(99, 102, 241, 0.3);
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.05);
+    }
+
+    .grid-cell-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .cell-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .cell-counter {
+      font-size: 11px;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 2px 8px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+    }
+
+    .cell-rarity-badge {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: none;
+    }
+
+    .cell-filter-input {
+      width: 100%;
+      padding: 6px 10px;
+      font-size: 12px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      background: rgba(15, 23, 42, 0.5);
+    }
+
+    .word-list-container {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 4px;
+      margin-right: -4px;
+      max-height: 150px;
+    }
+
+    /* Scrollbar Style */
+    .word-list-container::-webkit-scrollbar {
+      width: 4px;
+    }
+    .word-list-container::-webkit-scrollbar-track {
+      background: rgba(255,255,255,0.02);
+      border-radius: 2px;
+    }
+    .word-list-container::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+    }
+    .word-list-container::-webkit-scrollbar-thumb:hover {
+      background: rgba(255,255,255,0.25);
+    }
+
+    .word-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 8px;
+      margin-bottom: 4px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.02);
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .word-item:hover {
+      background: rgba(99, 102, 241, 0.08);
+      border-color: rgba(99, 102, 241, 0.2);
+      transform: translateX(2px);
+    }
+
+    .word-item.legendary { color: var(--rarity-legendary); }
+    .word-item.epic { color: var(--rarity-epic); }
+    .word-item.rare { color: var(--rarity-rare); }
+    .word-item.common { color: var(--rarity-common); }
+
+    .word-points {
+      font-size: 10px;
+      opacity: 0.8;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+
+    /* Notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #10b981;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 1000;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .quick-clear-btn {
+      font-size: 11px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-decoration: underline;
+      float: right;
+    }
+
+    .quick-clear-btn:hover {
+      color: var(--text-main);
+    }
+
+    /* Empty Grid State */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      text-align: center;
+      flex: 1;
+      height: 100%;
+      padding: 40px;
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.6;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-layer"></div>
+  <div class="glass-overlay"></div>
+
+  <header>
+    <div class="header-logo-container">
+      <span class="header-logo">🧮</span>
+      <div class="header-title-wrapper">
+        <h1>WORD GRID SOLVER</h1>
+        <p>TikTok Live Games Companion Tool</p>
+      </div>
+    </div>
+    
+    <div class="header-controls">
+      <!-- Language Selection -->
+      <select id="langSelect" onchange="onLangChange(this.value)">
+        <option value="id">🇮🇩 Bahasa Indonesia (ID)</option>
+        <option value="en">🇬🇧 English (EN)</option>
+        <option value="mixed">🌐 Campuran (ID + EN)</option>
+      </select>
+
+      <!-- Load Status -->
+      <div class="loader-status">
+        <div id="statusDot" class="status-dot"></div>
+        <span id="statusText">Belum Dimuat</span>
+      </div>
+
+      <button class="btn btn-secondary" onclick="clearAllClues()">🧹 Reset Clues</button>
+      <button class="btn" onclick="solveWordGrid()">🚀 Solve Board</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Sidebar Controls -->
+    <div class="sidebar">
+      <!-- Row Clues Card -->
+      <div class="card">
+        <div class="card-title">
+          <span>Rows (Baris)</span>
+        </div>
+        <div class="clue-group">
+          <!-- Row 1 -->
+          <div class="clue-row">
+            <div class="clue-label">Row 1 (R1)</div>
+            <div class="clue-inputs">
+              <select id="r1_type" onchange="toggleClueValueInput('r1')">
+                <option value="none">— Tanpa Kriteria —</option>
+                <option value="length">Panjang Kata</option>
+                <option value="length_range">Rentang Panjang (cth: 4-6)</option>
+                <option value="length_max">Maks Huruf</option>
+                <option value="length_min">Min Huruf</option>
+                <option value="contains">Mengandung Huruf</option>
+                <option value="contains_multiple">Mengandung Semua Huruf (cth: A,B)</option>
+                <option value="not_contains">Tanpa Huruf</option>
+                <option value="not_contains_multiple">Tanpa Semua Huruf (cth: E,R)</option>
+                <option value="starts_with">Awalan Huruf</option>
+                <option value="ends_with" selected>Akhiran Huruf</option>
+                <option value="starts_vowel">Awalan Vokal</option>
+                <option value="ends_consonant">Akhiran Konsonan</option>
+                <option value="min_vowels">Minimal Huruf Vokal</option>
+                <option value="double_letter">Huruf Ganda (cth: AA)</option>
+                <option value="multiple_letter">Huruf Muncul > 1 Kali</option>
+                <option value="no_repeat_letter">Tanpa Huruf Berulang</option>
+              </select>
+              <input type="text" id="r1_val" value="V" placeholder="Nilai (e.g. V, A, 5)">
+            </div>
+          </div>
+          
+          <!-- Row 2 -->
+          <div class="clue-row">
+            <div class="clue-label">Row 2 (R2)</div>
+            <div class="clue-inputs">
+              <select id="r2_type" onchange="toggleClueValueInput('r2')">
+                <option value="none" selected>— Tanpa Kriteria —</option>
+                <option value="length">Panjang Kata</option>
+                <option value="length_range">Rentang Panjang</option>
+                <option value="length_max">Maks Huruf</option>
+                <option value="length_min">Min Huruf</option>
+                <option value="contains">Mengandung Huruf</option>
+                <option value="contains_multiple">Mengandung Semua Huruf</option>
+                <option value="not_contains">Tanpa Huruf</option>
+                <option value="not_contains_multiple">Tanpa Semua Huruf</option>
+                <option value="starts_with">Awalan Huruf</option>
+                <option value="ends_with">Akhiran Huruf</option>
+                <option value="starts_vowel">Awalan Vokal</option>
+                <option value="ends_consonant">Akhiran Konsonan</option>
+                <option value="min_vowels">Minimal Huruf Vokal</option>
+                <option value="double_letter">Huruf Ganda (cth: AA)</option>
+                <option value="multiple_letter">Huruf Muncul > 1 Kali</option>
+                <option value="no_repeat_letter">Tanpa Huruf Berulang</option>
+              </select>
+              <input type="text" id="r2_val" style="display: none;" placeholder="Nilai">
+            </div>
+          </div>
+
+          <!-- Row 3 -->
+          <div class="clue-row">
+            <div class="clue-label">Row 3 (R3)</div>
+            <div class="clue-inputs">
+              <select id="r3_type" onchange="toggleClueValueInput('r3')">
+                <option value="none" selected>— Tanpa Kriteria —</option>
+                <option value="length">Panjang Kata</option>
+                <option value="length_range">Rentang Panjang</option>
+                <option value="length_max">Maks Huruf</option>
+                <option value="length_min">Min Huruf</option>
+                <option value="contains">Mengandung Huruf</option>
+                <option value="contains_multiple">Mengandung Semua Huruf</option>
+                <option value="not_contains">Tanpa Huruf</option>
+                <option value="not_contains_multiple">Tanpa Semua Huruf</option>
+                <option value="starts_with">Awalan Huruf</option>
+                <option value="ends_with">Akhiran Huruf</option>
+                <option value="starts_vowel">Awalan Vokal</option>
+                <option value="ends_consonant">Akhiran Konsonan</option>
+                <option value="min_vowels">Minimal Huruf Vokal</option>
+                <option value="double_letter">Huruf Ganda (cth: AA)</option>
+                <option value="multiple_letter">Huruf Muncul > 1 Kali</option>
+                <option value="no_repeat_letter">Tanpa Huruf Berulang</option>
+              </select>
+              <input type="text" id="r3_val" style="display: none;" placeholder="Nilai">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Column Clues Card -->
+      <div class="card">
+        <div class="card-title">
+          <span>Columns (Kolom)</span>
+        </div>
+        <div class="clue-group">
+          <!-- Col 1 -->
+          <div class="clue-row">
+            <div class="clue-label">Col 1 (C1)</div>
+            <div class="clue-inputs">
+              <select id="c1_type" onchange="toggleClueValueInput('c1')">
+                <option value="none">— Tanpa Kriteria —</option>
+                <option value="length">Panjang Kata</option>
+                <option value="length_range">Rentang Panjang</option>
+                <option value="length_max">Maks Huruf</option>
+                <option value="length_min">Min Huruf</option>
+                <option value="contains" selected>Mengandung Huruf</option>
+                <option value="contains_multiple">Mengandung Semua Huruf</option>
+                <option value="not_contains">Tanpa Huruf</option>
+                <option value="not_contains_multiple">Tanpa Semua Huruf</option>
+                <option value="starts_with">Awalan Huruf</option>
+                <option value="ends_with">Akhiran Huruf</option>
+                <option value="starts_vowel">Awalan Vokal</option>
+                <option value="ends_consonant">Akhiran Konsonan</option>
+                <option value="min_vowels">Minimal Huruf Vokal</option>
+                <option value="double_letter">Huruf Ganda (cth: AA)</option>
+                <option value="multiple_letter">Huruf Muncul > 1 Kali</option>
+                <option value="no_repeat_letter">Tanpa Huruf Berulang</option>
+              </select>
+              <input type="text" id="c1_val" value="AP" placeholder="Nilai (e.g. AP, E)">
+            </div>
+          </div>
+
+          <!-- Col 2 -->
+          <div class="clue-row">
+            <div class="clue-label">Col 2 (C2)</div>
+            <div class="clue-inputs">
+              <select id="c2_type" onchange="toggleClueValueInput('c2')">
+                <option value="none" selected>— Tanpa Kriteria —</option>
+                <option value="length">Panjang Kata</option>
+                <option value="length_range">Rentang Panjang</option>
+                <option value="length_max">Maks Huruf</option>
+                <option value="length_min">Min Huruf</option>
+                <option value="contains">Mengandung Huruf</option>
+                <option value="contains_multiple">Mengandung Semua Huruf</option>
+                <option value="not_contains">Tanpa Huruf</option>
+                <option value="not_contains_multiple">Tanpa Semua Huruf</option>
+                <option value="starts_with">Awalan Huruf</option>
+                <option value="ends_with">Akhiran Huruf</option>
+                <option value="starts_vowel">Awalan Vokal</option>
+                <option value="ends_consonant">Akhiran Konsonan</option>
+                <option value="min_vowels">Minimal Huruf Vokal</option>
+                <option value="double_letter">Huruf Ganda (cth: AA)</option>
+                <option value="multiple_letter">Huruf Muncul > 1 Kali</option>
+                <option value="no_repeat_letter">Tanpa Huruf Berulang</option>
+              </select>
+              <input type="text" id="c2_val" style="display: none;" placeholder="Nilai">
+            </div>
+          </div>
+
+          <!-- Col 3 -->
+          <div class="clue-row">
+            <div class="clue-label">Col 3 (C3)</div>
+            <div class="clue-inputs">
+              <select id="c3_type" onchange="toggleClueValueInput('c3')">
+                <option value="none" selected>— Tanpa Kriteria —</option>
+                <option value="length">Panjang Kata</option>
+                <option value="length_range">Rentang Panjang</option>
+                <option value="length_max">Maks Huruf</option>
+                <option value="length_min">Min Huruf</option>
+                <option value="contains">Mengandung Huruf</option>
+                <option value="contains_multiple">Mengandung Semua Huruf</option>
+                <option value="not_contains">Tanpa Huruf</option>
+                <option value="not_contains_multiple">Tanpa Semua Huruf</option>
+                <option value="starts_with">Awalan Huruf</option>
+                <option value="ends_with">Akhiran Huruf</option>
+                <option value="starts_vowel">Awalan Vokal</option>
+                <option value="ends_consonant">Akhiran Konsonan</option>
+                <option value="min_vowels">Minimal Huruf Vokal</option>
+                <option value="double_letter">Huruf Ganda (cth: AA)</option>
+                <option value="multiple_letter">Huruf Muncul > 1 Kali</option>
+                <option value="no_repeat_letter">Tanpa Huruf Berulang</option>
+              </select>
+              <input type="text" id="c3_val" style="display: none;" placeholder="Nilai">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content Area / Result Grid -->
+    <div class="content-area">
+      <div class="grid-container" id="gridContainer">
+        <!-- R1 x C1 -->
+        <div class="grid-cell" id="cell-0-0">
+          <div class="grid-cell-header">
+            <span class="cell-title">R1 × C1</span>
+            <span class="cell-rarity-badge" id="badge-0-0"></span>
+            <span class="cell-counter" id="count-0-0">0 Kata</span>
+          </div>
+          <input type="text" class="cell-filter-input" id="filter-0-0" placeholder="Filter..." oninput="filterCellWords(0, 0)">
+          <div class="word-list-container" id="list-0-0">
+            <div class="empty-state">
+              <span class="empty-state-icon">🔍</span>
+              <span>Klik Solve</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- R1 x C2 -->
+        <div class="grid-cell" id="cell-0-1">
+          <div class="grid-cell-header">
+            <span class="cell-title">R1 × C2</span>
+            <span class="cell-rarity-badge" id="badge-0-1"></span>
+            <span class="cell-counter" id="count-0-1">0 Kata</span>
+          </div>
+          <input type="text" class="cell-filter-input" id="filter-0-1" placeholder="Filter..." oninput="filterCellWords(0, 1)">
+          <div class="word-list-container" id="list-0-1">
+            <div class="empty-state">
+              <span class="empty-state-icon">🔍</span>
+              <span>Klik Solve</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- R1 x C3 -->
+        <div class="grid-cell" id="cell-0-2">
+          <div class="grid-cell-header">
+            <span class="cell-title">R1 × C3</span>
+            <span class="cell-rarity-badge" id="badge-0-2"></span>
+            <span class="cell-counter" id="count-0-2">0 Kata</span>
+          </div>
+          <input type="text" class="cell-filter-input" id="filter-0-2" placeholder="Filter..." oninput="filterCellWords(0, 2)">
+          <div class="word-list-container" id="list-0-2">
+            <div class="empty-state">
+              <span class="empty-state-icon">🔍</span>
+              <span>Klik Solve</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- R2 x C1 -->
+        <div class="grid-cell" id="cell-1-0">
+          <div class="grid-cell-header">
+            <span class="cell-title">R2 × C1</span>
+            <span class="cell-rarity-badge" id="badge-1-0"></span>
+            <span class="cell-counter" id="count-1-0">0 Kata</span>
+          </div>
+          <input type="text" class="cell-filter-input" id="filter-1-0" placeholder="Filter..." oninput="filterCellWords(1, 0)">
+          <div class="word-list-container" id="list-1-0">
+            <div class="empty-state">
+              <span class="empty-state-icon">🔍</span>
+              <span>Klik Solve</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- R2 x C2 -->
+        <div class="grid-cell" id="cell-1-1">
+          <div class="grid-cell-header">
+            <span class="cell-title">R2 × C2</span>
+            <span class="cell-rarity-badge" id="badge-1-1"></span>
+            <span class="cell-counter" id="count-1-1">0 Kata</span>
+          </div>
+          <input type="text" class="cell-filter-input" id="filter-1-1" placeholder="Filter..." oninput="filterCellWords(1, 1)">
+          <div class="word-list-container" id="list-1-1">
+            <div class="empty-state">
+              <span class="empty-state-icon">🔍</span>
+              <span>Klik Solve</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- R2 x C3 -->
+        <div class="grid-cell" id="cell-1-2">
+          <div class="grid-cell-header">
+            <span class="cell-title">R2 × C3</span>
+            <span class="cell-rarity-badge" id="badge-1-2"></span>
+            <span class="cell-counter" id="count-1-2">0 Kata</span>
+          </div>
+          <input type="text" class="cell-filter-input" id="filter-1-2" placeholder="Filter..." oninput="filterCellWords(1, 2)">
+          <div class="word-list-container" id="list-1-2">
+            <div class="empty-state">
+              <span class="empty-state-icon">🔍</span>
+              <span>Klik Solve</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- R3 x C1 -->
+        <div class="grid-cell" id="cell-2-0">
+          <div class="grid-cell-header">
+            <span class="cell-title">R3 × C1</span>
+            <span class="cell-rarity-badge" id="badge-2-0"></span>
+            <span class="cell-counter" id="count-2-0">0 Kata</span>
+          </div>
+          <input type="text" class="cell-filter-input" id="filter-2-0" placeholder="Filter..." oninput="filterCellWords(2, 0)">
+          <div class="word-list-container" id="list-2-0">
+            <div class="empty-state">
+              <span class="empty-state-icon">🔍</span>
+              <span>Klik Solve</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- R3 x C2 -->
+        <div class="grid-cell" id="cell-2-1">
+          <div class="grid-cell-header">
+            <span class="cell-title">R3 × C2</span>
+            <span class="cell-rarity-badge" id="badge-2-1"></span>
+            <span class="cell-counter" id="count-2-1">0 Kata</span>
+          </div>
+          <input type="text" class="cell-filter-input" id="filter-2-1" placeholder="Filter..." oninput="filterCellWords(2, 1)">
+          <div class="word-list-container" id="list-2-1">
+            <div class="empty-state">
+              <span class="empty-state-icon">🔍</span>
+              <span>Klik Solve</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- R3 x C3 -->
+        <div class="grid-cell" id="cell-2-2">
+          <div class="grid-cell-header">
+            <span class="cell-title">R3 × C3</span>
+            <span class="cell-rarity-badge" id="badge-2-2"></span>
+            <span class="cell-counter" id="count-2-2">0 Kata</span>
+          </div>
+          <input type="text" class="cell-filter-input" id="filter-2-2" placeholder="Filter..." oninput="filterCellWords(2, 2)">
+          <div class="word-list-container" id="list-2-2">
+            <div class="empty-state">
+              <span class="empty-state-icon">🔍</span>
+              <span>Klik Solve</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast" id="toast">
+    <span>📋</span> Kata berhasil disalin!
+  </div>
+
+  <script>
+    let dictionary = [];
+    let isLoaded = false;
+    let cellResults = {}; // { 'r-c': [words] }
+
+    window.onload = function() {
+      // Auto-load default Indonesian dictionary
+      loadDictionary('id');
+      
+      // Auto-toggle initial display inputs
+      toggleClueValueInput('r1');
+      toggleClueValueInput('r2');
+      toggleClueValueInput('r3');
+      toggleClueValueInput('c1');
+      toggleClueValueInput('c2');
+      toggleClueValueInput('c3');
+    };
+
+    function onLangChange(val) {
+      loadDictionary(val);
+    }
+
+    async function loadDictionary(lang) {
+      const statusDot = document.getElementById('statusDot');
+      const statusText = document.getElementById('statusText');
+      
+      statusDot.className = 'status-dot loading';
+      statusText.textContent = 'Memuat kamus...';
+      isLoaded = false;
+
+      try {
+        let text = '';
+        if (lang === 'id' || lang === 'mixed') {
+          const resId = await fetch('wordlist/kamus.txt');
+          if (resId.ok) text += await resId.text() + '\n';
+        }
+        if (lang === 'en' || lang === 'mixed') {
+          const resEn = await fetch('wordlist/dictionary.txt');
+          if (resEn.ok) text += await resEn.text() + '\n';
+        }
+
+        const lines = text.split('\n');
+        const wordsSet = new Set();
+        
+        for (let w of lines) {
+          const word = w.trim().replace(/"/g, '').toUpperCase();
+          // Filter valid word grid lengths (standard 3 to 15 letters, alphanumeric only)
+          if (word.length >= 3 && word.length <= 15 && /^[A-Z]+$/.test(word)) {
+            wordsSet.add(word);
+          }
+        }
+
+        dictionary = Array.from(wordsSet);
+        isLoaded = true;
+        
+        statusDot.className = 'status-dot success';
+        statusText.textContent = `${dictionary.length.toLocaleString()} Kata Dimuat`;
+        
+        // Auto resolve if values already exist
+        solveWordGrid();
+      } catch (err) {
+        console.error(err);
+        statusDot.className = 'status-dot';
+        statusText.textContent = 'Gagal memuat!';
+      }
+    }
+
+    function toggleClueValueInput(prefix) {
+      const type = document.getElementById(`${prefix}_type`).value;
+      const input = document.getElementById(`${prefix}_val`);
+      
+      // Types that do not require extra input value
+      const noValueTypes = ['none', 'starts_vowel', 'ends_consonant', 'double_letter', 'no_repeat_letter'];
+      
+      if (noValueTypes.includes(type)) {
+        input.style.display = 'none';
+      } else {
+        input.style.display = '';
+        if (type === 'length' || type === 'length_max' || type === 'length_min' || type === 'min_vowels') {
+          input.type = 'number';
+          if (!input.value || isNaN(input.value)) input.value = '5';
+        } else {
+          input.type = 'text';
+          if (input.type === 'text' && (input.value === '5' || !input.value)) {
+            input.value = prefix.startsWith('r') ? 'A' : 'B';
+          }
+        }
+      }
+    }
+
+    function clearAllClues() {
+      ['r1', 'r2', 'r3', 'c1', 'c2', 'c3'].forEach(prefix => {
+        document.getElementById(`${prefix}_type`).value = 'none';
+        document.getElementById(`${prefix}_val`).value = '';
+        toggleClueValueInput(prefix);
+      });
+      solveWordGrid();
+    }
+
+    function parseClue(prefix) {
+      const type = document.getElementById(`${prefix}_type`).value;
+      const valRaw = document.getElementById(`${prefix}_val`).value.toUpperCase().trim();
+
+      if (type === 'none') return null;
+
+      let clueObj = { type: type };
+
+      if (type === 'length' || type === 'length_max' || type === 'length_min' || type === 'min_vowels') {
+        clueObj.val = parseInt(valRaw) || 5;
+      } else if (type === 'length_range') {
+        const parts = valRaw.split('-');
+        clueObj.min = parseInt(parts[0]) || 3;
+        clueObj.max = parseInt(parts[1]) || 8;
+      } else if (type === 'contains_multiple' || type === 'not_contains_multiple') {
+        clueObj.val = valRaw.split(',').map(s => s.trim()).filter(s => s.length > 0);
+      } else if (type === 'starts_with' || type === 'ends_with' || type === 'contains' || type === 'not_contains' || type === 'multiple_letter') {
+        clueObj.val = valRaw;
+      }
+
+      return clueObj;
+    }
+
+    function checkWgClue(word, clue) {
+      if (!clue) return true; // No clue always passes
+      
+      if (clue.type === 'length') return word.length === clue.val;
+      if (clue.type === 'length_range') return word.length >= clue.min && word.length <= clue.max;
+      if (clue.type === 'length_max') return word.length <= clue.val;
+      if (clue.type === 'length_min') return word.length >= clue.val;
+      if (clue.type === 'contains') return word.includes(clue.val);
+      if (clue.type === 'contains_multiple') return clue.val.every(letter => word.includes(letter));
+      if (clue.type === 'not_contains') return !word.includes(clue.val);
+      if (clue.type === 'not_contains_multiple') return clue.val.every(letter => !word.includes(letter));
+      if (clue.type === 'starts_with') return word.startsWith(clue.val);
+      if (clue.type === 'ends_with') return word.endsWith(clue.val);
+      if (clue.type === 'starts_vowel') return /^[AEIOU]/.test(word);
+      if (clue.type === 'ends_consonant') return /[^AEIOU]$/.test(word);
+      if (clue.type === 'min_vowels') return (word.match(/[AEIOU]/g) || []).length >= clue.val;
+      if (clue.type === 'double_letter') return /(.)\1/.test(word);
+      if (clue.type === 'multiple_letter') return (word.match(new RegExp(clue.val, 'g')) || []).length >= 2;
+      if (clue.type === 'no_repeat_letter') return new Set(word).size === word.length;
+      
+      return false;
+    }
+
+    function getPointsAndRarity(validCount, word) {
+      let basePoints = 1;
+      let rarityName = 'COMMON';
+      let rarityClass = 'common';
+      
+      if (validCount <= 10) {
+        basePoints = 15;
+        rarityName = 'LEGENDARY';
+        rarityClass = 'legendary';
+      } else if (validCount <= 50) {
+        basePoints = 7;
+        rarityName = 'EPIC';
+        rarityClass = 'epic';
+      } else if (validCount <= 200) {
+        basePoints = 3;
+        rarityName = 'RARE';
+        rarityClass = 'rare';
+      }
+
+      // Add length points
+      let lenPoints = 0;
+      let len = word.length;
+      if (len === 5) lenPoints = 1;
+      else if (len === 6) lenPoints = 2;
+      else if (len === 7) lenPoints = 4;
+      else if (len === 8) lenPoints = 6;
+      else if (len >= 9) lenPoints = 10;
+      
+      const totalPoints = basePoints + lenPoints;
+      return { totalPoints, rarityName, rarityClass };
+    }
+
+    function solveWordGrid() {
+      if (!isLoaded) return;
+
+      const rowClues = [parseClue('r1'), parseClue('r2'), parseClue('r3')];
+      const colClues = [parseClue('c1'), parseClue('c2'), parseClue('c3')];
+
+      for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+          const rowClue = rowClues[r];
+          const colClue = colClues[c];
+          const cellId = `${r}-${c}`;
+          
+          const matches = [];
+
+          // Only compute matches if at least one clue is specified in the grid coordinates
+          if (rowClue || colClue) {
+            for (let word of dictionary) {
+              if (checkWgClue(word, rowClue) && checkWgClue(word, colClue)) {
+                matches.push(word);
+              }
+            }
+          }
+
+          // Sort matches: first by length (descending), then alphabetically
+          matches.sort((a, b) => {
+            if (b.length !== a.length) return b.length - a.length;
+            return a.localeCompare(b);
+          });
+
+          cellResults[cellId] = matches;
+          renderCell(r, c);
+        }
+      }
+    }
+
+    function renderCell(r, c) {
+      const cellId = `${r}-${c}`;
+      const matches = cellResults[cellId] || [];
+      const listContainer = document.getElementById(`list-${cellId}`);
+      const counterEl = document.getElementById(`count-${cellId}`);
+      const badgeEl = document.getElementById(`badge-${cellId}`);
+      const cellEl = document.getElementById(`cell-${cellId}`);
+      const filterInput = document.getElementById(`filter-${cellId}`);
+      const filterText = filterInput.value.toUpperCase().trim();
+
+      // Reset style
+      cellEl.classList.remove('active-solve');
+      badgeEl.style.display = 'none';
+
+      if (matches.length === 0) {
+        counterEl.textContent = '0 Kata';
+        listContainer.innerHTML = `
+          <div class="empty-state">
+            <span class="empty-state-icon">📭</span>
+            <span>Tidak ada kata cocok</span>
+          </div>
+        `;
+        return;
+      }
+
+      cellEl.classList.add('active-solve');
+      
+      // Determine overall cell rarity based on total valid count
+      const sampleWord = matches[0] || '';
+      const { rarityName, rarityClass } = getPointsAndRarity(matches.length, sampleWord);
+      badgeEl.textContent = rarityName;
+      badgeEl.style.display = 'inline-block';
+      badgeEl.style.background = `rgba(var(--bg-dark), 0.5)`;
+      badgeEl.style.color = `var(--rarity-${rarityClass})`;
+      badgeEl.style.border = `1px solid var(--rarity-${rarityClass})`;
+
+      // Filter matches
+      const filteredMatches = filterText 
+        ? matches.filter(w => w.includes(filterText)) 
+        : matches;
+
+      counterEl.textContent = `${filteredMatches.length} / ${matches.length} Kata`;
+
+      if (filteredMatches.length === 0) {
+        listContainer.innerHTML = `
+          <div class="empty-state">
+            <span class="empty-state-icon">🔍</span>
+            <span>Filter tidak cocok</span>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      for (let word of filteredMatches) {
+        const { totalPoints, rarityClass: wordRarity } = getPointsAndRarity(matches.length, word);
+        html += `
+          <div class="word-item ${wordRarity}" onclick="copyWord('${word}')">
+            <span>${word}</span>
+            <span class="word-points">+${totalPoints} Pts</span>
+          </div>
+        `;
+      }
+      listContainer.innerHTML = html;
+    }
+
+    function filterCellWords(r, c) {
+      renderCell(r, c);
+    }
+
+    function copyWord(word) {
+      navigator.clipboard.writeText(word).then(() => {
+        const toast = document.getElementById('toast');
+        toast.className = 'toast show';
+        setTimeout(() => {
+          toast.className = 'toast';
+        }, 2000);
+      }).catch(err => {
+        console.error('Could not copy text: ', err);
+      });
+    }
+  </script>
+</body>
+</html>

@@ -84,6 +84,35 @@
       -webkit-text-fill-color: transparent;
     }
 
+    /* Recap Switch Tabs */
+    .recap-tabs {
+      display: flex;
+      gap: 4px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 20px;
+      padding: 3px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .recap-tab {
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,0.6);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .recap-tab.active {
+      background: linear-gradient(135deg, var(--highlight-pink) 0%, var(--highlight-purple) 100%);
+      color: white;
+      box-shadow: 0 2px 10px rgba(254, 44, 85, 0.3);
+    }
+
     .btn-download {
       background: linear-gradient(135deg, var(--highlight-pink) 0%, var(--highlight-purple) 100%);
       border: none;
@@ -380,6 +409,10 @@
     <!-- Action Panel -->
     <div class="controls-bar">
       <h1>Game Solvers Recap</h1>
+      <div class="recap-tabs">
+        <button class="recap-tab active" id="tabDaily" onclick="switchTimeframe('daily')">Daily</button>
+        <button class="recap-tab" id="tabWeekly" onclick="switchTimeframe('weekly')">Weekly</button>
+      </div>
       <button class="btn-download" onclick="downloadRecap()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -429,9 +462,15 @@
       { id: 'colorfit', name: 'Color Fit Solvers', prefix: 'pts_colorfit_', emoji: '🎨', borderClass: 'border-teal', avatarClass: 'avatar-colorfit', titleColor: '#00d2d3' }
     ];
 
-    const playerScores = {};
+    const playerScoresWeekly = {};
+    const playerScoresDaily = {};
     const playerAvatars = {};
-    allModes.forEach(m => { playerScores[m.id] = {}; });
+    allModes.forEach(m => {
+      playerScoresWeekly[m.id] = {};
+      playerScoresDaily[m.id] = {};
+    });
+
+    let currentTimeframe = 'daily';
 
     // Load data from localStorage
     const avatarPrefix = 'pts_avatar_';
@@ -442,10 +481,13 @@
           const username = key.substring(avatarPrefix.length);
           playerAvatars[username] = localStorage.getItem(key);
         } else if (key.startsWith('pts_')) {
-          // Exclude metadata/social metrics prefixes and daily reset records
-          if (key.startsWith('pts_active_') || key.startsWith('pts_like_') || key.startsWith('pts_share_') || key.startsWith('pts_gift_') || key.startsWith('pts_avatar_') || key.includes('daily_')) {
+          // Exclude metadata/social metrics prefixes
+          if (key.startsWith('pts_active_') || key.startsWith('pts_like_') || key.startsWith('pts_share_') || key.startsWith('pts_gift_') || key.startsWith('pts_avatar_')) {
             continue;
           }
+
+          // Determine if it is daily or weekly
+          const isDaily = key.includes('daily_');
 
           // Match specific game prefixes
           let matchedMode = 'wordle';
@@ -456,96 +498,145 @@
             }
           }
 
-          const prefixToStrip = matchedMode === 'wordle' ? 'pts_' : allModes.find(m => m.id === matchedMode).prefix;
-          const username = key.substring(prefixToStrip.length);
-          const score = parseInt(localStorage.getItem(key)) || 0;
-          if (score > 0) {
-            playerScores[matchedMode][username] = score;
+          const modeObj = allModes.find(m => m.id === matchedMode);
+          const basePrefix = modeObj.prefix;
+
+          let username = '';
+          if (isDaily) {
+            const stripStr = matchedMode === 'wordle' ? 'pts_daily_' : (basePrefix + 'daily_');
+            if (key.startsWith(stripStr)) {
+              username = key.substring(stripStr.length);
+            }
+          } else {
+            username = key.substring(basePrefix.length);
+          }
+
+          if (username) {
+            const score = parseInt(localStorage.getItem(key)) || 0;
+            if (score > 0) {
+              if (isDaily) {
+                playerScoresDaily[matchedMode][username] = score;
+              } else {
+                playerScoresWeekly[matchedMode][username] = score;
+              }
+            }
           }
         }
       }
     }
 
-    // Process and sort modes by popularity (active solvers count)
-    const activeModes = allModes.map(m => {
-      const players = Object.entries(playerScores[m.id])
-        .map(([username, score]) => ({ username, score }))
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 3); // Take top 3
-      return {
-        ...m,
-        players,
-        count: players.length
-      };
-    });
+    function renderTimeframe(timeframe) {
+      currentTimeframe = timeframe;
 
-    // Sort: most active game modes first, fall back to default order if equal
-    activeModes.sort((a, b) => {
-      if (b.count !== a.count) return b.count - a.count;
-      return allModes.findIndex(m => m.id === a.id) - allModes.findIndex(m => m.id === b.id);
-    });
+      // Update active tab styling
+      const tabDaily = document.getElementById('tabDaily');
+      const tabWeekly = document.getElementById('tabWeekly');
+      if (tabDaily) tabDaily.classList.toggle('active', timeframe === 'daily');
+      if (tabWeekly) tabWeekly.classList.toggle('active', timeframe === 'weekly');
 
-    // Pick top 4 modes to display on card
-    const modesToDisplay = activeModes.slice(0, 4);
+      // Select proper score map
+      const activeScores = timeframe === 'daily' ? playerScoresDaily : playerScoresWeekly;
 
-    // Render logic
-    const wrapper = document.getElementById('categoriesWrapper');
-    wrapper.innerHTML = ''; // clear
+      // Process and sort modes by popularity (active solvers count)
+      const activeModes = allModes.map(m => {
+        const players = Object.entries(activeScores[m.id])
+          .map(([username, score]) => ({ username, score }))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3); // Take top 3
+        return {
+          ...m,
+          players,
+          count: players.length
+        };
+      });
 
-    modesToDisplay.forEach(mode => {
-      const box = document.createElement('div');
-      box.className = `category-box ${mode.borderClass}`;
+      // Sort: most active game modes first, fall back to default order if equal
+      activeModes.sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        return allModes.findIndex(m => m.id === a.id) - allModes.findIndex(m => m.id === b.id);
+      });
+
+      // Pick top 4 modes to display on card
+      const modesToDisplay = activeModes.slice(0, 4);
+
+      // Render logic
+      const wrapper = document.getElementById('categoriesWrapper');
+      wrapper.innerHTML = ''; // clear
+
+      modesToDisplay.forEach(mode => {
+        const box = document.createElement('div');
+        box.className = `category-box ${mode.borderClass}`;
+        
+        const title = document.createElement('div');
+        title.className = 'category-title';
+        title.style.color = mode.titleColor;
+        title.innerHTML = `${mode.emoji} ${mode.name}`;
+        box.appendChild(title);
+
+        const entries = document.createElement('div');
+        entries.className = 'entries-grid';
+
+        if (mode.players.length === 0) {
+          entries.innerHTML = `<div class="no-data">Belum ada tebakan valid</div>`;
+        } else {
+          mode.players.forEach((player, idx) => {
+            const row = document.createElement('div');
+            row.className = 'leader-row';
+
+            const initial = player.username.substring(0, 1).toUpperCase();
+            const avatarUrl = playerAvatars[player.username];
+            
+            let avatarHTML = '';
+            if (avatarUrl) {
+              avatarHTML = `
+                <div style="position: relative; width: 20px; height: 20px;">
+                  <img src="${avatarUrl}" class="leader-avatar" alt="" crossorigin="anonymous" referrerpolicy="no-referrer" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                  <div class="letter-avatar ${mode.avatarClass}" style="display: none; position: absolute; top:0; left:0;">${initial}</div>
+                </div>`;
+            } else {
+              avatarHTML = `<div class="letter-avatar ${mode.avatarClass}">${initial}</div>`;
+            }
+
+            row.innerHTML = `
+              <div class="leader-info">
+                <span class="leader-rank rank-${idx + 1}">#${idx + 1}</span>
+                ${avatarHTML}
+                <span class="leader-name">${player.username}</span>
+              </div>
+              <span class="leader-score">${player.score} Poin</span>
+            `;
+            entries.appendChild(row);
+          });
+        }
+
+        box.appendChild(entries);
+        wrapper.appendChild(box);
+      });
+
+      // Formatting date & header text
+      const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      const formattedDate = new Date().toLocaleDateString('id-ID', dateOptions).toUpperCase();
       
-      const title = document.createElement('div');
-      title.className = 'category-title';
-      title.style.color = mode.titleColor;
-      title.innerHTML = `${mode.emoji} ${mode.name}`;
-      box.appendChild(title);
-
-      const entries = document.createElement('div');
-      entries.className = 'entries-grid';
-
-      if (mode.players.length === 0) {
-        entries.innerHTML = `<div class="no-data">Belum ada tebakan valid</div>`;
-      } else {
-        mode.players.forEach((player, idx) => {
-          const row = document.createElement('div');
-          row.className = 'leader-row';
-
-          const initial = player.username.substring(0, 1).toUpperCase();
-          const avatarUrl = playerAvatars[player.username];
-          
-          let avatarHTML = '';
-          if (avatarUrl) {
-            avatarHTML = `
-              <div style="position: relative; width: 20px; height: 20px;">
-                <img src="${avatarUrl}" class="leader-avatar" alt="" crossorigin="anonymous" referrerpolicy="no-referrer" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                <div class="letter-avatar ${mode.avatarClass}" style="display: none; position: absolute; top:0; left:0;">${initial}</div>
-              </div>`;
-          } else {
-            avatarHTML = `<div class="letter-avatar ${mode.avatarClass}">${initial}</div>`;
-          }
-
-          row.innerHTML = `
-            <div class="leader-info">
-              <span class="leader-rank rank-${idx + 1}">#${idx + 1}</span>
-              ${avatarHTML}
-              <span class="leader-name">${player.username}</span>
-            </div>
-            <span class="leader-score">${player.score} Poin</span>
-          `;
-          entries.appendChild(row);
-        });
+      const dateText = document.getElementById('currentDate');
+      if (dateText) {
+        if (timeframe === 'daily') {
+          dateText.textContent = `${formattedDate} (HARIAN)`;
+        } else {
+          dateText.textContent = `${formattedDate} (MINGGUAN)`;
+        }
       }
 
-      box.appendChild(entries);
-      wrapper.appendChild(box);
-    });
+      // Re-adjust card scale
+      adjustScale();
+    }
 
-    // Formatting date
-    const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('id-ID', dateOptions).toUpperCase();
-    
+    window.switchTimeframe = function(timeframe) {
+      renderTimeframe(timeframe);
+    };
+
+    // Initial render using Daily points
+    renderTimeframe('daily');
+
     // Read room host from localStorage or fallback
     const savedRoom = localStorage.getItem('wordle_host_username') || localStorage.getItem('wordle_username') || '';
     if (savedRoom) {
@@ -635,7 +726,8 @@
           const image = canvas.toDataURL('image/png');
           
           const link = document.createElement('a');
-          link.download = `Top_Game_Solvers_Recap_${new Date().toISOString().slice(0, 10)}.png`;
+          const recName = currentTimeframe === 'daily' ? 'Daily' : 'Weekly';
+          link.download = `Top_Game_Solvers_${recName}_Recap_${new Date().toISOString().slice(0, 10)}.png`;
           link.href = image;
           link.click();
 

@@ -3913,12 +3913,24 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Load background customization
   const savedBgUrl = localStorage.getItem('custom_bg_url');
-  if (savedBgUrl) {
+  if (savedBgUrl && !savedBgUrl.startsWith('data:')) {
+    // Only show URL in input if it's not a base64 data URL (too large)
     const inputEl = document.getElementById('bgUrlInput');
     if (inputEl) inputEl.value = savedBgUrl;
-    if (!isDynamicBg) applyStaticBg(); // re-apply to load the image
   }
-  
+  if (!isDynamicBg) applyStaticBg();
+
+  // Restore saved solid color into RGB picker
+  const savedColor = localStorage.getItem('custom_bg_color');
+  if (savedColor) {
+    const hexInput = document.getElementById('bgHexInput');
+    if (hexInput) hexInput.value = savedColor;
+    syncRgbFromHex(savedColor);
+  } else {
+    // Default dark color
+    if (typeof updateRgbPreview === 'function') updateRgbPreview(32, 33, 36);
+  }
+
   const savedBlur = localStorage.getItem('custom_bg_blur') || 12;
   const savedDim = localStorage.getItem('custom_bg_dim') || 60;
   const blurSlider = document.getElementById('bgBlurSlider');
@@ -3957,10 +3969,14 @@ window.toggleAutoFullscreen = function(enabled) {
 // Dynamic / Static Background toggle
 function applyStaticBg() {
   const customUrl = localStorage.getItem('custom_bg_url');
+  const customColor = localStorage.getItem('custom_bg_color');
   bgLayer.className = 'bg-layer';
   if (customUrl) {
     bgLayer.style.backgroundImage = `url("${customUrl}")`;
     bgLayer.style.backgroundColor = '';
+  } else if (customColor) {
+    bgLayer.style.backgroundImage = 'none';
+    bgLayer.style.backgroundColor = customColor;
   } else {
     // Warna background tab header Google Chrome: #202124
     bgLayer.style.backgroundImage = 'none';
@@ -6086,6 +6102,7 @@ window.changeBackground = function() {
         const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
         try {
           localStorage.setItem('custom_bg_url', dataUrl);
+          localStorage.removeItem('custom_bg_color'); // Clear solid color if image is set
           const toggle = document.getElementById('dynamicBgToggle');
           if (toggle) toggle.checked = false;
           toggleDynamicBg(false);
@@ -6117,6 +6134,7 @@ window.changeBackground = function() {
     console.log("Terapkan custom background URL:", url);
     try {
       localStorage.setItem('custom_bg_url', url);
+      localStorage.removeItem('custom_bg_color'); // Clear solid color if image URL is set
       const toggle = document.getElementById('dynamicBgToggle');
       if (toggle) toggle.checked = false;
       toggleDynamicBg(false);
@@ -6154,6 +6172,112 @@ window.applyBgEffects = function(blurVal, dimVal) {
     const op = dimVal / 100;
     overlay.style.background = `rgba(0, 0, 0, ${op})`;
   }
+};
+
+// --- Hapus background custom (gambar/URL/warna solid) ---
+window.clearBackground = function() {
+  localStorage.removeItem('custom_bg_url');
+  localStorage.removeItem('custom_bg_color');
+
+  // Reset URL input
+  const urlInput = document.getElementById('bgUrlInput');
+  if (urlInput) urlInput.value = '';
+  const fileInput = document.getElementById('bgFileInput');
+  if (fileInput) fileInput.value = '';
+
+  // Reset RGB picker ke default
+  const rSlider = document.getElementById('rgbR');
+  const gSlider = document.getElementById('rgbG');
+  const bSlider = document.getElementById('rgbB');
+  if (rSlider) rSlider.value = 32;
+  if (gSlider) gSlider.value = 33;
+  if (bSlider) bSlider.value = 36;
+  updateRgbPreview(32, 33, 36);
+
+  applyStaticBg();
+  showToast('🗑️ Background dihapus — kembali ke warna default', 2000);
+};
+
+// --- RGB helper: update preview swatch + hex code ---
+function updateRgbPreview(r, g, b) {
+  const hex = '#' + [r, g, b].map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join('');
+  const preview = document.getElementById('bgColorPreview');
+  const hexInput = document.getElementById('bgHexInput');
+  const rVal = document.getElementById('rgbRVal');
+  const gVal = document.getElementById('rgbGVal');
+  const bVal = document.getElementById('rgbBVal');
+  if (preview) preview.style.background = hex;
+  if (hexInput) hexInput.value = hex;
+  if (rVal) rVal.textContent = r;
+  if (gVal) gVal.textContent = g;
+  if (bVal) bVal.textContent = b;
+}
+window.updateRgbPreview = updateRgbPreview;
+
+// --- Fired when RGB sliders move ---
+window.onRgbSliderChange = function() {
+  const r = parseInt(document.getElementById('rgbR').value);
+  const g = parseInt(document.getElementById('rgbG').value);
+  const b = parseInt(document.getElementById('rgbB').value);
+  updateRgbPreview(r, g, b);
+};
+
+// --- Sync sliders from hex code typed in input ---
+window.syncRgbFromHex = function(rawHex) {
+  let hex = rawHex.trim();
+  if (!hex.startsWith('#')) hex = '#' + hex;
+  // Only proceed if it's a valid 6-digit hex
+  if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+    // Update just the preview if partial (at least 4 chars)
+    const preview = document.getElementById('bgColorPreview');
+    if (preview && /^#[0-9A-Fa-f]{3,6}$/.test(hex)) {
+      preview.style.background = hex;
+    }
+    return;
+  }
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const rSlider = document.getElementById('rgbR');
+  const gSlider = document.getElementById('rgbG');
+  const bSlider = document.getElementById('rgbB');
+  if (rSlider) rSlider.value = r;
+  if (gSlider) gSlider.value = g;
+  if (bSlider) bSlider.value = b;
+  const rVal = document.getElementById('rgbRVal');
+  const gVal = document.getElementById('rgbGVal');
+  const bVal = document.getElementById('rgbBVal');
+  if (rVal) rVal.textContent = r;
+  if (gVal) gVal.textContent = g;
+  if (bVal) bVal.textContent = b;
+  const preview = document.getElementById('bgColorPreview');
+  if (preview) preview.style.background = hex;
+};
+
+// --- Terapkan warna solid sebagai background ---
+window.applyRgbBackground = function() {
+  const r = parseInt(document.getElementById('rgbR').value);
+  const g = parseInt(document.getElementById('rgbG').value);
+  const b = parseInt(document.getElementById('rgbB').value);
+  const hex = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+
+  // Clear image background, save solid color
+  localStorage.removeItem('custom_bg_url');
+  localStorage.setItem('custom_bg_color', hex);
+
+  // Clear URL/file input so the image section is visually reset
+  const urlInput = document.getElementById('bgUrlInput');
+  if (urlInput) urlInput.value = '';
+  const fileInput = document.getElementById('bgFileInput');
+  if (fileInput) fileInput.value = '';
+
+  // Switch to static mode and apply
+  const toggle = document.getElementById('dynamicBgToggle');
+  if (toggle) toggle.checked = false;
+  toggleDynamicBg(false);
+  applyStaticBg();
+
+  showToast(`🎨 Background warna solid diterapkan: ${hex}`, 2000);
 };
 
 document.addEventListener('DOMContentLoaded', () => {

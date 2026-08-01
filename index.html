@@ -422,9 +422,52 @@
                 <!-- Background setting container -->
                 <div style="margin: 15px 0; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
                   <div style="font-size: 11px; color: #aaa; margin-bottom: 8px; font-weight: 700; text-transform: uppercase; text-align: left;">Tampilan Latar (Background)</div>
+
+                  <!-- Gambar/URL -->
                   <input type="text" id="bgUrlInput" class="custom-input" placeholder="URL Gambar Latar..." onkeyup="if(event.key === 'Enter') changeBackground();" oninput="const fi = document.getElementById('bgFileInput'); if(fi) fi.value = '';" style="width: 100%; margin-bottom: 5px; padding: 6px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff; font-size: 11px; box-sizing: border-box;">
                   <input type="file" id="bgFileInput" accept="image/*" onchange="const ui = document.getElementById('bgUrlInput'); if(ui) ui.value = ''; changeBackground();" style="width: 100%; margin-bottom: 5px; color: #ccc; font-size: 10px; background: #222; padding: 4px; border-radius: 4px; border: 1px solid #555; box-sizing: border-box;">
-                  <button class="lang-option" onclick="changeBackground()" style="margin-bottom: 10px; width: 100%; justify-content: center; background: rgba(255,255,255,0.08);">Terapkan Background</button>
+
+                  <!-- Row: Terapkan + Hapus -->
+                  <div style="display:flex; gap:6px; margin-bottom:10px;">
+                    <button class="lang-option" onclick="changeBackground()" style="flex:1; justify-content: center; background: rgba(255,255,255,0.08);">Terapkan</button>
+                    <button class="lang-option" onclick="clearBackground()" style="flex:0 0 auto; justify-content: center; background: rgba(254,44,85,0.15); border-color: rgba(254,44,85,0.35); color:#fe8080;" title="Hapus background custom">🗑️ Hapus BG</button>
+                  </div>
+
+                  <!-- Separator: warna solid -->
+                  <div style="font-size: 10px; color: #888; text-transform: uppercase; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.5px;">— atau pilih warna solid —</div>
+
+                  <!-- RGB Sliders -->
+                  <div id="rgbPickerContainer" style="background: rgba(0,0,0,0.25); border-radius: 8px; padding: 10px; margin-bottom: 8px;">
+
+                    <!-- Preview swatch + Hex input -->
+                    <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
+                      <div id="bgColorPreview" style="width:36px; height:36px; border-radius:6px; border:2px solid rgba(255,255,255,0.2); flex-shrink:0; background:#202124;"></div>
+                      <div style="flex:1;">
+                        <label style="font-size:10px; color:#aaa; display:block; margin-bottom:3px;">Hex Code</label>
+                        <input type="text" id="bgHexInput" maxlength="7" placeholder="#202124" oninput="syncRgbFromHex(this.value)" style="width:100%; padding:5px 8px; background:#1a1a1a; border:1px solid #555; border-radius:4px; color:#fff; font-size:12px; font-family:monospace; box-sizing:border-box;">
+                      </div>
+                    </div>
+
+                    <!-- Slider R -->
+                    <div style="margin-bottom:7px;">
+                      <div style="display:flex; justify-content:space-between; font-size:10px; color:#ff6b6b; margin-bottom:2px;"><span>R (Merah)</span><span id="rgbRVal">32</span></div>
+                      <input type="range" id="rgbR" min="0" max="255" value="32" oninput="onRgbSliderChange()" style="width:100%; accent-color:#ff6b6b; cursor:pointer;">
+                    </div>
+                    <!-- Slider G -->
+                    <div style="margin-bottom:7px;">
+                      <div style="display:flex; justify-content:space-between; font-size:10px; color:#51cf66; margin-bottom:2px;"><span>G (Hijau)</span><span id="rgbGVal">33</span></div>
+                      <input type="range" id="rgbG" min="0" max="255" value="33" oninput="onRgbSliderChange()" style="width:100%; accent-color:#51cf66; cursor:pointer;">
+                    </div>
+                    <!-- Slider B -->
+                    <div style="margin-bottom:10px;">
+                      <div style="display:flex; justify-content:space-between; font-size:10px; color:#74c0fc; margin-bottom:2px;"><span>B (Biru)</span><span id="rgbBVal">36</span></div>
+                      <input type="range" id="rgbB" min="0" max="255" value="36" oninput="onRgbSliderChange()" style="width:100%; accent-color:#74c0fc; cursor:pointer;">
+                    </div>
+
+                    <button class="lang-option" onclick="applyRgbBackground()" style="width:100%; justify-content:center; background: linear-gradient(135deg, rgba(254,44,85,0.25), rgba(37,244,238,0.15));">✅ Terapkan Warna Ini</button>
+                  </div>
+
+                  <!-- Blur + Dim sliders -->
                   <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-bottom: 5px;">
                     <label style="color: #ccc;">Efek Blur</label>
                     <input type="range" id="bgBlurSlider" min="0" max="30" value="12" oninput="updateBgEffects()" style="width: 60%; cursor: pointer;">
@@ -434,6 +477,7 @@
                     <input type="range" id="bgDimSlider" min="0" max="100" value="60" oninput="updateBgEffects()" style="width: 60%; cursor: pointer;">
                   </div>
                 </div>
+
 
                 <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; display: flex; flex-direction: column; gap: 4px;">
                   <button class="lang-option" onclick="resetDailyLeaderboard(event)" style="color: #ffa502;">🗑️ Reset Daily Only</button>

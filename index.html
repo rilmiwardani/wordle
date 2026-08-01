@@ -437,7 +437,7 @@
                   <div style="font-size: 10px; color: #888; text-transform: uppercase; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.5px;">— atau pilih warna solid —</div>
 
                   <!-- RGB Sliders -->
-                  <div id="rgbPickerContainer" style="background: rgba(0,0,0,0.25); border-radius: 8px; padding: 10px; margin-bottom: 8px;">
+                  <div id="rgbPickerContainer" onclick="event.stopPropagation()" style="background: rgba(0,0,0,0.25); border-radius: 8px; padding: 10px; margin-bottom: 8px;">
 
                     <!-- Preview swatch + Hex input -->
                     <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
@@ -468,11 +468,11 @@
                   </div>
 
                   <!-- Blur + Dim sliders -->
-                  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-bottom: 5px;">
+                  <div onclick="event.stopPropagation()" style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-bottom: 5px;">
                     <label style="color: #ccc;">Efek Blur</label>
                     <input type="range" id="bgBlurSlider" min="0" max="30" value="12" oninput="updateBgEffects()" style="width: 60%; cursor: pointer;">
                   </div>
-                  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
+                  <div onclick="event.stopPropagation()" style="display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
                     <label style="color: #ccc;">Kegelapan</label>
                     <input type="range" id="bgDimSlider" min="0" max="100" value="60" oninput="updateBgEffects()" style="width: 60%; cursor: pointer;">
                   </div>

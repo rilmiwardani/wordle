@@ -1171,7 +1171,19 @@ function selectGame(mode) {
     else loginTitle.textContent = 'TIKTOK WORDLE';
   }
 
-  // Hide game select, show login
+  // If already connected to TikTok, skip login and go straight to game
+  if (isConnectedToTikTok && socket && socket.connected) {
+    gameSelectOverlay.style.display = 'none';
+    loginOverlay.style.display = 'none';
+    gameContainer.style.display = 'flex';
+    document.getElementById('hostMusicControl').style.display = 'flex';
+    applyGameModeUI();
+    startNewRound();
+    showToast(`🎮 Ganti ke ${mode.toUpperCase()}`, 2000);
+    return;
+  }
+
+  // Not yet connected — show login screen
   gameSelectOverlay.style.display = 'none';
   loginOverlay.style.display = 'flex';
 }
@@ -3645,20 +3657,17 @@ function backToGameList(e) {
   // Hentikan auto-reconnect timer
   if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
 
-  // Putuskan koneksi dari TikTok jika terhubung
-  if (socket && socket.connected) {
-    socket.emit('disconnect-tiktok');
-  }
+  // Keep TikTok connection alive — only clear game state
+  // Connection is only terminated via explicit 'Disconnect' button
 
   // Hapus mode game saat ini dari sessionStorage
   try {
     sessionStorage.removeItem('wordle_gameMode');
   } catch (ex) {}
 
-  // Reset status game
+  // Reset status game (tapi BUKAN status koneksi)
   currentGameMode = "";
   currentWord = "";
-  isConnectedToTikTok = false;
   isGameOver = false;
   guesses = [];
   round = 1;
@@ -3673,6 +3682,21 @@ function backToGameList(e) {
   const gameSelectOverlay = document.getElementById('gameSelectOverlay');
   if (gameSelectOverlay) {
     gameSelectOverlay.style.display = 'flex';
+  }
+
+  // Update connection status banner on game select screen
+  const connBanner = document.getElementById('gameSelectConnectedBanner');
+  const connUser = document.getElementById('gameSelectConnectedUser');
+  const subtitle = document.getElementById('gameSelectSubtitle');
+  if (connBanner && connUser) {
+    if (isConnectedToTikTok && lastUsername) {
+      connUser.textContent = `@${lastUsername}`;
+      connBanner.style.display = 'flex';
+      if (subtitle) subtitle.textContent = 'Pilih game berikutnya — langsung mulai!';
+    } else {
+      connBanner.style.display = 'none';
+      if (subtitle) subtitle.textContent = 'Pilih game untuk dimainkan';
+    }
   }
 
   // Tutup dropdown pengaturan

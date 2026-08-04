@@ -808,7 +808,8 @@ function onYouTubeIframeAPIReady() {
       'autoplay': 1,
       'controls': 0,
       'playsinline': 1,       // Required for iOS inline playback
-      'enablejsapi': 1
+      'enablejsapi': 1,
+      'origin': window.location.origin
     },
     events: {
       'onReady': onPlayerReady,
@@ -3459,16 +3460,16 @@ function startNewRound() {
     if (TARGET_WORDS.length >= 6) {
       const shuffled = [...TARGET_WORDS];
       shuffleArray(shuffled);
-      const isHard = (hardModeState !== 'off');
+      const isUltra = (hardModeState === 'ultra');
       
       for (let i = 0; i < 6; i++) {
         const word = shuffled[i];
-        const numClues = WORD_LENGTH === 5 ? 2 : Math.floor(WORD_LENGTH / 2);
+        const numClues = WORD_LENGTH <= 5 ? 1 : (WORD_LENGTH <= 7 ? 2 : 3);
         const clues = Array(WORD_LENGTH).fill(null);
         const allIndices = Array.from({length: WORD_LENGTH}, (_, k) => k);
         shuffleArray(allIndices);
         
-        if (isHard) {
+        if (isUltra) {
           // Place yellow clues: correct letters in wrong positions
           let placedClues = 0;
           for (let c = 0; c < WORD_LENGTH && placedClues < numClues; c++) {
@@ -5296,16 +5297,34 @@ function processGuess(guessWord, userData) {
             avatar.classList.add('show');
           }
           
+          const targetWord = fillBlanksTargets[matchedIndex].word;
+          let statuses = Array(WORD_LENGTH).fill('absent');
+          let targetLetters = targetWord.split('');
+
+          // First pass: correct
+          for (let j = 0; j < WORD_LENGTH; j++) {
+            if (guessWord[j] === targetWord[j]) {
+              statuses[j] = 'correct';
+              targetLetters[j] = null;
+            }
+          }
+          
+          // Second pass: present
+          if (hardModeState === 'off') {
+            for (let j = 0; j < WORD_LENGTH; j++) {
+              if (statuses[j] !== 'correct' && targetLetters.includes(guessWord[j])) {
+                statuses[j] = 'present';
+                targetLetters[targetLetters.indexOf(guessWord[j])] = null;
+              }
+            }
+          }
+
           for (let j = 0; j < WORD_LENGTH; j++) {
             const tile = document.getElementById(`tile-empty-${matchedIndex}-${j}`);
             if (tile) {
-              const clue = fillBlanksTargets[matchedIndex].clues[j];
               tile.textContent = guessWord[j];
-              
-              if (clue && clue.status === 'correct') {
-                 tile.className = 'tile correct';
-              } else {
-                 tile.className = 'tile absent'; 
+              tile.className = 'tile ' + statuses[j];
+              if (statuses[j] !== 'correct') {
                  tile.style.transition = 'all 0.3s';
               }
               // optional: add small pulse effect for invalid guess

@@ -211,6 +211,17 @@ window.toggleHeartFlurry = function(checked) {
   localStorage.setItem('wordle_heartFlurryEnabled', checked);
 };
 
+let isGameAnimationsEnabled = localStorage.getItem('wordle_gameAnimationsEnabled') !== 'false';
+window.toggleGameAnimations = function(checked) {
+  isGameAnimationsEnabled = checked;
+  localStorage.setItem('wordle_gameAnimationsEnabled', checked);
+  if (checked) {
+    document.body.classList.remove('no-animations');
+  } else {
+    document.body.classList.add('no-animations');
+  }
+};
+
 let isMarqueeEnabled = localStorage.getItem('wordle_marqueeEnabled') !== 'false';
 let playerLikes = {};
 let playerShares = {};
@@ -562,6 +573,7 @@ function updateLikeCounter(data, addedLikes) {
 }
 
 let isWaitingForLikes = false;
+let wordLoopContributors = [];
 
 window.executeRestartTransition = function() {
   if (!isWaitingForLikes) return; // Prevent double trigger
@@ -594,8 +606,26 @@ function triggerWinTransition(winDuration, isMultiWinner = false) {
   const activeFooter = document.getElementById(footerId);
   const activeProgress = document.getElementById(progressId);
   
+  if (isMultiWinner) {
+    const multiWinTitle = document.getElementById('multiWinTitle');
+    if (multiWinTitle) {
+      if (currentGameMode === 'wordloop') {
+        multiWinTitle.textContent = 'LOOP COMPLETED!';
+      } else if (currentGameMode === 'wordgrid') {
+        multiWinTitle.textContent = 'LEADERBOARD WORD GRID';
+      } else {
+        multiWinTitle.textContent = 'ROUND COMPLETED!';
+      }
+    }
+  }
+
   if (activeOverlay) activeOverlay.classList.add('show');
   if (window.playHostAudio) playHostAudio('win');
+  
+  // Burst confetti on any win
+  if (typeof triggerConfetti === 'function') {
+    triggerConfetti();
+  }
   
   if (isLikeRestartEnabled) {
     isWaitingForLikes = true;
@@ -1383,8 +1413,11 @@ function updateBestGuessUI() {
 function createWord500RowEl(guessData, isLatest, revealAllColors = false) {
   const row = document.createElement('div');
   row.className = 'board-row w500-row' + (isLatest ? ' w500-latest-row' : '');
+  if (isLatest && isGameAnimationsEnabled) {
+    row.classList.add('pop-in');
+  }
   const avatar = document.createElement('img');
-  avatar.className = 'guesser-avatar';
+  avatar.className = 'guesser-avatar' + (isLatest && isGameAnimationsEnabled ? ' spring-in' : '');
   if (guessData.userData && guessData.userData.profilePictureUrl) {
     avatar.src = guessData.userData.profilePictureUrl;
     avatar.classList.add('show');
@@ -1524,8 +1557,11 @@ function renderWord500Board(revealAllColors = false) {
 function createWordFitRowEl(guessData, isLatest, revealAllColors = false) {
   const row = document.createElement('div');
   row.className = 'board-row wordfit-row' + (isLatest ? ' wordfit-latest-row' : '');
+  if (isLatest && isGameAnimationsEnabled) {
+    row.classList.add('pop-in');
+  }
   const avatar = document.createElement('img');
-  avatar.className = 'guesser-avatar';
+  avatar.className = 'guesser-avatar' + (isLatest && isGameAnimationsEnabled ? ' spring-in' : '');
   if (guessData.userData && guessData.userData.profilePictureUrl) {
     avatar.src = guessData.userData.profilePictureUrl;
     avatar.classList.add('show');
@@ -1898,11 +1934,6 @@ function startInstructionRotation() {
     if (instEl) {
       instEl.innerHTML = res.text;
       instEl.style.color = 'var(--text-muted)';
-    }
-    
-    // Play interaction sound sparingly when the instruction rotates to "Follow & Share"
-    if (res.isFollowStep && Math.random() < 0.4) {
-       if (window.playHostAudio) playHostAudio('interaction');
     }
     
     currentInstructionIndex++;
@@ -3429,6 +3460,7 @@ function startNewRound() {
 
   currentWord = getRandomWord();
   guesses = [];
+  wordLoopContributors = [];
   guessQueue = [];
   discoveredLetters = Array(WORD_LENGTH).fill(null);
   bestGuess = null;
@@ -5474,6 +5506,13 @@ function processGuess(guessWord, userData) {
   row.style.position = 'relative';
   if (!isValidWord) {
     row.style.zIndex = "999";
+    if (isGameAnimationsEnabled) {
+      row.classList.add('elastic-shake');
+    }
+  } else {
+    if (isGameAnimationsEnabled) {
+      row.classList.add('pop-in');
+    }
   }
   
   let invalidTooltipMsg = hardModeMsg;
@@ -5484,6 +5523,7 @@ function processGuess(guessWord, userData) {
   }
 
   if (invalidTooltipMsg) {
+    if (window.playHostAudio) playHostAudio('invalid');
     const tooltip = document.createElement('div');
     tooltip.className = 'row-tooltip is-invalid-tooltip' + (hardModeConflictWord ? ' clue-conflict-tooltip' : '');
     tooltip.textContent = invalidTooltipMsg;
@@ -5502,7 +5542,7 @@ function processGuess(guessWord, userData) {
   }
   
   const avatar = document.createElement('img');
-  avatar.className = 'guesser-avatar';
+  avatar.className = 'guesser-avatar' + (isGameAnimationsEnabled ? ' spring-in' : '');
   avatar.id = `avatar-${currentRow}`;
   if (userData && userData.profilePictureUrl) {
     avatar.src = userData.profilePictureUrl;
@@ -5570,13 +5610,13 @@ function processGuess(guessWord, userData) {
     }
 
     // Second pass: present
-    if (!isNoYellowMode) {
-      for (let i = 0; i < WORD_LENGTH; i++) {
-        if (guessArray[i] !== null && targetArray.includes(guessArray[i])) {
+    for (let i = 0; i < WORD_LENGTH; i++) {
+      if (guessArray[i] !== null && targetArray.includes(guessArray[i])) {
+        if (!isNoYellowMode || isAnySortedMode) {
           statuses[i] = 'present';
-          targetArray[targetArray.indexOf(guessArray[i])] = null;
-          presentCount++;
         }
+        targetArray[targetArray.indexOf(guessArray[i])] = null;
+        presentCount++;
       }
     }
     
@@ -5609,7 +5649,15 @@ function processGuess(guessWord, userData) {
       tiles[i].classList.add('blind');
     } else {
       // Wordle: normal colored feedback
-      tiles[i].classList.add(statuses[i]);
+      if (isGameAnimationsEnabled) {
+        tiles[i].classList.add('flip-3d');
+        tiles[i].style.animationDelay = `${i * 150}ms`;
+        setTimeout(() => {
+          tiles[i].classList.add(statuses[i]);
+        }, (i * 150) + 225);
+      } else {
+        tiles[i].classList.add(statuses[i]);
+      }
     }
   }
 
@@ -5666,9 +5714,11 @@ function processGuess(guessWord, userData) {
     row.appendChild(partialClue);
   }
 
+  let isClose = false;
   if (isValidWord && guessWord !== currentWord && (correctCount + presentCount >= Math.floor(WORD_LENGTH / 2) + 1)) {
     if (!hasPlayedCloseAudio) {
       hasPlayedCloseAudio = true;
+      isClose = true;
       if (window.playHostAudio) playHostAudio('close');
     }
   }
@@ -5709,7 +5759,17 @@ function processGuess(guessWord, userData) {
     
     if (isValidWord) {
       guesses.push(guessWord);
-      if (currentGameMode === 'wordloop') updateWordLoopUI();
+      if (currentGameMode === 'wordloop') {
+        wordLoopContributors.push({
+          word: guessWord,
+          userData: userData ? {
+            nickname: userData.nickname,
+            profilePictureUrl: userData.profilePictureUrl,
+            uniqueId: userData.uniqueId
+          } : { nickname: 'SISTEM', uniqueId: 'system' }
+        });
+        updateWordLoopUI();
+      }
     } else {
       row.classList.add('is-invalid-row');
     }
@@ -5737,7 +5797,7 @@ function processGuess(guessWord, userData) {
   if (currentGameMode === 'wordloop') {
     if (guesses.length === 6) {
       isWin = true;
-      winPts = 10; // Bonus points for completing loop
+      winPts = 0; // Equalized: all players get +5 points for their word guess
     }
   } else {
     if (guessWord === currentWord) {
@@ -5749,66 +5809,119 @@ function processGuess(guessWord, userData) {
   if (isWin) {
     isGameOver = true;
     guessQueue = []; // Bug#1+#5 fix: clear antrian agar tebakan lama tidak masuk ronde baru
-    if (winPts > 0) {
-      addPoints(userData, winPts);
-      showFloatingPoints(winPts, `avatar-${currentRow}`);
-    }
-    const winnerName = userData ? userData.nickname : 'Someone';
-    const avatarUrl = userData && userData.profilePictureUrl ? userData.profilePictureUrl : 'assets/bg_nature.png';
-    const winOverlay = document.getElementById('winOverlay');
-    document.getElementById('winAvatar').src = avatarUrl;
-    document.getElementById('winName').textContent = winnerName;
-    document.getElementById('winPts').innerHTML = `🪙 +${winPts} Bonus`;
-    const winWordEl = document.getElementById('winWord');
-    if (winWordEl) {
-      if (currentGameMode === 'colorfit') {
-        winWordEl.innerHTML = '';
-        winWordEl.style.display = 'flex';
-        winWordEl.style.justifyContent = 'center';
-        winWordEl.style.gap = '8px';
-        winWordEl.style.marginTop = '10px';
+    
+    if (currentGameMode === 'wordloop') {
+      const multiWinList = document.getElementById('multiWinList');
+      if (multiWinList) {
+        multiWinList.innerHTML = '';
         
-        for (let i = 0; i < currentWord.length; i++) {
-          const letter = currentWord[i];
-          const box = document.createElement('div');
-          box.className = `color-box color-${letter.toLowerCase()}`;
-          box.textContent = letter;
-          box.style.width = '32px';
-          box.style.height = '32px';
-          box.style.fontSize = '18px';
-          box.style.textShadow = 'none'; 
-          winWordEl.appendChild(box);
+        wordLoopContributors.forEach((c, idx) => {
+          const isSystem = (c.userData.uniqueId === 'system');
+          const pointsEarned = isSystem ? 0 : 5;
+          const displayPoints = isSystem ? 'Start' : `+${pointsEarned}`;
+          
+          const item = document.createElement('div');
+          item.className = 'multi-win-item';
+          
+          item.innerHTML = `
+            <img class="multi-win-avatar" src="${c.userData.profilePictureUrl || 'assets/bg_nature.png'}" alt="Avatar">
+            <div class="multi-win-info">
+              <div class="multi-win-name">${c.userData.nickname || 'Unknown'}</div>
+              <div class="multi-win-word">${c.word}</div>
+            </div>
+            <div class="multi-win-points">${displayPoints}</div>
+          `;
+          multiWinList.appendChild(item);
+        });
+      }
+      
+      if (isGameAnimationsEnabled) {
+        if (row) {
+          const winningTiles = row.querySelectorAll('.tile');
+          setTimeout(() => {
+            winningTiles.forEach((t, idx) => {
+              setTimeout(() => t.classList.add('win-wave'), idx * 100);
+            });
+          }, 1200);
         }
+        
+        setTimeout(() => {
+          triggerWinTransition(6000, true);
+        }, 2400);
       } else {
-        winWordEl.innerHTML = '';
-        winWordEl.textContent = currentGameMode === 'wordloop' ? "LOOP COMPLETED!" : currentWord;
-        winWordEl.style.display = 'block';
-        winWordEl.style.fontSize = '';
-        winWordEl.style.letterSpacing = '';
-        winWordEl.style.marginTop = '';
+        triggerWinTransition(6000, true);
+      }
+      
+    } else {
+      if (winPts > 0) {
+        addPoints(userData, winPts);
+        showFloatingPoints(winPts, `avatar-${currentRow}`);
+      }
+      const winnerName = userData ? userData.nickname : 'Someone';
+      const avatarUrl = userData && userData.profilePictureUrl ? userData.profilePictureUrl : 'assets/bg_nature.png';
+      const winOverlay = document.getElementById('winOverlay');
+      document.getElementById('winAvatar').src = avatarUrl;
+      document.getElementById('winName').textContent = winnerName;
+      document.getElementById('winPts').innerHTML = `🪙 +${winPts} Bonus`;
+      const winWordEl = document.getElementById('winWord');
+      if (winWordEl) {
+        if (currentGameMode === 'colorfit') {
+          winWordEl.innerHTML = '';
+          winWordEl.style.display = 'flex';
+          winWordEl.style.justifyContent = 'center';
+          winWordEl.style.gap = '8px';
+          winWordEl.style.marginTop = '10px';
+          
+          for (let i = 0; i < currentWord.length; i++) {
+            const letter = currentWord[i];
+            const box = document.createElement('div');
+            box.className = `color-box color-${letter.toLowerCase()}`;
+            box.textContent = letter;
+            box.style.width = '32px';
+            box.style.height = '32px';
+            box.style.fontSize = '18px';
+            box.style.textShadow = 'none'; 
+            winWordEl.appendChild(box);
+          }
+        } else {
+          winWordEl.innerHTML = '';
+          winWordEl.textContent = currentWord;
+          winWordEl.style.display = 'block';
+          winWordEl.style.fontSize = '';
+          winWordEl.style.letterSpacing = '';
+          winWordEl.style.marginTop = '';
+        }
+      }
+      
+      // Jika di mode Word500/Word600/WordFit, reveal seluruh grid sebelum overlay muncul
+      if (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit') {
+          if (currentGameMode === 'wordfit') renderWordFitBoard(true);
+          else renderWord500Board(true);
+      }
+      
+      // Tunggu 2 detik dulu agar jawaban di grid (dan efek reveal) terlihat, baru tampilkan overlay
+      if (isGameAnimationsEnabled) {
+        const winningRow = (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit') ? board.firstChild : row;
+        if (winningRow) {
+          const winningTiles = winningRow.querySelectorAll('.tile');
+          setTimeout(() => {
+            winningTiles.forEach((t, idx) => {
+              setTimeout(() => t.classList.add('win-wave'), idx * 100);
+            });
+          }, 1200); // Mulai wave saat huruf terakhir hampir selesai flip
+        }
+        
+        setTimeout(() => {
+          triggerWinTransition(4000);
+        }, 2400); // Tunggu wave selesai sebelum memunculkan overlay
+      } else {
+        triggerWinTransition(4000);
       }
     }
-    
-    // Jika di mode Word500/Word600/WordFit, reveal seluruh grid sebelum overlay muncul
-    if (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit') {
-        if (currentGameMode === 'wordfit') renderWordFitBoard(true);
-        else renderWord500Board(true);
-    }
-    
-    // Tunggu 2 detik dulu agar jawaban di grid (dan efek reveal) terlihat, baru tampilkan overlay
-    const winningRow = (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit') ? board.firstChild : row;
-    if (winningRow) {
-      const winningTiles = winningRow.querySelectorAll('.tile');
-      setTimeout(() => {
-        winningTiles.forEach((t, idx) => {
-          setTimeout(() => t.classList.add('win-wave'), idx * 100);
-        });
-      }, 1200); // Mulai wave saat huruf terakhir hampir selesai flip
-    }
+  }
 
-    setTimeout(() => {
-      triggerWinTransition(4000);
-    }, 2400); // Tunggu wave selesai sebelum memunculkan overlay
+  if (isValidWord && !isWin && !isClose) {
+    if (window.playHostAudio) playHostAudio('interaction');
   }
 }
 
@@ -5977,6 +6090,10 @@ function showCustomConfirm(message, onConfirm) {
   
   if (!overlay || !messageEl || !yesBtn || !noBtn) return;
   
+  // Close settings dropdown so it doesn't cover the modal
+  const dropdown = document.getElementById('settingsDropdown');
+  if (dropdown) dropdown.classList.remove('open');
+  
   messageEl.textContent = message;
   overlay.style.display = 'flex';
   
@@ -5986,12 +6103,14 @@ function showCustomConfirm(message, onConfirm) {
   yesBtn.parentNode.replaceChild(newYes, yesBtn);
   noBtn.parentNode.replaceChild(newNo, noBtn);
   
-  newYes.addEventListener('click', () => {
+  newYes.addEventListener('click', (e) => {
+    e.stopPropagation();
     overlay.style.display = 'none';
     if (typeof onConfirm === 'function') onConfirm();
   });
   
-  newNo.addEventListener('click', () => {
+  newNo.addEventListener('click', (e) => {
+    e.stopPropagation();
     overlay.style.display = 'none';
   });
 }
@@ -6323,6 +6442,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const heartFlurryToggle = document.getElementById('heartFlurryToggle');
   if (heartFlurryToggle) heartFlurryToggle.checked = isHeartFlurryEnabled;
+
+  const gameAnimationsToggle = document.getElementById('gameAnimationsToggle');
+  if (gameAnimationsToggle) gameAnimationsToggle.checked = isGameAnimationsEnabled;
+  if (!isGameAnimationsEnabled) {
+    document.body.classList.add('no-animations');
+  }
 
   // Initialize length checkboxes
   try {
@@ -6668,6 +6793,105 @@ window.testCustomGiftSound = function() {
   }
 };
 
+window.openCustomSFXSettings = function(e) {
+  if (e) e.stopPropagation();
+  const dropdown = document.getElementById('settingsDropdown');
+  if (dropdown) dropdown.classList.remove('open');
+  
+  document.getElementById('customSfxEnabled').checked = customSfxSettings.enabled !== false;
+  document.getElementById('customSfxVolumeSlider').value = customSfxSettings.volume;
+  document.getElementById('customSfxVolumeLabel').textContent = `${customSfxSettings.volume}%`;
+  
+  document.getElementById('customSfxStartUrl').value = customSfxSettings.start || '';
+  document.getElementById('customSfxWinUrl').value = customSfxSettings.win || '';
+  document.getElementById('customSfxCloseUrl').value = customSfxSettings.close || '';
+  document.getElementById('customSfxCorrectUrl').value = customSfxSettings.correct || '';
+  document.getElementById('customSfxInteractionUrl').value = customSfxSettings.interaction || '';
+  document.getElementById('customSfxClickUrl').value = customSfxSettings.click || '';
+  document.getElementById('customSfxInvalidUrl').value = customSfxSettings.invalid || '';
+  
+  document.getElementById('customSfxSettingsModal').style.display = 'flex';
+};
+
+window.saveCustomSFXSettings = function() {
+  customSfxSettings.enabled = document.getElementById('customSfxEnabled').checked;
+  customSfxSettings.volume = parseInt(document.getElementById('customSfxVolumeSlider').value) || 80;
+  
+  customSfxSettings.start = document.getElementById('customSfxStartUrl').value.trim();
+  customSfxSettings.win = document.getElementById('customSfxWinUrl').value.trim();
+  customSfxSettings.close = document.getElementById('customSfxCloseUrl').value.trim();
+  customSfxSettings.correct = document.getElementById('customSfxCorrectUrl').value.trim();
+  customSfxSettings.interaction = document.getElementById('customSfxInteractionUrl').value.trim();
+  customSfxSettings.click = document.getElementById('customSfxClickUrl').value.trim();
+  customSfxSettings.invalid = document.getElementById('customSfxInvalidUrl').value.trim();
+  
+  localStorage.setItem('custom_sfx_settings', JSON.stringify(customSfxSettings));
+  document.getElementById('customSfxSettingsModal').style.display = 'none';
+  
+  showToast("✅ Pengaturan SFX Kustom disimpan!");
+};
+
+window.previewCustomSfxSound = function(type) {
+  const inputEl = document.getElementById(`customSfx${type.charAt(0).toUpperCase() + type.slice(1)}Url`);
+  if (!inputEl) return;
+  const url = inputEl.value.trim();
+  if (!url) {
+    showToast(`⚠️ Masukkan URL audio untuk event ${type} terlebih dahulu!`);
+    return;
+  }
+  
+  try {
+    const vol = parseInt(document.getElementById('customSfxVolumeSlider').value) || 80;
+    const audio = new Audio(url);
+    audio.volume = vol / 100;
+    
+    duckMusicVolume();
+    audio.play().catch(e => {
+      showToast("🚫 Gagal memutar suara! Periksa kembali URL.");
+      restoreMusicVolume();
+    });
+    
+    audio.onended = () => {
+      restoreMusicVolume();
+    };
+    audio.onerror = () => {
+      showToast("🚫 Gagal memutar suara! Format URL salah atau diblokir.");
+      restoreMusicVolume();
+    };
+  } catch (err) {
+    showToast("🚫 Gagal memutar file audio!");
+    restoreMusicVolume();
+  }
+};
+
+window.handleSfxFileUpload = function(inputEl, type) {
+  const file = inputEl.files[0];
+  if (!file) return;
+  
+  // Cek ukuran file (rekomendasi maks 500KB agar muat di localStorage)
+  if (file.size > 500 * 1024) {
+    showToast("⚠️ Ukuran file terlalu besar! Gunakan file di bawah 500KB agar tersimpan dengan aman.");
+    inputEl.value = "";
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const dataUrl = e.target.result;
+    const urlInput = document.getElementById(`customSfx${type.charAt(0).toUpperCase() + type.slice(1)}Url`);
+    if (urlInput) {
+      urlInput.value = dataUrl;
+      showToast(`✅ File audio untuk ${type} berhasil dimuat! Klik Simpan untuk menyimpan.`);
+    }
+    inputEl.value = ""; // Reset input file agar bisa mendeteksi file yang sama jika di-upload ulang
+  };
+  reader.onerror = function() {
+    showToast("🚫 Gagal membaca file audio!");
+    inputEl.value = "";
+  };
+  reader.readAsDataURL(file);
+};
+
 // ─── TTS Settings Functions ───
 let ttsSettings = {
   enabled: false,
@@ -6845,6 +7069,26 @@ const sfxAudioFiles = {
   win: ['assets/audio/sfx-win.mp3']
 };
 
+let customSfxSettings = {
+  enabled: true,
+  volume: 80,
+  start: '',
+  win: '',
+  close: '',
+  correct: '',
+  interaction: '',
+  click: '',
+  invalid: ''
+};
+try {
+  const savedCustomSfx = localStorage.getItem('custom_sfx_settings');
+  if (savedCustomSfx) {
+    customSfxSettings = Object.assign(customSfxSettings, JSON.parse(savedCustomSfx));
+  }
+} catch (e) {
+  console.warn('Failed to load custom SFX settings', e);
+}
+
 let currentHostAudio = null;
 let _musicDucked = false;
 const DUCK_VOLUME_RATIO = 0.2; // Musik turun ke 20% saat host audio bermain
@@ -6873,24 +7117,55 @@ function restoreMusicVolume() {
   } catch(e) { console.warn('[Audio] Restore error', e); }
 }
 
+let lastSfxPlayTimes = {};
+
 window.playHostAudio = function(type) {
-  if (!hostAudioSettings.enabled) return;
-  
-  // Play SFX (Backsound) if exists for this type — SFX berjalan independen dari host audio
-  // SFX diputar dengan delay 300ms agar suara host terdengar duluan dan tidak tenggelam
-  if (typeof sfxAudioFiles !== 'undefined' && sfxAudioFiles[type]) {
-    const sfxFiles = sfxAudioFiles[type];
-    if (sfxFiles && sfxFiles.length > 0) {
-      const sfxFile = sfxFiles[Math.floor(Math.random() * sfxFiles.length)];
-      setTimeout(() => {
-        const sfxAudio = new Audio(sfxFile);
-        // Volume SFX 25% dari volume host — cukup terdengar tapi tidak mengalahkan suara host
-        sfxAudio.volume = (hostAudioSettings.volume / 100) * 0.25;
-        sfxAudio.play().catch(e => console.log('SFX play blocked', e));
-      }, 300);
+  const now = Date.now();
+  // Throttle high-frequency minor events to prevent overlapping audio chaos
+  if (['interaction', 'click', 'invalid'].includes(type)) {
+    const lastPlay = lastSfxPlayTimes[type] || 0;
+    if (now - lastPlay < 300) {
+      return; // Skip if played less than 300ms ago
+    }
+    lastSfxPlayTimes[type] = now;
+  }
+
+  // 1. Play Custom SFX if configured & enabled (independent of host voice audio settings)
+  let customSfxPlayed = false;
+  if (customSfxSettings.enabled && customSfxSettings[type]) {
+    const customUrl = customSfxSettings[type].trim();
+    if (customUrl) {
+      try {
+        const customAudio = new Audio(customUrl);
+        customAudio.volume = (customSfxSettings.volume / 100);
+        customAudio.play().catch(e => console.log('Custom SFX play blocked', e));
+      } catch (e) {
+        console.warn('Custom SFX play error', e);
+      }
+      customSfxPlayed = true;
     }
   }
 
+  // 2. Play default SFX if no custom SFX was played (only if host audio is enabled)
+  if (hostAudioSettings.enabled && !customSfxPlayed) {
+    if (typeof sfxAudioFiles !== 'undefined' && sfxAudioFiles[type]) {
+      const sfxFiles = sfxAudioFiles[type];
+      if (sfxFiles && sfxFiles.length > 0) {
+        const sfxFile = sfxFiles[Math.floor(Math.random() * sfxFiles.length)];
+        try {
+          const sfxAudio = new Audio(sfxFile);
+          sfxAudio.volume = (hostAudioSettings.volume / 100) * 0.25;
+          sfxAudio.play().catch(e => console.log('SFX play blocked', e));
+        } catch (e) {
+          console.warn('SFX play error', e);
+        }
+      }
+    }
+  }
+
+  // 3. Play host voice audio
+  if (!hostAudioSettings.enabled) return;
+  
   const files = hostAudioFiles[type];
   if (!files || files.length === 0) return;
   
@@ -6902,7 +7177,6 @@ window.playHostAudio = function(type) {
     }
   } else {
     // If minor event (close, interaction), and HOST audio is already playing, skip
-    // Note: hanya cek currentHostAudio, bukan SFX — supaya SFX tidak menghalangi host
     if (currentHostAudio && !currentHostAudio.paused) {
       return;
     }
@@ -6934,8 +7208,26 @@ window.testHostAudio = function() {
   
   const vol = (window._tempHostAudioVolume !== undefined && window._tempHostAudioVolume !== null) ? window._tempHostAudioVolume : hostAudioSettings.volume;
 
-  // Test SFX if exists — same volume and delay as playHostAudio
-  if (typeof sfxAudioFiles !== 'undefined' && sfxAudioFiles[randomType]) {
+  // 1. Test Custom SFX if exists
+  let customSfxPlayed = false;
+  if (customSfxSettings.enabled && customSfxSettings[randomType]) {
+    const customUrl = customSfxSettings[randomType].trim();
+    if (customUrl) {
+      setTimeout(() => {
+        try {
+          const customAudio = new Audio(customUrl);
+          customAudio.volume = (customSfxSettings.volume / 100);
+          customAudio.play().catch(e => console.log('Custom SFX test play blocked', e));
+        } catch (e) {
+          console.warn('Custom SFX test play error', e);
+        }
+      }, 300);
+      customSfxPlayed = true;
+    }
+  }
+
+  // 2. Play default SFX if no custom SFX was played
+  if (!customSfxPlayed && typeof sfxAudioFiles !== 'undefined' && sfxAudioFiles[randomType]) {
     const sfxFiles = sfxAudioFiles[randomType];
     if (sfxFiles && sfxFiles.length > 0) {
       const sfxFile = sfxFiles[Math.floor(Math.random() * sfxFiles.length)];

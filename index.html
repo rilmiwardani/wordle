@@ -126,7 +126,7 @@
   </div>
 
   <!-- Connection Overlay -->
-  <div class="login-overlay" id="loginOverlay" style="display: none;">
+  <div class="login-overlay" id="loginOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.65);">
     <div class="login-card">
       <div class="login-logo">🎮</div>
       <h1 id="loginTitle">TIKTOK WORDLE</h1>
@@ -398,6 +398,13 @@
                     <div class="toggle-track"></div>
                   </div>
                 </label>
+                <label class="settings-toggle-row" onclick="event.stopPropagation()">
+                  <span class="settings-toggle-label">✨ Animasi Papan Game</span>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="gameAnimationsToggle" checked onchange="toggleGameAnimations(this.checked)">
+                    <div class="toggle-track"></div>
+                  </div>
+                </label>
                 <label class="settings-toggle" style="margin-top: 10px;">
                   <span class="settings-toggle-label">🔲 Auto Fullscreen (Klik Layar)</span>
                   <div class="toggle-switch">
@@ -418,6 +425,7 @@
                 <button class="lang-option" onclick="openMusicSettings(event)">🎵 Pengaturan Musik</button>
                 <button class="lang-option" onclick="openTTSSettings(event)">🗣️ Pengaturan Suara (TTS)</button>
                 <button class="lang-option" onclick="openSocialAudioSettings(event)">🔊 Pengaturan Sound Alert</button>
+                <button class="lang-option" onclick="openCustomSFXSettings(event)">🔊 Pengaturan SFX Kustom</button>
                 
                 <!-- Background setting container -->
                 <div style="margin: 15px 0; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
@@ -703,6 +711,7 @@
     <div class="win-card">
       <div class="win-avatar-container">
         <img id="winAvatar" src="" alt="Winner">
+        <div class="crown-icon">👑</div>
       </div>
       <div class="win-title">WE HAVE A WINNER!</div>
       <div class="win-name" id="winName">@username</div>
@@ -770,7 +779,7 @@
   </div>
 
   <!-- Music Settings Modal -->
-  <div class="login-overlay" id="musicSettingsModal" style="display: none; z-index: 500;">
+  <div class="login-overlay" id="musicSettingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; background: rgba(0,0,0,0.65);">
     <div class="login-card" style="max-width: 380px; width: 90%; padding: 25px;">
       <h2 style="margin-bottom: 20px; color: white; font-size: 1.2rem;">🎵 Pengaturan Request Musik</h2>
       
@@ -818,7 +827,7 @@
   </div>
 
   <!-- TTS Settings Modal -->
-  <div class="login-overlay" id="ttsSettingsModal" style="display: none; z-index: 500;">
+  <div class="login-overlay" id="ttsSettingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; background: rgba(0,0,0,0.65);">
     <div class="login-card" style="max-width: 380px; width: 90%; padding: 25px;">
       <h2 style="margin-bottom: 20px; color: white; font-size: 1.2rem;">🗣️ Pengaturan Suara (TTS)</h2>
       
@@ -903,7 +912,7 @@
   </div>
 
   <!-- Social Audio Settings Modal -->
-  <div class="login-overlay" id="socialAudioSettingsModal" style="display: none; z-index: 500;">
+  <div class="login-overlay" id="socialAudioSettingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; background: rgba(0,0,0,0.65);">
     <div class="login-card" style="max-width: 380px; width: 90%; padding: 25px;">
       <h2 style="margin-bottom: 20px; color: white; font-size: 1.2rem;">🔊 Pengaturan Sound Alert</h2>
       
@@ -955,8 +964,116 @@
     </div>
   </div>
 
+  <!-- Custom SFX Settings Modal -->
+  <div class="login-overlay" id="customSfxSettingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; background: rgba(0,0,0,0.65);">
+    <div class="login-card" style="max-width: 400px; width: 90%; padding: 25px; max-height: 90vh; overflow-y: auto;">
+      <h2 style="margin-bottom: 20px; color: white; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">🔊 Pengaturan SFX Kustom</h2>
+      
+      <label style="text-align: left; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+        <span style="font-size: 13px; color: #ccc;">Aktifkan SFX Kustom:</span>
+        <div class="toggle-switch">
+          <input type="checkbox" id="customSfxEnabled">
+          <div class="toggle-track"></div>
+        </div>
+      </label>
+      
+      <div style="text-align: left; margin-bottom: 15px;">
+        <div style="display: flex; justify-content: space-between;">
+          <label style="font-size: 13px; color: #ccc;">Volume SFX:</label>
+          <span id="customSfxVolumeLabel" style="font-size: 13px; color: white; font-weight: 600;">80%</span>
+        </div>
+        <input type="range" id="customSfxVolumeSlider" min="0" max="100" value="80" oninput="document.getElementById('customSfxVolumeLabel').textContent = this.value + '%'" style="width: 100%; margin-top: 5px; cursor: pointer;">
+      </div>
+      
+      <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-bottom: 15px;">
+        <div style="font-size: 11px; color: #aaa; margin-bottom: 10px; font-weight: 700; text-transform: uppercase; text-align: left;">Daftar Efek Suara (URL atau File Audio)</div>
+        
+        <!-- start -->
+        <div style="text-align: left; margin-bottom: 12px;">
+          <label style="font-size: 11px; color: #ccc; display: block; margin-bottom: 4px;">Game Start (Mulai Game):</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="customSfxStartUrl" placeholder="https://... atau upload file 📂" style="flex: 1; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; font-size: 12px;">
+            <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'start')" style="display: none;" id="customSfxStartFile">
+            <button onclick="document.getElementById('customSfxStartFile').click()" style="padding: 8px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal">📂</button>
+            <button onclick="previewCustomSfxSound('start')" style="padding: 8px 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap;">▶️ TEST</button>
+          </div>
+        </div>
 
-    <!-- Social Alerts (Follow / Share / Gift) -->
+        <!-- win -->
+        <div style="text-align: left; margin-bottom: 12px;">
+          <label style="font-size: 11px; color: #ccc; display: block; margin-bottom: 4px;">Game Win (Kemenangan):</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="customSfxWinUrl" placeholder="https://... atau upload file 📂" style="flex: 1; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; font-size: 12px;">
+            <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'win')" style="display: none;" id="customSfxWinFile">
+            <button onclick="document.getElementById('customSfxWinFile').click()" style="padding: 8px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal">📂</button>
+            <button onclick="previewCustomSfxSound('win')" style="padding: 8px 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap;">▶️ TEST</button>
+          </div>
+        </div>
+
+        <!-- close -->
+        <div style="text-align: left; margin-bottom: 12px;">
+          <label style="font-size: 11px; color: #ccc; display: block; margin-bottom: 4px;">Hampir Benar (Close):</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="customSfxCloseUrl" placeholder="https://... atau upload file 📂" style="flex: 1; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; font-size: 12px;">
+            <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'close')" style="display: none;" id="customSfxCloseFile">
+            <button onclick="document.getElementById('customSfxCloseFile').click()" style="padding: 8px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal">📂</button>
+            <button onclick="previewCustomSfxSound('close')" style="padding: 8px 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap;">▶️ TEST</button>
+          </div>
+        </div>
+
+        <!-- correct -->
+        <div style="text-align: left; margin-bottom: 12px;">
+          <label style="font-size: 11px; color: #ccc; display: block; margin-bottom: 4px;">Kata Terpecahkan (Correct):</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="customSfxCorrectUrl" placeholder="https://... atau upload file 📂" style="flex: 1; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; font-size: 12px;">
+            <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'correct')" style="display: none;" id="customSfxCorrectFile">
+            <button onclick="document.getElementById('customSfxCorrectFile').click()" style="padding: 8px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal">📂</button>
+            <button onclick="previewCustomSfxSound('correct')" style="padding: 8px 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap;">▶️ TEST</button>
+          </div>
+        </div>
+
+        <!-- interaction -->
+        <div style="text-align: left; margin-bottom: 12px;">
+          <label style="font-size: 11px; color: #ccc; display: block; margin-bottom: 4px;">Tebakan Masuk (Interaction):</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="customSfxInteractionUrl" placeholder="https://... atau upload file 📂" style="flex: 1; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; font-size: 12px;">
+            <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'interaction')" style="display: none;" id="customSfxInteractionFile">
+            <button onclick="document.getElementById('customSfxInteractionFile').click()" style="padding: 8px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal">📂</button>
+            <button onclick="previewCustomSfxSound('interaction')" style="padding: 8px 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap;">▶️ TEST</button>
+          </div>
+        </div>
+
+        <!-- click -->
+        <div style="text-align: left; margin-bottom: 12px;">
+          <label style="font-size: 11px; color: #ccc; display: block; margin-bottom: 4px;">Bocoran Huruf (Click Clue):</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="customSfxClickUrl" placeholder="https://... atau upload file 📂" style="flex: 1; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; font-size: 12px;">
+            <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'click')" style="display: none;" id="customSfxClickFile">
+            <button onclick="document.getElementById('customSfxClickFile').click()" style="padding: 8px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal">📂</button>
+            <button onclick="previewCustomSfxSound('click')" style="padding: 8px 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap;">▶️ TEST</button>
+          </div>
+        </div>
+
+        <!-- invalid -->
+        <div style="text-align: left; margin-bottom: 12px;">
+          <label style="font-size: 11px; color: #ccc; display: block; margin-bottom: 4px;">Tebakan Tidak Valid (Invalid):</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="customSfxInvalidUrl" placeholder="https://... atau upload file 📂" style="flex: 1; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; font-size: 12px;">
+            <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'invalid')" style="display: none;" id="customSfxInvalidFile">
+            <button onclick="document.getElementById('customSfxInvalidFile').click()" style="padding: 8px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal">📂</button>
+            <button onclick="previewCustomSfxSound('invalid')" style="padding: 8px 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap;">▶️ TEST</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button onclick="saveCustomSFXSettings()" style="flex: 1; padding: 12px; background: #3b82f6; border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Simpan</button>
+        <button onclick="document.getElementById('customSfxSettingsModal').style.display='none'" style="flex: 1; padding: 12px; background: rgba(255,255,255,0.2); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Batal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Social Alerts (Follow / Share / Gift) -->
     <div id="socialAlertContainer" class="social-alert-container">
       <img id="socialAlertAvatar" class="social-alert-avatar" src="assets/default-avatar.png" alt="Avatar">
       <div class="social-alert-text">
@@ -967,18 +1084,7 @@
       <span id="socialAlertGiftCount" class="social-alert-gift-count" style="display: none;">x1</span>
     </div>
 
-    <!-- Custom Confirm Modal -->
-    <div id="confirmModal" class="confirm-modal-overlay" style="display: none;">
-      <div class="confirm-modal-box">
-        <div class="confirm-modal-icon">⚠️</div>
-        <div class="confirm-modal-title">Konfirmasi</div>
-        <div class="confirm-modal-message" id="confirmModalMessage">Apakah Anda yakin?</div>
-        <div class="confirm-modal-actions">
-          <button id="confirmModalYes" class="confirm-btn yes">Ya, Hapus</button>
-          <button id="confirmModalNo" class="confirm-btn no">Batal</button>
-        </div>
-      </div>
-    </div>
+
 
   <!-- Recap Overlay -->
   <div id="recapOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: rgba(0,0,0,0.9);">
@@ -988,6 +1094,19 @@
     <iframe id="recapIframe" src="" style="width: 100%; height: 100%; border: none;"></iframe>
   </div>
 
-  <script src="app.js?v=30"></script>
+  <!-- Custom Confirm Modal -->
+  <div id="confirmModal" class="confirm-modal-overlay" style="display: none;">
+    <div class="confirm-modal-box">
+      <div class="confirm-modal-icon">⚠️</div>
+      <div class="confirm-modal-title">Konfirmasi</div>
+      <div class="confirm-modal-message" id="confirmModalMessage">Apakah Anda yakin?</div>
+      <div class="confirm-modal-actions">
+        <button id="confirmModalYes" class="confirm-btn yes">Ya, Hapus</button>
+        <button id="confirmModalNo" class="confirm-btn no">Batal</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=39"></script>
 </body>
 </html>

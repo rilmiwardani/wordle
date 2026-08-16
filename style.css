@@ -3112,3 +3112,316 @@ body.no-animations *::after {
   transition-duration: 0s !important;
   animation-duration: 0s !important;
 }
+
+
+/* ==========================================================================
+   SQUAREWORD ID - TIKTOK LIVE GAME MODE STYLES (EXACT 1:1 PIXEL ALIGNMENT)
+   ========================================================================== */
+
+.squareword-board-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(8px, 1.8vw, 14px);
+  width: 100%;
+  max-width: var(--board-max-width, 450px);
+  margin: 0 auto 10px;
+  position: relative;
+  box-sizing: border-box;
+  padding: 0;
+}
+
+/* All 3 row types have the EXACT SAME 7-column grid with ZERO padding and ZERO border so all columns match */
+.sq-input-row,
+.sq-last-guess-row,
+.sq-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: clamp(4px, 1.5vw, 8px);
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  box-sizing: border-box;
+  align-items: center;
+}
+
+.sq-input-row,
+.sq-last-guess-row {
+  position: relative;
+}
+
+/* Grid Wrapper & Grid list */
+.sq-grid-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.sq-grid {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(4px, 1.5vw, 8px);
+  width: 100%;
+}
+
+.sq-row {
+  border-radius: 12px;
+  transition: all 0.25s ease;
+}
+
+.sq-row.row-scanning {
+  background: transparent;
+  /* box-shadow: none; */
+  border-radius: 12px;
+}
+
+.sq-row.row-complete {
+  background: transparent;
+  /* box-shadow: none; */
+  border-radius: 12px;
+}
+
+/* Invisible spacer on column 7 of top and bottom rows */
+.sq-spacer {
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Avatar Container (Col 1) - Perfect 1:1 Square matching tile width */
+.sq-avatar-container {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 12px;
+  border: 2px solid rgba(254, 44, 85, 0.85);
+  /* box-shadow: none; */
+  overflow: hidden;
+  background: #1e1e2d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.2s;
+}
+
+.sq-avatar-container.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.sq-avatar-container.active {
+  opacity: 1;
+  visibility: visible;
+  animation: sqPulseGlow 1.2s infinite alternate;
+}
+
+.sq-avatar-container.sq-last-avatar {
+  border-color: rgba(59, 130, 246, 0.85);
+  /* box-shadow: none; */
+}
+
+.sq-avatar-container.sq-row-avatar {
+  border-color: rgba(34, 197, 94, 0.85);
+  /* box-shadow: none; */
+}
+
+.sq-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sq-avatar-name {
+  display: none !important;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.88);
+  color: #ffffff;
+  font-size: clamp(7px, 1.6vw, 8.5px);
+  font-weight: 800;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 1px 2px;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+}
+
+/* Tiles (Col 2 to 6) - Perfect 1:1 Square */
+.sq-tile {
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 12px;
+  font-size: clamp(1.3rem, 4.2vw, 2rem);
+  font-weight: 800;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  box-sizing: border-box;
+  transition: all 0.25s ease;
+  user-select: none;
+  overflow: hidden;
+}
+
+/* Top Input Tiles */
+.sq-input-tile {
+  background: rgba(254, 44, 85, 0.06);
+  border-color: rgba(254, 44, 85, 0.3);
+}
+
+.sq-input-tile.typed {
+  background: rgba(254, 44, 85, 0.22);
+  border-color: rgba(254, 44, 85, 0.85);
+  /* box-shadow: none; */
+}
+
+/* Main Grid Puzzle Tiles */
+.sq-puzzle-tile {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  color: transparent;
+  cursor: default;
+}
+
+.sq-puzzle-tile.correct {
+  background: var(--correct, #16a34a) !important;
+  border-color: #22c55e !important;
+  color: #ffffff !important;
+  /* box-shadow: none; */
+}
+
+/* Bottom Last Guess Tiles (Plain / Neutral without green/yellow color backgrounds) */
+.sq-last-tile {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 2px solid rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+/* Clue Box (Col 7) - Perfect 1:1 Square */
+.sq-clue-box {
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  background: rgba(234, 179, 8, 0.08);
+  border: 2px dashed rgba(234, 179, 8, 0.35);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  box-sizing: border-box;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
+}
+
+.sq-clue-box.has-clues {
+  background: rgba(234, 179, 8, 0.15);
+  border: 2px solid rgba(234, 179, 8, 0.6);
+  /* box-shadow: none; */
+}
+
+.sq-clue-letters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  align-content: center;
+  gap: 1.5px;
+  width: 100%;
+  height: 100%;
+}
+
+.sq-clue-letter-char {
+  font-size: clamp(8px, 1.8vw, 11px);
+  font-weight: 800;
+  color: #fef08a;
+  background: transparent;
+  border: none;
+  padding: 0;
+  line-height: 1;
+  text-shadow: none;
+}
+
+/* Animations */
+@keyframes sqPulseGlow {
+  0% {
+    box-shadow: 0 0 8px rgba(254, 44, 85, 0.4);
+    transform: scale(1);
+  }
+  100% {
+    box-shadow: 0 0 18px rgba(254, 44, 85, 0.8);
+    transform: scale(1.05);
+  }
+}
+
+@keyframes sqTileFlip {
+  0% {
+    transform: rotateX(0deg);
+  }
+  50% {
+    transform: rotateX(90deg);
+  }
+  100% {
+    transform: rotateX(0deg);
+  }
+}
+
+.sq-tile-flip {
+  animation: sqTileFlip 0.45s ease forwards;
+}
+
+@keyframes sqTileWave {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.sq-tile-wave {
+  animation: sqTileWave 0.5s ease;
+}
+
+@keyframes sqCluePop {
+  0% {
+    transform: scale(0.85);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.sq-clue-pop {
+  animation: sqCluePop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}

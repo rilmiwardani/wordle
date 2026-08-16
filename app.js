@@ -10,6 +10,7 @@ let displayRowsWord600 = parseInt(localStorage.getItem('displayRows_word600')) |
 let displayRowsWordfit = parseInt(localStorage.getItem('displayRows_wordfit')) || DISPLAY_ROWS_DEFAULT.wordfit;
 
 function getDisplayRows() {
+  if (currentGameMode === 'squareword') return 5;
   if (currentGameMode === 'fillblanks') return 6;
   if (currentGameMode === 'wordtango') return 4;
   if (currentGameMode === 'word500') return displayRowsWord500;
@@ -83,6 +84,17 @@ let WORD_LENGTH = 5;
 document.documentElement.style.setProperty('--word-length', WORD_LENGTH);
 
 // Game Mode State: 'wordle' or 'word500'
+
+// ==================== SQUAREWORD 5x5 STATE ====================
+let squarewordPuzzleIndex = 0;
+let squarewordGrid = [];
+let squarewordRevealed = [];
+let squarewordGuesses = [];
+let squarewordSolvedRows = [false, false, false, false, false];
+let squarewordSolvedCols = [false, false, false, false, false];
+let squarewordContributors = {};
+let isSquarewordScanning = false;
+
 let currentGameMode = sessionStorage.getItem('wordle_gameMode') || '';
 let isWgTakeoverMode = localStorage.getItem('wordle_wgTakeover') === 'true';
 let wgHintDelay = parseInt(localStorage.getItem('wordle_wgHintDelay')) || 45; // in seconds
@@ -611,6 +623,8 @@ function triggerWinTransition(winDuration, isMultiWinner = false) {
     if (multiWinTitle) {
       if (currentGameMode === 'wordloop') {
         multiWinTitle.textContent = 'LOOP COMPLETED!';
+      } else if (currentGameMode === 'squareword') {
+        multiWinTitle.textContent = '🎉 SQUAREWORD 5×5 SELESAI!';
       } else if (currentGameMode === 'wordgrid') {
         multiWinTitle.textContent = 'LEADERBOARD WORD GRID';
       } else {
@@ -696,6 +710,7 @@ function getPtsPrefix() {
   if (currentGameMode === 'fillblanks') return 'pts_fill_';
   if (currentGameMode === 'wordtango') return 'pts_tango_';
   if (currentGameMode === 'wordgrid') return 'pts_wgrid_';
+  if (currentGameMode === 'squareword') return 'pts_sqword_';
   return 'pts_';
 }
 
@@ -1201,6 +1216,7 @@ function selectGame(mode) {
     else if (mode === 'wordfit') loginTitle.textContent = 'TIKTOK WORDFIT';
     else if (mode === 'fillblanks') loginTitle.textContent = 'WORD FILL';
     else if (mode === 'wordtango') loginTitle.textContent = 'WORD TANGO';
+    else if (mode === 'squareword') loginTitle.textContent = 'SQUAREWORD 5×5';
     else loginTitle.textContent = 'TIKTOK WORDLE';
   }
 
@@ -1246,6 +1262,7 @@ function switchGameMode(e) {
   else if (currentGameMode === 'wordloop') currentGameMode = 'fillblanks';
   else if (currentGameMode === 'fillblanks') currentGameMode = 'wordtango';
   else if (currentGameMode === 'wordtango') currentGameMode = 'wordgrid';
+  else if (currentGameMode === 'wordgrid') currentGameMode = 'squareword';
   else currentGameMode = 'wordle';
   try { sessionStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
 
@@ -1304,6 +1321,9 @@ function applyGameModeUI() {
   const wordGridInfoContainer = document.getElementById('wordGridInfoContainer');
   const wordGridContainer = document.getElementById('wordGridContainer');
   const boardObj = document.getElementById('board');
+  const squarewordBoardContainer = document.getElementById('squarewordBoardContainer');
+  if (squarewordBoardContainer) squarewordBoardContainer.style.display = 'none';
+
 
   if (wordLoopInfoContainer) wordLoopInfoContainer.style.display = 'none';
   if (wordTangoInfoContainer) wordTangoInfoContainer.style.display = 'none';
@@ -1359,6 +1379,13 @@ function applyGameModeUI() {
     if (wordGridInfoContainer) wordGridInfoContainer.style.display = '';
     if (wordGridContainer) wordGridContainer.style.display = 'grid';
     if (boardObj) boardObj.style.display = 'none';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Squareword';
+  } else if (currentGameMode === 'squareword') {
+    if (headerTitle) headerTitle.textContent = 'SQUAREWORD 5×5';
+    if (hintContainer) hintContainer.style.display = 'none';
+    if (bestGuessContainer) bestGuessContainer.style.display = 'none';
+    if (boardObj) boardObj.style.display = 'none';
+    if (squarewordBoardContainer) squarewordBoardContainer.style.display = 'flex';
     if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
   } else {
     if (headerTitle) headerTitle.textContent = 'WORDLE';
@@ -1732,6 +1759,11 @@ function initBoard() {
   if (colorLegend) colorLegend.style.display = (currentGameMode === 'colorfit') ? 'flex' : 'none';
   if (currentGameMode === 'colorfit') board.parentElement.classList.add('colorfit-mode');
   else board.parentElement.classList.remove('colorfit-mode');
+
+  if (currentGameMode === 'squareword') {
+    initSquarewordBoard();
+    return;
+  }
 
   if (currentGameMode === 'wordfit' || currentGameMode === 'colorfit') {
     renderWordFitBoard();
@@ -3430,6 +3462,18 @@ function showWordGridWinOverlay() {
 function startNewRound() {
   applyGameModeUI();
   hasPlayedCloseAudio = false;
+  if (currentGameMode === 'squareword') {
+    WORD_LENGTH = 5;
+    document.documentElement.style.setProperty('--word-length', 5);
+    updateBoardScaleUI();
+    if (wordsLoaded && allValidWords && allValidWords[5] && allValidWords[5].length > 0) {
+      VALID_WORDS = allValidWords[5];
+      TARGET_WORDS = allTargetWords[5];
+      availableWords = allAvailableWords[5];
+    }
+    initSquarewordRound();
+    return;
+  }
   // Word500 always uses 5 letters; Word600 always uses 6 letters; Wordle/WordLoop randomizes 5, 6, or 7
   if (currentGameMode === 'word500') {
     WORD_LENGTH = 5;
@@ -4750,6 +4794,7 @@ let joinGuessUsersDedup = new Set(); // key: userId
 let lastJoinGuessTime = 0;
 
 function getFarWordFromTarget() {
+  if (currentGameMode === 'squareword') return null;
   if (!VALID_WORDS || VALID_WORDS.length === 0 || !currentWord) return null;
   const targetChars = new Set(currentWord.split(''));
   
@@ -4845,17 +4890,24 @@ function handleChatGuess(data) {
   }
 }
 
-function processQueue() {
+async function processQueue() {
   if (isProcessing || guessQueue.length === 0 || isGameOver) return;
   isProcessing = true;
   
   const { guessWord, userData } = guessQueue.shift();
 
-  processGuess(guessWord, userData);
+  try {
+    if (currentGameMode === 'squareword') {
+      await processSquarewordGuess(guessWord, userData);
+    } else {
+      processGuess(guessWord, userData);
+    }
+  } catch (err) {
+    console.error('Error processing guess:', err);
+  }
   
   isProcessing = false;
-  // Reduced from 50ms; near-instant queue drain
-  if (guessQueue.length > 0) {
+  if (guessQueue.length > 0 && !isGameOver) {
     setTimeout(processQueue, 10);
   }
 }
@@ -5041,6 +5093,11 @@ function processGuess(guessWord, userData) {
         return; // Reject silently from the board
       }
     }
+  }
+
+  if (currentGameMode === 'squareword') {
+    processSquarewordGuess(guessWord, userData);
+    return;
   }
 
   if (currentGameMode === 'wordgrid') {
@@ -7432,3 +7489,566 @@ window.toggleSettingsGroup = function(headerElement, e) {
   // Toggle the clicked group
   group.classList.toggle('open');
 };
+
+// ==========================================================================
+// SQUAREWORD 5x5 ENGINE & GAMEPLAY CONTROLLER
+// ==========================================================================
+
+let lastSquarewordGuess = null;
+let lastSquarewordUser = null;
+
+function initSquarewordRound() {
+  let puzzles = window.SQUAREWORD_PUZZLES_ID || [
+    ["redup","utama","buras","udara","sekat"],
+    ["jaket","alibi","musim","ilusi","katun"],
+    ["malah","opera","pikat","aroma","sikap"],
+    ["cekal","idola","lidah","asasi","pilar"]
+  ];
+
+  if (typeof lastLang !== 'undefined') {
+    if (lastLang === 'en' && window.SQUAREWORD_PUZZLES_EN) {
+      puzzles = window.SQUAREWORD_PUZZLES_EN;
+    } else if (lastLang === 'mixed' && window.SQUAREWORD_PUZZLES_EN) {
+      // Create an interleaved mixed list (ID, EN, ID, EN, ...)
+      const mixed = [];
+      const idList = window.SQUAREWORD_PUZZLES_ID || [];
+      const enList = window.SQUAREWORD_PUZZLES_EN;
+      const len = Math.max(idList.length, enList.length);
+      for (let i = 0; i < len; i++) {
+        if (idList[i]) mixed.push(idList[i]);
+        if (enList[i]) mixed.push(enList[i]);
+      }
+      puzzles = mixed;
+    }
+  }
+
+  if (squarewordPuzzleIndex >= puzzles.length) {
+    squarewordPuzzleIndex = 0;
+  }
+
+  squarewordGrid = puzzles[squarewordPuzzleIndex];
+  squarewordPuzzleIndex++;
+
+  squarewordRevealed = [
+    [false, false, false, false, false],
+    [false, false, false, false, false],
+    [false, false, false, false, false],
+    [false, false, false, false, false],
+    [false, false, false, false, false]
+  ];
+
+  squarewordGuesses = [];
+  squarewordSolvedRows = [false, false, false, false, false];
+  squarewordSolvedCols = [false, false, false, false, false];
+  squarewordContributors = {};
+  isSquarewordScanning = false;
+  isGameOver = false;
+  lastSquarewordGuess = null;
+  lastSquarewordUser = null;
+  currentWord = "SQUAREWORD";
+  userGuessDedup = new Set();
+  joinGuessUsersDedup = new Set();
+  guessQueue = [];
+
+  initSquarewordBoard();
+}
+
+function initSquarewordBoard() {
+  const gridContainer = document.getElementById('squarewordGrid');
+  if (!gridContainer) return;
+
+  gridContainer.innerHTML = '';
+
+  for (let r = 0; r < 5; r++) {
+    const row = document.createElement('div');
+    row.className = 'sq-row';
+    row.id = 'sqRow_' + r;
+
+    // Col 1: Left Row Solver Avatar Slot (Hidden until row is solved)
+    const leftAvatar = document.createElement('div');
+    leftAvatar.className = 'sq-avatar-container sq-row-avatar';
+    leftAvatar.id = 'sqRowAvatar_' + r;
+    leftAvatar.title = 'Pemenang Baris ' + (r + 1);
+    leftAvatar.innerHTML = '<img class="sq-avatar-img" id="sqRowAvatarImg_' + r + '" src="assets/bg_nature.png" alt="Solver"><span class="sq-avatar-name" id="sqRowAvatarName_' + r + '"></span>';
+    row.appendChild(leftAvatar);
+
+    // Col 2..6: 5 Tiles for this row (Aligned with top input tiles!)
+    for (let c = 0; c < 5; c++) {
+      const tile = document.createElement('div');
+      tile.className = 'tile sq-tile sq-puzzle-tile';
+      tile.id = 'sqTile_' + r + '_' + c;
+      tile.textContent = '';
+      row.appendChild(tile);
+    }
+
+    // Col 7: Clue Box on the right
+    const clueBox = document.createElement('div');
+    clueBox.className = 'sq-clue-box';
+    clueBox.id = 'sqClueBox_' + r;
+    clueBox.innerHTML = '<div class="sq-clue-letters" id="sqClueLetters_' + r + '"></div>';
+    row.appendChild(clueBox);
+
+    gridContainer.appendChild(row);
+  }
+
+  // Reset top input preview (Hidden at round start)
+  const inputAvatar = document.getElementById('sqInputAvatar');
+  const inputName = document.getElementById('sqInputName');
+  const inputAvatarContainer = document.getElementById('sqInputAvatarContainer');
+  if (inputAvatar) inputAvatar.src = 'assets/bg_nature.png';
+  if (inputName) inputName.textContent = '';
+  if (inputAvatarContainer) {
+    inputAvatarContainer.classList.remove('show', 'active');
+  }
+
+  for (let c = 0; c < 5; c++) {
+    const tile = document.getElementById('sqInputTile' + c);
+    if (tile) {
+      tile.textContent = '';
+      tile.className = 'tile sq-tile sq-input-tile';
+    }
+  }
+
+  renderSquarewordGrid();
+  renderSquarewordLastGuess();
+}
+
+function renderSquarewordLastGuess() {
+  const lastAvatar = document.getElementById('sqLastAvatar');
+  const lastName = document.getElementById('sqLastName');
+  const lastAvatarContainer = document.getElementById('sqLastAvatarContainer');
+
+  if (!lastSquarewordGuess) {
+    if (lastAvatar) lastAvatar.src = 'assets/bg_nature.png';
+    if (lastName) lastName.textContent = '';
+    if (lastAvatarContainer) lastAvatarContainer.classList.remove('show');
+    for (let c = 0; c < 5; c++) {
+      const tile = document.getElementById('sqLastTile' + c);
+      if (tile) {
+        tile.textContent = '';
+        tile.className = 'tile sq-tile sq-last-tile';
+      }
+    }
+    return;
+  }
+
+  if (lastAvatar && lastSquarewordUser && lastSquarewordUser.profilePictureUrl) {
+    lastAvatar.src = lastSquarewordUser.profilePictureUrl;
+  }
+  if (lastName && lastSquarewordUser) {
+    lastName.textContent = (lastSquarewordUser.nickname || lastSquarewordUser.uniqueId || 'GUESSER').slice(0, 8);
+  }
+  if (lastAvatarContainer) {
+    lastAvatarContainer.classList.add('show');
+  }
+
+  for (let c = 0; c < 5; c++) {
+    const tile = document.getElementById('sqLastTile' + c);
+    if (tile) {
+      tile.textContent = lastSquarewordGuess[c];
+      tile.className = 'tile sq-tile sq-last-tile'; // Plain / uncolored
+    }
+  }
+}
+
+function renderSquarewordGrid() {
+  if (!squarewordGrid || squarewordGrid.length < 5) return;
+
+  for (let r = 0; r < 5; r++) {
+    const targetRowUpper = squarewordGrid[r].toUpperCase();
+    const rowElem = document.getElementById('sqRow_' + r);
+    const isRowSolved = squarewordRevealed[r].every(v => v);
+
+    if (rowElem) {
+      if (isRowSolved) {
+        rowElem.classList.add('row-complete');
+      } else {
+        rowElem.classList.remove('row-complete');
+      }
+    }
+
+    for (let c = 0; c < 5; c++) {
+      const tile = document.getElementById('sqTile_' + r + '_' + c);
+      if (tile) {
+        if (squarewordRevealed[r][c]) {
+          tile.textContent = targetRowUpper[c];
+          tile.className = 'tile sq-tile sq-puzzle-tile correct';
+        } else {
+          tile.textContent = '';
+          tile.className = 'tile sq-tile sq-puzzle-tile';
+        }
+      }
+    }
+
+    renderSquarewordRowClues(r);
+  }
+
+  renderSquarewordLastGuess();
+}
+
+function renderSquarewordRowClues(r, animate = false) {
+  const clueBox = document.getElementById('sqClueBox_' + r);
+  const clueLettersBox = document.getElementById('sqClueLetters_' + r);
+  if (!clueBox || !clueLettersBox || !squarewordGrid || !squarewordGrid[r]) return;
+
+  const targetRowUpper = squarewordGrid[r].toUpperCase();
+
+  // 1. Calculate unplaced target letters in row r
+  const unplacedCounts = {};
+  for (let c = 0; c < 5; c++) {
+    if (!squarewordRevealed[r][c]) {
+      const char = targetRowUpper[c];
+      unplacedCounts[char] = (unplacedCounts[char] || 0) + 1;
+    }
+  }
+
+  // 2. Count maximum occurrences of each letter guessed across all guesses
+  const maxGuessedCounts = {};
+  for (const guess of squarewordGuesses) {
+    const guessUpper = guess.toUpperCase();
+    const guessFreq = {};
+    for (const char of guessUpper) {
+      guessFreq[char] = (guessFreq[char] || 0) + 1;
+    }
+    for (const char in guessFreq) {
+      maxGuessedCounts[char] = Math.max(maxGuessedCounts[char] || 0, guessFreq[char]);
+    }
+  }
+
+  // 3. Clue letters are unplaced letters that have been guessed
+  const clueLetters = [];
+  for (const char in unplacedCounts) {
+    const availableToClue = Math.min(unplacedCounts[char], maxGuessedCounts[char] || 0);
+    for (let i = 0; i < availableToClue; i++) {
+      clueLetters.push(char.toUpperCase());
+    }
+  }
+
+  clueLetters.sort();
+
+  if (clueLetters.length > 0) {
+    clueBox.classList.add('has-clues');
+    if (animate) {
+      clueBox.classList.remove('sq-clue-pop');
+      void clueBox.offsetWidth;
+      clueBox.classList.add('sq-clue-pop');
+    }
+    clueLettersBox.innerHTML = clueLetters.map(char => '<span class="sq-clue-letter-char">' + char + '</span>').join('');
+  } else {
+    clueBox.classList.remove('has-clues', 'sq-clue-pop');
+    clueLettersBox.innerHTML = '';
+  }
+}
+
+async function processSquarewordGuess(guessWord, userData) {
+  if (isGameOver || isSquarewordScanning) return;
+
+  const guessUpper = (guessWord || '').trim().toUpperCase().replace(/[^A-Z]/g, '');
+  if (guessUpper.length !== 5) return;
+
+  // 1. Strict Dictionary Validation against valid KBBI words
+  const validDict = (allValidWords && allValidWords[5] && allValidWords[5].length > 0) 
+    ? allValidWords[5] 
+    : ((VALID_WORDS && VALID_WORDS.length > 0) ? VALID_WORDS : null);
+
+  let isValidWord = false;
+  if (validDict && validDict.length > 0) {
+    isValidWord = validDict.includes(guessUpper);
+  } else if (fullValidDictionary && fullValidDictionary.size > 0) {
+    isValidWord = fullValidDictionary.has(guessUpper);
+  } else {
+    isValidWord = (guessUpper.length === 5);
+  }
+
+  if (!isValidWord) {
+    console.log('[Squareword] Rejected invalid KBBI word:', guessUpper);
+    const inputRow = document.getElementById('squarewordInputRow');
+    if (inputRow) {
+      inputRow.classList.remove('shake');
+      void inputRow.offsetWidth;
+      inputRow.classList.add('shake');
+    }
+    if (typeof showToast === 'function') {
+      const errMsg = (typeof lastLang !== 'undefined' && (lastLang === 'en' || lastLang === 'mixed')) 
+        ? '❌ "' + guessUpper + '" not in dictionary!' 
+        : '❌ "' + guessUpper + '" tidak ada dalam kamus KBBI!';
+      showToast(errMsg, 1800);
+    }
+    if (window.sounds) window.sounds.playInvalid();
+    if (window.playHostAudio) playHostAudio('invalid');
+    return;
+  }
+
+  isSquarewordScanning = true;
+
+  // 1. Update Top Input Row Preview with Guesser Avatar & Word
+  const inputAvatar = document.getElementById('sqInputAvatar');
+  const inputName = document.getElementById('sqInputName');
+  const inputAvatarContainer = document.getElementById('sqInputAvatarContainer');
+  
+  if (inputAvatar && userData && userData.profilePictureUrl) {
+    inputAvatar.src = userData.profilePictureUrl;
+  }
+  if (inputName) {
+    inputName.textContent = (userData.nickname || userData.uniqueId || 'GUESSER').slice(0, 8);
+  }
+  if (inputAvatarContainer) {
+    inputAvatarContainer.classList.add('show', 'active');
+  }
+
+  for (let c = 0; c < 5; c++) {
+    const tile = document.getElementById('sqInputTile' + c);
+    if (tile) {
+      tile.textContent = guessUpper[c];
+      tile.className = 'tile sq-tile sq-input-tile typed';
+    }
+  }
+
+  // Record guess
+  squarewordGuesses.push(guessUpper);
+
+  const prevSolvedRows = [...squarewordSolvedRows];
+  const prevSolvedCols = [...squarewordSolvedCols];
+
+  let newRevealedInRound = 0;
+
+  // 2. Downwards Scan Wave (Rows 0 to 4)
+  for (let r = 0; r < 5; r++) {
+    if (window.sounds) window.sounds.playScanRow(r);
+    const rowElem = document.getElementById('sqRow_' + r);
+    if (rowElem) {
+      rowElem.classList.add('row-scanning');
+    }
+
+    const targetRowUpper = squarewordGrid[r].toUpperCase();
+    let rowRevealedNew = false;
+    const newlyRevealedCols = [];
+
+    for (let c = 0; c < 5; c++) {
+      if (guessUpper[c] === targetRowUpper[c]) {
+        if (!squarewordRevealed[r][c]) {
+          squarewordRevealed[r][c] = true;
+          rowRevealedNew = true;
+          newlyRevealedCols.push(c);
+          newRevealedInRound++;
+
+          // Award +5 pts per new green letter
+          addPoints(userData, 5);
+          if (!squarewordContributors[userData.uniqueId]) {
+            squarewordContributors[userData.uniqueId] = { score: 0, letters: 0, words: 0, data: userData };
+          }
+          squarewordContributors[userData.uniqueId].score += 5;
+          squarewordContributors[userData.uniqueId].letters += 1;
+        }
+      }
+    }
+
+    // Render revealed green tiles across the grid
+    for (let c = 0; c < 5; c++) {
+      const tile = document.getElementById('sqTile_' + r + '_' + c);
+      if (tile && squarewordRevealed[r][c]) {
+        tile.textContent = targetRowUpper[c];
+        tile.className = 'tile sq-tile sq-puzzle-tile correct';
+      }
+    }
+
+    newlyRevealedCols.forEach((c, index) => {
+      if (window.sounds) window.sounds.playFlip(index);
+      const tile = document.getElementById('sqTile_' + r + '_' + c);
+      if (tile) {
+        tile.classList.remove('sq-tile-flip');
+        void tile.offsetWidth;
+        tile.classList.add('sq-tile-flip');
+      }
+    });
+
+    if (rowRevealedNew) {
+      if (window.sounds) window.sounds.playGreenChime();
+      showFloatingPoints(newlyRevealedCols.length * 5, 'sqRow_' + r);
+      if (window.playHostAudio) playHostAudio('correct');
+    }
+
+    // Check if horizontal row r is fully solved (5 green)
+    const isRowNowSolved = squarewordRevealed[r].every(v => v);
+    if (isRowNowSolved && !prevSolvedRows[r]) {
+      if (window.sounds) window.sounds.playRowSolved();
+      squarewordSolvedRows[r] = true;
+      if (rowElem) rowElem.classList.add('row-complete');
+
+      // Reveal solver avatar on the left of this row
+      const rowAvatarContainer = document.getElementById('sqRowAvatar_' + r);
+      const rowAvatarImg = document.getElementById('sqRowAvatarImg_' + r);
+      const rowAvatarName = document.getElementById('sqRowAvatarName_' + r);
+      if (rowAvatarContainer && rowAvatarImg && userData && userData.profilePictureUrl) {
+        rowAvatarImg.src = userData.profilePictureUrl;
+        if (rowAvatarName) rowAvatarName.textContent = (userData.nickname || userData.uniqueId || '').slice(0, 8);
+        rowAvatarContainer.classList.add('show');
+      }
+
+      // +15 bonus points for completing a horizontal row
+      addPoints(userData, 15);
+      if (!squarewordContributors[userData.uniqueId]) {
+        squarewordContributors[userData.uniqueId] = { score: 0, letters: 0, words: 0, data: userData };
+      }
+      squarewordContributors[userData.uniqueId].score += 15;
+      squarewordContributors[userData.uniqueId].words += 1;
+      showFloatingPoints(15, 'sqRow_' + r);
+
+      // Trigger wave animation on solved row
+      for (let c = 0; c < 5; c++) {
+        const tile = document.getElementById('sqTile_' + r + '_' + c);
+        if (tile) {
+          tile.classList.remove('sq-tile-wave');
+          void tile.offsetWidth;
+          tile.style.animationDelay = (c * 80) + 'ms';
+          tile.classList.add('sq-tile-wave');
+        }
+      }
+    }
+
+    // Update yellow clue box for row r
+    renderSquarewordRowClues(r, true);
+
+    await new Promise(res => setTimeout(res, 140));
+
+    if (rowElem) {
+      rowElem.classList.remove('row-scanning');
+    }
+  }
+
+  // 3. Check Vertical Columns (0 to 4)
+  for (let c = 0; c < 5; c++) {
+    let isColNowSolved = true;
+    for (let r = 0; r < 5; r++) {
+      if (!squarewordRevealed[r][c]) {
+        isColNowSolved = false;
+        break;
+      }
+    }
+
+    if (isColNowSolved && !prevSolvedCols[c]) {
+      squarewordSolvedCols[c] = true;
+
+      // +15 bonus points for completing a vertical column
+      addPoints(userData, 15);
+      if (!squarewordContributors[userData.uniqueId]) {
+        squarewordContributors[userData.uniqueId] = { score: 0, letters: 0, words: 0, data: userData };
+      }
+      squarewordContributors[userData.uniqueId].score += 15;
+      squarewordContributors[userData.uniqueId].words += 1;
+
+      // Column wave animation
+      for (let r = 0; r < 5; r++) {
+        const tile = document.getElementById('sqTile_' + r + '_' + c);
+        if (tile) {
+          tile.classList.remove('sq-tile-wave');
+          void tile.offsetWidth;
+          tile.style.animationDelay = (r * 80) + 'ms';
+          tile.classList.add('sq-tile-wave');
+        }
+      }
+      await new Promise(res => setTimeout(res, 250));
+    }
+  }
+
+  // 4. Save and Render Last Guess Row (Avatar + 5 plain letter tiles, NO background color)
+  lastSquarewordGuess = guessUpper;
+  lastSquarewordUser = userData;
+  renderSquarewordLastGuess();
+
+  // Clear Top Input Row (Letters and Avatar disappear after moving to bottom)
+  for (let c = 0; c < 5; c++) {
+    const tile = document.getElementById('sqInputTile' + c);
+    if (tile) {
+      tile.textContent = '';
+      tile.className = 'tile sq-tile sq-input-tile';
+    }
+  }
+  if (inputAvatarContainer) {
+    inputAvatarContainer.classList.remove('show', 'active');
+  }
+
+  // Ensure all revealed tiles across ALL rows stay permanently green
+  renderSquarewordGrid();
+
+  isSquarewordScanning = false;
+
+  // 5. Check Win Condition (All 25 tiles revealed)
+  let allTilesSolved = true;
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 5; c++) {
+      if (!squarewordRevealed[r][c]) {
+        allTilesSolved = false;
+        break;
+      }
+    }
+    if (!allTilesSolved) break;
+  }
+
+  if (allTilesSolved) {
+    isGameOver = true;
+
+    // +50 Final Solver Winner Bonus
+    addPoints(userData, 50);
+    if (!squarewordContributors[userData.uniqueId]) {
+      squarewordContributors[userData.uniqueId] = { score: 0, letters: 0, words: 0, data: userData };
+    }
+    squarewordContributors[userData.uniqueId].score += 50;
+
+    // Determine MVP
+    let maxScore = 0;
+    let mvpData = userData;
+    Object.values(squarewordContributors).forEach(s => {
+      if (s.score > maxScore) {
+        maxScore = s.score;
+        mvpData = s.data;
+      }
+    });
+
+    if (window.sounds) window.sounds.playWin();
+    if (window.playHostAudio) playHostAudio('win');
+
+    // Display Multi-Winner / Contributors Overlay
+    setTimeout(() => {
+      const multiWinList = document.getElementById('multiWinList');
+      const multiWinTitle = document.getElementById('multiWinTitle');
+      if (multiWinTitle) multiWinTitle.textContent = '🎉 SQUAREWORD 5×5 SELESAI!';
+
+      if (multiWinList) {
+        multiWinList.innerHTML = '';
+        const sortedContributors = Object.values(squarewordContributors).sort((a, b) => b.score - a.score);
+
+        sortedContributors.slice(0, 6).forEach((item, rank) => {
+          const isMvp = (mvpData && item.data.uniqueId === mvpData.uniqueId);
+          const rowDiv = document.createElement('div');
+          rowDiv.className = 'multi-win-item ' + (isMvp ? 'mvp' : '');
+          rowDiv.innerHTML = `
+            <img class="multi-win-avatar" src="${item.data.profilePictureUrl || 'assets/bg_nature.png'}" alt="Avatar">
+            <div class="multi-win-info">
+              <div class="multi-win-name">${item.data.nickname || item.data.uniqueId || 'Anon'}${isMvp ? ' 👑 (MVP)' : ''}</div>
+              <div class="multi-win-word">${item.letters} Huruf • ${item.words} Baris/Kolom</div>
+            </div>
+            <div class="multi-win-points">+${item.score} Pts</div>
+          `;
+          multiWinList.appendChild(rowDiv);
+        });
+      }
+
+      triggerWinTransition(9000, true);
+    }, 800);
+  }
+}
+
+
+// Web Audio Settings
+function toggleWebAudio(enabled) {
+  localStorage.setItem('squareword_webaudio', enabled);
+  if (window.sounds) window.sounds.setEnabled(enabled);
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('squareword_webaudio');
+  const isEnabled = saved !== 'false';
+  const toggle = document.getElementById('webAudioToggle');
+  if (toggle) toggle.checked = isEnabled;
+  if (window.sounds) window.sounds.setEnabled(isEnabled);
+});

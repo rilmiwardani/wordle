@@ -3103,15 +3103,42 @@ header {
   100% { transform: translateX(0); }
 }
 
-/* ─── Performance Animation Override ─── */
-body.no-animations *,
-body.no-animations *::before,
-body.no-animations *::after {
+/* ─── Performance Game Board Animation Override ─── */
+/* Hanya menonaktifkan animasi pada elemen papan permainan & ubin tebakan agar alur game instan dan hemat resource */
+body.no-animations #board *,
+body.no-animations #wordfitBoardContainer *,
+body.no-animations #wordloopBoardContainer *,
+body.no-animations #fillblanksBoardContainer *,
+body.no-animations #wordtangoBoardContainer *,
+body.no-animations #wordgridBoardContainer *,
+body.no-animations #squarewordBoardContainer *,
+body.no-animations .board-row,
+body.no-animations .tile,
+body.no-animations .sq-tile,
+body.no-animations .sq-row,
+body.no-animations .sq-input-row,
+body.no-animations .sq-last-guess-row,
+body.no-animations .guesser-avatar,
+body.no-animations .sq-avatar-container,
+body.no-animations .sq-avatar,
+body.no-animations .mm-block,
+body.no-animations .w500-count,
+body.no-animations .clue-letters,
+body.no-animations .sq-clue-pop,
+body.no-animations .sq-tile-flip,
+body.no-animations .sq-pulse-glow,
+body.no-animations .row-scanning,
+body.no-animations .pop-in,
+body.no-animations .spring-in,
+body.no-animations .flip-3d,
+body.no-animations .elastic-shake,
+body.no-animations .win-wave {
   animation: none !important;
   transition: none !important;
   transition-duration: 0s !important;
   animation-duration: 0s !important;
 }
+
 
 
 /* ==========================================================================

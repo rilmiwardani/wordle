@@ -95,6 +95,14 @@ let squarewordSolvedCols = [false, false, false, false, false];
 let squarewordContributors = {};
 let isSquarewordScanning = false;
 
+// ==================== WORD LADDER (WEAVER) STATE ====================
+let wordLadderIndex = 0;
+let wordLadderStartWord = '';
+let wordLadderTargetWord = '';
+let wordLadderMinSteps = 4;
+let wordLadderHistory = []; // array of { word, userData, changedIndex, stepNum, pts }
+let wordLadderContributors = {}; // map by username -> { userData, points, steps, words }
+
 let currentGameMode = sessionStorage.getItem('wordle_gameMode') || '';
 let isWgTakeoverMode = localStorage.getItem('wordle_wgTakeover') === 'true';
 let wgHintDelay = parseInt(localStorage.getItem('wordle_wgHintDelay')) || 45; // in seconds
@@ -566,6 +574,7 @@ function updateLikeCounter(data, addedLikes) {
   const avatar = data.profilePictureUrl || '';
   if (nickname) nameEl.textContent = nickname;
   if (avatar && avatarEl) {
+    avatarEl.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
     avatarEl.src = avatar;
     avatarEl.style.display = 'block';
   } else {
@@ -593,6 +602,10 @@ window.executeRestartTransition = function() {
   
   const winOverlay = document.getElementById('winOverlay');
   if (winOverlay) winOverlay.classList.remove('show');
+  const winAvatar = document.getElementById('winAvatar');
+  if (winAvatar) {
+    winAvatar.src = 'assets/bg_nature.png';
+  }
   
   const multiWinOverlay = document.getElementById('multiWinOverlay');
   if (multiWinOverlay) multiWinOverlay.classList.remove('show');
@@ -711,6 +724,7 @@ function getPtsPrefix() {
   if (currentGameMode === 'wordtango') return 'pts_tango_';
   if (currentGameMode === 'wordgrid') return 'pts_wgrid_';
   if (currentGameMode === 'squareword') return 'pts_sqword_';
+  if (currentGameMode === 'wordladder') return 'pts_wladder_';
   return 'pts_';
 }
 
@@ -722,7 +736,7 @@ function initWeeklyLeaderboard() {
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key && key.startsWith(prefix)) {
-      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wfit_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_'))) continue;
+      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wfit_') || key.startsWith('pts_colorfit_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_') || key.startsWith('pts_sqword_') || key.startsWith('pts_wladder_'))) continue;
       
       if (key.startsWith(prefix + 'like_') || 
           key.startsWith(prefix + 'share_') || 
@@ -1263,6 +1277,7 @@ function switchGameMode(e) {
   else if (currentGameMode === 'fillblanks') currentGameMode = 'wordtango';
   else if (currentGameMode === 'wordtango') currentGameMode = 'wordgrid';
   else if (currentGameMode === 'wordgrid') currentGameMode = 'squareword';
+  else if (currentGameMode === 'squareword') currentGameMode = 'wordladder';
   else currentGameMode = 'wordle';
   try { sessionStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
 
@@ -1323,6 +1338,8 @@ function applyGameModeUI() {
   const boardObj = document.getElementById('board');
   const squarewordBoardContainer = document.getElementById('squarewordBoardContainer');
   if (squarewordBoardContainer) squarewordBoardContainer.style.display = 'none';
+  const wordLadderInfoContainer = document.getElementById('wordLadderInfoContainer');
+  if (wordLadderInfoContainer) wordLadderInfoContainer.style.display = 'none';
 
 
   if (wordLoopInfoContainer) wordLoopInfoContainer.style.display = 'none';
@@ -1386,6 +1403,13 @@ function applyGameModeUI() {
     if (bestGuessContainer) bestGuessContainer.style.display = 'none';
     if (boardObj) boardObj.style.display = 'none';
     if (squarewordBoardContainer) squarewordBoardContainer.style.display = 'flex';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Word Ladder';
+  } else if (currentGameMode === 'wordladder') {
+    if (headerTitle) headerTitle.textContent = 'WORD LADDER';
+    if (hintContainer) hintContainer.style.display = 'none';
+    if (bestGuessContainer) bestGuessContainer.style.display = 'none';
+    if (wordLadderInfoContainer) wordLadderInfoContainer.style.display = '';
+    if (boardObj) boardObj.style.display = '';
     if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
   } else {
     if (headerTitle) headerTitle.textContent = 'WORDLE';
@@ -1418,7 +1442,7 @@ function updateBestGuessUI() {
     : '';
 
   for (let i = 0; i < bestGuess.word.length; i++) {
-    html += `<div class="tile blind" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 15%; font-size: 1.1rem; min-width: 0; min-height: 0; display:flex; align-items:center; justify-content:center; ${extraStyle}">${bestGuess.word[i]}</div>`;
+    html += `<div class="tile blind" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 6px; font-size: 1.1rem; min-width: 0; min-height: 0; display:flex; align-items:center; justify-content:center; ${extraStyle}">${bestGuess.word[i]}</div>`;
   }
   if (window.w500UseMastermind) {
     html += `<div class="mastermind-container" style="grid-column: span 3; width: 100%; height: auto; aspect-ratio: 3/1; margin: 0;">`;
@@ -1428,9 +1452,9 @@ function updateBestGuessUI() {
     html += `</div></div>`;
   } else {
     html += `
-      <div class="w500-count green" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 15%; font-size: 1rem; min-width: 0; min-height: 0;">${bestGuess.c}</div>
-      <div class="w500-count yellow" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 15%; font-size: 1rem; min-width: 0; min-height: 0;">${bestGuess.p}</div>
-      <div class="w500-count red" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 15%; font-size: 1rem; min-width: 0; min-height: 0;">${bestGuess.a}</div>
+      <div class="w500-count green" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 6px; font-size: 1rem; min-width: 0; min-height: 0;">${bestGuess.c}</div>
+      <div class="w500-count yellow" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 6px; font-size: 1rem; min-width: 0; min-height: 0;">${bestGuess.p}</div>
+      <div class="w500-count red" style="aspect-ratio: 1/1; height: auto; width: 100%; border-radius: 6px; font-size: 1rem; min-width: 0; min-height: 0;">${bestGuess.a}</div>
     </div>`;
   }
   container.innerHTML = html;
@@ -1445,10 +1469,9 @@ function createWord500RowEl(guessData, isLatest, revealAllColors = false) {
   }
   const avatar = document.createElement('img');
   avatar.className = 'guesser-avatar' + (isLatest && isGameAnimationsEnabled ? ' spring-in' : '');
-  if (guessData.userData && guessData.userData.profilePictureUrl) {
-    avatar.src = guessData.userData.profilePictureUrl;
-    avatar.classList.add('show');
-  }
+  avatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
+  avatar.src = (guessData.userData && guessData.userData.profilePictureUrl) ? guessData.userData.profilePictureUrl : 'assets/bg_nature.png';
+  avatar.classList.add('show');
   row.appendChild(avatar);
   const isAllRed = guessData.a === guessData.word.length;
   
@@ -1589,10 +1612,9 @@ function createWordFitRowEl(guessData, isLatest, revealAllColors = false) {
   }
   const avatar = document.createElement('img');
   avatar.className = 'guesser-avatar' + (isLatest && isGameAnimationsEnabled ? ' spring-in' : '');
-  if (guessData.userData && guessData.userData.profilePictureUrl) {
-    avatar.src = guessData.userData.profilePictureUrl;
-    avatar.classList.add('show');
-  }
+  avatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
+  avatar.src = (guessData.userData && guessData.userData.profilePictureUrl) ? guessData.userData.profilePictureUrl : 'assets/bg_nature.png';
+  avatar.classList.add('show');
   row.appendChild(avatar);
   const isAllRed = guessData.a === guessData.word.length;
   
@@ -1762,6 +1784,11 @@ function initBoard() {
 
   if (currentGameMode === 'squareword') {
     initSquarewordBoard();
+    return;
+  }
+
+  if (currentGameMode === 'wordladder') {
+    renderWordLadderBoard();
     return;
   }
 
@@ -2035,7 +2062,7 @@ function handleMyRank(userData) {
     const key = localStorage.key(i);
     if (key && key.startsWith(prefix)) {
       if (key.startsWith(dailyPrefix)) continue;
-      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wfit_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_'))) continue;
+      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wfit_') || key.startsWith('pts_colorfit_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_') || key.startsWith('pts_sqword_') || key.startsWith('pts_wladder_'))) continue;
       if (key.startsWith(prefix + 'like_') || 
           key.startsWith(prefix + 'share_') || 
           key.startsWith(prefix + 'gift_') || 
@@ -3519,7 +3546,9 @@ function startNewRound() {
   // Reset like progress for new round
   currentLikes = 0;
   
-  // Hide progress bar on new round
+  // Hide progress bar and reset win avatar on new round
+  const winAvatar = document.getElementById('winAvatar');
+  if (winAvatar) winAvatar.src = 'assets/bg_nature.png';
   const likeProgress = document.getElementById('likeProgressContainer');
   if (likeProgress) likeProgress.style.display = 'none';
   
@@ -3645,6 +3674,10 @@ function startNewRound() {
     generateWordGridBoard();
   }
 
+  if (currentGameMode === 'wordladder') {
+    startWordLadderRound();
+  }
+
   // Apply mode-specific UI
   applyGameModeUI();
   initBoard();
@@ -3657,7 +3690,7 @@ function startNewRound() {
   startInstructionRotation();
   const getW500Name = () => window.w500UseMastermind ? 'Word Pegs 5' : 'Word500';
   const getW600Name = () => window.w500UseMastermind ? 'Word Pegs 6' : 'Word600';
-  const gameName = currentGameMode === 'wordtango' ? 'Word Tango' : (currentGameMode === 'fillblanks' ? 'Word Fill' : (currentGameMode === 'word500' ? getW500Name() : (currentGameMode === 'word600' ? getW600Name() : (currentGameMode === 'wordloop' ? 'Word Loop' : 'Wordle'))));
+  const gameName = currentGameMode === 'wordladder' ? 'Word Ladder' : (currentGameMode === 'squareword' ? 'Squareword' : (currentGameMode === 'wordtango' ? 'Word Tango' : (currentGameMode === 'fillblanks' ? 'Word Fill' : (currentGameMode === 'word500' ? getW500Name() : (currentGameMode === 'word600' ? getW600Name() : (currentGameMode === 'wordloop' ? 'Word Loop' : 'Wordle'))))));
   showToast(`${gameName} Round ${round} Started!`, 2000);
   
   if (window.playHostAudio) playHostAudio('start');
@@ -4647,6 +4680,7 @@ function setupSocketListeners() {
 
     if (!container || !userData) return;
 
+    avatar.onerror = function() { this.onerror = null; this.src = 'assets/default-avatar.png'; };
     avatar.src = userData.profilePictureUrl || 'assets/default-avatar.png';
     nameEl.textContent = userData.nickname || userData.uniqueId || 'Seseorang';
     
@@ -4845,7 +4879,7 @@ function handleAutoGuessOnJoin(memberData) {
   const simulatedData = {
     nickname: memberData.nickname || memberData.uniqueId || 'Viewer',
     uniqueId: memberData.uniqueId || 'viewer',
-    profilePictureUrl: memberData.profilePictureUrl || 'https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/7339798436154310662~c5_100x100.jpeg',
+    profilePictureUrl: memberData.profilePictureUrl || 'assets/bg_nature.png',
     comment: farWord,
     followRole: memberData.followRole || 0,
     isFollower: memberData.isFollower || false
@@ -4870,7 +4904,9 @@ function handleChatGuess(data) {
   const msg = data.comment.toUpperCase().replace(/[^A-Z]/g, '');
   
   let isAllowedLength = (msg.length === WORD_LENGTH);
-  if (currentGameMode === 'wordtango') {
+  if (currentGameMode === 'wordladder') {
+    isAllowedLength = (msg.length === (wordLadderStartWord ? wordLadderStartWord.length : 4));
+  } else if (currentGameMode === 'wordtango') {
     isAllowedLength = (msg.length >= 3 && msg.length <= 6);
   } else if (currentGameMode === 'wordgrid') {
     isAllowedLength = (msg.length >= 3);
@@ -4894,13 +4930,14 @@ async function processQueue() {
   if (isProcessing || guessQueue.length === 0 || isGameOver) return;
   isProcessing = true;
   
+  const queueLen = guessQueue.length;
   const { guessWord, userData } = guessQueue.shift();
 
   try {
     if (currentGameMode === 'squareword') {
       await processSquarewordGuess(guessWord, userData);
     } else {
-      processGuess(guessWord, userData);
+      processGuess(guessWord, userData, queueLen);
     }
   } catch (err) {
     console.error('Error processing guess:', err);
@@ -4908,7 +4945,17 @@ async function processQueue() {
   
   isProcessing = false;
   if (guessQueue.length > 0 && !isGameOver) {
-    setTimeout(processQueue, 10);
+    let nextDelay = 10;
+    if (isGameAnimationsEnabled && currentGameMode !== 'squareword') {
+      if (guessQueue.length <= 1) {
+        nextDelay = 280; // Jeda estetik jika antrean santai agar flip berurutan rapi
+      } else if (guessQueue.length <= 3) {
+        nextDelay = 100; // Jeda cepat jika antrean sedang
+      } else {
+        nextDelay = 10;  // Jeda instan jika antrean banjir
+      }
+    }
+    setTimeout(processQueue, nextDelay);
   }
 }
 
@@ -5084,8 +5131,8 @@ function addTangoGuessToFeed(word, userData, isCorrect) {
   }
 }
 
-// Process a valid guess — optimized: no blocking delays
-function processGuess(guessWord, userData) {
+// Process a valid guess — optimized: adaptive pacing & smooth flip
+function processGuess(guessWord, userData, queueLen = 0) {
   if (isBadWordsFilterOn) {
     for (const bad of STOPWORDS) {
       if (guessWord.includes(bad)) {
@@ -5097,6 +5144,11 @@ function processGuess(guessWord, userData) {
 
   if (currentGameMode === 'squareword') {
     processSquarewordGuess(guessWord, userData);
+    return;
+  }
+
+  if (currentGameMode === 'wordladder') {
+    processWordLadderGuess(guessWord, userData);
     return;
   }
 
@@ -5163,8 +5215,9 @@ function processGuess(guessWord, userData) {
     if (row) {
       row.classList.add('solved');
       const avatar = row.querySelector('.guesser-avatar');
-      if (avatar && userData && userData.profilePictureUrl) {
-        avatar.src = userData.profilePictureUrl;
+      if (avatar) {
+        avatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
+        avatar.src = (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : 'assets/bg_nature.png';
         avatar.style.display = '';
         avatar.classList.add('show');
         showFloatingPoints(pts, avatar.id);
@@ -5227,7 +5280,7 @@ function processGuess(guessWord, userData) {
             const item = document.createElement('div');
             item.className = `multi-win-item ${isMvp ? 'mvp' : ''}`;
             item.innerHTML = `
-              <img class="multi-win-avatar" src="${solverData.profilePictureUrl || 'assets/bg_nature.png'}" alt="Avatar">
+              <img class="multi-win-avatar" src="${solverData.profilePictureUrl || 'assets/bg_nature.png'}" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="Avatar">
               <div class="multi-win-info">
                 <div class="multi-win-name">${solverData.nickname || 'Unknown'}</div>
                 <div class="multi-win-word">${t.word}</div>
@@ -5301,8 +5354,9 @@ function processGuess(guessWord, userData) {
         
         if (row) {
           const avatar = row.querySelector('.guesser-avatar');
-          if (avatar && userData && userData.profilePictureUrl) {
-            avatar.src = userData.profilePictureUrl;
+          if (avatar) {
+            avatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
+            avatar.src = (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : 'assets/bg_nature.png';
             avatar.classList.add('show');
             showFloatingPoints(pts, avatar.id);
           }
@@ -5356,7 +5410,7 @@ function processGuess(guessWord, userData) {
                 const item = document.createElement('div');
                 item.className = `multi-win-item ${isMvp ? 'mvp' : ''}`;
                 item.innerHTML = `
-                  <img class="multi-win-avatar" src="${solverData.profilePictureUrl || 'assets/bg_nature.png'}" alt="Avatar">
+                  <img class="multi-win-avatar" src="${solverData.profilePictureUrl || 'assets/bg_nature.png'}" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="Avatar">
                   <div class="multi-win-info">
                     <div class="multi-win-name">${solverData.nickname || 'Unknown'}</div>
                     <div class="multi-win-word">${t.word}</div>
@@ -5381,8 +5435,9 @@ function processGuess(guessWord, userData) {
           const originalAvatarSrc = avatar ? avatar.src : '';
           const originalAvatarShow = avatar ? avatar.classList.contains('show') : false;
           
-          if (avatar && userData && userData.profilePictureUrl) {
-            avatar.src = userData.profilePictureUrl;
+          if (avatar) {
+            avatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
+            avatar.src = (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : 'assets/bg_nature.png';
             avatar.classList.add('show');
           }
           
@@ -5601,10 +5656,9 @@ function processGuess(guessWord, userData) {
   const avatar = document.createElement('img');
   avatar.className = 'guesser-avatar' + (isGameAnimationsEnabled ? ' spring-in' : '');
   avatar.id = `avatar-${currentRow}`;
-  if (userData && userData.profilePictureUrl) {
-    avatar.src = userData.profilePictureUrl;
-    avatar.classList.add('show');
-  }
+  avatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
+  avatar.src = (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : 'assets/bg_nature.png';
+  avatar.classList.add('show');
   row.appendChild(avatar);
 
   const tiles = [];
@@ -5707,11 +5761,18 @@ function processGuess(guessWord, userData) {
     } else {
       // Wordle: normal colored feedback
       if (isGameAnimationsEnabled) {
-        tiles[i].classList.add('flip-3d');
-        tiles[i].style.animationDelay = `${i * 150}ms`;
-        setTimeout(() => {
+        if (queueLen > 3) {
+          // Antrean banjir: langsung tampilkan warna instan tanpa flip agar papan tidak pusing
           tiles[i].classList.add(statuses[i]);
-        }, (i * 150) + 225);
+        } else {
+          // Antrean santai atau sedang: animasi flip adaptif
+          const stepDelay = queueLen > 1 ? 40 : 100; // 40ms jika antrean sedang, 100ms jika santai
+          tiles[i].classList.add('flip-3d');
+          tiles[i].style.animationDelay = `${i * stepDelay}ms`;
+          setTimeout(() => {
+            tiles[i].classList.add(statuses[i]);
+          }, (i * stepDelay) + 180);
+        }
       } else {
         tiles[i].classList.add(statuses[i]);
       }
@@ -5881,7 +5942,7 @@ function processGuess(guessWord, userData) {
           item.className = 'multi-win-item';
           
           item.innerHTML = `
-            <img class="multi-win-avatar" src="${c.userData.profilePictureUrl || 'assets/bg_nature.png'}" alt="Avatar">
+            <img class="multi-win-avatar" src="${c.userData.profilePictureUrl || 'assets/bg_nature.png'}" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="Avatar">
             <div class="multi-win-info">
               <div class="multi-win-name">${c.userData.nickname || 'Unknown'}</div>
               <div class="multi-win-word">${c.word}</div>
@@ -5914,10 +5975,14 @@ function processGuess(guessWord, userData) {
         addPoints(userData, winPts);
         showFloatingPoints(winPts, `avatar-${currentRow}`);
       }
-      const winnerName = userData ? userData.nickname : 'Someone';
-      const avatarUrl = userData && userData.profilePictureUrl ? userData.profilePictureUrl : 'assets/bg_nature.png';
+      const winnerName = userData ? (userData.nickname || userData.uniqueId || 'Someone') : 'Someone';
+      const avatarUrl = (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : 'assets/bg_nature.png';
       const winOverlay = document.getElementById('winOverlay');
-      document.getElementById('winAvatar').src = avatarUrl;
+      const winAvatar = document.getElementById('winAvatar');
+      if (winAvatar) {
+        winAvatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
+        winAvatar.src = avatarUrl;
+      }
       document.getElementById('winName').textContent = winnerName;
       document.getElementById('winPts').innerHTML = `🪙 +${winPts} Bonus`;
       const winWordEl = document.getElementById('winWord');
@@ -6223,7 +6288,7 @@ window.resetLeaderboard = function(e) {
       const key = localStorage.key(i);
       if (key && key.startsWith(prefix)) {
         if (key.includes('_like_') || key.includes('_share_') || key.includes('_gift_') || key.includes('_active_') || key.includes('_avatar_')) continue;
-        if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wfit_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_'))) continue;
+        if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wfit_') || key.startsWith('pts_colorfit_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_') || key.startsWith('pts_sqword_') || key.startsWith('pts_wladder_'))) continue;
         keysToRemove.push(key);
       }
     }
@@ -7632,8 +7697,9 @@ function renderSquarewordLastGuess() {
     return;
   }
 
-  if (lastAvatar && lastSquarewordUser && lastSquarewordUser.profilePictureUrl) {
-    lastAvatar.src = lastSquarewordUser.profilePictureUrl;
+  if (lastAvatar) {
+    lastAvatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
+    lastAvatar.src = (lastSquarewordUser && lastSquarewordUser.profilePictureUrl) ? lastSquarewordUser.profilePictureUrl : 'assets/bg_nature.png';
   }
   if (lastName && lastSquarewordUser) {
     lastName.textContent = (lastSquarewordUser.nickname || lastSquarewordUser.uniqueId || 'GUESSER').slice(0, 8);
@@ -7786,8 +7852,9 @@ async function processSquarewordGuess(guessWord, userData) {
   const inputName = document.getElementById('sqInputName');
   const inputAvatarContainer = document.getElementById('sqInputAvatarContainer');
   
-  if (inputAvatar && userData && userData.profilePictureUrl) {
-    inputAvatar.src = userData.profilePictureUrl;
+  if (inputAvatar) {
+    inputAvatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
+    inputAvatar.src = (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : 'assets/bg_nature.png';
   }
   if (inputName) {
     inputName.textContent = (userData.nickname || userData.uniqueId || 'GUESSER').slice(0, 8);
@@ -7879,9 +7946,10 @@ async function processSquarewordGuess(guessWord, userData) {
       const rowAvatarContainer = document.getElementById('sqRowAvatar_' + r);
       const rowAvatarImg = document.getElementById('sqRowAvatarImg_' + r);
       const rowAvatarName = document.getElementById('sqRowAvatarName_' + r);
-      if (rowAvatarContainer && rowAvatarImg && userData && userData.profilePictureUrl) {
-        rowAvatarImg.src = userData.profilePictureUrl;
-        if (rowAvatarName) rowAvatarName.textContent = (userData.nickname || userData.uniqueId || '').slice(0, 8);
+      if (rowAvatarContainer && rowAvatarImg) {
+        rowAvatarImg.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
+        rowAvatarImg.src = (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : 'assets/bg_nature.png';
+        if (rowAvatarName) rowAvatarName.textContent = (userData ? (userData.nickname || userData.uniqueId || '') : '').slice(0, 8);
         rowAvatarContainer.classList.add('show');
       }
 
@@ -8052,3 +8120,312 @@ document.addEventListener('DOMContentLoaded', () => {
   if (toggle) toggle.checked = isEnabled;
   if (window.sounds) window.sounds.setEnabled(isEnabled);
 });
+
+
+// ==================== WORD LADDER (WEAVER) GAMEPLAY ====================
+function getWordLadderFeedback(guess, target) {
+  const len = guess.length;
+  const result = Array(len).fill('absent');
+  const targetLetters = target.split('');
+  const guessLetters = guess.split('');
+
+  // 1st pass: green (correct position)
+  for (let i = 0; i < len; i++) {
+    if (guessLetters[i] === targetLetters[i]) {
+      result[i] = 'correct';
+      targetLetters[i] = null;
+      guessLetters[i] = null;
+    }
+  }
+
+  // 2nd pass: yellow (present in target)
+  for (let i = 0; i < len; i++) {
+    if (guessLetters[i] !== null) {
+      const idx = targetLetters.indexOf(guessLetters[i]);
+      if (idx !== -1) {
+        result[i] = 'present';
+        targetLetters[idx] = null;
+      }
+    }
+  }
+
+  return result;
+}
+
+function startWordLadderRound() {
+  const isEn = (lastLang === 'en');
+  const puzzles = isEn 
+    ? (window.WORDLADDER_PUZZLES_EN || []) 
+    : (window.WORDLADDER_PUZZLES_ID || []);
+
+  if (!puzzles || puzzles.length === 0) {
+    console.error('No Word Ladder puzzles found, using fallback');
+    wordLadderStartWord = 'KOPI';
+    wordLadderTargetWord = 'SUSU';
+    wordLadderMinSteps = 4;
+  } else {
+    const p = puzzles[wordLadderIndex % puzzles.length];
+    wordLadderIndex++;
+    wordLadderStartWord = (p.start || 'KOPI').toUpperCase();
+    wordLadderTargetWord = (p.target || 'SUSU').toUpperCase();
+    wordLadderMinSteps = p.minSteps || 4;
+  }
+
+  const wordLen = wordLadderStartWord.length;
+  WORD_LENGTH = wordLen;
+  document.documentElement.style.setProperty('--word-length', wordLen);
+  if (allValidWords && allValidWords[wordLen]) {
+    VALID_WORDS = allValidWords[wordLen];
+    TARGET_WORDS = allTargetWords[wordLen] || [];
+    availableWords = allAvailableWords[wordLen] || [];
+  }
+
+  wordLadderHistory = [];
+  wordLadderContributors = {};
+  isGameOver = false;
+
+  renderWordLadderBoard();
+}
+
+function renderWordLadderBoard() {
+  const boardEl = document.getElementById('board');
+  if (!boardEl) return;
+  boardEl.innerHTML = '';
+  boardEl.className = '';
+
+  const wordLen = wordLadderStartWord ? wordLadderStartWord.length : 4;
+  document.documentElement.style.setProperty('--word-length', wordLen);
+
+  // 1. Top Row: Start Word (Prefilled Cyan)
+  const startRow = document.createElement('div');
+  startRow.className = 'board-row wordladder-row wordladder-start-row';
+  
+  const startSpacer = document.createElement('div');
+  startSpacer.className = 'guesser-avatar';
+  startSpacer.style.visibility = 'hidden';
+  startRow.appendChild(startSpacer);
+
+  for (let i = 0; i < wordLen; i++) {
+    const tile = document.createElement('div');
+    tile.className = 'tile prefilled';
+    tile.textContent = wordLadderStartWord[i] || '';
+    startRow.appendChild(tile);
+  }
+  boardEl.appendChild(startRow);
+
+  // 2. Middle Rows: Guessed Steps
+  for (let s = 0; s < wordLadderHistory.length; s++) {
+    const item = wordLadderHistory[s];
+    const row = document.createElement('div');
+    row.className = 'board-row wordladder-row';
+    if (s === wordLadderHistory.length - 1 && isGameAnimationsEnabled) {
+      row.classList.add('pop-in');
+    }
+
+    const avatar = document.createElement('img');
+    avatar.className = 'guesser-avatar show';
+    avatar.id = `ladder-avatar-${s + 1}`;
+    avatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
+    avatar.src = (item.userData && item.userData.profilePictureUrl) ? item.userData.profilePictureUrl : 'assets/bg_nature.png';
+    row.appendChild(avatar);
+
+    const feedback = getWordLadderFeedback(item.word, wordLadderTargetWord);
+
+    for (let i = 0; i < wordLen; i++) {
+      const tile = document.createElement('div');
+      tile.className = `tile ${feedback[i]}`;
+      tile.textContent = item.word[i];
+      row.appendChild(tile);
+    }
+    boardEl.appendChild(row);
+  }
+
+  // 3. Active Next Row: Empty placeholder row (if game is still active)
+  if (!isGameOver) {
+    const emptyRow = document.createElement('div');
+    emptyRow.className = 'board-row wordladder-row wordladder-empty-row';
+    
+    const emptySpacer = document.createElement('div');
+    emptySpacer.className = 'guesser-avatar';
+    emptySpacer.style.visibility = 'hidden';
+    emptyRow.appendChild(emptySpacer);
+
+    for (let i = 0; i < wordLen; i++) {
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      emptyRow.appendChild(tile);
+    }
+    boardEl.appendChild(emptyRow);
+  }
+
+  // 4. Bottom Row: Target Word (Prefilled Gold/Orange)
+  const targetRow = document.createElement('div');
+  targetRow.className = 'board-row wordladder-row wordladder-target-row';
+
+  const targetSpacer = document.createElement('div');
+  targetSpacer.className = 'guesser-avatar';
+  targetSpacer.style.visibility = 'hidden';
+  targetRow.appendChild(targetSpacer);
+
+  for (let i = 0; i < wordLen; i++) {
+    const tile = document.createElement('div');
+    tile.className = 'tile prefilled';
+    tile.textContent = wordLadderTargetWord[i] || '';
+    targetRow.appendChild(tile);
+  }
+  boardEl.appendChild(targetRow);
+
+  // Update info bar text
+  const stepCountEl = document.getElementById('ladderCurrentSteps');
+  const minStepsEl = document.getElementById('ladderMinSteps');
+  if (stepCountEl) stepCountEl.textContent = wordLadderHistory.length;
+  if (minStepsEl) minStepsEl.textContent = wordLadderMinSteps;
+
+  // Auto-scroll to show active bottom rows if board gets long
+  const container = document.querySelector('.board-container');
+  if (container) {
+    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+  }
+}
+
+function processWordLadderGuess(guessWord, userData) {
+  if (isGameOver) return;
+  const word = guessWord.toUpperCase().trim();
+  const wordLen = wordLadderStartWord ? wordLadderStartWord.length : 4;
+
+  if (word.length !== wordLen) return;
+
+  const dict = (allValidWords && allValidWords[wordLen]) ? allValidWords[wordLen] : (VALID_WORDS || []);
+  const isValid = (dict && dict.includes(word)) || (fullValidDictionary && (fullValidDictionary.has(word) || fullValidDictionary.has(word.toLowerCase())));
+  if (!isValid) {
+    if (window.playHostAudio) playHostAudio('invalid');
+    showToast(`"${word}" tidak ada di kamus!`, 1500);
+    return;
+  }
+
+  // 1. Cek apakah kata sudah pernah digunakan (Kata awal atau langkah sebelumnya di ronde ini)
+  const isAlreadyUsed = (word === wordLadderStartWord) || wordLadderHistory.some(item => item.word === word);
+  if (isAlreadyUsed) {
+    if (window.playHostAudio) playHostAudio('invalid');
+    showToast(`"${word}" sudah digunakan di ronde ini!`, 1800);
+    return;
+  }
+
+  const currentActiveWord = (wordLadderHistory.length === 0)
+    ? wordLadderStartWord
+    : wordLadderHistory[wordLadderHistory.length - 1].word;
+
+  let diffCount = 0;
+  let changedIndex = -1;
+  for (let i = 0; i < wordLen; i++) {
+    if (word[i] !== currentActiveWord[i]) {
+      diffCount++;
+      changedIndex = i;
+    }
+  }
+
+  if (diffCount !== 1) {
+    if (window.playHostAudio) playHostAudio('invalid');
+    showToast(`"${word}" harus beda tepat 1 huruf dari "${currentActiveWord}"!`, 1800);
+    return;
+  }
+
+  const stepPts = 5;
+  addPoints(userData, stepPts);
+
+  const username = userData.uniqueId || userData.nickname || 'anon';
+  if (!wordLadderContributors[username]) {
+    wordLadderContributors[username] = {
+      userData: userData,
+      points: 0,
+      steps: 0,
+      words: []
+    };
+  }
+  wordLadderContributors[username].points += stepPts;
+  wordLadderContributors[username].steps += 1;
+  wordLadderContributors[username].words.push(word);
+
+  const stepNum = wordLadderHistory.length + 1;
+  wordLadderHistory.push({
+    word: word,
+    userData: userData,
+    changedIndex: changedIndex,
+    stepNum: stepNum,
+    pts: stepPts
+  });
+
+  renderWordLadderBoard();
+  showFloatingPoints(stepPts, `ladder-avatar-${stepNum}`);
+
+  if (window.playHostAudio) playHostAudio('click');
+
+  if (word === wordLadderTargetWord) {
+    isGameOver = true;
+    const finishBonus = 25;
+    addPoints(userData, finishBonus);
+    wordLadderContributors[username].points += finishBonus;
+
+    renderWordLadderBoard();
+
+    if (window.playHostAudio) playHostAudio('win');
+    triggerConfetti();
+
+    setTimeout(() => {
+      // Sort contributors by score descending (Top-to-Bottom)
+      const sortedContributors = Object.values(wordLadderContributors).sort((a, b) => b.points - a.points || b.steps - a.steps);
+
+      const multiWinTitle = document.getElementById('multiWinTitle');
+      if (multiWinTitle) multiWinTitle.textContent = 'WORD LADDER COMPLETED! 🪜';
+
+      const multiWinList = document.getElementById('multiWinList');
+      if (multiWinList) {
+        multiWinList.innerHTML = `
+          <div style="text-align: center; margin-bottom: 12px; font-size: 13px; font-weight: 800; color: #00f2fe; text-transform: uppercase; letter-spacing: 0.5px;">
+            ${wordLadderStartWord} ➔ ${wordLadderTargetWord} (${stepNum} Langkah / Optimal: ${wordLadderMinSteps})
+          </div>
+        `;
+
+        sortedContributors.forEach((c, idx) => {
+          const isMvp = (idx === 0);
+          const item = document.createElement('div');
+          item.className = `multi-win-item ${isMvp ? 'mvp' : ''}`;
+          item.innerHTML = `
+            <img class="multi-win-avatar" src="${c.userData.profilePictureUrl || 'assets/bg_nature.png'}" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="Avatar">
+            <div class="multi-win-info">
+              <div class="multi-win-name">${isMvp ? '👑 ' : ''}${c.userData.nickname || 'Unknown'} <span style="font-size: 11px; opacity: 0.8;">(#${idx + 1})</span></div>
+              <div class="multi-win-word" style="font-size: 12px; color: #00f2fe;">${c.steps} Langkah: ${c.words.join(' ➔ ')}</div>
+            </div>
+            <div class="multi-win-pts" style="font-size: 14px; font-weight: 900; color: #ffd54f;">🪙 +${c.points} Pts</div>
+          `;
+          multiWinList.appendChild(item);
+        });
+      }
+
+      const multiWinOverlay = document.getElementById('multiWinOverlay');
+      if (multiWinOverlay) multiWinOverlay.classList.add('show');
+
+      const isLikeRestart = document.getElementById('likeRestartToggle') ? document.getElementById('likeRestartToggle').checked : false;
+      const progressContainer = document.getElementById('multiLikeProgressContainer');
+      const footer = document.getElementById('multiWinFooter');
+
+      if (isLikeRestart) {
+        if (progressContainer) progressContainer.style.display = 'block';
+        if (footer) footer.style.display = 'none';
+        isWaitingForLikes = true;
+        updateLikeProgressBar();
+      } else {
+        if (progressContainer) progressContainer.style.display = 'none';
+        if (footer) {
+          footer.style.display = 'block';
+          footer.textContent = 'Next round starting soon...';
+        }
+        setTimeout(() => {
+          if (!isWaitingForLikes) {
+            executeRestartTransition();
+          }
+        }, 8000);
+      }
+    }, 600);
+  }
+}

@@ -1155,14 +1155,14 @@ header {
   align-items: center;
   transition: opacity 0.3s ease;
   padding: 4px;
-  border-radius: 12px;
+  border-radius: 6px;
 }
 
 /* Avatar Guesser */
 .guesser-avatar {
   width: 100%;
   aspect-ratio: 1/1;
-  border-radius: 12px;
+  border-radius: 6px;
   border: 2px solid rgba(255,255,255,0.3);
   opacity: 0;
   transition: opacity 0.3s;
@@ -1179,7 +1179,7 @@ header {
 .tile {
   background: var(--empty);
   border: 2px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1368,9 +1368,9 @@ header {
 /* Mobile specific tweaks */
 @media (max-width: 400px) {
   #board { max-width: 360px; }
-  .tile { font-size: 1.5rem; border-radius: 15%; }
-  .guesser-avatar { border-radius: 15%; }
-  .w500-count { font-size: 1.2rem; border-radius: 15%; }
+  .tile { font-size: 1.5rem; border-radius: 6px; }
+  .guesser-avatar { border-radius: 6px; }
+  .w500-count { font-size: 1.2rem; border-radius: 6px; }
 }
 
 /* Align front menus higher up on mobile screens */
@@ -2701,7 +2701,7 @@ header {
   margin-bottom: calc(20px * var(--board-scale, 1));
 }
 .word-grid-cell {
-  border-radius: 12px;
+  border-radius: 6px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -3195,20 +3195,20 @@ body.no-animations .win-wave {
 }
 
 .sq-row {
-  border-radius: 12px;
+  border-radius: 6px;
   transition: all 0.25s ease;
 }
 
 .sq-row.row-scanning {
   background: transparent;
   /* box-shadow: none; */
-  border-radius: 12px;
+  border-radius: 6px;
 }
 
 .sq-row.row-complete {
   background: transparent;
   /* box-shadow: none; */
-  border-radius: 12px;
+  border-radius: 6px;
 }
 
 /* Invisible spacer on column 7 of top and bottom rows */
@@ -3230,7 +3230,7 @@ body.no-animations .win-wave {
   height: auto;
   min-width: 0;
   min-height: 0;
-  border-radius: 12px;
+  border-radius: 6px;
   border: 2px solid rgba(254, 44, 85, 0.85);
   /* box-shadow: none; */
   overflow: hidden;
@@ -3298,7 +3298,7 @@ body.no-animations .win-wave {
   height: auto;
   min-width: 0;
   min-height: 0;
-  border-radius: 12px;
+  border-radius: 6px;
   font-size: clamp(1.3rem, 4.2vw, 2rem);
   font-weight: 800;
   text-transform: uppercase;
@@ -3358,7 +3358,7 @@ body.no-animations .win-wave {
   min-height: 0;
   background: rgba(234, 179, 8, 0.08);
   border: 2px dashed rgba(234, 179, 8, 0.35);
-  border-radius: 12px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3452,3 +3452,26 @@ body.no-animations .win-wave {
 .sq-clue-pop {
   animation: sqCluePop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   WORD LADDER (TANGGA KATA / WEAVER) - SIMPLE WORDLE BOARD STYLES
+   ═════════════════════════════════════════════════════════════════════════════ */
+.board-row.wordladder-row {
+  transition: all 0.25s ease;
+}
+
+.wordladder-start-row .tile,
+.wordladder-target-row .tile {
+  background: rgba(255, 255, 255, 0.12);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.wordladder-empty-row .tile {
+  background: var(--empty);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+
+
+

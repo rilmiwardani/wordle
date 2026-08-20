@@ -154,7 +154,7 @@ io.on("connection", (socket) => {
           duration: video.timestamp || "",
           candidates: candidates,
           requesterName: "Host",
-          requesterImg: "https://p16-sign-va.tiktokcdn.com/tos-maliva-avt-0068/7339798436154310662~c5_100x100.jpeg",
+          requesterImg: "assets/bg_nature.png",
           originalQuery: query
         });
       }

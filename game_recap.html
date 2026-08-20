@@ -255,6 +255,7 @@
     .border-blue::after { background: #54a0ff; }
     .border-magenta::after { background: #ff9ff3; }
     .border-teal::after { background: #00d2d3; }
+    .border-sqword::after { background: #2ed573; }
 
     .category-title {
       font-size: 0.75rem;
@@ -330,6 +331,7 @@
     .avatar-fill { background: linear-gradient(135deg, #54a0ff, #2e86de); }
     .avatar-tango { background: linear-gradient(135deg, #ff9ff3, #f368e0); }
     .avatar-colorfit { background: linear-gradient(135deg, #00d2d3, #01a3a4); }
+    .avatar-sqword { background: linear-gradient(135deg, #2ed573, #10ac84); }
 
     .leader-name {
       font-weight: 600;
@@ -449,10 +451,12 @@
   </div>
 
   <script>
-    // --- Config for all 9 game modes ---
+    // --- Config for all 10 game modes ---
     const allModes = [
       { id: 'wordle', name: 'Wordle Masters', prefix: 'pts_', emoji: '🏆', borderClass: 'border-pink', avatarClass: 'avatar-wordle', titleColor: '#fe2c55' },
       { id: 'wgrid', name: 'Grid Geniuses', prefix: 'pts_wgrid_', emoji: '🧩', borderClass: 'border-cyan', avatarClass: 'avatar-wgrid', titleColor: '#25f4ee' },
+      { id: 'sqword', name: 'Squareword 5×5', prefix: 'pts_sqword_', emoji: '🟩', borderClass: 'border-sqword', avatarClass: 'avatar-sqword', titleColor: '#2ed573' },
+      { id: 'wladder', name: 'Word Ladder (Weaver)', prefix: 'pts_wladder_', emoji: '🪜', borderClass: 'border-cyan', avatarClass: 'avatar-wgrid', titleColor: '#00f2fe' },
       { id: 'wloop', name: 'Loop Connectors', prefix: 'pts_wloop_', emoji: '🔄', borderClass: 'border-purple', avatarClass: 'avatar-wloop', titleColor: '#a855f7' },
       { id: 'w500', name: 'Word Pegs 5', prefix: 'pts_w500_', emoji: '🎯', borderClass: 'border-gold', avatarClass: 'avatar-w500', titleColor: '#ffbe0b' },
       { id: 'w600', name: 'Word Pegs 6', prefix: 'pts_w600_', emoji: '⚔️', borderClass: 'border-orange', avatarClass: 'avatar-w600', titleColor: '#ff9f43' },

@@ -180,6 +180,9 @@ let socket = null;
 let localSocket = null; // Dedicated connection to local node server for music features
 
 let currentWord = "";
+let lastRoundTargetWord = "";
+let isAutoStarterPreviousTarget = localStorage.getItem('wordle_autoStarter') === 'true';
+let isShowHintsDiscovered = localStorage.getItem('wordle_showHintsDiscovered') !== 'false';
 let guesses = [];
 let knownAbsentLetters = new Set();
 // Word Grid state
@@ -378,19 +381,9 @@ setInterval(() => {
   }
 }, 10000);
 
-function applyMarqueeAnimationProps(contentEl, marqueeContainer) {
-  const speed = 65; // pixels/sec
-  const containerWidth = marqueeContainer.clientWidth || 420;
-  
-  contentEl.style.setProperty('--marquee-start', `${containerWidth}px`);
-  
-  const textWidth = contentEl.scrollWidth || 500;
-  const duration = (containerWidth + textWidth) / speed;
-  
-  contentEl.style.animation = 'none';
-  contentEl.offsetHeight; // trigger reflow
-  contentEl.style.animation = `marquee-scroll ${duration}s linear infinite`;
-}
+let spotlightIndex = 0;
+let spotlightTimer = null;
+let currentSpotlightSlides = [];
 
 function formatShortNumber(num) {
   if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '').replace('.', ',') + 'M';
@@ -398,65 +391,181 @@ function formatShortNumber(num) {
   return num;
 }
 
-function updateMarqueeUI(forceImmediate = false) {
-  const marqueeContainer = document.getElementById('marqueeContainer');
-  if (!marqueeContainer) return;
-  
-  if (!isMarqueeEnabled) {
-    marqueeContainer.style.display = 'none';
-    return;
+function getUserAvatar(username) {
+  if (typeof playerPoints !== 'undefined' && playerPoints[username] && playerPoints[username].avatar) {
+    return playerPoints[username].avatar;
   }
-  
+  try {
+    const saved = localStorage.getItem('pts_avatar_' + username);
+    if (saved) return saved;
+  } catch(e) {}
+  return 'assets/bg_nature.png';
+}
+
+function buildSpotlightSlides() {
+  const slides = [];
+  const topGifters = getTop3(playerGifts);
   const topLikers = getTop3(playerLikes);
   const topSharers = getTop3(playerShares);
-  const topGifters = getTop3(playerGifts);
   const topActiveViewers = getTopActiveViewers();
-  
-  let likerText = "❤️ TOP LIKERS: ";
-  if (topLikers.length > 0) {
-    likerText += topLikers.map((u, i) => `${i + 1}. <span class="highlight">${u.username}</span> ${formatShortNumber(u.count)}💖`).join(" &nbsp;&nbsp;&nbsp;");
-  } else {
-    likerText += `<span class="highlight">-</span>`;
-  }
-  
-  let sharerText = "🚀 TOP SHARERS: ";
-  if (topSharers.length > 0) {
-    sharerText += topSharers.map((u, i) => `${i + 1}. <span class="highlight">${u.username}</span> ${formatShortNumber(u.count)}🚀`).join(" &nbsp;&nbsp;&nbsp;");
-  } else {
-    sharerText += `<span class="highlight">-</span>`;
-  }
 
-  let gifterText = "🎁 TOP GIFTERS: ";
+  // 1. Top Gifters Slide
   if (topGifters.length > 0) {
-    gifterText += topGifters.map((u, i) => `${i + 1}. <span class="highlight">${u.username}</span> ${formatShortNumber(u.count)}🪙`).join(" &nbsp;&nbsp;&nbsp;");
-  } else {
-    gifterText += `<span class="highlight">-</span>`;
+    const usersHTML = topGifters.map((u, i) => `
+      <div class="spotlight-avatar-item rank-${i + 1}" title="@${u.username} • ${u.count.toLocaleString()} Koin">
+        <div class="spotlight-avatar-wrap">
+          <img src="${getUserAvatar(u.username)}" class="spotlight-avatar" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="${u.username}">
+          <span class="spotlight-rank">${i + 1}</span>
+        </div>
+        <span class="spotlight-val">${formatShortNumber(u.count)}</span>
+      </div>
+    `).join('');
+    slides.push(`
+      <div class="spotlight-slide">
+        <div class="spotlight-header-pill badge-gift">
+          <svg class="spotlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg>
+          <span>TOP GIFTERS</span>
+        </div>
+        <div class="spotlight-list">${usersHTML}</div>
+      </div>
+    `);
   }
 
-  let activeViewerText = "👑 TOP ACTIVE VIEWERS: ";
+  // 2. Top Likers Slide
+  if (topLikers.length > 0) {
+    const usersHTML = topLikers.map((u, i) => `
+      <div class="spotlight-avatar-item rank-${i + 1}" title="@${u.username} • ${u.count.toLocaleString()} Likes">
+        <div class="spotlight-avatar-wrap">
+          <img src="${getUserAvatar(u.username)}" class="spotlight-avatar" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="${u.username}">
+          <span class="spotlight-rank">${i + 1}</span>
+        </div>
+        <span class="spotlight-val">${formatShortNumber(u.count)}</span>
+      </div>
+    `).join('');
+    slides.push(`
+      <div class="spotlight-slide">
+        <div class="spotlight-header-pill badge-like">
+          <svg class="spotlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+          <span>TOP LIKERS</span>
+        </div>
+        <div class="spotlight-list">${usersHTML}</div>
+      </div>
+    `);
+  }
+
+  // 3. Top Sharers Slide
+  if (topSharers.length > 0) {
+    const usersHTML = topSharers.map((u, i) => `
+      <div class="spotlight-avatar-item rank-${i + 1}" title="@${u.username} • ${u.count.toLocaleString()} Shares">
+        <div class="spotlight-avatar-wrap">
+          <img src="${getUserAvatar(u.username)}" class="spotlight-avatar" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="${u.username}">
+          <span class="spotlight-rank">${i + 1}</span>
+        </div>
+        <span class="spotlight-val">${formatShortNumber(u.count)}</span>
+      </div>
+    `).join('');
+    slides.push(`
+      <div class="spotlight-slide">
+        <div class="spotlight-header-pill badge-share">
+          <svg class="spotlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+          <span>TOP SHARERS</span>
+        </div>
+        <div class="spotlight-list">${usersHTML}</div>
+      </div>
+    `);
+  }
+
+  // 4. Top Active Viewers Slide
   if (topActiveViewers.length > 0) {
-    activeViewerText += topActiveViewers.map((u, i) => `${i + 1}. <span class="highlight">${u.username}</span> ${formatActiveTime(u.count)}`).join(" &nbsp;&nbsp;&nbsp;");
-  } else {
-    activeViewerText += `<span class="highlight">-</span>`;
+    const usersHTML = topActiveViewers.map((u, i) => `
+      <div class="spotlight-avatar-item rank-${i + 1}" title="@${u.username} • ${formatActiveTime(u.count)}">
+        <div class="spotlight-avatar-wrap">
+          <img src="${getUserAvatar(u.username)}" class="spotlight-avatar" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="${u.username}">
+          <span class="spotlight-rank">${i + 1}</span>
+        </div>
+        <span class="spotlight-val">${formatActiveTime(u.count)}</span>
+      </div>
+    `).join('');
+    slides.push(`
+      <div class="spotlight-slide">
+        <div class="spotlight-header-pill badge-active">
+          <svg class="spotlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <span>TOP AKTIF</span>
+        </div>
+        <div class="spotlight-list">${usersHTML}</div>
+      </div>
+    `);
   }
-  
-  const newHTML = `${gifterText} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${likerText} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${sharerText} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${activeViewerText}`;
-  
+
+  // Fallback if no supporters yet
+  if (slides.length === 0) {
+    slides.push(`
+      <div class="spotlight-fallback">
+        <div class="spotlight-header-pill badge-live">
+          <svg class="spotlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          <span>LIVE CHAT</span>
+        </div>
+        <span>Ketik tebakan kata di live chat untuk ikut bermain!</span>
+      </div>
+    `);
+  }
+
+  return slides;
+}
+
+function updateMarqueeUI(forceImmediate = false) {
+  const marqueeContainer = document.getElementById('marqueeContainer');
   const contentEl = document.getElementById('marqueeContent');
-  if (!contentEl) return;
-  
-  const isCurrentlyEmpty = !contentEl.innerHTML || contentEl.innerHTML === "";
-  const isContainerHidden = marqueeContainer.style.display === 'none';
-  
-  if (forceImmediate || isCurrentlyEmpty || isContainerHidden) {
-    contentEl.innerHTML = newHTML;
-    applyMarqueeAnimationProps(contentEl, marqueeContainer);
-    pendingMarqueeHTML = "";
-  } else {
-    pendingMarqueeHTML = newHTML;
+  if (!marqueeContainer || !contentEl) return;
+
+  if (!isMarqueeEnabled) {
+    marqueeContainer.style.display = 'none';
+    if (spotlightTimer) {
+      clearInterval(spotlightTimer);
+      spotlightTimer = null;
+    }
+    return;
   }
-  
+
   marqueeContainer.style.display = 'flex';
+  currentSpotlightSlides = buildSpotlightSlides();
+
+  if (forceImmediate || !contentEl.innerHTML || contentEl.innerHTML === "") {
+    spotlightIndex = 0;
+    contentEl.innerHTML = currentSpotlightSlides[0] || '';
+    contentEl.classList.remove('fade-out');
+    contentEl.classList.add('fade-in');
+  }
+
+  if (!spotlightTimer) {
+    startSpotlightRotator();
+  }
+}
+
+function startSpotlightRotator() {
+  if (spotlightTimer) clearInterval(spotlightTimer);
+  spotlightTimer = setInterval(() => {
+    const marqueeContainer = document.getElementById('marqueeContainer');
+    const contentEl = document.getElementById('marqueeContent');
+    if (!marqueeContainer || !contentEl || !isMarqueeEnabled) return;
+
+    currentSpotlightSlides = buildSpotlightSlides();
+    if (currentSpotlightSlides.length === 0) return;
+
+    spotlightIndex = (spotlightIndex + 1) % currentSpotlightSlides.length;
+    const nextHTML = currentSpotlightSlides[spotlightIndex];
+
+    // Smooth Fade Out & In
+    contentEl.classList.remove('fade-in');
+    contentEl.classList.add('fade-out');
+
+    setTimeout(() => {
+      contentEl.innerHTML = nextHTML;
+      void contentEl.offsetWidth; // Force CSS reflow to guarantee smooth transition
+      contentEl.classList.remove('fade-out');
+      contentEl.classList.add('fade-in');
+    }, 380);
+  }, 4800);
 }
 
 window.updateLikeThreshold = function(val) {
@@ -814,10 +923,26 @@ function addPoints(userData, points) {
 }
 
 function switchLbTab(tab) {
+  if (currentLbTab === tab) return;
   currentLbTab = tab;
-  document.getElementById('tab-session').classList.toggle('active', tab === 'session');
-  document.getElementById('tab-weekly').classList.toggle('active', tab === 'weekly');
-  renderLeaderboard();
+  const tabSession = document.getElementById('tab-session');
+  const tabWeekly = document.getElementById('tab-weekly');
+  if (tabSession) tabSession.classList.toggle('active', tab === 'session');
+  if (tabWeekly) tabWeekly.classList.toggle('active', tab === 'weekly');
+  
+  const lbList = document.getElementById('lbList');
+  if (lbList) {
+    lbList.classList.remove('fade-in');
+    lbList.classList.add('fade-out');
+    setTimeout(() => {
+      renderLeaderboard();
+      void lbList.offsetWidth; // Trigger reflow for smooth fade-in
+      lbList.classList.remove('fade-out');
+      lbList.classList.add('fade-in');
+    }, 280);
+  } else {
+    renderLeaderboard();
+  }
 }
 
 function renderLeaderboard() {
@@ -1222,16 +1347,29 @@ function selectGame(mode) {
 
   initWeeklyLeaderboard();
 
-  // Update login title
+  // Update login title and chip
   const loginTitle = document.getElementById('loginTitle');
+  const loginGameChip = document.getElementById('loginGameChip');
+  const gameNames = {
+    wordle: 'WORDLE',
+    word500: window.w500UseMastermind ? 'WORD PEGS 5' : 'WORD500',
+    word600: window.w500UseMastermind ? 'WORD PEGS 6' : 'WORD600',
+    wordfit: 'WORD FIT',
+    colorfit: 'COLOR FIT',
+    wordloop: 'WORD LOOP',
+    fillblanks: 'WORD FILL',
+    wordtango: 'WORD TANGO',
+    wordgrid: 'WORD GRID',
+    squareword: 'SQUAREWORD 5×5',
+    wordladder: 'WORD LADDER'
+  };
+  const titleName = gameNames[mode] || mode.toUpperCase();
+
   if (loginTitle) {
-    if (mode === 'word500') loginTitle.textContent = window.w500UseMastermind ? 'TIKTOK WORD PEGS 5' : 'TIKTOK WORD500';
-    else if (mode === 'word600') loginTitle.textContent = window.w500UseMastermind ? 'TIKTOK WORD PEGS 6' : 'TIKTOK WORD600';
-    else if (mode === 'wordfit') loginTitle.textContent = 'TIKTOK WORDFIT';
-    else if (mode === 'fillblanks') loginTitle.textContent = 'WORD FILL';
-    else if (mode === 'wordtango') loginTitle.textContent = 'WORD TANGO';
-    else if (mode === 'squareword') loginTitle.textContent = 'SQUAREWORD 5×5';
-    else loginTitle.textContent = 'TIKTOK WORDLE';
+    loginTitle.textContent = `TIKTOK ${titleName}`;
+  }
+  if (loginGameChip) {
+    loginGameChip.textContent = `MODE AKTIF: ${titleName}`;
   }
 
   // If already connected to TikTok, skip login and go straight to game
@@ -1242,7 +1380,7 @@ function selectGame(mode) {
     document.getElementById('hostMusicControl').style.display = 'flex';
     applyGameModeUI();
     startNewRound();
-    showToast(`🎮 Ganti ke ${mode.toUpperCase()}`, 2000);
+    showToast(`🎮 Ganti ke ${titleName}`, 2000);
     return;
   }
 
@@ -1313,11 +1451,6 @@ function changeGameModeDirect(mode, e) {
   const selectElement = document.getElementById('switchGameSelect');
   if (selectElement) selectElement.value = "";
 
-  const triggerSpan = document.querySelector('#customGameSelect .custom-select-trigger span');
-  if (triggerSpan) triggerSpan.innerHTML = '🔄 Pilih Game Mode...';
-  const customOptions = document.querySelectorAll('#customGameSelect .custom-option');
-  customOptions.forEach(opt => opt.classList.remove('selected'));
-
   applyGameModeUI();
   initWeeklyLeaderboard();
   startNewRound();
@@ -1349,6 +1482,16 @@ function applyGameModeUI() {
   if (wordGridInfoContainer) wordGridInfoContainer.style.display = 'none';
   if (wordGridContainer) wordGridContainer.style.display = 'none';
   if (boardObj) boardObj.style.display = '';
+
+  // Synchronize active game card in settings panel
+  const gameCards = document.querySelectorAll('.game-card');
+  gameCards.forEach(card => {
+    if (card.getAttribute('data-value') === currentGameMode) {
+      card.classList.add('active');
+    } else {
+      card.classList.remove('active');
+    }
+  });
 
   if (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit') {
     if (headerTitle) {
@@ -1413,7 +1556,7 @@ function applyGameModeUI() {
     if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
   } else {
     if (headerTitle) headerTitle.textContent = 'WORDLE';
-    if (hintContainer) hintContainer.style.display = '';
+    if (hintContainer) hintContainer.style.display = isShowHintsDiscovered ? '' : 'none';
     if (bestGuessContainer) bestGuessContainer.style.display = 'none';
     const nextName = window.w500UseMastermind ? 'Word Pegs 5' : 'Word500';
     if (switchBtn) switchBtn.textContent = `🔄 Switch to ${nextName}`;
@@ -1991,14 +2134,30 @@ function startInstructionRotation() {
     const res = getInstructionText();
     const instEl = document.querySelector('.instruction');
     if (instEl) {
-      instEl.innerHTML = res.text;
-      instEl.style.color = 'var(--text-muted)';
+      instEl.classList.remove('fade-in');
+      instEl.classList.add('fade-out');
+      setTimeout(() => {
+        instEl.innerHTML = res.text;
+        instEl.style.color = 'var(--text-muted)';
+        void instEl.offsetWidth; // Trigger reflow for smooth transition
+        instEl.classList.remove('fade-out');
+        instEl.classList.add('fade-in');
+      }, 300);
     }
     
     currentInstructionIndex++;
   };
   
-  updateText();
+  // Initial display
+  const initialRes = getInstructionText();
+  const initialInstEl = document.querySelector('.instruction');
+  if (initialInstEl) {
+    initialInstEl.innerHTML = initialRes.text;
+    initialInstEl.style.color = 'var(--text-muted)';
+    initialInstEl.classList.add('fade-in');
+  }
+  currentInstructionIndex++;
+
   instructionTimer = setInterval(updateText, 5000); // Switch every 5s
 }
 
@@ -2009,13 +2168,20 @@ function processRankQueue() {
   const rankData = rankMessageQueue.shift();
   const instEl = document.querySelector('.instruction');
   if (instEl) {
-    instEl.innerHTML = `
-      <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
-        <img src="${rankData.avatar}" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.3);" onerror="this.src='assets/bg_nature.png'">
-        <span>${rankData.msg}</span>
-      </div>
-    `;
-    instEl.style.color = 'var(--warning)';
+    instEl.classList.remove('fade-in');
+    instEl.classList.add('fade-out');
+    setTimeout(() => {
+      instEl.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+          <img src="${rankData.avatar}" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.3);" onerror="this.src='assets/bg_nature.png'">
+          <span>${rankData.msg}</span>
+        </div>
+      `;
+      instEl.style.color = 'var(--warning)';
+      void instEl.offsetWidth;
+      instEl.classList.remove('fade-out');
+      instEl.classList.add('fade-in');
+    }, 300);
   }
   
   setTimeout(() => {
@@ -2023,11 +2189,18 @@ function processRankQueue() {
     if (rankMessageQueue.length > 0) {
       processRankQueue();
     } else {
-      // Revert to normal rotation
-      const text = getInstructionText((currentInstructionIndex - 1 + 4) % 4);
+      // Revert to normal rotation with smooth fade
+      const res = getInstructionText((currentInstructionIndex - 1 + 4) % 4);
       if (instEl) {
-        instEl.innerHTML = text;
-        instEl.style.color = 'var(--text-muted)';
+        instEl.classList.remove('fade-in');
+        instEl.classList.add('fade-out');
+        setTimeout(() => {
+          instEl.innerHTML = res.text || res;
+          instEl.style.color = 'var(--text-muted)';
+          void instEl.offsetWidth;
+          instEl.classList.remove('fade-out');
+          instEl.classList.add('fade-in');
+        }, 300);
       }
     }
   }, 5000); // Show for 5s
@@ -3529,6 +3702,7 @@ function startNewRound() {
     availableWords = [];
   }
 
+  lastRoundTargetWord = currentWord;
   currentWord = getRandomWord();
   guesses = [];
   wordLoopContributors = [];
@@ -3715,6 +3889,14 @@ function startNewRound() {
           guessQueue.push({ guessWord: loopWord, userData: { nickname: 'SISTEM', uniqueId: 'system' } });
           setTimeout(processQueue, 300);
       }
+    }
+  }
+
+  // Auto-Starter logic
+  if (isAutoStarterPreviousTarget && lastRoundTargetWord && lastRoundTargetWord.length === WORD_LENGTH) {
+    if (currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'word600') {
+      guessQueue.push({ guessWord: lastRoundTargetWord, userData: { nickname: 'SISTEM', uniqueId: 'system' } });
+      setTimeout(processQueue, 300);
     }
   }
 }
@@ -3919,6 +4101,18 @@ window.toggleNoRepeat = function(checked) {
   if (currentGameMode === 'wordfit' || currentGameMode === 'word500' || currentGameMode === 'word600') {
     startNewRound();
   }
+};
+
+window.toggleAutoStarter = function(checked) {
+  isAutoStarterPreviousTarget = checked;
+  try { localStorage.setItem('wordle_autoStarter', checked); } catch(e) {}
+};
+
+window.toggleShowHintsDiscovered = function(checked) {
+  isShowHintsDiscovered = checked;
+  try { localStorage.setItem('wordle_showHintsDiscovered', checked); } catch(e) {}
+  applyGameModeUI();
+  showToast(checked ? '💡 Bar Hints Discovered: AKTIF' : '💡 Bar Hints Discovered: NONAKTIF', 2000);
 };
 
 function updateNoRepeatBadgeUI() {
@@ -4185,7 +4379,7 @@ function validateHardMode(guessWord) {
       const statuses = getWordleFeedback(past, currentWord);
       const newG = guessWord.split('');
       
-      // Ultra hard mode check: no using completely gray letters
+      // Ultra hard mode check: no using completely gray letters & yellow must change position
       if (hardModeState === 'ultra') {
         const completelyGray = new Set();
         for(let i=0; i<past.length; i++) {
@@ -4202,6 +4396,17 @@ function validateHardMode(guessWord) {
         for(let i=0; i<guessWord.length; i++) {
           if (completelyGray.has(guessWord[i])) {
             return { valid: false, msg: `Huruf "${guessWord[i]}" (abu-abu) tidak boleh digunakan lagi`, conflictWord: past };
+          }
+        }
+
+        // Yellow letters CANNOT be reused in the same spot where they were yellow
+        for(let i=0; i<past.length; i++) {
+          if (statuses[i] === 'present' && guessWord[i] === past[i]) {
+            return { 
+              valid: false, 
+              msg: `Huruf "${past[i]}" kuning di posisi ke-${i+1}, harus dipindah ke posisi lain!`, 
+              conflictWord: past 
+            };
           }
         }
       }
@@ -4264,10 +4469,10 @@ window.toggleAdvancedSettings = function() {
   const btn = document.getElementById('advancedToggleBtn');
   if (container.style.display === 'none') {
     container.style.display = 'block';
-    btn.textContent = 'Advanced Settings ▲';
+    if (btn) btn.innerHTML = '<span>⚙️ Pengaturan Lanjutan</span> <span class="adv-arrow">▲</span>';
   } else {
     container.style.display = 'none';
-    btn.textContent = 'Advanced Settings ▼';
+    if (btn) btn.innerHTML = '<span>⚙️ Pengaturan Lanjutan</span> <span class="adv-arrow">▼</span>';
   }
 };
 
@@ -6047,20 +6252,25 @@ function processGuess(guessWord, userData, queueLen = 0) {
   }
 }
 
-// Toast System
-function showToast(message, duration = 3000) {
+// Toast System (Smooth Fade In / Fade Out)
+function showToast(message, duration = 2800) {
   const toast = document.createElement('div');
   toast.className = 'toast';
   toast.textContent = message;
   toastContainer.appendChild(toast);
   
+  // Smooth fade-in
+  requestAnimationFrame(() => {
+    toast.classList.add('show');
+  });
+  
+  // Smooth fade-out
   setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateY(20px) scale(0.9)';
-    toast.style.transition = 'all 0.3s ease';
+    toast.classList.remove('show');
+    toast.classList.add('hide');
     setTimeout(() => {
-      if(toast.parentNode) toast.parentNode.removeChild(toast);
-    }, 300);
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 360);
   }, duration);
 }
 
@@ -6413,15 +6623,34 @@ window.changeBackground = function() {
 };
 
 window.updateBgEffects = function() {
-  const blurVal = document.getElementById('bgBlurSlider').value;
-  const dimVal = document.getElementById('bgDimSlider').value;
+  const blurSlider = document.getElementById('bgBlurSlider');
+  const dimSlider = document.getElementById('bgDimSlider');
+  if (!blurSlider || !dimSlider) return;
+
+  const blurVal = blurSlider.value;
+  const dimVal = dimSlider.value;
   
+  const blurLabel = document.getElementById('bgBlurValue');
+  if (blurLabel) blurLabel.textContent = `${blurVal}px`;
+  const dimLabel = document.getElementById('bgDimValue');
+  if (dimLabel) dimLabel.textContent = `${dimVal}%`;
+
   localStorage.setItem('custom_bg_blur', blurVal);
   localStorage.setItem('custom_bg_dim', dimVal);
   
   if (typeof window.applyBgEffects === 'function') {
     window.applyBgEffects(blurVal, dimVal);
   }
+};
+
+window.resetBgEffects = function(e) {
+  if (e) e.stopPropagation();
+  const blurSlider = document.getElementById('bgBlurSlider');
+  const dimSlider = document.getElementById('bgDimSlider');
+  if (blurSlider) blurSlider.value = 12;
+  if (dimSlider) dimSlider.value = 60;
+  window.updateBgEffects();
+  showToast('↺ Efek Blur (12px) & Kegelapan (60%) di-reset ke default!', 2000);
 };
 
 window.applyBgEffects = function(blurVal, dimVal) {
@@ -6559,6 +6788,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const noYellowToggle = document.getElementById('noYellowToggle');
   if (noYellowToggle) noYellowToggle.checked = isNoYellowMode;
 
+  const autoStarterToggle = document.getElementById('autoStarterToggle');
+  if (autoStarterToggle) autoStarterToggle.checked = isAutoStarterPreviousTarget;
+
+  const showHintsDiscoveredToggle = document.getElementById('showHintsDiscoveredToggle');
+  if (showHintsDiscoveredToggle) showHintsDiscoveredToggle.checked = isShowHintsDiscovered;
+
   const marqueeToggle = document.getElementById('marqueeToggle');
   if (marqueeToggle) marqueeToggle.checked = isMarqueeEnabled;
 
@@ -6583,18 +6818,36 @@ document.addEventListener('DOMContentLoaded', () => {
   } catch(e) {}
   if (typeof updateBoardScaleUI === 'function') updateBoardScaleUI();
 
-  // Handle smooth marquee updates when animation completes a cycle (off-screen)
-  const contentEl = document.getElementById('marqueeContent');
-  const marqueeContainer = document.getElementById('marqueeContainer');
-  if (contentEl && marqueeContainer) {
-    contentEl.addEventListener('animationiteration', () => {
-      if (pendingMarqueeHTML && pendingMarqueeHTML !== "") {
-        contentEl.innerHTML = pendingMarqueeHTML;
-        applyMarqueeAnimationProps(contentEl, marqueeContainer);
-        pendingMarqueeHTML = "";
+  // Initialize Background Blur & Dim sliders
+  try {
+    const savedBlur = localStorage.getItem('custom_bg_blur') || 12;
+    const savedDim = localStorage.getItem('custom_bg_dim') || 60;
+    const blurSlider = document.getElementById('bgBlurSlider');
+    const dimSlider = document.getElementById('bgDimSlider');
+    if (blurSlider) blurSlider.value = savedBlur;
+    if (dimSlider) dimSlider.value = savedDim;
+    const blurLabel = document.getElementById('bgBlurValue');
+    if (blurLabel) blurLabel.textContent = `${savedBlur}px`;
+    const dimLabel = document.getElementById('bgDimValue');
+    if (dimLabel) dimLabel.textContent = `${savedDim}%`;
+    if (typeof window.applyBgEffects === 'function') {
+      window.applyBgEffects(savedBlur, savedDim);
+    }
+  } catch(e) {}
+
+  // Synchronize active game card on load
+  try {
+    const gameCards = document.querySelectorAll('.game-card');
+    gameCards.forEach(card => {
+      if (card.getAttribute('data-value') === currentGameMode) {
+        card.classList.add('active');
+      } else {
+        card.classList.remove('active');
       }
     });
-  }
+  } catch(e) {}
+
+  updateMarqueeUI(true);
 });
 
 window.updateAllowedLengths = function() {
@@ -7502,40 +7755,21 @@ setInterval(() => {
   headerAlternatorState = (headerAlternatorState + 1) % maxState;
 }, 3000);
 
-// --- Custom Select Dropdown logic for Switch Game ---
-window.toggleCustomSelect = function(e) {
-  if (e) e.stopPropagation();
-  const select = document.getElementById('customGameSelect');
-  if (select) {
-    select.classList.toggle('open');
-  }
-};
-
+// --- Game Selection logic for 2-Column Cards Grid ---
 window.selectCustomGame = function(value, e) {
   if (e) e.stopPropagation();
-  const select = document.getElementById('customGameSelect');
-  if (select) {
-    select.classList.remove('open');
-    
-    const options = select.querySelectorAll('.custom-option');
-    options.forEach(opt => opt.classList.remove('selected'));
-    
-    const activeOpt = select.querySelector(`.custom-option[data-value="${value}"]`);
-    if (activeOpt) {
-      activeOpt.classList.add('selected');
-      const triggerSpan = select.querySelector('.custom-select-trigger span');
-      if (triggerSpan) triggerSpan.innerHTML = activeOpt.innerHTML;
+  
+  const cards = document.querySelectorAll('.game-card');
+  cards.forEach(card => {
+    if (card.getAttribute('data-value') === value) {
+      card.classList.add('active');
+    } else {
+      card.classList.remove('active');
     }
-    
-    changeGameModeDirect(value, e);
-  }
-};
+  });
 
-// Close select if user clicks outside
-document.addEventListener('click', function() {
-  const select = document.getElementById('customGameSelect');
-  if (select) select.classList.remove('open');
-});
+  changeGameModeDirect(value, e);
+};
 
 // Accordion toggle logic for Settings groups
 window.toggleSettingsGroup = function(headerElement, e) {

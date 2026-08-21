@@ -15,193 +15,261 @@
   <div class="bg-layer" id="bgLayer"></div>
   <div class="glass-overlay"></div>
 
-  <!-- Game Selection Overlay -->
+  <!-- Game Selection Overlay (NYT Games + Jackbox Style) -->
   <div class="game-select-overlay" id="gameSelectOverlay">
     <div class="game-select-container">
-      <div class="game-select-logo">🎮</div>
-      <h1 class="game-select-title">TIKTOK LIVE GAMES</h1>
-      <p class="game-select-subtitle" id="gameSelectSubtitle">Pilih game untuk dimainkan</p>
-
-      <!-- Connection status banner (shown when already connected) -->
-      <div id="gameSelectConnectedBanner" style="display:none; align-items:center; justify-content:center; gap:10px; background:rgba(0,242,254,0.08); border:1px solid rgba(0,242,254,0.25); border-radius:12px; padding:10px 18px; margin-bottom:14px; font-size:13px; color:#00f2fe;">
-        <span style="font-size:16px;">🟢</span>
-        <span id="gameSelectConnectedUser" style="font-weight:700;">@username</span>
-        <span style="color:rgba(255,255,255,0.5);">masih terhubung ke TikTok Live</span>
-        <button onclick="switchAccount()" style="margin-left:auto; background:rgba(254,44,85,0.15); border:1px solid rgba(254,44,85,0.4); color:#fe2c55; font-size:11px; font-weight:700; padding:5px 12px; border-radius:8px; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='rgba(254,44,85,0.3)'" onmouseout="this.style.background='rgba(254,44,85,0.15)'">Disconnect</button>
+      <div class="game-select-header">
+        <div class="game-select-badge">TIKTOK LIVE PARTY • 11 GAMES</div>
+        <h1 class="game-select-title">PILIH PERMAINAN</h1>
+        <p class="game-select-subtitle" id="gameSelectSubtitle">Pilih mode tebak kata untuk dimainkan bersama penonton di live chat TikTok</p>
       </div>
 
-        <div class="game-card" onclick="selectGame('wordladder')" id="cardWordLadder">
-          <div class="game-card-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v18"></path><path d="M18 3v18"></path><path d="M6 7h12"></path><path d="M6 12h12"></path><path d="M6 17h12"></path></svg>
+      <!-- Connection status banner (shown when already connected) -->
+      <div id="gameSelectConnectedBanner" class="game-select-connected-banner" style="display: none;">
+        <span class="status-indicator-dot">🟢</span>
+        <span id="gameSelectConnectedUser" class="connected-username">@username</span>
+        <span class="connected-text">terhubung ke Live</span>
+        <button onclick="switchAccount()" class="btn-disconnect-small">Disconnect</button>
+      </div>
+
+      <!-- Game Cards Scroll Area -->
+      <div class="game-cards-scroll">
+        <div class="game-cards">
+          <!-- 1. Wordle -->
+          <div class="game-card card-nyt-wordle" onclick="selectGame('wordle')" id="cardWordle">
+            <div class="card-visual">
+              <span class="mini-tile tile-green">W</span>
+              <span class="mini-tile tile-yellow">O</span>
+              <span class="mini-tile tile-gray">R</span>
+              <span class="mini-tile tile-green">D</span>
+            </div>
+            <div class="card-body">
+              <div class="card-top-row">
+                <span class="card-title">WORDLE</span>
+                <span class="card-badge badge-green">CLASSIC</span>
+              </div>
+            </div>
           </div>
-          <div class="game-card-content">
-            <div class="game-card-name">WORD LADDER</div>
-            <div class="game-card-desc">Ubah 1 huruf per langkah dari Kata Awal menuju Kata Target!</div>
+
+          <!-- 2. Word500 -->
+          <div class="game-card card-nyt-word500" onclick="selectGame('word500')" id="cardWord500">
+            <div class="card-visual">
+              <span class="mini-peg peg-green">5</span>
+              <span class="mini-peg peg-yellow">0</span>
+              <span class="mini-peg peg-gray">0</span>
+            </div>
+            <div class="card-body">
+              <div class="card-top-row">
+                <span class="card-title" id="cardNameW500">WORD500</span>
+                <span class="card-badge badge-blue">NUMERIC</span>
+              </div>
+            </div>
           </div>
-          <div class="game-card-arrow">→</div>
-        </div>
-        <div class="game-card" onclick="selectGame('squareword')" id="cardSquareword">
-          <div class="game-card-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect></svg>
+
+          <!-- 3. Word600 -->
+          <div class="game-card card-nyt-word600" onclick="selectGame('word600')" id="cardWord600">
+            <div class="card-visual">
+              <span class="mini-peg peg-green">6</span>
+              <span class="mini-peg peg-yellow">0</span>
+              <span class="mini-peg peg-gray">0</span>
+            </div>
+            <div class="card-body">
+              <div class="card-top-row">
+                <span class="card-title" id="cardNameW600">WORD600</span>
+                <span class="card-badge badge-purple">6 HURUF</span>
+              </div>
+            </div>
           </div>
-          <div class="game-card-content">
-            <div class="game-card-name">SQUAREWORD</div>
-            <div class="game-card-desc">Teka-teki 5×5 (10 kata KBBI). Buka ubin hijau & petunjuk kuning!</div>
+
+          <!-- 4. Word Fit -->
+          <div class="game-card card-nyt-wordfit" onclick="selectGame('wordfit')" id="cardWordFit">
+            <div class="card-visual">
+              <span class="mini-peg peg-green">5</span>
+              <span class="mini-peg peg-yellow">0</span>
+            </div>
+            <div class="card-body">
+              <div class="card-top-row">
+                <span class="card-title">WORD FIT</span>
+                <span class="card-badge badge-teal">INDICATOR</span>
+              </div>
+            </div>
           </div>
-          <div class="game-card-arrow">→</div>
-        </div>
-        <div class="game-card" onclick="selectGame('wordle')" id="cardWordle">
-          <div class="game-card-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line></svg>
+
+          <!-- 5. Color Fit -->
+          <div class="game-card card-nyt-colorfit" onclick="selectGame('colorfit')" id="cardColorFit">
+            <div class="card-visual">
+              <span class="mini-dot dot-red"></span>
+              <span class="mini-dot dot-green"></span>
+              <span class="mini-dot dot-blue"></span>
+              <span class="mini-dot dot-yellow"></span>
+            </div>
+            <div class="card-body">
+              <div class="card-top-row">
+                <span class="card-title">COLOR FIT</span>
+                <span class="card-badge badge-pink">WARNA</span>
+              </div>
+            </div>
           </div>
-          <div class="game-card-content">
-            <div class="game-card-name">WORDLE</div>
-            <div class="game-card-desc">Tebak kata dengan petunjuk warna per huruf. 6 kesempatan.</div>
+
+          <!-- 6. Word Loop -->
+          <div class="game-card card-nyt-wordloop" onclick="selectGame('wordloop')" id="cardWordLoop">
+            <div class="card-visual">
+              <span class="mini-tag tag-chain-a">KA</span>
+              <span class="chain-arrow">→</span>
+              <span class="mini-tag tag-chain-b">TA</span>
+            </div>
+            <div class="card-body">
+              <div class="card-top-row">
+                <span class="card-title">WORD LOOP</span>
+                <span class="card-badge badge-amber">CHAIN</span>
+              </div>
+            </div>
           </div>
-          <div class="game-card-arrow">→</div>
-        </div>
-        <div class="game-card" onclick="selectGame('word500')" id="cardWord500">
-          <div class="game-card-icon" id="cardIconW500">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+
+          <!-- 7. Word Fill -->
+          <div class="game-card card-nyt-fillblanks" onclick="selectGame('fillblanks')" id="cardFillBlanks">
+            <div class="card-visual">
+              <span class="mini-tile tile-green">K</span>
+              <span class="mini-tile tile-blank">_</span>
+              <span class="mini-tile tile-yellow">T</span>
+              <span class="mini-tile tile-blank">_</span>
+            </div>
+            <div class="card-body">
+              <div class="card-top-row">
+                <span class="card-title">WORD FILL</span>
+                <span class="card-badge badge-orange">CO-OP</span>
+              </div>
+            </div>
           </div>
-          <div class="game-card-content">
-            <div class="game-card-name" id="cardNameW500">WORD500</div>
-            <div class="game-card-desc" id="cardDescW500">Hanya dapat angka: berapa huruf benar & hampir benar. Unlimited!</div>
+
+          <!-- 8. Word Tango -->
+          <div class="game-card card-nyt-wordtango" onclick="selectGame('wordtango')" id="cardWordTango">
+            <div class="card-visual">
+              <span class="mini-chip">A</span>
+              <span class="mini-chip">B</span>
+              <span class="mini-chip">C</span>
+            </div>
+            <div class="card-body">
+              <div class="card-top-row">
+                <span class="card-title">WORD TANGO</span>
+                <span class="card-badge badge-rose">POOL</span>
+              </div>
+            </div>
           </div>
-          <div class="game-card-arrow">→</div>
-        </div>
-        <div class="game-card" onclick="selectGame('word600')" id="cardWord600">
-          <div class="game-card-icon" id="cardIconW600">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
+
+          <!-- 9. Word Grid -->
+          <div class="game-card card-nyt-wordgrid" onclick="selectGame('wordgrid')" id="cardWordGrid">
+            <div class="card-visual">
+              <div class="mini-grid-3x3">
+                <span></span><span></span><span></span>
+                <span></span><span class="active-cell"></span><span></span>
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="card-top-row">
+                <span class="card-title">WORD GRID</span>
+                <span class="card-badge badge-indigo">3×3 GRID</span>
+              </div>
+            </div>
           </div>
-          <div class="game-card-content">
-            <div class="game-card-name" id="cardNameW600">WORD600</div>
-            <div class="game-card-desc" id="cardDescW600">Sama seperti Word500 tapi dengan tebakan 6 huruf.</div>
+
+          <!-- 10. Squareword -->
+          <div class="game-card card-nyt-squareword" onclick="selectGame('squareword')" id="cardSquareword">
+            <div class="card-visual">
+              <div class="mini-grid-5x5">
+                <span class="sq-g"></span><span></span><span class="sq-y"></span><span></span><span></span>
+                <span></span><span class="sq-g"></span><span></span><span></span><span></span>
+                <span></span><span></span><span class="sq-g"></span><span></span><span></span>
+                <span></span><span></span><span></span><span class="sq-g"></span><span></span>
+                <span></span><span></span><span></span><span></span><span class="sq-g"></span>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="card-top-row">
+                <span class="card-title">SQUAREWORD</span>
+                <span class="card-badge badge-fuchsia">5×5</span>
+              </div>
+            </div>
           </div>
-          <div class="game-card-arrow">→</div>
-        </div>
-        <div class="game-card" onclick="selectGame('wordfit')" id="cardWordFit">
-          <div class="game-card-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
+
+          <!-- 11. Word Ladder -->
+          <div class="game-card card-nyt-wordladder" onclick="selectGame('wordladder')" id="cardWordLadder">
+            <div class="card-visual">
+              <span class="ladder-step">AWAL</span>
+              <span class="ladder-bar">↓</span>
+              <span class="ladder-step step-target">AKHIR</span>
+            </div>
+            <div class="card-body">
+              <div class="card-top-row">
+                <span class="card-title">WORD LADDER</span>
+                <span class="card-badge badge-sky">LADDER</span>
+              </div>
+            </div>
           </div>
-          <div class="game-card-content">
-            <div class="game-card-name">WORD FIT</div>
-            <div class="game-card-desc">Tebak kata dengan 2 indikator: benar (hijau) & hampir benar (kuning). Panjang kata fleksibel!</div>
-          </div>
-          <div class="game-card-arrow">→</div>
-        </div>
-        <div class="game-card" onclick="selectGame('wordloop')" id="cardWordLoop">
-          <div class="game-card-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
-          </div>
-          <div class="game-card-content">
-            <div class="game-card-name">WORD LOOP</div>
-            <div class="game-card-desc">Sambung kata 6 baris. Akhir kata menutup loop!</div>
-          </div>
-          <div class="game-card-arrow">→</div>
-        </div>
-        <div class="game-card" onclick="selectGame('fillblanks')" id="cardFillBlanks">
-          <div class="game-card-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-          </div>
-          <div class="game-card-content">
-            <div class="game-card-name">WORD FILL</div>
-            <div class="game-card-desc">Tebak 6 kata sekaligus dari petunjuk huruf hijau & kuning yang diberikan!</div>
-          </div>
-          <div class="game-card-arrow">→</div>
-        </div>
-        <div class="game-card" onclick="selectGame('wordtango')" id="cardWordTango">
-          <div class="game-card-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
-          </div>
-          <div class="game-card-content">
-            <div class="game-card-name">WORD TANGO</div>
-            <div class="game-card-desc">Lengkapi 4 kata rumpang (panjang 3-6 huruf) menggunakan huruf dari Letter Pool!</div>
-          </div>
-          <div class="game-card-arrow">→</div>
-        </div>
-        <div class="game-card" onclick="selectGame('wordgrid')" id="cardWordGrid">
-          <div class="game-card-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg>
-          </div>
-          <div class="game-card-content">
-            <div class="game-card-name">WORD GRID</div>
-            <div class="game-card-desc">Tebak kata yang sesuai dengan kriteria baris dan kolom. 9 Kotak!</div>
-          </div>
-          <div class="game-card-arrow">→</div>
-        </div>
-        <div class="game-card" onclick="selectGame('wordladder')" id="cardWordLadder">
-          <div class="game-card-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v18"></path><path d="M18 3v18"></path><path d="M6 7h12"></path><path d="M6 12h12"></path><path d="M6 17h12"></path></svg>
-          </div>
-          <div class="game-card-content">
-            <div class="game-card-name">WORD LADDER</div>
-            <div class="game-card-desc">Ubah 1 huruf tiap langkah dari Kata Awal menuju Kata Target!</div>
-          </div>
-          <div class="game-card-arrow">→</div>
-        </div>
-        <div class="game-card" onclick="selectGame('squareword')" id="cardSquareword">
-          <div class="game-card-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect></svg>
-          </div>
-          <div class="game-card-content">
-            <div class="game-card-name">SQUAREWORD 5×5</div>
-            <div class="game-card-desc">Tebak 10 kata sekaligus (5 horizontal & 5 vertikal) dalam grid 5x5!</div>
-          </div>
-          <div class="game-card-arrow">→</div>
-        </div>
-        <div class="game-card" onclick="selectGame('colorfit')" id="cardColorFit">
-          <div class="game-card-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12c0 2.22 1 4.3 2.7 5.7L6 21.5c1 .5 2.2.5 3.2 0l2.8-1.5z"></path><circle cx="7.5" cy="10.5" r="1.5"></circle><circle cx="11.5" cy="7.5" r="1.5"></circle><circle cx="16.5" cy="9.5" r="1.5"></circle></svg>
-          </div>
-          <div class="game-card-content">
-            <div class="game-card-name">COLOR FIT</div>
-            <div class="game-card-desc">Tebak urutan warna (Merah, Hijau, Biru, Kuning, Ungu, Oranye) yang benar!</div>
-          </div>
-          <div class="game-card-arrow">→</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Connection Overlay -->
-  <div class="login-overlay" id="loginOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.65);">
+  <!-- Connection / Lobby Overlay (Jackbox Style) -->
+  <div class="login-overlay" id="loginOverlay" style="display: none;">
     <div class="login-card">
-      <div class="login-logo">🎮</div>
-      <h1 id="loginTitle">TIKTOK WORDLE</h1>
-      <p>Enter TikTok username to start</p>
-      <div class="input-group">
-        <span class="at-symbol">@</span>
-        <input type="text" id="usernameInput" placeholder="username" autocomplete="off">
+      <button class="login-back-btn" onclick="backToGameList()" title="Kembali ke Menu Game">
+        <span class="back-arrow">←</span> Kembali ke Menu
+      </button>
+
+      <div class="login-header">
+        <div class="login-game-chip" id="loginGameChip">MODE AKTIF: WORDLE</div>
+        <h1 id="loginTitle">ROOM SETUP</h1>
+        <p id="loginSubtitle">Hubungkan live chat penonton TikTok untuk mulai bermain</p>
       </div>
-      <div class="input-group" style="margin-top: 15px;">
+
+      <div class="input-group login-input-group">
+        <span class="at-symbol">@</span>
+        <input type="text" id="usernameInput" placeholder="username_tiktok" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="input-group login-input-group">
+        <span class="at-symbol">🌐</span>
         <select id="languageSelect" class="lang-select">
-          <option value="en">English (EN)</option>
-          <option value="id">Bahasa Indonesia (ID)</option>
-          <option value="mixed">Campuran (EN + ID)</option>
+          <option value="id">🇮🇩 Bahasa Indonesia (ID)</option>
+          <option value="en">🇬🇧 English (EN)</option>
+          <option value="mixed">🌐 Campuran (ID + EN)</option>
         </select>
       </div>
-      <div id="advancedToggleBtn" onclick="toggleAdvancedSettings()" style="color: var(--text-muted); font-size: 12px; cursor: pointer; text-decoration: underline; margin-bottom: 20px; display: inline-block;">Advanced Settings ▼</div>
 
-      <div id="advancedSettingsContainer" style="display: none;">
-        <div class="input-group" title="Optional. Used to fix connection errors. Get it from your TikTok cookies.">
+      <div id="advancedToggleBtn" onclick="toggleAdvancedSettings()" class="advanced-toggle-btn">
+        <span>⚙️ Pengaturan Lanjutan</span> <span class="adv-arrow">▼</span>
+      </div>
+
+      <div id="advancedSettingsContainer" class="advanced-settings-panel" style="display: none;">
+        <div class="input-group login-input-group" title="Opsional. Digunakan jika ada kendala koneksi API TikTok.">
           <span class="at-symbol">🔑</span>
           <input type="password" id="sessionInput" placeholder="Session ID (Opsional)" autocomplete="off">
         </div>
-        <div class="input-group">
+        <div class="input-group login-input-group">
           <span class="at-symbol">🔌</span>
-          <select id="backendSelect" class="lang-select" onchange="handleBackendChange(this.value)" style="background: transparent; border: none; color: white; width: 100%; padding: 16px 12px; font-size: 16px; font-weight: 600; outline: none; appearance: none;">
-            <option value="socketio" style="color: black;">Local Server (Socket.IO)</option>
-            <option value="indofinity" style="color: black;">IndoFinity (ws://localhost:62024)</option>
+          <select id="backendSelect" class="lang-select" onchange="handleBackendChange(this.value)">
+            <option value="socketio">Local Server (Socket.IO)</option>
+            <option value="indofinity">IndoFinity (ws://localhost:62024)</option>
           </select>
         </div>
-        <div class="input-group" id="indofinityIpGroup" style="display: none;">
-          <span class="at-symbol">🌐</span>
-          <input type="text" id="indofinityIpInput" placeholder="IP IndoFinity (misal: 192.168.1.10)" autocomplete="off" style="width: 100%;">
+        <div class="input-group login-input-group" id="indofinityIpGroup" style="display: none;">
+          <span class="at-symbol">📡</span>
+          <input type="text" id="indofinityIpInput" placeholder="IP IndoFinity (misal: 192.168.1.10)" autocomplete="off">
         </div>
       </div>
-      <button id="connectBtn" onclick="connectToLive()">Connect to Live</button>
-      <button id="offlineBtn" onclick="startOfflineMode()" style="margin-top: 10px; background: #3b82f6; border: none; padding: 12px; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; transition: all 0.2s;">Main Offline (Host)</button>
+
+      <div class="login-actions">
+        <button id="connectBtn" class="btn-connect-live" onclick="connectToLive()">
+          HUBUNGKAN KE LIVE
+        </button>
+        <button id="offlineBtn" class="btn-offline-mode" onclick="startOfflineMode()">
+          MAIN OFFLINE (HOST)
+        </button>
+      </div>
+
       <div id="loginStatus" class="status-msg"></div>
     </div>
   </div>
@@ -224,6 +292,7 @@
     <header>
       <div class="header-left">
         <div class="room-info">
+          <button id="menuBtn" class="switch-btn" title="Pilih Game Lain (Menu Depan)" onclick="backToGameList()">🏠</button>
           <div class="live-badge">LIVE</div>
           <span id="roomHost">@username</span>
           <button id="switchAccountBtn" class="switch-btn" title="Ganti Akun" onclick="switchAccount()">🔄</button>
@@ -238,80 +307,224 @@
           <button id="settingsBtn" class="settings-btn" onclick="toggleSettings(event)">⚙</button>
           <div class="settings-dropdown" id="settingsDropdown">
             
-            <!-- Group 1: Bahasa -->
+            <!-- Group 1: 🌐 Bahasa & Pilihan Game -->
             <div class="settings-group">
               <div class="settings-group-header" onclick="toggleSettingsGroup(this, event)">
-                <span>🌐 Bahasa</span>
+                <span>🌐 Pilihan Game & Bahasa</span>
                 <span class="arrow">▼</span>
               </div>
-              <div class="settings-group-content">
-                <button class="lang-option" data-lang="en" onclick="changeLang('en', event)">🇬🇧 English</button>
-                <button class="lang-option" data-lang="id" onclick="changeLang('id', event)">🇮🇩 Indonesia</button>
-                <button class="lang-option" data-lang="mixed" onclick="changeLang('mixed', event)">🌐 Campuran</button>
+              <div class="settings-group-content" style="padding: 10px 12px;">
+                <!-- 2-Column Game Mode Grid -->
+                <div class="game-mode-grid" id="gameModeGrid">
+                  <!-- Wordle -->
+                  <div class="game-card" data-value="wordle" onclick="selectCustomGame('wordle', event)">
+                    <div class="game-card-icon badge-wordle">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                        <line x1="9" y1="3" x2="9" y2="21"></line>
+                        <line x1="15" y1="3" x2="15" y2="21"></line>
+                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                        <line x1="3" y1="15" x2="21" y2="15"></line>
+                      </svg>
+                    </div>
+                    <div class="game-card-text">
+                      <div class="game-card-title">Wordle</div>
+                      <div class="game-card-desc">Tebak 5-8 Huruf</div>
+                    </div>
+                  </div>
+
+                  <!-- Word500 -->
+                  <div class="game-card" data-value="word500" onclick="selectCustomGame('word500', event)">
+                    <div class="game-card-icon badge-word500">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="6" cy="12" r="3"></circle>
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <circle cx="18" cy="12" r="3"></circle>
+                      </svg>
+                    </div>
+                    <div class="game-card-text">
+                      <div class="game-card-title">Word500</div>
+                      <div class="game-card-desc">Mastermind 5H</div>
+                    </div>
+                  </div>
+
+                  <!-- Word600 -->
+                  <div class="game-card" data-value="word600" onclick="selectCustomGame('word600', event)">
+                    <div class="game-card-icon badge-word600">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+                        <line x1="7" y1="5" x2="7" y2="19"></line>
+                        <line x1="11" y1="5" x2="11" y2="19"></line>
+                        <line x1="15" y1="5" x2="15" y2="19"></line>
+                      </svg>
+                    </div>
+                    <div class="game-card-text">
+                      <div class="game-card-title">Word600</div>
+                      <div class="game-card-desc">Mastermind 6H</div>
+                    </div>
+                  </div>
+
+                  <!-- Word Fit -->
+                  <div class="game-card" data-value="wordfit" onclick="selectCustomGame('wordfit', event)">
+                    <div class="game-card-icon badge-wordfit">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2v20M2 12h20"></path>
+                        <rect x="7" y="7" width="10" height="10" rx="1"></rect>
+                      </svg>
+                    </div>
+                    <div class="game-card-text">
+                      <div class="game-card-title">Word Fit</div>
+                      <div class="game-card-desc">Tebak & Eliminasi</div>
+                    </div>
+                  </div>
+
+                  <!-- Word Loop -->
+                  <div class="game-card" data-value="wordloop" onclick="selectCustomGame('wordloop', event)">
+                    <div class="game-card-icon badge-wordloop">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="17 1 21 5 17 9"></polyline>
+                        <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                        <polyline points="7 23 3 19 7 15"></polyline>
+                        <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                      </svg>
+                    </div>
+                    <div class="game-card-text">
+                      <div class="game-card-title">Word Loop</div>
+                      <div class="game-card-desc">Sambung Kata</div>
+                    </div>
+                  </div>
+
+                  <!-- Word Fill -->
+                  <div class="game-card" data-value="fillblanks" onclick="selectCustomGame('fillblanks', event)">
+                    <div class="game-card-icon badge-wordfill">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                      </svg>
+                    </div>
+                    <div class="game-card-text">
+                      <div class="game-card-title">Word Fill</div>
+                      <div class="game-card-desc">Kata Rumpang</div>
+                    </div>
+                  </div>
+
+                  <!-- Word Tango -->
+                  <div class="game-card" data-value="wordtango" onclick="selectCustomGame('wordtango', event)">
+                    <div class="game-card-icon badge-wordtango">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 18V5l12-2v13"></path>
+                        <circle cx="6" cy="18" r="3"></circle>
+                        <circle cx="18" cy="16" r="3"></circle>
+                      </svg>
+                    </div>
+                    <div class="game-card-text">
+                      <div class="game-card-title">Word Tango</div>
+                      <div class="game-card-desc">4 Kata & Pool</div>
+                    </div>
+                  </div>
+
+                  <!-- Word Grid -->
+                  <div class="game-card" data-value="wordgrid" onclick="selectCustomGame('wordgrid', event)">
+                    <div class="game-card-icon badge-wordgrid">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                        <line x1="3" y1="15" x2="21" y2="15"></line>
+                        <line x1="9" y1="3" x2="9" y2="21"></line>
+                        <line x1="15" y1="3" x2="15" y2="21"></line>
+                      </svg>
+                    </div>
+                    <div class="game-card-text">
+                      <div class="game-card-title">Word Grid</div>
+                      <div class="game-card-desc">Matriks 3×3</div>
+                    </div>
+                  </div>
+
+                  <!-- Word Ladder -->
+                  <div class="game-card" data-value="wordladder" onclick="selectCustomGame('wordladder', event)">
+                    <div class="game-card-icon badge-wordladder">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 3v18"></path>
+                        <path d="M18 3v18"></path>
+                        <line x1="6" y1="7" x2="18" y2="7"></line>
+                        <line x1="6" y1="12" x2="18" y2="12"></line>
+                        <line x1="6" y1="17" x2="18" y2="17"></line>
+                      </svg>
+                    </div>
+                    <div class="game-card-text">
+                      <div class="game-card-title">Word Ladder</div>
+                      <div class="game-card-desc">Tangga Kata</div>
+                    </div>
+                  </div>
+
+                  <!-- Squareword -->
+                  <div class="game-card" data-value="squareword" onclick="selectCustomGame('squareword', event)">
+                    <div class="game-card-icon badge-squareword">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="6" height="6" rx="1"></rect>
+                        <rect x="15" y="3" width="6" height="6" rx="1"></rect>
+                        <rect x="3" y="15" width="6" height="6" rx="1"></rect>
+                        <rect x="15" y="15" width="6" height="6" rx="1"></rect>
+                        <rect x="9" y="9" width="6" height="6" rx="1"></rect>
+                      </svg>
+                    </div>
+                    <div class="game-card-text">
+                      <div class="game-card-title">Squareword</div>
+                      <div class="game-card-desc">Grid 5×5</div>
+                    </div>
+                  </div>
+
+                  <!-- Color Fit -->
+                  <div class="game-card" data-value="colorfit" onclick="selectCustomGame('colorfit', event)" style="grid-column: span 2;">
+                    <div class="game-card-icon badge-colorfit">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 2a10 10 0 0 1 10 10"></path>
+                        <circle cx="12" cy="12" r="4"></circle>
+                      </svg>
+                    </div>
+                    <div class="game-card-text">
+                      <div class="game-card-title">Color Fit</div>
+                      <div class="game-card-desc">Warna & Huruf Mastermind</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Language selection row -->
+                <div style="font-size: 10px; color: #aaa; margin: 4px 0 6px; font-weight: 700; text-transform: uppercase; text-align: left;">Bahasa Kamus</div>
+                <div style="display: flex; gap: 4px;">
+                  <button class="lang-option" data-lang="id" onclick="changeLang('id', event)" style="flex:1; justify-content:center; font-size: 11px;">🇮🇩 ID</button>
+                  <button class="lang-option" data-lang="en" onclick="changeLang('en', event)" style="flex:1; justify-content:center; font-size: 11px;">🇬🇧 EN</button>
+                  <button class="lang-option" data-lang="mixed" onclick="changeLang('mixed', event)" style="flex:1; justify-content:center; font-size: 11px;">🌐 Mix</button>
+                </div>
               </div>
             </div>
 
-            <!-- Group 2: Game Mode & Aturan Umum -->
+            <!-- Group 2: 📏 Panjang Kata -->
             <div class="settings-group">
               <div class="settings-group-header" onclick="toggleSettingsGroup(this, event)">
-                <span>🎮 Game Mode & Aturan Umum</span>
+                <span>📏 Panjang Kata</span>
                 <span class="arrow">▼</span>
               </div>
               <div class="settings-group-content">
-                <div class="custom-select" id="customGameSelect" onclick="event.stopPropagation()">
-                  <div class="custom-select-trigger" onclick="toggleCustomSelect(event)">
-                    <span>🔄 Pilih Game Mode...</span>
-                    <div class="arrow">▼</div>
-                  </div>
-                  <div class="custom-options">
-                    <div class="custom-option" data-value="wordle" onclick="selectCustomGame('wordle', event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line></svg><span>Wordle (5/6 Huruf)</span></div>
-                    <div class="custom-option" data-value="word500" onclick="selectCustomGame('word500', event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg><span>Word500 (Mastermind 5)</span></div>
-                    <div class="custom-option" data-value="word600" onclick="selectCustomGame('word600', event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg><span>Word600 (Mastermind 6)</span></div>
-                    <div class="custom-option" data-value="wordfit" onclick="selectCustomGame('wordfit', event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg><span>Word Fit</span></div>
-                    <div class="custom-option" data-value="wordloop" onclick="selectCustomGame('wordloop', event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg><span>Word Loop</span></div>
-                    <div class="custom-option" data-value="fillblanks" onclick="selectCustomGame('fillblanks', event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg><span>Word Fill</span></div>
-                    <div class="custom-option" data-value="wordtango" onclick="selectCustomGame('wordtango', event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg><span>Word Tango</span></div>
-                    <div class="custom-option" data-value="wordgrid" onclick="selectCustomGame('wordgrid', event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg><span>Word Grid</span></div>
-                    <div class="custom-option" data-value="wordladder" onclick="selectCustomGame('wordladder', event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v18"></path><path d="M18 3v18"></path><path d="M6 7h12"></path><path d="M6 12h12"></path><path d="M6 17h12"></path></svg><span>Word Ladder</span></div>
-                    <div class="custom-option" data-value="squareword" onclick="selectCustomGame('squareword', event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect></svg><span>Squareword 5×5</span></div>
-                    <div class="custom-option" data-value="colorfit" onclick="selectCustomGame('colorfit', event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12c0 2.22 1 4.3 2.7 5.7L6 21.5c1 .5 2.2.5 3.2 0l2.8-1.5z"></path><circle cx="7.5" cy="10.5" r="1.5"></circle><circle cx="11.5" cy="7.5" r="1.5"></circle><circle cx="16.5" cy="9.5" r="1.5"></circle></svg><span>Color Fit</span></div>
-                  </div>
+                <div class="settings-checkboxes" onclick="event.stopPropagation()" style="display: flex; gap: 10px; color: rgba(255,255,255,0.8); font-size: 13px; flex-wrap: wrap; justify-content: center;">
+                  <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="len3Toggle" onchange="updateAllowedLengths()"> 3</label>
+                  <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="len4Toggle" onchange="updateAllowedLengths()"> 4</label>
+                  <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="len5Toggle" checked onchange="updateAllowedLengths()"> 5</label>
+                  <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="len6Toggle" checked onchange="updateAllowedLengths()"> 6</label>
+                  <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="len7Toggle" checked onchange="updateAllowedLengths()"> 7</label>
+                  <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="len8Toggle" checked onchange="updateAllowedLengths()"> 8</label>
                 </div>
-                <button class="lang-option" id="recapBtn" onclick="event.stopPropagation(); document.getElementById('recapIframe').src='recap.html'; document.getElementById('recapOverlay').style.display='block';">🏆 Supporter Recap</button>
-                <button class="lang-option" id="gameRecapBtn" onclick="event.stopPropagation(); document.getElementById('recapIframe').src='game_recap.html'; document.getElementById('recapOverlay').style.display='block';">🎮 Game Solver Recap</button>
-                <button class="lang-option" id="wordGridSolverBtn" onclick="event.stopPropagation(); window.open('wordgrid_solver.html', '_blank');">🧮 Word Grid Solver</button>
-                <label class="settings-toggle-row" onclick="event.stopPropagation()">
-                  <span class="settings-toggle-label">🚫 Filter Kata Kasar</span>
-                  <div class="toggle-switch">
-                    <input type="checkbox" id="badWordsToggle" checked onchange="toggleBadWords(this.checked)">
-                    <div class="toggle-track"></div>
-                  </div>
-                </label>
-                <label class="settings-toggle-row" onclick="event.stopPropagation()">
-                  <span class="settings-toggle-label">❤️ Restart dari Like</span>
-                  <div class="toggle-switch">
-                    <input type="checkbox" id="likeRestartToggle" onchange="toggleLikeRestart(this.checked)">
-                    <div class="toggle-track"></div>
-                  </div>
-                </label>
-                <div id="likeThresholdContainer" onclick="event.stopPropagation()" style="display: none; text-align: left; margin: 10px 0 0 0; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px;">
-                  <label style="font-size: 13px; color: #ccc;">Target Likes:</label>
-                  <input type="number" id="likeThresholdInput" value="1000" onchange="updateLikeThreshold(this.value)" onclick="event.stopPropagation()" style="width: 100%; padding: 8px; margin-top: 5px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px;">
-                </div>
-                <label class="settings-toggle-row" onclick="event.stopPropagation()" title="Mainkan suara gift untuk setiap ketukan beruntun">
-                  <span class="settings-toggle-label">🎁 Bunyi Tiap Combo Gift</span>
-                  <div class="toggle-switch">
-                    <input type="checkbox" id="playEveryGiftSoundToggle" onchange="togglePlayEveryGiftSound(this.checked)">
-                    <div class="toggle-track"></div>
-                  </div>
-                </label>
+                <button class="lang-option" onclick="applyAllowedLengths(event)" style="margin-top: 8px; justify-content: center; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #ffffff; padding: 6px; border-radius: 6px; font-weight: bold; width: 100%;">
+                  ⚡ Terapkan & Mulai Ulang
+                </button>
               </div>
             </div>
 
-            <!-- Group 3 (New): ⚙️ Aturan Mode Khusus -->
+            <!-- Group 3: 🎯 Aturan Permainan -->
             <div class="settings-group">
               <div class="settings-group-header" onclick="toggleSettingsGroup(this, event)">
-                <span>⚙️ Aturan Mode Khusus</span>
+                <span>🎯 Aturan Permainan</span>
                 <span class="arrow">▼</span>
               </div>
               <div class="settings-group-content">
@@ -343,6 +556,36 @@
                     <div class="toggle-track"></div>
                   </div>
                 </label>
+                <label class="settings-toggle-row" onclick="event.stopPropagation()">
+                  <div style="display: flex; flex-direction: column; text-align: left;">
+                    <span class="settings-toggle-label">🔄 Auto-Starter (Target Sblm)</span>
+                    <span style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px;">Otomatis tebak kata target dari ronde sebelumnya</span>
+                  </div>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="autoStarterToggle" onchange="toggleAutoStarter(this.checked)">
+                    <div class="toggle-track"></div>
+                  </div>
+                </label>
+                <label class="settings-toggle-row" onclick="event.stopPropagation()">
+                  <div style="display: flex; flex-direction: column; text-align: left;">
+                    <span class="settings-toggle-label">💡 Bar Hints Discovered</span>
+                    <span style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px;">Tampilkan bar huruf hijau yang terbuka di Wordle</span>
+                  </div>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="showHintsDiscoveredToggle" checked onchange="toggleShowHintsDiscovered(this.checked)">
+                    <div class="toggle-track"></div>
+                  </div>
+                </label>
+                <label class="settings-toggle-row" onclick="event.stopPropagation()" id="w500StyleSetting">
+                  <div style="display: flex; flex-direction: column; text-align: left;">
+                    <span class="settings-toggle-label">🧩 Word500 Mastermind Style</span>
+                    <span style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px;">Gunakan visual peg warna Mastermind</span>
+                  </div>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="w500StyleToggle" checked onchange="toggleW500Style(this.checked)">
+                    <div class="toggle-track"></div>
+                  </div>
+                </label>
                 <label class="settings-toggle-row" onclick="event.stopPropagation()" title="Izinkan perebutan kotak di Word Grid menggunakan kata berskor lebih tinggi">
                   <div style="display: flex; flex-direction: column; text-align: left;">
                     <span class="settings-toggle-label">⚔️ Perebutan Kotak (Word Grid)</span>
@@ -366,37 +609,16 @@
               </div>
             </div>
 
-            <!-- Group 3: Panjang Kata -->
+            <!-- Group 4: 📺 Tampilan & Visual -->
             <div class="settings-group">
               <div class="settings-group-header" onclick="toggleSettingsGroup(this, event)">
-                <span>📏 Panjang Kata</span>
-                <span class="arrow">▼</span>
-              </div>
-              <div class="settings-group-content">
-                <div class="settings-checkboxes" onclick="event.stopPropagation()" style="display: flex; gap: 10px; color: rgba(255,255,255,0.8); font-size: 13px; flex-wrap: wrap; justify-content: center;">
-                  <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="len3Toggle" onchange="updateAllowedLengths()"> 3</label>
-                  <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="len4Toggle" onchange="updateAllowedLengths()"> 4</label>
-                  <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="len5Toggle" checked onchange="updateAllowedLengths()"> 5</label>
-                  <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="len6Toggle" checked onchange="updateAllowedLengths()"> 6</label>
-                  <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="len7Toggle" checked onchange="updateAllowedLengths()"> 7</label>
-                  <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="len8Toggle" checked onchange="updateAllowedLengths()"> 8</label>
-                </div>
-                <button class="lang-option" onclick="applyAllowedLengths(event)" style="margin-top: 8px; justify-content: center; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #ffffff; padding: 6px; border-radius: 6px; font-weight: bold; width: 100%;">
-                  ⚡ Terapkan & Mulai Ulang
-                </button>
-              </div>
-            </div>
-
-            <!-- Group 4: Tampilan -->
-            <div class="settings-group">
-              <div class="settings-group-header" onclick="toggleSettingsGroup(this, event)">
-                <span>🖼️ Tampilan</span>
+                <span>📺 Tampilan & Visual</span>
                 <span class="arrow">▼</span>
               </div>
               <div class="settings-group-content">
                 <div class="display-rows-control" onclick="event.stopPropagation()" style="margin-bottom: 8px;">
                   <button class="rows-btn" onclick="changeDisplayRows(-1, event)">−</button>
-                  <span class="rows-label">Baris: <strong id="displayRowsLabel">6</strong></span>
+                  <span class="rows-label">Baris Tebakan: <strong id="displayRowsLabel">6</strong></span>
                   <button class="rows-btn" onclick="changeDisplayRows(1, event)">+</button>
                 </div>
                 <div class="display-rows-control" onclick="event.stopPropagation()" style="margin-bottom: 12px;">
@@ -405,28 +627,7 @@
                   <button class="rows-btn" onclick="changeBoardScale(10, event)">+</button>
                 </div>
                 <label class="settings-toggle-row" onclick="event.stopPropagation()">
-                  <span class="settings-toggle-label">🖼️ Background Dinamis</span>
-                  <div class="toggle-switch">
-                    <input type="checkbox" id="dynamicBgToggle" checked onchange="toggleDynamicBg(this.checked)">
-                    <div class="toggle-track"></div>
-                  </div>
-                </label>
-                <label class="settings-toggle-row" onclick="event.stopPropagation()" id="w500StyleSetting">
-                  <span class="settings-toggle-label">🧩 Word500 Mastermind Style</span>
-                  <div class="toggle-switch">
-                    <input type="checkbox" id="w500StyleToggle" checked onchange="toggleW500Style(this.checked)">
-                    <div class="toggle-track"></div>
-                  </div>
-                </label>
-                <label class="settings-toggle-row" onclick="event.stopPropagation()">
-                  <span class="settings-toggle-label">🤖 Auto-Jawab saat Join</span>
-                  <div class="toggle-switch">
-                    <input type="checkbox" id="autoGuessJoinToggle" onchange="toggleAutoGuessJoin(this.checked)">
-                    <div class="toggle-track"></div>
-                  </div>
-                </label>
-                <label class="settings-toggle-row" onclick="event.stopPropagation()">
-                  <span class="settings-toggle-label">📢 Top Liker & Sharer Marquee</span>
+                  <span class="settings-toggle-label">📢 Bar Top Supporter (Rotasi Fade)</span>
                   <div class="toggle-switch">
                     <input type="checkbox" id="marqueeToggle" checked onchange="toggleMarquee(this.checked)">
                     <div class="toggle-track"></div>
@@ -447,13 +648,13 @@
                   </div>
                 </label>
                 <label class="settings-toggle-row" onclick="event.stopPropagation()">
-                  <span class="settings-toggle-label">🔊 Efek Suara (Web Audio)</span>
+                  <span class="settings-toggle-label">🖼️ Background Dinamis</span>
                   <div class="toggle-switch">
-                    <input type="checkbox" id="webAudioToggle" checked onchange="toggleWebAudio(this.checked)">
+                    <input type="checkbox" id="dynamicBgToggle" checked onchange="toggleDynamicBg(this.checked)">
                     <div class="toggle-track"></div>
                   </div>
                 </label>
-                <label class="settings-toggle" style="margin-top: 10px;">
+                <label class="settings-toggle" style="margin-top: 8px;">
                   <span class="settings-toggle-label">🔲 Auto Fullscreen (Klik Layar)</span>
                   <div class="toggle-switch">
                     <input type="checkbox" id="autoFullscreenToggle" checked onchange="toggleAutoFullscreen(this.checked)">
@@ -463,79 +664,141 @@
               </div>
             </div>
 
-            <!-- Group 5: Admin & Audio -->
+            <!-- Group 5: 🎨 Kustomisasi Background -->
             <div class="settings-group">
               <div class="settings-group-header" onclick="toggleSettingsGroup(this, event)">
-                <span>⚙️ Admin & Audio</span>
+                <span>🎨 Kustomisasi Background</span>
                 <span class="arrow">▼</span>
               </div>
               <div class="settings-group-content">
-                <button class="lang-option" onclick="openMusicSettings(event)">🎵 Pengaturan Musik</button>
-                <button class="lang-option" onclick="openTTSSettings(event)">🗣️ Pengaturan Suara (TTS)</button>
-                <button class="lang-option" onclick="openSocialAudioSettings(event)">🔊 Pengaturan Sound Alert</button>
-                <button class="lang-option" onclick="openCustomSFXSettings(event)">🔊 Pengaturan SFX Kustom</button>
-                
-                <!-- Background setting container -->
-                <div style="margin: 15px 0; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
-                  <div style="font-size: 11px; color: #aaa; margin-bottom: 8px; font-weight: 700; text-transform: uppercase; text-align: left;">Tampilan Latar (Background)</div>
+                <!-- Gambar/URL -->
+                <div style="font-size: 10px; color: #aaa; margin-bottom: 6px; font-weight: 700; text-transform: uppercase; text-align: left;">Gambar / URL Latar</div>
+                <input type="text" id="bgUrlInput" class="custom-input" placeholder="URL Gambar Latar..." onkeyup="if(event.key === 'Enter') changeBackground();" oninput="const fi = document.getElementById('bgFileInput'); if(fi) fi.value = '';" style="width: 100%; margin-bottom: 5px; padding: 6px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff; font-size: 11px; box-sizing: border-box;">
+                <input type="file" id="bgFileInput" accept="image/*" onchange="const ui = document.getElementById('bgUrlInput'); if(ui) ui.value = ''; changeBackground();" style="width: 100%; margin-bottom: 5px; color: #ccc; font-size: 10px; background: #222; padding: 4px; border-radius: 4px; border: 1px solid #555; box-sizing: border-box;">
 
-                  <!-- Gambar/URL -->
-                  <input type="text" id="bgUrlInput" class="custom-input" placeholder="URL Gambar Latar..." onkeyup="if(event.key === 'Enter') changeBackground();" oninput="const fi = document.getElementById('bgFileInput'); if(fi) fi.value = '';" style="width: 100%; margin-bottom: 5px; padding: 6px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff; font-size: 11px; box-sizing: border-box;">
-                  <input type="file" id="bgFileInput" accept="image/*" onchange="const ui = document.getElementById('bgUrlInput'); if(ui) ui.value = ''; changeBackground();" style="width: 100%; margin-bottom: 5px; color: #ccc; font-size: 10px; background: #222; padding: 4px; border-radius: 4px; border: 1px solid #555; box-sizing: border-box;">
-
-                  <!-- Row: Terapkan + Hapus -->
-                  <div style="display:flex; gap:6px; margin-bottom:10px;">
-                    <button class="lang-option" onclick="changeBackground()" style="flex:1; justify-content: center; background: rgba(255,255,255,0.08);">Terapkan</button>
-                    <button class="lang-option" onclick="clearBackground()" style="flex:0 0 auto; justify-content: center; background: rgba(254,44,85,0.15); border-color: rgba(254,44,85,0.35); color:#fe8080;" title="Hapus background custom">🗑️ Hapus BG</button>
-                  </div>
-
-                  <!-- Separator: warna solid -->
-                  <div style="font-size: 10px; color: #888; text-transform: uppercase; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.5px;">— atau pilih warna solid —</div>
-
-                  <!-- RGB Sliders -->
-                  <div id="rgbPickerContainer" onclick="event.stopPropagation()" style="background: rgba(0,0,0,0.25); border-radius: 8px; padding: 10px; margin-bottom: 8px;">
-
-                    <!-- Preview swatch + Hex input -->
-                    <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
-                      <div id="bgColorPreview" style="width:36px; height:36px; border-radius:6px; border:2px solid rgba(255,255,255,0.2); flex-shrink:0; background:#202124;"></div>
-                      <div style="flex:1;">
-                        <label style="font-size:10px; color:#aaa; display:block; margin-bottom:3px;">Hex Code</label>
-                        <input type="text" id="bgHexInput" maxlength="7" placeholder="#202124" oninput="syncRgbFromHex(this.value)" style="width:100%; padding:5px 8px; background:#1a1a1a; border:1px solid #555; border-radius:4px; color:#fff; font-size:12px; font-family:monospace; box-sizing:border-box;">
-                      </div>
-                    </div>
-
-                    <!-- Slider R -->
-                    <div style="margin-bottom:7px;">
-                      <div style="display:flex; justify-content:space-between; font-size:10px; color:#ff6b6b; margin-bottom:2px;"><span>R (Merah)</span><span id="rgbRVal">32</span></div>
-                      <input type="range" id="rgbR" min="0" max="255" value="32" oninput="onRgbSliderChange()" style="width:100%; accent-color:#ff6b6b; cursor:pointer;">
-                    </div>
-                    <!-- Slider G -->
-                    <div style="margin-bottom:7px;">
-                      <div style="display:flex; justify-content:space-between; font-size:10px; color:#51cf66; margin-bottom:2px;"><span>G (Hijau)</span><span id="rgbGVal">33</span></div>
-                      <input type="range" id="rgbG" min="0" max="255" value="33" oninput="onRgbSliderChange()" style="width:100%; accent-color:#51cf66; cursor:pointer;">
-                    </div>
-                    <!-- Slider B -->
-                    <div style="margin-bottom:10px;">
-                      <div style="display:flex; justify-content:space-between; font-size:10px; color:#74c0fc; margin-bottom:2px;"><span>B (Biru)</span><span id="rgbBVal">36</span></div>
-                      <input type="range" id="rgbB" min="0" max="255" value="36" oninput="onRgbSliderChange()" style="width:100%; accent-color:#74c0fc; cursor:pointer;">
-                    </div>
-
-                    <button class="lang-option" onclick="applyRgbBackground()" style="width:100%; justify-content:center; background: linear-gradient(135deg, rgba(254,44,85,0.25), rgba(37,244,238,0.15));">✅ Terapkan Warna Ini</button>
-                  </div>
-
-                  <!-- Blur + Dim sliders -->
-                  <div onclick="event.stopPropagation()" style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-bottom: 5px;">
-                    <label style="color: #ccc;">Efek Blur</label>
-                    <input type="range" id="bgBlurSlider" min="0" max="30" value="12" oninput="updateBgEffects()" style="width: 60%; cursor: pointer;">
-                  </div>
-                  <div onclick="event.stopPropagation()" style="display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
-                    <label style="color: #ccc;">Kegelapan</label>
-                    <input type="range" id="bgDimSlider" min="0" max="100" value="60" oninput="updateBgEffects()" style="width: 60%; cursor: pointer;">
-                  </div>
+                <!-- Row: Terapkan + Hapus -->
+                <div style="display:flex; gap:6px; margin-bottom:10px;">
+                  <button class="lang-option" onclick="changeBackground()" style="flex:1; justify-content: center; background: rgba(255,255,255,0.08);">Terapkan Gambar</button>
+                  <button class="lang-option" onclick="clearBackground()" style="flex:0 0 auto; justify-content: center; background: rgba(254,44,85,0.15); border-color: rgba(254,44,85,0.35); color:#fe8080;" title="Hapus background custom">🗑️ Hapus BG</button>
                 </div>
 
+                <!-- Separator: warna solid -->
+                <div style="font-size: 10px; color: #888; text-transform: uppercase; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.5px;">— atau warna solid —</div>
 
-                <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; display: flex; flex-direction: column; gap: 4px;">
+                <!-- RGB Sliders -->
+                <div id="rgbPickerContainer" onclick="event.stopPropagation()" style="background: rgba(0,0,0,0.25); border-radius: 8px; padding: 10px; margin-bottom: 8px;">
+                  <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
+                    <div id="bgColorPreview" style="width:36px; height:36px; border-radius:6px; border:2px solid rgba(255,255,255,0.2); flex-shrink:0; background:#202124;"></div>
+                    <div style="flex:1;">
+                      <label style="font-size:10px; color:#aaa; display:block; margin-bottom:3px;">Hex Code</label>
+                      <input type="text" id="bgHexInput" maxlength="7" placeholder="#202124" oninput="syncRgbFromHex(this.value)" style="width:100%; padding:5px 8px; background:#1a1a1a; border:1px solid #555; border-radius:4px; color:#fff; font-size:12px; font-family:monospace; box-sizing:border-box;">
+                    </div>
+                  </div>
+
+                  <div style="margin-bottom:7px;">
+                    <div style="display:flex; justify-content:space-between; font-size:10px; color:#ff6b6b; margin-bottom:2px;"><span>R (Merah)</span><span id="rgbRVal">32</span></div>
+                    <input type="range" id="rgbR" min="0" max="255" value="32" oninput="onRgbSliderChange()" style="width:100%; accent-color:#ff6b6b; cursor:pointer;">
+                  </div>
+                  <div style="margin-bottom:7px;">
+                    <div style="display:flex; justify-content:space-between; font-size:10px; color:#51cf66; margin-bottom:2px;"><span>G (Hijau)</span><span id="rgbGVal">33</span></div>
+                    <input type="range" id="rgbG" min="0" max="255" value="33" oninput="onRgbSliderChange()" style="width:100%; accent-color:#51cf66; cursor:pointer;">
+                  </div>
+                  <div style="margin-bottom:10px;">
+                    <div style="display:flex; justify-content:space-between; font-size:10px; color:#74c0fc; margin-bottom:2px;"><span>B (Biru)</span><span id="rgbBVal">36</span></div>
+                    <input type="range" id="rgbB" min="0" max="255" value="36" oninput="onRgbSliderChange()" style="width:100%; accent-color:#74c0fc; cursor:pointer;">
+                  </div>
+
+                  <button class="lang-option" onclick="applyRgbBackground()" style="width:100%; justify-content:center; background: linear-gradient(135deg, rgba(254,44,85,0.25), rgba(37,244,238,0.15));">✅ Terapkan Warna Ini</button>
+                </div>
+
+                <!-- Blur + Dim sliders -->
+                <div onclick="event.stopPropagation()" style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-bottom: 5px;">
+                  <label style="color: #ccc;">Efek Blur: <span id="bgBlurValue" style="color: var(--primary); font-weight: bold;">12px</span></label>
+                  <input type="range" id="bgBlurSlider" min="0" max="30" value="12" oninput="updateBgEffects()" style="width: 55%; cursor: pointer;">
+                </div>
+                <div onclick="event.stopPropagation()" style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-bottom: 6px;">
+                  <label style="color: #ccc;">Kegelapan: <span id="bgDimValue" style="color: var(--primary); font-weight: bold;">60%</span></label>
+                  <input type="range" id="bgDimSlider" min="0" max="100" value="60" oninput="updateBgEffects()" style="width: 55%; cursor: pointer;">
+                </div>
+                <button class="lang-option" onclick="resetBgEffects(event)" style="font-size: 10px; padding: 5px 8px; width: 100%; justify-content: center; color: #94a3b8; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px;">↺ Reset Blur & Kegelapan (Default)</button>
+              </div>
+            </div>
+
+            <!-- Group 6: 🔊 Audio & Musik -->
+            <div class="settings-group">
+              <div class="settings-group-header" onclick="toggleSettingsGroup(this, event)">
+                <span>🔊 Audio & Musik</span>
+                <span class="arrow">▼</span>
+              </div>
+              <div class="settings-group-content">
+                <label class="settings-toggle-row" onclick="event.stopPropagation()">
+                  <span class="settings-toggle-label">🔊 Efek Suara (Web Audio)</span>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="webAudioToggle" checked onchange="toggleWebAudio(this.checked)">
+                    <div class="toggle-track"></div>
+                  </div>
+                </label>
+                <label class="settings-toggle-row" onclick="event.stopPropagation()" title="Mainkan suara gift untuk setiap ketukan beruntun">
+                  <span class="settings-toggle-label">🎁 Bunyi Tiap Combo Gift</span>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="playEveryGiftSoundToggle" onchange="togglePlayEveryGiftSound(this.checked)">
+                    <div class="toggle-track"></div>
+                  </div>
+                </label>
+                <button class="lang-option" onclick="openMusicSettings(event)">🎵 Pengaturan Musik YouTube (!play)</button>
+                <button class="lang-option" onclick="openTTSSettings(event)">🗣️ Pengaturan Suara (TTS)</button>
+                <button class="lang-option" onclick="openSocialAudioSettings(event)">🔔 Pengaturan Sound Alert</button>
+                <button class="lang-option" onclick="openCustomSFXSettings(event)">🎛️ Pengaturan SFX Kustom</button>
+              </div>
+            </div>
+
+            <!-- Group 7: 🤖 Live Stream & Otomasi -->
+            <div class="settings-group">
+              <div class="settings-group-header" onclick="toggleSettingsGroup(this, event)">
+                <span>🤖 Live Stream & Otomasi</span>
+                <span class="arrow">▼</span>
+              </div>
+              <div class="settings-group-content">
+                <label class="settings-toggle-row" onclick="event.stopPropagation()">
+                  <span class="settings-toggle-label">🤖 Auto-Jawab saat Join</span>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="autoGuessJoinToggle" onchange="toggleAutoGuessJoin(this.checked)">
+                    <div class="toggle-track"></div>
+                  </div>
+                </label>
+                <label class="settings-toggle-row" onclick="event.stopPropagation()">
+                  <span class="settings-toggle-label">🚫 Filter Kata Kasar</span>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="badWordsToggle" checked onchange="toggleBadWords(this.checked)">
+                    <div class="toggle-track"></div>
+                  </div>
+                </label>
+                <label class="settings-toggle-row" onclick="event.stopPropagation()">
+                  <span class="settings-toggle-label">❤️ Restart dari Target Like</span>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="likeRestartToggle" onchange="toggleLikeRestart(this.checked)">
+                    <div class="toggle-track"></div>
+                  </div>
+                </label>
+                <div id="likeThresholdContainer" onclick="event.stopPropagation()" style="display: none; text-align: left; margin: 6px 0 0 0; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                  <label style="font-size: 11px; color: #ccc;">Target Likes untuk Reset:</label>
+                  <input type="number" id="likeThresholdInput" value="1000" onchange="updateLikeThreshold(this.value)" onclick="event.stopPropagation()" style="width: 100%; padding: 6px; margin-top: 4px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; box-sizing: border-box;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Group 8: 📊 Alat & Reset Data -->
+            <div class="settings-group">
+              <div class="settings-group-header" onclick="toggleSettingsGroup(this, event)">
+                <span>📊 Alat & Reset Data</span>
+                <span class="arrow">▼</span>
+              </div>
+              <div class="settings-group-content">
+                <button class="lang-option" id="recapBtn" onclick="event.stopPropagation(); document.getElementById('recapIframe').src='recap.html'; document.getElementById('recapOverlay').style.display='block';">🏆 Supporter Recap</button>
+                <button class="lang-option" id="gameRecapBtn" onclick="event.stopPropagation(); document.getElementById('recapIframe').src='game_recap.html'; document.getElementById('recapOverlay').style.display='block';">🎮 Game Solver Recap</button>
+                <button class="lang-option" id="wordGridSolverBtn" onclick="event.stopPropagation(); window.open('wordgrid_solver.html', '_blank');">🧮 Word Grid Solver</button>
+                
+                <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
                   <button class="lang-option" onclick="resetDailyLeaderboard(event)" style="color: #ffa502;">🗑️ Reset Daily Only</button>
                   <button class="lang-option" onclick="resetLeaderboard(event)" style="color: #ff6b6b;">🗑️ Reset Top Rank (Poin Game)</button>
                   <button class="lang-option" onclick="resetTopSupporters(event)" style="color: #4bcffa;">🗑️ Reset Top Supporters</button>
@@ -773,11 +1036,9 @@
         </div>
       </div>
 
-      <!-- Marquee for Top Liker & Sharer -->
-      <div id="marqueeContainer" class="marquee-container" style="display: none;">
-        <div class="marquee-wrapper">
-          <div class="marquee-content" id="marqueeContent"></div>
-        </div>
+      <!-- Supporter Spotlight Rotator (Fade In/Out) -->
+      <div id="marqueeContainer" class="supporter-spotlight-container" style="display: none;">
+        <div class="supporter-spotlight-inner" id="marqueeContent"></div>
       </div>
     </div>
 

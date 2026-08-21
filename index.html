@@ -547,8 +547,8 @@
                 </label>
                 <label class="settings-toggle-row" onclick="event.stopPropagation()">
                   <div style="display: flex; flex-direction: column; text-align: left;">
-                    <span class="settings-toggle-label">🔄 Auto-Starter (Target Sblm)</span>
-                    <span style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px;">Otomatis tebak kata target dari ronde sebelumnya</span>
+                    <span class="settings-toggle-label">🔄 Auto-Starter Word</span>
+                    <span style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px;">Target sblm jika jumlah huruf sama, atau kata acak jika beda</span>
                   </div>
                   <div class="toggle-switch">
                     <input type="checkbox" id="autoStarterToggle" onchange="toggleAutoStarter(this.checked)">
@@ -727,6 +727,50 @@
                     <div class="toggle-track"></div>
                   </div>
                 </label>
+                <div class="settings-toggle-row" onclick="event.stopPropagation()" style="display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 8px 12px; background: rgba(0,0,0,0.15); border-radius: 8px; margin: 4px 0;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 11px; color: #ddd; font-weight: 600;">🎨 Gaya Suara Ubin (Flip SFX):</span>
+                    <button onclick="previewCurrentSoundTheme(event)" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;">▶️ Test</button>
+                  </div>
+                  <select id="soundThemeSelect" onchange="changeSoundTheme(this.value)" onclick="event.stopPropagation()" style="width: 100%; padding: 6px 8px; margin-top: 3px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; font-size: 12px; cursor: pointer;">
+                    <option value="wood">🪵 ASMR Ubin Kayu (Scrabble)</option>
+                    <option value="pop">🫧 Soft Bubble Pop</option>
+                    <option value="card">🃏 Card Snap (Kartu Remi)</option>
+                    <option value="scifi">🔮 Kristal Sci-Fi</option>
+                    <option value="classic">📻 Klasik Synth (Default)</option>
+                  </select>
+                </div>
+
+                <div class="settings-toggle-row" onclick="event.stopPropagation()" style="display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 8px 12px; background: rgba(0,0,0,0.15); border-radius: 8px; margin: 4px 0;">
+                  <span style="font-size: 11px; color: #ddd; font-weight: 600;">🎨 Tampilan Pemutar Musik:</span>
+                  <select id="mainMusicPlayerStyleSelect" onchange="changeMusicPlayerStyle(this.value)" onclick="event.stopPropagation()" style="width: 100%; padding: 6px 8px; margin-top: 3px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; font-size: 12px; cursor: pointer;">
+                    <option value="vinyl">💿 Piringan Hitam (Vinyl Disc)</option>
+                    <option value="playlist">📋 Daftar Antrian Lagu (Playlist Queue)</option>
+                    <option value="compact">📻 Bar Minimalis (Compact)</option>
+                  </select>
+                </div>
+                <label class="settings-toggle-row" onclick="event.stopPropagation()">
+                  <div style="display: flex; flex-direction: column; text-align: left;">
+                    <span class="settings-toggle-label">📻 Suasana Radio / Vinyl</span>
+                    <span style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px;">Desis udara FM & crackle vinil saat lagu berputar</span>
+                  </div>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="mainRadioAmbianceToggle" onchange="toggleRadioAmbiance(this.checked)">
+                    <div class="toggle-track"></div>
+                  </div>
+                </label>
+
+                <label class="settings-toggle-row" onclick="event.stopPropagation()">
+                  <div style="display: flex; flex-direction: column; text-align: left;">
+                    <span class="settings-toggle-label">📻 Jingle Notifikasi Request</span>
+                    <span style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px;">SFX frekuensi radio saat penonton request (!play)</span>
+                  </div>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="mainRadioSFXToggle" checked onchange="toggleRadioRequestSFX(this.checked)">
+                    <div class="toggle-track"></div>
+                  </div>
+                </label>
+
                 <label class="settings-toggle-row" onclick="event.stopPropagation()" title="Mainkan suara gift untuk setiap ketukan beruntun">
                   <span class="settings-toggle-label">🎁 Bunyi Tiap Combo Gift</span>
                   <div class="toggle-switch">
@@ -788,6 +832,12 @@
                 <button class="lang-option" id="wordGridSolverBtn" onclick="event.stopPropagation(); window.open('wordgrid_solver.html', '_blank');">🧮 Word Grid Solver</button>
                 
                 <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
+                  <button class="lang-option" onclick="exportLeaderboardData(event)" style="color: #2ed573;">📤 Ekspor Data Leaderboard (.JSON)</button>
+                  <button class="lang-option" onclick="document.getElementById('importLeaderboardFileInput').click(); event.stopPropagation();" style="color: #70a1ff;">📥 Impor Data Leaderboard (.JSON)</button>
+                  <input type="file" id="importLeaderboardFileInput" accept=".json" onchange="handleLeaderboardFileImport(this)" style="display: none;">
+                </div>
+
+                <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
                   <button class="lang-option" onclick="resetDailyLeaderboard(event)" style="color: #ffa502;">🗑️ Reset Daily Only</button>
                   <button class="lang-option" onclick="resetLeaderboard(event)" style="color: #ff6b6b;">🗑️ Reset Top Rank (Poin Game)</button>
                   <button class="lang-option" onclick="resetTopSupporters(event)" style="color: #4bcffa;">🗑️ Reset Top Supporters</button>
@@ -822,39 +872,60 @@
     </div>
     <!-- Music Player Widget -->
     <div id="musicNotifContainer" style="position: absolute; bottom: 145px; right: 20px; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; z-index: 101; pointer-events: none;"></div>
-    <div class="music-widget" id="musicWidget">
+    <div class="music-widget music-style-vinyl" id="musicWidget">
       <div id="ytPlayerContainer"></div>
       
-      <div class="music-vinyl-container">
-        <div class="music-vinyl" id="musicVinyl">
-          <img id="musicThumb" src="" alt="Album Art">
-          <div class="music-vinyl-hole"></div>
+      <div class="music-now-playing-header" id="musicNowPlayingHeader" style="display: none;">
+        <div class="music-live-badge">
+          <span class="music-live-pulse"></span>
+          <span class="music-live-text">NOW PLAYING</span>
+        </div>
+        <div class="music-equalizer" id="musicHeaderEqualizer" style="margin-left: auto;">
+          <span></span><span></span><span></span><span></span><span></span>
         </div>
       </div>
-      
-      <div class="music-info">
-        <div class="music-title-row">
-          <div class="music-equalizer" id="musicEqualizer">
-            <span></span><span></span><span></span>
-          </div>
-          <div class="music-title-marquee">
-            <div class="music-title" id="musicTitle">Song Title</div>
+
+      <div class="music-card-main" style="display: flex; align-items: center; gap: 10px; width: 100%;">
+        <div class="music-vinyl-container">
+          <div class="music-vinyl" id="musicVinyl">
+            <img id="musicThumb" src="" alt="Album Art">
+            <div class="music-vinyl-hole"></div>
           </div>
         </div>
         
-        <div class="music-requester">
-          Req by <span id="musicRequester">@user</span> 
-          <span class="music-dot">•</span> 
-          <span id="musicTimeProgress">0:00 / 0:00</span>
+        <div class="music-info">
+          <div class="music-title-row">
+            <div class="music-equalizer" id="musicEqualizer">
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <div class="music-title-marquee">
+              <div class="music-title" id="musicTitle">Song Title</div>
+            </div>
+          </div>
+          
+          <div class="music-requester">
+            Req by <span id="musicRequester">user</span> 
+            <span class="music-dot">•</span> 
+            <span id="musicTimeProgress">0:00 / 0:00</span>
+          </div>
+          
+          <div class="music-progress-bar">
+            <div class="music-progress-fill" id="musicProgressFill"></div>
+          </div>
+          
+          <div class="music-next" id="musicNextSong" style="display: none;">
+            Next: <span id="musicNextSongName">Song Name</span>
+          </div>
         </div>
-        
-        <div class="music-progress-bar">
-          <div class="music-progress-fill" id="musicProgressFill"></div>
+      </div>
+
+      <!-- Playlist Queue Sub-Container -->
+      <div class="music-queue-container" id="musicQueueContainer" style="display: none;">
+        <div class="music-queue-header">
+          <span>⏳ ANTRIAN SELANJUTNYA</span>
+          <span class="music-queue-count" id="musicQueueCount">0</span>
         </div>
-        
-        <div class="music-next" id="musicNextSong" style="display: none;">
-          Next: <span id="musicNextSongName">Song Name</span>
-        </div>
+        <div class="music-queue-items" id="musicQueueItems"></div>
       </div>
     </div>
 
@@ -1130,6 +1201,39 @@
           <div class="toggle-track"></div>
         </div>
       </label>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 6px 10px; background: rgba(255,255,255,0.06); border-radius: 6px;">
+        <span style="font-size: 12px; color: #ccc;">📻 SFX Notifikasi Request:</span>
+        <button onclick="if(window.sounds) window.sounds.playRadioRequest()" style="background: rgba(59,130,246,0.25); border: 1px solid rgba(59,130,246,0.5); color: #93c5fd; padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer;">▶️ Test Suara</button>
+      </div>
+
+      <!-- Radio / Vinyl Lo-Fi Ambient Layer -->
+      <div style="text-align: left; margin-bottom: 12px; padding: 10px; background: rgba(0,0,0,0.25); border-radius: 8px;">
+        <label style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 4px;">
+          <span style="font-size: 13px; color: #fff; font-weight: 600;">📻 Efek Suasana Radio / Vinyl:</span>
+          <div class="toggle-switch">
+            <input type="checkbox" id="musicRadioAmbianceToggle" onchange="toggleRadioAmbianceUI(this.checked)">
+            <div class="toggle-track"></div>
+          </div>
+        </label>
+        <span style="font-size: 10px; color: #aaa; display: block; margin-bottom: 8px;">Desis udara FM + retakan piringan hitam di latar lagu</span>
+        <div id="musicRadioAmbianceSliderContainer" style="display: none;">
+          <div style="display: flex; justify-content: space-between;">
+            <label style="font-size: 11px; color: #ccc;">Intensitas Desis Radio:</label>
+            <span id="musicRadioAmbianceLabel" style="font-size: 11px; color: #93c5fd; font-weight: 600;">20%</span>
+          </div>
+          <input type="range" id="musicRadioAmbianceSlider" min="5" max="100" value="20" oninput="updateRadioAmbianceVolumeUI(this.value)" style="width: 100%; margin-top: 4px; cursor: pointer;">
+        </div>
+      </div>
+
+      <div style="text-align: left; margin-bottom: 12px;">
+        <label style="font-size: 13px; color: #ccc;">Gaya Tampilan Widget Musik:</label>
+        <select id="modalMusicPlayerStyleSelect" onchange="changeMusicPlayerStyle(this.value)" style="width: 100%; padding: 8px; margin-top: 5px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-size: 13px; cursor: pointer;">
+          <option value="vinyl">💿 Piringan Hitam (Vinyl Disc)</option>
+          <option value="playlist">📋 Daftar Antrian Lagu (Playlist Queue)</option>
+          <option value="compact">📻 Bar Minimalis (Compact)</option>
+        </select>
+      </div>
 
       <div style="text-align: left; margin-bottom: 12px;">
         <div style="display: flex; justify-content: space-between;">

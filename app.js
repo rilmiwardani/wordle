@@ -1,5 +1,8 @@
-// Auto-detect hostname so it works on other devices in the same WiFi
-const SOCKET_URL = window.location.protocol + "//" + window.location.hostname + ":9200";
+// Auto-detect hostname so it works on web browser, WiFi devices, and Tauri desktop
+const isTauriHost = window.location.hostname === 'tauri.localhost' || !window.location.hostname;
+const socketHost = isTauriHost ? 'localhost' : window.location.hostname;
+const socketProto = window.location.protocol === 'https:' ? 'https:' : 'http:';
+const SOCKET_URL = `${socketProto}//${socketHost}:9200`;
 // Max visible rows on board — per mode, configurable via Settings
 const DISPLAY_ROWS_DEFAULT = { wordle: 6, word500: 8, word600: 8, wordfit: 8 };
 const DISPLAY_ROWS_MIN = 3;
@@ -329,12 +332,62 @@ function formatActiveTime(seconds) {
   return `${hours}j ${remainingMinutes}m`;
 }
 
+// In-memory avatar cache to avoid repeated synchronous localStorage disk reads/writes
+const avatarMemoryCache = {};
+
+// Debounced batch storage saver to prevent main thread blocking during high-volume live streams
+let pendingStorageSaves = {};
+let storageSaveTimeout = null;
+
+function queueStorageSave(key, value) {
+  pendingStorageSaves[key] = value;
+  if (!storageSaveTimeout) {
+    storageSaveTimeout = setTimeout(flushStorageSaves, 3000);
+  }
+}
+
+function flushStorageSaves() {
+  storageSaveTimeout = null;
+  const entries = Object.entries(pendingStorageSaves);
+  pendingStorageSaves = {};
+  for (let i = 0; i < entries.length; i++) {
+    try {
+      localStorage.setItem(entries[i][0], entries[i][1]);
+    } catch(e) {}
+  }
+}
+window.addEventListener('beforeunload', flushStorageSaves);
+
+function setUserAvatar(username, url) {
+  if (!username || !url) return;
+  if (avatarMemoryCache[username] === url) return;
+  avatarMemoryCache[username] = url;
+  queueStorageSave('pts_avatar_' + username, url);
+}
+
+function getUserAvatar(username) {
+  if (typeof playerPoints !== 'undefined' && playerPoints[username] && playerPoints[username].avatar) {
+    return playerPoints[username].avatar;
+  }
+  if (avatarMemoryCache[username]) {
+    return avatarMemoryCache[username];
+  }
+  try {
+    const saved = localStorage.getItem('pts_avatar_' + username);
+    if (saved) {
+      avatarMemoryCache[username] = saved;
+      return saved;
+    }
+  } catch(e) {}
+  return 'assets/bg_nature.png';
+}
+
 function recordActivity(username, profilePictureUrl = null) {
   if (!username) return;
   const now = Date.now();
   
   if (profilePictureUrl) {
-    try { localStorage.setItem('pts_avatar_' + username, profilePictureUrl); } catch(e) {}
+    setUserAvatar(username, profilePictureUrl);
   }
 
   if (!playerActivePresence[username]) {
@@ -368,16 +421,13 @@ setInterval(() => {
         if (elapsedSec > 0) {
           presence.accumulatedTime += elapsedSec;
           presence.lastUpdateTime = now;
-          localStorage.setItem('pts_active_' + username, presence.accumulatedTime);
+          queueStorageSave('pts_active_' + username, presence.accumulatedTime);
           updated = true;
         }
       } else {
         presence.lastUpdateTime = now;
       }
     }
-  }
-  if (updated) {
-    updateMarqueeUI();
   }
 }, 10000);
 
@@ -391,17 +441,6 @@ function formatShortNumber(num) {
   return num;
 }
 
-function getUserAvatar(username) {
-  if (typeof playerPoints !== 'undefined' && playerPoints[username] && playerPoints[username].avatar) {
-    return playerPoints[username].avatar;
-  }
-  try {
-    const saved = localStorage.getItem('pts_avatar_' + username);
-    if (saved) return saved;
-  } catch(e) {}
-  return 'assets/bg_nature.png';
-}
-
 function buildSpotlightSlides() {
   const slides = [];
   const topGifters = getTop3(playerGifts);
@@ -409,17 +448,40 @@ function buildSpotlightSlides() {
   const topSharers = getTop3(playerShares);
   const topActiveViewers = getTopActiveViewers();
 
+  function renderSpotlightItem(u, i, valPrefix, valText) {
+    const isTop1 = i === 0;
+    const nameClean = escapeHTML(u.username || 'user');
+
+    if (isTop1) {
+      const shortName = nameClean.length > 12 ? nameClean.substring(0, 11) + '…' : nameClean;
+      return `
+        <div class="spotlight-avatar-item spotlight-top1 rank-1" title="${nameClean} • ${valText}">
+          <div class="spotlight-avatar-wrap">
+            <img src="${getUserAvatar(u.username)}" class="spotlight-avatar" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="${nameClean}">
+            <span class="spotlight-rank">👑</span>
+          </div>
+          <div class="spotlight-user-info">
+            <span class="spotlight-user-name">${shortName}</span>
+            <span class="spotlight-val">${valPrefix} ${valText}</span>
+          </div>
+        </div>
+      `;
+    } else {
+      return `
+        <div class="spotlight-avatar-item spotlight-mini rank-${i + 1}" title="${nameClean} • ${valText}">
+          <div class="spotlight-avatar-wrap">
+            <img src="${getUserAvatar(u.username)}" class="spotlight-avatar" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="${nameClean}">
+            <span class="spotlight-rank">${i + 1}</span>
+          </div>
+          <span class="spotlight-val">${valText}</span>
+        </div>
+      `;
+    }
+  }
+
   // 1. Top Gifters Slide
   if (topGifters.length > 0) {
-    const usersHTML = topGifters.map((u, i) => `
-      <div class="spotlight-avatar-item rank-${i + 1}" title="@${u.username} • ${u.count.toLocaleString()} Koin">
-        <div class="spotlight-avatar-wrap">
-          <img src="${getUserAvatar(u.username)}" class="spotlight-avatar" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="${u.username}">
-          <span class="spotlight-rank">${i + 1}</span>
-        </div>
-        <span class="spotlight-val">${formatShortNumber(u.count)}</span>
-      </div>
-    `).join('');
+    const usersHTML = topGifters.map((u, i) => renderSpotlightItem(u, i, '🪙', formatShortNumber(u.count))).join('');
     slides.push(`
       <div class="spotlight-slide">
         <div class="spotlight-header-pill badge-gift">
@@ -433,15 +495,7 @@ function buildSpotlightSlides() {
 
   // 2. Top Likers Slide
   if (topLikers.length > 0) {
-    const usersHTML = topLikers.map((u, i) => `
-      <div class="spotlight-avatar-item rank-${i + 1}" title="@${u.username} • ${u.count.toLocaleString()} Likes">
-        <div class="spotlight-avatar-wrap">
-          <img src="${getUserAvatar(u.username)}" class="spotlight-avatar" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="${u.username}">
-          <span class="spotlight-rank">${i + 1}</span>
-        </div>
-        <span class="spotlight-val">${formatShortNumber(u.count)}</span>
-      </div>
-    `).join('');
+    const usersHTML = topLikers.map((u, i) => renderSpotlightItem(u, i, '❤️', formatShortNumber(u.count))).join('');
     slides.push(`
       <div class="spotlight-slide">
         <div class="spotlight-header-pill badge-like">
@@ -455,15 +509,7 @@ function buildSpotlightSlides() {
 
   // 3. Top Sharers Slide
   if (topSharers.length > 0) {
-    const usersHTML = topSharers.map((u, i) => `
-      <div class="spotlight-avatar-item rank-${i + 1}" title="@${u.username} • ${u.count.toLocaleString()} Shares">
-        <div class="spotlight-avatar-wrap">
-          <img src="${getUserAvatar(u.username)}" class="spotlight-avatar" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="${u.username}">
-          <span class="spotlight-rank">${i + 1}</span>
-        </div>
-        <span class="spotlight-val">${formatShortNumber(u.count)}</span>
-      </div>
-    `).join('');
+    const usersHTML = topSharers.map((u, i) => renderSpotlightItem(u, i, '🔁', formatShortNumber(u.count))).join('');
     slides.push(`
       <div class="spotlight-slide">
         <div class="spotlight-header-pill badge-share">
@@ -477,15 +523,7 @@ function buildSpotlightSlides() {
 
   // 4. Top Active Viewers Slide
   if (topActiveViewers.length > 0) {
-    const usersHTML = topActiveViewers.map((u, i) => `
-      <div class="spotlight-avatar-item rank-${i + 1}" title="@${u.username} • ${formatActiveTime(u.count)}">
-        <div class="spotlight-avatar-wrap">
-          <img src="${getUserAvatar(u.username)}" class="spotlight-avatar" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="${u.username}">
-          <span class="spotlight-rank">${i + 1}</span>
-        </div>
-        <span class="spotlight-val">${formatActiveTime(u.count)}</span>
-      </div>
-    `).join('');
+    const usersHTML = topActiveViewers.map((u, i) => renderSpotlightItem(u, i, '⏱️', formatActiveTime(u.count))).join('');
     slides.push(`
       <div class="spotlight-slide">
         <div class="spotlight-header-pill badge-active">
@@ -610,15 +648,21 @@ function updateLikeProgressBar() {
 // ═══════════════════════════════════════
 //         HEART FLURRY ANIMATION
 // ═══════════════════════════════════════
+let lastHeartFlurryTime = 0;
 const HEART_EMOJIS = ['❤️', '💖', '💗', '💕', '💓', '💘', '💝', '🩷', '🤍', '💜'];
-const MAX_HEARTS_ON_SCREEN = 18;
+const MAX_HEARTS_ON_SCREEN = 12;
 
 function spawnHeartFlurry(count) {
   if (!isHeartFlurryEnabled) return;
+  const now = performance.now();
+  if (now - lastHeartFlurryTime < 180) return; // Throttle flurry spawn
+  lastHeartFlurryTime = now;
+
   const container = document.getElementById('heartFlurryContainer');
   if (!container) return;
 
-  for (let i = 0; i < count; i++) {
+  const spawnCount = Math.min(count, 3);
+  for (let i = 0; i < spawnCount; i++) {
     // Performance cap: if already full, don't spawn new ones to save CPU
     if (container.children.length >= MAX_HEARTS_ON_SCREEN) {
       break;
@@ -630,29 +674,29 @@ function spawnHeartFlurry(count) {
 
     // Randomize position and physics
     const xPos = Math.random() * 60;
-    const duration = 2 + Math.random() * 1.5;
-    const delay = i * 0.08;
-    const size = 20 + Math.random() * 18;
+    const duration = 1.8 + Math.random() * 1.2;
+    const delay = i * 0.06;
+    const size = 18 + Math.random() * 14;
 
     heart.style.left = `${xPos}px`;
     heart.style.fontSize = `${size}px`;
     heart.style.setProperty('--duration', `${duration}s`);
     heart.style.setProperty('--delay', `${delay}s`);
-    heart.style.setProperty('--drift1', `${(Math.random() - 0.5) * 30}px`);
-    heart.style.setProperty('--drift2', `${(Math.random() - 0.5) * 40}px`);
-    heart.style.setProperty('--drift3', `${(Math.random() - 0.5) * 30}px`);
-    heart.style.setProperty('--drift4', `${(Math.random() - 0.5) * 20}px`);
-    heart.style.setProperty('--rot1', `${(Math.random() - 0.5) * 30}deg`);
-    heart.style.setProperty('--rot2', `${(Math.random() - 0.5) * 40}deg`);
-    heart.style.setProperty('--rot3', `${(Math.random() - 0.5) * 30}deg`);
-    heart.style.setProperty('--rot4', `${(Math.random() - 0.5) * 50}deg`);
+    heart.style.setProperty('--drift1', `${(Math.random() - 0.5) * 24}px`);
+    heart.style.setProperty('--drift2', `${(Math.random() - 0.5) * 30}px`);
+    heart.style.setProperty('--drift3', `${(Math.random() - 0.5) * 24}px`);
+    heart.style.setProperty('--drift4', `${(Math.random() - 0.5) * 16}px`);
+    heart.style.setProperty('--rot1', `${(Math.random() - 0.5) * 25}deg`);
+    heart.style.setProperty('--rot2', `${(Math.random() - 0.5) * 30}deg`);
+    heart.style.setProperty('--rot3', `${(Math.random() - 0.5) * 25}deg`);
+    heart.style.setProperty('--rot4', `${(Math.random() - 0.5) * 35}deg`);
 
     container.appendChild(heart);
 
     // Remove after animation completes
     setTimeout(() => {
       if (heart.parentNode) heart.parentNode.removeChild(heart);
-    }, (duration + delay) * 1000 + 200);
+    }, (duration + delay) * 1000 + 100);
   }
 }
 
@@ -711,10 +755,6 @@ window.executeRestartTransition = function() {
   
   const winOverlay = document.getElementById('winOverlay');
   if (winOverlay) winOverlay.classList.remove('show');
-  const winAvatar = document.getElementById('winAvatar');
-  if (winAvatar) {
-    winAvatar.src = 'assets/bg_nature.png';
-  }
   
   const multiWinOverlay = document.getElementById('multiWinOverlay');
   if (multiWinOverlay) multiWinOverlay.classList.remove('show');
@@ -723,6 +763,10 @@ window.executeRestartTransition = function() {
   if (board) board.classList.add('board-transitioning');
   
   setTimeout(() => {
+    const winAvatar = document.getElementById('winAvatar');
+    if (winAvatar) {
+      winAvatar.src = 'assets/bg_nature.png';
+    }
     round++;
     startNewRound();
     requestAnimationFrame(() => {
@@ -756,6 +800,7 @@ function triggerWinTransition(winDuration, isMultiWinner = false) {
   }
 
   if (activeOverlay) activeOverlay.classList.add('show');
+  if (window.sounds) window.sounds.playWin();
   if (window.playHostAudio) playHostAudio('win');
   
   // Burst confetti on any win
@@ -793,6 +838,16 @@ let word500PendingInvalidRow = null; // baris invalid yang sedang tampil di boar
 let fillBlanksTargets = [];
 let wordTangoTargets = []; // { word, length, missingIndices, solved, solver, points }
 let wordTangoPool = []; // { id, char, used }
+function escapeHTML(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 let ytPlayer = null;
 let musicQueue = [];
 let activeMusic = null;
@@ -930,25 +985,12 @@ function switchLbTab(tab) {
   if (tabSession) tabSession.classList.toggle('active', tab === 'session');
   if (tabWeekly) tabWeekly.classList.toggle('active', tab === 'weekly');
   
-  const lbList = document.getElementById('lbList');
-  if (lbList) {
-    lbList.classList.remove('fade-in');
-    lbList.classList.add('fade-out');
-    setTimeout(() => {
-      renderLeaderboard();
-      void lbList.offsetWidth; // Trigger reflow for smooth fade-in
-      lbList.classList.remove('fade-out');
-      lbList.classList.add('fade-in');
-    }, 280);
-  } else {
-    renderLeaderboard();
-  }
+  renderLeaderboard();
 }
 
 function renderLeaderboard() {
   const lbList = document.getElementById('lbList');
   if (!lbList) return;
-  lbList.innerHTML = '';
   
   const sortedPlayers = Object.entries(playerPoints)
     .filter(([_, data]) => data[currentLbTab + 'Pts'] > 0)
@@ -959,21 +1001,61 @@ function renderLeaderboard() {
     lbList.innerHTML = '<div style="text-align:center;font-size:12px;color:rgba(255,255,255,0.4);padding:10px;">Belum ada tebakan benar</div>';
     return;
   }
-  
+
+  // Clear if previously showing the empty message
+  if (lbList.querySelector('div:not(.lb-item)')) {
+    lbList.innerHTML = '';
+  }
+
+  const existingItems = lbList.querySelectorAll('.lb-item');
+
+  // If item count changed, rebuild cleanly
+  if (existingItems.length !== sortedPlayers.length) {
+    lbList.innerHTML = sortedPlayers.map(([username, data], index) => `
+      <div class="lb-item">
+        <div class="lb-avatar-wrapper">
+          <img src="${data.avatar || 'assets/bg_nature.png'}" class="lb-avatar" onerror="this.onerror=null;this.src='assets/bg_nature.png';">
+          <div class="lb-rank rank-${index + 1}">${index + 1}</div>
+        </div>
+        <div class="lb-info">
+          <span class="lb-name">${escapeHTML(username)}</span>
+          <span class="lb-pts">${data[currentLbTab + 'Pts']} pts</span>
+        </div>
+      </div>
+    `).join('');
+    return;
+  }
+
+  // In-place DOM update without destroying pills (Zero Flicker!)
   sortedPlayers.forEach(([username, data], index) => {
-    const item = document.createElement('div');
-    item.className = 'lb-item';
-    item.innerHTML = `
-      <div class="lb-avatar-wrapper">
-        <img src="${data.avatar}" class="lb-avatar" onerror="this.src='assets/bg_nature.png'">
-        <div class="lb-rank rank-${index + 1}">${index + 1}</div>
-      </div>
-      <div class="lb-info">
-        <span class="lb-name">${username}</span>
-        <span class="lb-pts">${data[currentLbTab + 'Pts']} pts</span>
-      </div>
-    `;
-    lbList.appendChild(item);
+    const item = existingItems[index];
+    if (!item) return;
+
+    const avatarImg = item.querySelector('.lb-avatar');
+    const newAvatar = data.avatar || 'assets/bg_nature.png';
+    if (avatarImg && avatarImg.getAttribute('src') !== newAvatar) {
+      avatarImg.src = newAvatar;
+    }
+
+    const nameSpan = item.querySelector('.lb-name');
+    if (nameSpan && nameSpan.textContent !== username) {
+      nameSpan.textContent = username;
+    }
+
+    const ptsSpan = item.querySelector('.lb-pts');
+    const newPtsText = `${data[currentLbTab + 'Pts']} pts`;
+    if (ptsSpan && ptsSpan.textContent !== newPtsText) {
+      ptsSpan.textContent = newPtsText;
+      ptsSpan.style.transition = 'color 0.25s ease';
+      ptsSpan.style.color = '#38bdf8';
+      setTimeout(() => { if (ptsSpan) ptsSpan.style.color = ''; }, 350);
+    }
+
+    const rankDiv = item.querySelector('.lb-rank');
+    if (rankDiv) {
+      rankDiv.className = `lb-rank rank-${index + 1}`;
+      rankDiv.textContent = index + 1;
+    }
   });
 }
 
@@ -982,33 +1064,80 @@ setInterval(() => {
   switchLbTab(currentLbTab === 'session' ? 'weekly' : 'session');
 }, 10000);
 
-// YouTube Iframe API setup
-function onYouTubeIframeAPIReady() {
-  ytPlayer = new YT.Player('ytPlayerContainer', {
-    height: '200',
-    width: '200',
-    videoId: '',
-    playerVars: {
-      'autoplay': 1,
-      'controls': 0,
-      'playsinline': 1,       // Required for iOS inline playback
-      'enablejsapi': 1,
-      'origin': window.location.origin
-    },
-    events: {
-      'onReady': onPlayerReady,
-      'onStateChange': onPlayerStateChange,
-      'onError': onPlayerError
-    }
-  });
+// YouTube Iframe API setup with Universal Auto-Recovery & Tauri Origin Compatibility
+let ytPlayerReady = false;
+let ytInitStarted = false;
+
+function initYouTubePlayer() {
+  if (ytInitStarted || ytPlayerReady) return;
+  const container = document.getElementById('ytPlayerContainer');
+  if (!container) return;
+  if (!window.YT || !window.YT.Player) return;
+
+  ytInitStarted = true;
+
+  // Safe Origin for both Web Browser and Tauri Desktop (prevents YouTube Error 150)
+  let safeOrigin = window.location.origin;
+  if (!safeOrigin || safeOrigin.startsWith('tauri://') || safeOrigin.startsWith('file://') || safeOrigin.includes('tauri.localhost')) {
+    safeOrigin = 'http://localhost:3500';
+  }
+
+  console.log('[Music] Initializing YouTube Player with origin:', safeOrigin);
+
+  try {
+    ytPlayer = new YT.Player('ytPlayerContainer', {
+      height: '200',
+      width: '200',
+      videoId: '',
+      playerVars: {
+        'autoplay': 1,
+        'controls': 0,
+        'playsinline': 1,
+        'enablejsapi': 1,
+        'origin': safeOrigin,
+        'widget_referrer': safeOrigin
+      },
+      events: {
+        'onReady': onPlayerReady,
+        'onStateChange': onPlayerStateChange,
+        'onError': onPlayerError
+      }
+    });
+  } catch(e) {
+    console.error('[Music] Failed to initialize YT.Player:', e);
+    ytInitStarted = false;
+  }
 }
 
-let ytPlayerReady = false;
+window.onYouTubeIframeAPIReady = function() {
+  initYouTubePlayer();
+};
+
+// Auto-check if YouTube API was already loaded from cache before app.js executed
+if (window.YT && window.YT.Player) {
+  initYouTubePlayer();
+} else {
+  const checkYTInterval = setInterval(() => {
+    if (window.YT && window.YT.Player) {
+      clearInterval(checkYTInterval);
+      initYouTubePlayer();
+    }
+  }, 200);
+  setTimeout(() => clearInterval(checkYTInterval), 10000);
+}
 
 function onPlayerReady(event) {
+  console.log('[Music] YouTube Player is READY');
   ytPlayerReady = true;
   event.target.unMute();
   event.target.setVolume(musicSettings.volume);
+
+  // If there is already music queued or pending, start playing immediately
+  if (isMusicPlaying && activeMusic && event.target.loadVideoById) {
+    event.target.loadVideoById(activeMusic.videoId);
+  } else if (!isMusicPlaying && musicQueue.length > 0) {
+    playNextMusic();
+  }
 }
 
 let ytPlayAttempts = 0;
@@ -1032,11 +1161,50 @@ function updateMusicQueueUI() {
   } else {
     if (nextContainer) nextContainer.style.display = 'none';
   }
+
+  // Render Playlist Queue List (for Playlist Style)
+  const queueContainer = document.getElementById('musicQueueContainer');
+  const queueItems = document.getElementById('musicQueueItems');
+  const queueCount = document.getElementById('musicQueueCount');
+
+  if (queueContainer && queueItems) {
+    const style = musicSettings.playerStyle || 'vinyl';
+    if (musicQueue.length > 0 && style === 'playlist') {
+      queueContainer.style.display = 'flex';
+      if (queueCount) queueCount.textContent = musicQueue.length;
+      
+      const maxDisplay = 3;
+      const displayQueue = musicQueue.slice(0, maxDisplay);
+      queueItems.innerHTML = displayQueue.map((item, idx) => `
+        <div class="music-queue-item">
+          <span class="music-queue-idx">#${idx + 1}</span>
+          <img class="music-queue-thumb" src="${item.thumbnail || 'assets/bg_nature.png'}" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="Thumb">
+          <div class="music-queue-detail">
+            <div class="music-queue-title">${escapeHTML(item.title)}</div>
+            <div class="music-queue-user">${escapeHTML(item.requesterName || 'user')}</div>
+          </div>
+        </div>
+      `).join('');
+
+      if (musicQueue.length > maxDisplay) {
+        const remaining = musicQueue.length - maxDisplay;
+        queueItems.innerHTML += `<div class="music-queue-more">+${remaining} lagu lainnya dalam antrian...</div>`;
+      }
+    } else {
+      queueContainer.style.display = 'none';
+      queueItems.innerHTML = '';
+    }
+  }
 }
 
 function showMusicNotif(requesterName, title) {
   const container = document.getElementById('musicNotifContainer');
   if (!container) return;
+
+  // Bunyikan SFX Radio FM Tuning & DJ Cue saat request masuk (hanya jika diaktifkan)
+  if (musicSettings.radioSFX !== false && window.sounds && typeof window.sounds.playRadioRequest === 'function') {
+    window.sounds.playRadioRequest();
+  }
   
   // Prevent flooding: limit to 1 active notification by clearing the container first
   container.innerHTML = '';
@@ -1047,7 +1215,7 @@ function showMusicNotif(requesterName, title) {
   notif.innerHTML = `
     <span class="music-notif-icon">🎵</span>
     <div class="music-notif-content">
-      <span><span class="music-notif-user">@${requesterName}</span> requested:</span>
+      <span><span class="music-notif-user">${requesterName}</span> requested:</span>
       <span class="music-notif-title">${title}</span>
     </div>
   `;
@@ -1064,12 +1232,14 @@ function showMusicNotif(requesterName, title) {
 function onPlayerStateChange(event) {
   const vinyl = document.getElementById('musicVinyl');
   const eq = document.getElementById('musicEqualizer');
+  const headerEq = document.getElementById('musicHeaderEqualizer');
   
   // If the video ends (state 0), play the next one
   if (event.data == YT.PlayerState.ENDED) {
     ytPlayAttempts = 0;
     if (vinyl) vinyl.classList.remove('playing');
     if (eq) eq.classList.remove('playing');
+    if (headerEq) headerEq.classList.remove('playing');
     clearInterval(musicProgressInterval);
     
     playNextMusic();
@@ -1079,6 +1249,7 @@ function onPlayerStateChange(event) {
     ytPlayAttempts = 0;
     if (vinyl) vinyl.classList.add('playing');
     if (eq) eq.classList.add('playing');
+    if (headerEq) headerEq.classList.add('playing');
     
     clearInterval(musicProgressInterval);
     musicProgressInterval = setInterval(() => {
@@ -1101,12 +1272,16 @@ function onPlayerStateChange(event) {
     clearInterval(musicProgressInterval);
   }
 
-  // If video is cued but not playing (mobile autoplay blocked), force play (max 3 attempts)
+  // If video is cued/paused but not playing, force play only if music should be playing (max 3 attempts)
   if (event.data == YT.PlayerState.CUED || event.data == YT.PlayerState.PAUSED) {
+    if (!isMusicPlaying || !activeMusic) return; // Prevent looping when queue is empty or stopped
+
     if (ytPlayAttempts < 3) {
       ytPlayAttempts++;
       setTimeout(() => {
-        try { ytPlayer.playVideo(); } catch(e) {}
+        try { 
+          if (isMusicPlaying && activeMusic) ytPlayer.playVideo(); 
+        } catch(e) {}
       }, 500);
     } else {
       console.warn("[Music] Autoplay blocked by browser. User interaction required.");
@@ -1155,8 +1330,10 @@ function playNextMusic() {
   
   if (musicQueue.length === 0) {
     isMusicPlaying = false;
+    activeMusic = null;
     document.getElementById('musicWidget').classList.remove('show');
     if (hostSkipBtn) hostSkipBtn.style.display = 'none';
+    if (window.sounds) window.sounds.stopRadioAmbiance();
     if (ytPlayer && ytPlayer.stopVideo) {
       try { ytPlayer.stopVideo(); } catch(e) {}
     }
@@ -1171,7 +1348,7 @@ function playNextMusic() {
   
   document.getElementById('musicThumb').src = activeMusic.thumbnail || 'assets/bg_nature.png';
   document.getElementById('musicTitle').textContent = activeMusic.title;
-  document.getElementById('musicRequester').textContent = `@${activeMusic.requesterName}`;
+  document.getElementById('musicRequester').textContent = activeMusic.requesterName || 'user';
   
   const progElem = document.getElementById('musicTimeProgress');
   if (progElem) progElem.textContent = `0:00 / ${activeMusic.duration || '0:00'}`;
@@ -1181,6 +1358,10 @@ function playNextMusic() {
   
   document.getElementById('musicWidget').classList.add('show');
   
+  if (window.sounds && musicSettings.radioAmbiance) {
+    window.sounds.startRadioAmbiance();
+  }
+
   if (ytPlayer && ytPlayer.loadVideoById) {
     ytPlayer.unMute();
     ytPlayer.setVolume(musicSettings.volume);
@@ -1192,8 +1373,14 @@ function playNextMusic() {
 let wordsLoaded = false;
 let allTargetWords = { 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] };
 let allValidWords = { 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] };
+let allValidWordsSets = { 3: new Set(), 4: new Set(), 5: new Set(), 6: new Set(), 7: new Set(), 8: new Set() };
 let allAvailableWords = { 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] };
 let fullValidDictionary = new Set();
+let VALID_WORDS_SET = new Set();
+
+function syncValidWordsSet() {
+  VALID_WORDS_SET = new Set(VALID_WORDS || []);
+}
 
 function loadWordLists(lang) {
   return new Promise((resolve, reject) => {
@@ -1248,11 +1435,13 @@ function loadWordLists(lang) {
         allTargetWords[len] = tStr.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === len);
         const validList = vStr.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === len);
         allValidWords[len] = [...new Set([...validList, ...allTargetWords[len]])];
+        allValidWordsSets[len] = new Set(allValidWords[len]);
         allAvailableWords[len] = [...allTargetWords[len]];
         shuffleArray(allAvailableWords[len]);
       });
 
       wordsLoaded = true;
+      syncValidWordsSet();
       console.log(`Loaded target words - Length 3: ${allTargetWords[3].length}, 4: ${allTargetWords[4].length}, 5: ${allTargetWords[5].length}, 6: ${allTargetWords[6].length}, 7: ${allTargetWords[7].length}, 8: ${allTargetWords[8].length}`);
       
       const fullDictText = results[results.length - 1] || "";
@@ -3419,6 +3608,7 @@ function checkWordGridGuess(word, username, profilePic) {
     
     renderWordGridBoard();
     triggerCellParticleEffect(r, c, totalPoints);
+    if (window.sounds) window.sounds.playGreenChime();
     resetWgHintTimer();
     checkWordGridWin();
     return totalPoints; 
@@ -3671,6 +3861,7 @@ function startNewRound() {
       TARGET_WORDS = allTargetWords[5];
       availableWords = allAvailableWords[5];
     }
+    syncValidWordsSet();
     initSquarewordRound();
     return;
   }
@@ -3701,6 +3892,7 @@ function startNewRound() {
     VALID_WORDS = [];
     availableWords = [];
   }
+  syncValidWordsSet();
 
   lastRoundTargetWord = currentWord;
   currentWord = getRandomWord();
@@ -3893,10 +4085,31 @@ function startNewRound() {
   }
 
   // Auto-Starter logic
-  if (isAutoStarterPreviousTarget && lastRoundTargetWord && lastRoundTargetWord.length === WORD_LENGTH) {
-    if (currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'word600') {
-      guessQueue.push({ guessWord: lastRoundTargetWord, userData: { nickname: 'SISTEM', uniqueId: 'system' } });
-      setTimeout(processQueue, 300);
+  if (isAutoStarterPreviousTarget) {
+    const isGuessMode = !currentGameMode || currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit';
+    if (isGuessMode) {
+      let starterWord = null;
+
+      // 1. Jika kata target sebelumnya ada dan panjangnya sama persis
+      if (lastRoundTargetWord && lastRoundTargetWord.length === WORD_LENGTH && lastRoundTargetWord !== currentWord) {
+        starterWord = lastRoundTargetWord;
+      } else {
+        // 2. Jika panjang huruf berbeda atau ronde 1, pilih kata acak yang valid
+        const wordPool = (VALID_WORDS && VALID_WORDS.length > 0) ? VALID_WORDS : (TARGET_WORDS || []);
+        if (wordPool.length > 0) {
+          const matchingWords = wordPool.filter(w => w.length === WORD_LENGTH && w !== currentWord);
+          if (matchingWords.length > 0) {
+            starterWord = matchingWords[Math.floor(Math.random() * matchingWords.length)];
+          } else {
+            starterWord = wordPool[Math.floor(Math.random() * wordPool.length)];
+          }
+        }
+      }
+
+      if (starterWord) {
+        guessQueue.push({ guessWord: starterWord, userData: { nickname: 'SISTEM', uniqueId: 'system' } });
+        setTimeout(processQueue, 300);
+      }
     }
   }
 }
@@ -4935,17 +5148,16 @@ function setupSocketListeners() {
     showSocialAlert(data, 'share');
     const username = data.nickname || data.uniqueId;
     if (username) {
-      recordActivity(username);
+      recordActivity(username, data.profilePictureUrl);
       playerShares[username] = (playerShares[username] || 0) + 1;
-      localStorage.setItem('pts_share_' + username, playerShares[username]);
-      updateMarqueeUI();
+      queueStorageSave('pts_share_' + username, playerShares[username]);
     }
   });
 
   socket.on('follow', (data) => {
     showSocialAlert(data, 'follow');
     const username = data.nickname || data.uniqueId;
-    if (username) recordActivity(username);
+    if (username) recordActivity(username, data.profilePictureUrl);
   });
 
   const lastGiftAlerts = {};
@@ -4977,7 +5189,7 @@ function setupSocketListeners() {
 
     const username = data.nickname || data.uniqueId;
     if (username) {
-      recordActivity(username);
+      recordActivity(username, data.profilePictureUrl);
       
       // Points should ONLY be added on the final event to avoid double/inflated counting!
       if (data.giftType === 1 && !data.repeatEnd) return;
@@ -4985,8 +5197,7 @@ function setupSocketListeners() {
       const coins = data.totalDiamonds || ((data.diamondCount || 0) * (data.repeatCount || 1));
       if (coins > 0) {
         playerGifts[username] = (playerGifts[username] || 0) + coins;
-        localStorage.setItem('pts_gift_' + username, playerGifts[username]);
-        updateMarqueeUI();
+        queueStorageSave('pts_gift_' + username, playerGifts[username]);
       }
       
       // Cleanup tracking to prevent memory leak
@@ -5000,14 +5211,13 @@ function setupSocketListeners() {
     const addedLikes = (typeof data.likeCount === 'number') ? data.likeCount : 1;
     const username = data.nickname || data.uniqueId;
     if (username) {
-      recordActivity(username);
+      recordActivity(username, data.profilePictureUrl);
       playerLikes[username] = (playerLikes[username] || 0) + addedLikes;
-      localStorage.setItem('pts_like_' + username, playerLikes[username]);
-      updateMarqueeUI();
+      queueStorageSave('pts_like_' + username, playerLikes[username]);
     }
     
-    // Always spawn heart animation + counter for visual feedback
-    spawnHeartFlurry(Math.min(addedLikes, 5));
+    // Spawn throttled heart animation + counter for visual feedback
+    spawnHeartFlurry(Math.min(addedLikes, 3));
     updateLikeCounter(data, addedLikes);
     
     // Like-restart logic only when waiting
@@ -5366,8 +5576,8 @@ function processGuess(guessWord, userData, queueLen = 0) {
   }
 
   if (currentGameMode === 'wordtango') {
-    const validDict = allValidWords[guessWord.length];
-    let isValidWord = validDict && validDict.includes(guessWord);
+    const validSet = allValidWordsSets[guessWord.length];
+    let isValidWord = (validSet && validSet.size > 0) ? validSet.has(guessWord) : (allValidWords[guessWord.length] && allValidWords[guessWord.length].includes(guessWord));
     if (!isValidWord) return;
 
     let matchedIndex = -1;
@@ -5471,8 +5681,12 @@ function processGuess(guessWord, userData, queueLen = 0) {
       });
 
       let mvpData = userData;
-      const mvp = Object.values(solverScores).find(s => s.score === maxScore);
-      if (mvp) mvpData = mvp.data;
+      if (userData && userData.uniqueId && solverScores[userData.uniqueId] && solverScores[userData.uniqueId].score === maxScore) {
+        mvpData = userData;
+      } else {
+        const mvp = Object.values(solverScores).find(s => s.score === maxScore);
+        if (mvp) mvpData = mvp.data;
+      }
 
       setTimeout(() => {
         const multiWinList = document.getElementById('multiWinList');
@@ -5501,7 +5715,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
     return;
   }
 
-  let isValidWord = VALID_WORDS.includes(guessWord);
+  let isValidWord = (VALID_WORDS_SET && VALID_WORDS_SET.size > 0) ? VALID_WORDS_SET.has(guessWord) : VALID_WORDS.includes(guessWord);
   if (currentGameMode === 'colorfit') {
     isValidWord = /^[RGBYPOCW]+$/.test(guessWord) && guessWord.length === WORD_LENGTH;
   }
@@ -5840,6 +6054,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
   }
 
   if (invalidTooltipMsg) {
+    if (window.sounds) window.sounds.playInvalid();
     if (window.playHostAudio) playHostAudio('invalid');
     const tooltip = document.createElement('div');
     tooltip.className = 'row-tooltip is-invalid-tooltip' + (hardModeConflictWord ? ' clue-conflict-tooltip' : '');
@@ -5974,8 +6189,20 @@ function processGuess(guessWord, userData, queueLen = 0) {
           const stepDelay = queueLen > 1 ? 40 : 100; // 40ms jika antrean sedang, 100ms jika santai
           tiles[i].classList.add('flip-3d');
           tiles[i].style.animationDelay = `${i * stepDelay}ms`;
+
+          // Suara ubin berputar sinkron dengan tiap kotak huruf
+          setTimeout(() => {
+            if (window.sounds && typeof window.sounds.playFlip === 'function') {
+              window.sounds.playFlip(i);
+            }
+          }, i * stepDelay);
+
           setTimeout(() => {
             tiles[i].classList.add(statuses[i]);
+            // Jika terbuka huruf hijau (correct), bunyikan chime halus
+            if (statuses[i] === 'correct' && queueLen <= 2 && window.sounds && typeof window.sounds.playGreenChime === 'function') {
+              window.sounds.playGreenChime();
+            }
           }, (i * stepDelay) + 180);
         }
       } else {
@@ -6163,7 +6390,12 @@ function processGuess(guessWord, userData, queueLen = 0) {
           const winningTiles = row.querySelectorAll('.tile');
           setTimeout(() => {
             winningTiles.forEach((t, idx) => {
-              setTimeout(() => t.classList.add('win-wave'), idx * 100);
+              setTimeout(() => {
+                t.classList.add('win-wave');
+                if (window.sounds && typeof window.sounds.playWaveTile === 'function') {
+                  window.sounds.playWaveTile(idx, winningTiles.length);
+                }
+              }, idx * 100);
             });
           }, 1200);
         }
@@ -6233,7 +6465,12 @@ function processGuess(guessWord, userData, queueLen = 0) {
           const winningTiles = winningRow.querySelectorAll('.tile');
           setTimeout(() => {
             winningTiles.forEach((t, idx) => {
-              setTimeout(() => t.classList.add('win-wave'), idx * 100);
+              setTimeout(() => {
+                t.classList.add('win-wave');
+                if (window.sounds && typeof window.sounds.playWaveTile === 'function') {
+                  window.sounds.playWaveTile(idx, winningTiles.length);
+                }
+              }, idx * 100);
             });
           }, 1200); // Mulai wave saat huruf terakhir hampir selesai flip
         }
@@ -6535,6 +6772,130 @@ window.resetTopSupporters = function(e) {
     const dropdown = document.getElementById('settingsDropdown');
     if (dropdown) dropdown.classList.remove('show');
   });
+};
+
+// ─── Export & Import Leaderboard Data ───
+window.exportLeaderboardData = function(e) {
+  if (e) e.stopPropagation();
+  
+  // Pastikan data pending di-flush ke storage sebelum ekspor
+  if (typeof flushStorageSaves === 'function') flushStorageSaves();
+  
+  const exportPayload = {
+    appName: "TikTok Wordle Live Game",
+    version: "1.0",
+    exportedAt: new Date().toISOString(),
+    gameMode: currentGameMode,
+    rawEntries: {},
+    summary: {
+      totalKeys: 0,
+      totalPlayersRecorded: 0
+    }
+  };
+
+  // Kumpulkan seluruh data pts_* dari localStorage (poin game, daily, weekly, supporter, avatar)
+  const playersSet = new Set();
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('pts_')) {
+      const val = localStorage.getItem(key);
+      exportPayload.rawEntries[key] = val;
+      exportPayload.summary.totalKeys++;
+      
+      const cleanName = key.replace(/^pts_(w500_|w600_|wfit_|colorfit_|wloop_|fill_|tango_|wgrid_|sqword_|wladder_|daily_|like_|share_|gift_|active_|avatar_)?/, '');
+      if (cleanName) playersSet.add(cleanName);
+    }
+  }
+  exportPayload.summary.totalPlayersRecorded = playersSet.size;
+
+  if (exportPayload.summary.totalKeys === 0) {
+    showToast("⚠️ Belum ada data leaderboard untuk diekspor!", 2500);
+    return;
+  }
+
+  const jsonStr = JSON.stringify(exportPayload, null, 2);
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  
+  const d = new Date();
+  const dateStr = d.toISOString().slice(0, 10);
+  const timeStr = d.toTimeString().slice(0, 5).replace(':', '-');
+  const filename = `leaderboard_backup_${dateStr}_${timeStr}.json`;
+  
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  showToast(`📤 Ekspor berhasil! (${exportPayload.summary.totalKeys} data tersimpan)`, 2500);
+  
+  const dropdown = document.getElementById('settingsDropdown');
+  if (dropdown) dropdown.classList.remove('show');
+};
+
+window.handleLeaderboardFileImport = function(input) {
+  if (!input || !input.files || input.files.length === 0) return;
+  const file = input.files[0];
+  const reader = new FileReader();
+  
+  reader.onload = function(e) {
+    try {
+      const content = JSON.parse(e.target.result);
+      if (!content || typeof content !== 'object') {
+        throw new Error('Format JSON tidak valid');
+      }
+
+      let entriesToImport = {};
+      if (content.rawEntries && typeof content.rawEntries === 'object') {
+        entriesToImport = content.rawEntries;
+      } else {
+        // Fallback untuk file JSON flat key-value
+        for (const k in content) {
+          if (k.startsWith('pts_')) {
+            entriesToImport[k] = content[k];
+          }
+        }
+      }
+
+      const count = Object.keys(entriesToImport).length;
+      if (count === 0) {
+        showToast("⚠️ File JSON tidak berisi data leaderboard yang valid!", 3000);
+        input.value = '';
+        return;
+      }
+
+      showCustomConfirm(`Impor ${count} data leaderboard dari "${file.name}"? Data saat ini akan digabungkan/diperbarui.`, () => {
+        for (const key in entriesToImport) {
+          localStorage.setItem(key, entriesToImport[key]);
+        }
+        
+        // Reset cache memori avatar dan refresh state
+        if (typeof avatarMemoryCache === 'object') {
+          for (const k in avatarMemoryCache) delete avatarMemoryCache[k];
+        }
+        initWeeklyLeaderboard();
+        initTrackers();
+        renderLeaderboard();
+        updateMarqueeUI(true);
+        
+        showToast(`✅ Berhasil mengimpor ${count} data leaderboard!`, 3000);
+        input.value = '';
+        
+        const dropdown = document.getElementById('settingsDropdown');
+        if (dropdown) dropdown.classList.remove('show');
+      });
+
+    } catch (err) {
+      console.error('Import error:', err);
+      showToast("❌ Gagal membaca file JSON: " + err.message, 3000);
+      input.value = '';
+    }
+  };
+  
+  reader.readAsText(file);
 };
 
 window.changeBackground = function() {
@@ -6981,6 +7342,20 @@ window.openMusicSettings = function(e) {
   
   document.getElementById('musicVolumeSlider').value = musicSettings.volume;
   document.getElementById('musicVolumeLabel').textContent = `${musicSettings.volume}%`;
+
+  const modalStyleSelect = document.getElementById('modalMusicPlayerStyleSelect');
+  if (modalStyleSelect) modalStyleSelect.value = musicSettings.playerStyle || 'vinyl';
+
+  const ambianceToggle = document.getElementById('musicRadioAmbianceToggle');
+  const ambianceSlider = document.getElementById('musicRadioAmbianceSlider');
+  const ambianceLabel = document.getElementById('musicRadioAmbianceLabel');
+  const ambianceContainer = document.getElementById('musicRadioAmbianceSliderContainer');
+
+  const isAmbianceOn = musicSettings.radioAmbiance === true;
+  if (ambianceToggle) ambianceToggle.checked = isAmbianceOn;
+  if (ambianceSlider) ambianceSlider.value = musicSettings.radioAmbianceVolume || 20;
+  if (ambianceLabel) ambianceLabel.textContent = `${musicSettings.radioAmbianceVolume || 20}%`;
+  if (ambianceContainer) ambianceContainer.style.display = isAmbianceOn ? 'block' : 'none';
   
   document.getElementById('musicSettingsModal').style.display = 'flex';
 };
@@ -7000,6 +7375,19 @@ window.saveMusicSettings = function() {
   musicSettings.maxUser = parseInt(document.getElementById('musicMaxUser').value) || 2;
   musicSettings.maxDuration = parseInt(document.getElementById('musicMaxDuration').value) || 6;
   musicSettings.volume = parseInt(document.getElementById('musicVolumeSlider').value) || 50;
+
+  const ambianceToggle = document.getElementById('musicRadioAmbianceToggle');
+  const ambianceSlider = document.getElementById('musicRadioAmbianceSlider');
+  musicSettings.radioAmbiance = ambianceToggle ? ambianceToggle.checked : false;
+  musicSettings.radioAmbianceVolume = ambianceSlider ? (parseInt(ambianceSlider.value) || 20) : 20;
+  if (window.sounds) {
+    window.sounds.setRadioAmbiance(musicSettings.radioAmbiance, musicSettings.radioAmbianceVolume);
+    if (isMusicPlaying && musicSettings.radioAmbiance) {
+      window.sounds.startRadioAmbiance();
+    } else {
+      window.sounds.stopRadioAmbiance();
+    }
+  }
   
   const keywords = document.getElementById('musicBannedKeywords').value;
   musicSettings.bannedKeywords = keywords.split(',').map(k => k.trim().toLowerCase()).filter(k => k);
@@ -8047,13 +8435,13 @@ async function processSquarewordGuess(guessWord, userData) {
   if (guessUpper.length !== 5) return;
 
   // 1. Strict Dictionary Validation against valid KBBI words
-  const validDict = (allValidWords && allValidWords[5] && allValidWords[5].length > 0) 
-    ? allValidWords[5] 
-    : ((VALID_WORDS && VALID_WORDS.length > 0) ? VALID_WORDS : null);
-
   let isValidWord = false;
-  if (validDict && validDict.length > 0) {
-    isValidWord = validDict.includes(guessUpper);
+  if (allValidWordsSets && allValidWordsSets[5] && allValidWordsSets[5].size > 0) {
+    isValidWord = allValidWordsSets[5].has(guessUpper);
+  } else if (VALID_WORDS_SET && VALID_WORDS_SET.size > 0) {
+    isValidWord = VALID_WORDS_SET.has(guessUpper);
+  } else if (allValidWords && allValidWords[5] && allValidWords[5].length > 0) {
+    isValidWord = allValidWords[5].includes(guessUpper);
   } else if (fullValidDictionary && fullValidDictionary.size > 0) {
     isValidWord = fullValidDictionary.has(guessUpper);
   } else {
@@ -8204,6 +8592,11 @@ async function processSquarewordGuess(guessWord, userData) {
           void tile.offsetWidth;
           tile.style.animationDelay = (c * 80) + 'ms';
           tile.classList.add('sq-tile-wave');
+          setTimeout(() => {
+            if (window.sounds && typeof window.sounds.playWaveTile === 'function') {
+              window.sounds.playWaveTile(c, 5);
+            }
+          }, c * 80);
         }
       }
     }
@@ -8347,12 +8740,45 @@ function toggleWebAudio(enabled) {
   localStorage.setItem('squareword_webaudio', enabled);
   if (window.sounds) window.sounds.setEnabled(enabled);
 }
+
+function changeSoundTheme(theme) {
+  if (window.sounds) {
+    window.sounds.setTheme(theme);
+    previewCurrentSoundTheme();
+  }
+}
+
+function previewCurrentSoundTheme(e) {
+  if (e) e.stopPropagation();
+  if (window.sounds) {
+    window.sounds.playFlip(0);
+    setTimeout(() => window.sounds.playFlip(1), 100);
+    setTimeout(() => window.sounds.playFlip(2), 200);
+    setTimeout(() => window.sounds.playGreenChime(), 320);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const saved = localStorage.getItem('squareword_webaudio');
   const isEnabled = saved !== 'false';
   const toggle = document.getElementById('webAudioToggle');
   if (toggle) toggle.checked = isEnabled;
   if (window.sounds) window.sounds.setEnabled(isEnabled);
+
+  const themeSelect = document.getElementById('soundThemeSelect');
+  if (themeSelect && window.sounds) {
+    themeSelect.value = window.sounds.getTheme();
+  }
+
+  if (window.changeMusicPlayerStyle) {
+    window.changeMusicPlayerStyle(musicSettings.playerStyle || 'vinyl');
+  }
+
+  const mainRadioToggle = document.getElementById('mainRadioAmbianceToggle');
+  if (mainRadioToggle) mainRadioToggle.checked = musicSettings.radioAmbiance === true;
+
+  const mainSfxToggle = document.getElementById('mainRadioSFXToggle');
+  if (mainSfxToggle) mainSfxToggle.checked = musicSettings.radioSFX !== false;
 });
 
 
@@ -8530,8 +8956,10 @@ function processWordLadderGuess(guessWord, userData) {
   if (word.length !== wordLen) return;
 
   const dict = (allValidWords && allValidWords[wordLen]) ? allValidWords[wordLen] : (VALID_WORDS || []);
-  const isValid = (dict && dict.includes(word)) || (fullValidDictionary && (fullValidDictionary.has(word) || fullValidDictionary.has(word.toLowerCase())));
+  const validSet = (allValidWordsSets && allValidWordsSets[wordLen]) ? allValidWordsSets[wordLen] : VALID_WORDS_SET;
+  const isValid = (validSet && validSet.size > 0 && validSet.has(word)) || (dict && dict.includes(word)) || (fullValidDictionary && (fullValidDictionary.has(word) || fullValidDictionary.has(word.toLowerCase())));
   if (!isValid) {
+    if (window.sounds) window.sounds.playInvalid();
     if (window.playHostAudio) playHostAudio('invalid');
     showToast(`"${word}" tidak ada di kamus!`, 1500);
     return;
@@ -8540,6 +8968,7 @@ function processWordLadderGuess(guessWord, userData) {
   // 1. Cek apakah kata sudah pernah digunakan (Kata awal atau langkah sebelumnya di ronde ini)
   const isAlreadyUsed = (word === wordLadderStartWord) || wordLadderHistory.some(item => item.word === word);
   if (isAlreadyUsed) {
+    if (window.sounds) window.sounds.playInvalid();
     if (window.playHostAudio) playHostAudio('invalid');
     showToast(`"${word}" sudah digunakan di ronde ini!`, 1800);
     return;
@@ -8559,6 +8988,7 @@ function processWordLadderGuess(guessWord, userData) {
   }
 
   if (diffCount !== 1) {
+    if (window.sounds) window.sounds.playInvalid();
     if (window.playHostAudio) playHostAudio('invalid');
     showToast(`"${word}" harus beda tepat 1 huruf dari "${currentActiveWord}"!`, 1800);
     return;
@@ -8663,3 +9093,82 @@ function processWordLadderGuess(guessWord, userData) {
     }, 600);
   }
 }
+
+window.toggleRadioAmbianceUI = function(checked) {
+  const container = document.getElementById('musicRadioAmbianceSliderContainer');
+  if (container) container.style.display = checked ? 'block' : 'none';
+  if (window.sounds) {
+    const vol = parseInt(document.getElementById('musicRadioAmbianceSlider').value) || 20;
+    window.sounds.setRadioAmbiance(checked, vol);
+    if (checked) window.sounds.startRadioAmbiance();
+    else window.sounds.stopRadioAmbiance();
+  }
+};
+
+window.updateRadioAmbianceVolumeUI = function(val) {
+  const label = document.getElementById('musicRadioAmbianceLabel');
+  if (label) label.textContent = `${val}%`;
+  if (window.sounds) {
+    const isChecked = document.getElementById('musicRadioAmbianceToggle').checked;
+    window.sounds.setRadioAmbiance(isChecked, val);
+  }
+};
+
+window.toggleRadioAmbiance = function(enabled) {
+  musicSettings.radioAmbiance = !!enabled;
+  localStorage.setItem('music_settings', JSON.stringify(musicSettings));
+  const subToggle = document.getElementById('musicRadioAmbianceToggle');
+  if (subToggle) subToggle.checked = !!enabled;
+  const mainToggle = document.getElementById('mainRadioAmbianceToggle');
+  if (mainToggle) mainToggle.checked = !!enabled;
+
+  if (window.sounds) {
+    window.sounds.setRadioAmbiance(enabled, musicSettings.radioAmbianceVolume || 20);
+    if (enabled && isMusicPlaying) window.sounds.startRadioAmbiance();
+    else window.sounds.stopRadioAmbiance();
+  }
+};
+
+window.toggleRadioRequestSFX = function(enabled) {
+  musicSettings.radioSFX = !!enabled;
+  localStorage.setItem('music_settings', JSON.stringify(musicSettings));
+  const mainToggle = document.getElementById('mainRadioSFXToggle');
+  if (mainToggle) mainToggle.checked = !!enabled;
+};
+
+window.changeMusicPlayerStyle = function(style) {
+  musicSettings.playerStyle = style || 'vinyl';
+  localStorage.setItem('music_settings', JSON.stringify(musicSettings));
+  
+  const widget = document.getElementById('musicWidget');
+  if (widget) {
+    widget.classList.remove('music-style-vinyl', 'music-style-playlist', 'music-style-compact');
+    widget.classList.add('music-style-' + musicSettings.playerStyle);
+  }
+
+  const mainSelect = document.getElementById('mainMusicPlayerStyleSelect');
+  if (mainSelect) mainSelect.value = musicSettings.playerStyle;
+
+  const modalSelect = document.getElementById('modalMusicPlayerStyleSelect');
+  if (modalSelect) modalSelect.value = musicSettings.playerStyle;
+
+  updateMusicQueueUI();
+};
+
+// Universal Click/Tap Audio & YouTube Unlocker (Fixes Browser Autoplay Block)
+function unlockMediaAutoplay() {
+  if (window.sounds && window.sounds.ctx && window.sounds.ctx.state === 'suspended') {
+    window.sounds.ctx.resume();
+  }
+  if (ytPlayer && ytPlayer.unMute) {
+    try {
+      ytPlayer.unMute();
+      if (isMusicPlaying && activeMusic && ytPlayer.getPlayerState && ytPlayer.getPlayerState() !== 1) {
+        ytPlayer.playVideo();
+      }
+    } catch(e) {}
+  }
+}
+document.addEventListener('click', unlockMediaAutoplay, { passive: true });
+document.addEventListener('touchstart', unlockMediaAutoplay, { passive: true });
+document.addEventListener('keydown', unlockMediaAutoplay, { passive: true });

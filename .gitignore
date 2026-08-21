@@ -3,3 +3,5 @@ node_modules/
 old_app.js
 scratch/
 .env
+src-tauri/
+target/

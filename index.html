@@ -6,6 +6,7 @@
   <title>TikTok Live Games</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
   <script src="https://www.youtube.com/iframe_api"></script>
 </head>
@@ -205,7 +206,7 @@
   <div class="login-overlay" id="loginOverlay" style="display: none;">
     <div class="login-card">
       <button class="login-back-btn" onclick="backToGameList()" title="Kembali ke Menu Game">
-        <span class="back-arrow">←</span> Kembali ke Menu
+        <i class="fa-solid fa-arrow-left" style="margin-right: 6px;"></i> Kembali ke Menu
       </button>
 
       <div class="login-header">
@@ -220,7 +221,7 @@
       </div>
 
       <div class="input-group login-input-group">
-        <span class="at-symbol">🌐</span>
+        <span class="at-symbol"><i class="fa-solid fa-globe" style="color: #38bdf8;"></i></span>
         <select id="languageSelect" class="lang-select">
           <option value="id">🇮🇩 Bahasa Indonesia (ID)</option>
           <option value="en">🇬🇧 English (EN)</option>
@@ -229,23 +230,23 @@
       </div>
 
       <div id="advancedToggleBtn" onclick="toggleAdvancedSettings()" class="advanced-toggle-btn">
-        <span>⚙️ Pengaturan Lanjutan</span> <span class="adv-arrow">▼</span>
+        <span><i class="fa-solid fa-sliders" style="margin-right: 6px; color: #a855f7;"></i> Pengaturan Lanjutan</span> <span class="adv-arrow">▼</span>
       </div>
 
       <div id="advancedSettingsContainer" class="advanced-settings-panel" style="display: none;">
         <div class="input-group login-input-group" title="Opsional. Digunakan jika ada kendala koneksi API TikTok.">
-          <span class="at-symbol">🔑</span>
+          <span class="at-symbol"><i class="fa-solid fa-key" style="color: #facc15;"></i></span>
           <input type="password" id="sessionInput" placeholder="Session ID (Opsional)" autocomplete="off">
         </div>
         <div class="input-group login-input-group">
-          <span class="at-symbol">🔌</span>
+          <span class="at-symbol"><i class="fa-solid fa-plug" style="color: #38bdf8;"></i></span>
           <select id="backendSelect" class="lang-select" onchange="handleBackendChange(this.value)">
             <option value="socketio">Local Server (Socket.IO)</option>
             <option value="indofinity">IndoFinity (ws://localhost:62024)</option>
           </select>
         </div>
         <div class="input-group login-input-group" id="indofinityIpGroup" style="display: none;">
-          <span class="at-symbol">📡</span>
+          <span class="at-symbol"><i class="fa-solid fa-tower-broadcast" style="color: #4ade80;"></i></span>
           <input type="text" id="indofinityIpInput" placeholder="IP IndoFinity (misal: 192.168.1.10)" autocomplete="off">
         </div>
       </div>
@@ -281,25 +282,25 @@
     <header>
       <div class="header-left">
         <div class="room-info">
-          <button id="menuBtn" class="switch-btn" title="Pilih Game Lain (Menu Depan)" onclick="backToGameList()">🏠</button>
+          <button id="menuBtn" class="switch-btn" title="Pilih Game Lain (Menu Depan)" onclick="backToGameList()"><i class="fa-solid fa-house"></i></button>
           <div class="live-badge">LIVE</div>
           <span id="roomHost">@username</span>
-          <button id="switchAccountBtn" class="switch-btn" title="Ganti Akun" onclick="switchAccount()">🔄</button>
+          <button id="switchAccountBtn" class="switch-btn" title="Ganti Akun" onclick="switchAccount()"><i class="fa-solid fa-arrows-rotate"></i></button>
         </div>
       </div>
       <div class="header-title" id="headerTitle">WORDLE</div>
       <div class="header-right">
-        <div class="lang-badge" id="noRepeatBadge" title="Mode Tanpa Huruf Ganda (Isogram)" style="display: none; background: rgba(52, 152, 219, 0.2); border-color: rgba(52, 152, 219, 0.4);">🔠 1x</div>
+        <div class="lang-badge" id="noRepeatBadge" title="Mode Tanpa Huruf Ganda (Isogram)" style="display: none; background: rgba(52, 152, 219, 0.2); border-color: rgba(52, 152, 219, 0.4);"><i class="fa-solid fa-font" style="margin-right: 4px;"></i> 1x</div>
         <div class="lang-badge" id="currentLangBadge" title="Bahasa yang digunakan">🇮🇩 ID</div>
         <div class="round-badge" id="headerRoundBadge">Round <span id="roundNumber">1</span></div>
         <div class="settings-wrapper">
-          <button id="settingsBtn" class="settings-btn" onclick="toggleSettings(event)">⚙</button>
+          <button id="settingsBtn" class="settings-btn" onclick="toggleSettings(event)"><i class="fa-solid fa-gear"></i></button>
           <div class="settings-dropdown" id="settingsDropdown">
             
             <!-- Group 1: 🌐 Bahasa & Pilihan Game -->
             <div class="settings-group">
               <div class="settings-group-header" onclick="toggleSettingsGroup(this, event)">
-                <span>🌐 Pilihan Game & Bahasa</span>
+                <span><i class="fa-solid fa-globe" style="color: #38bdf8; margin-right: 8px;"></i> Pilihan Game & Bahasa</span>
                 <span class="arrow">▼</span>
               </div>
               <div class="settings-group-content" style="padding: 10px 12px;">
@@ -492,7 +493,7 @@
             <!-- Group 2: 📏 Panjang Kata -->
             <div class="settings-group">
               <div class="settings-group-header" onclick="toggleSettingsGroup(this, event)">
-                <span>📏 Panjang Kata</span>
+                <span><i class="fa-solid fa-ruler-horizontal" style="color: #facc15; margin-right: 8px;"></i> Panjang Kata</span>
                 <span class="arrow">▼</span>
               </div>
               <div class="settings-group-content">
@@ -505,7 +506,7 @@
                   <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="len8Toggle" checked onchange="updateAllowedLengths()"> 8</label>
                 </div>
                 <button class="lang-option" onclick="applyAllowedLengths(event)" style="margin-top: 8px; justify-content: center; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #ffffff; padding: 6px; border-radius: 6px; font-weight: bold; width: 100%;">
-                  ⚡ Terapkan & Mulai Ulang
+                  <i class="fa-solid fa-bolt" style="margin-right: 6px; color: #facc15;"></i> Terapkan & Mulai Ulang
                 </button>
               </div>
             </div>
@@ -513,21 +514,21 @@
             <!-- Group 3: 🎯 Aturan Permainan -->
             <div class="settings-group">
               <div class="settings-group-header" onclick="toggleSettingsGroup(this, event)">
-                <span>🎯 Aturan Permainan</span>
+                <span><i class="fa-solid fa-bullseye" style="color: #f43f5e; margin-right: 8px;"></i> Aturan Permainan</span>
                 <span class="arrow">▼</span>
               </div>
               <div class="settings-group-content">
                 <div style="display: flex; flex-direction: column; text-align: left; padding: 6px 12px; background: rgba(0,0,0,0.15); border-radius: 8px; margin-bottom: 8px;">
-                  <button class="lang-option" id="hardModeBtn" onclick="toggleHardMode(event)" style="margin: 0; padding: 6px 0; width: 100%; border: none; text-align: center;">🔥 Hard Mode: OFF</button>
+                  <button class="lang-option" id="hardModeBtn" onclick="toggleHardMode(event)" style="margin: 0; padding: 6px 0; width: 100%; border: none; text-align: center;"><i class="fa-solid fa-fire" style="color: #f97316; margin-right: 6px;"></i> Hard Mode: OFF</button>
                   <span style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 4px; text-align: center; width: 100%;">Berlaku untuk: Wordle, Word500, Word600, Word Fit, Color Fit, Word Fill</span>
                 </div>
                 <div style="display: flex; flex-direction: column; text-align: left; padding: 6px 12px; background: rgba(0,0,0,0.15); border-radius: 8px; margin-bottom: 8px;">
-                  <button class="lang-option" id="wgDifficultyBtn" onclick="toggleWgDifficulty(event)" style="margin: 0; padding: 6px 0; width: 100%; border: none; text-align: center;">🧩 Kesulitan Board: MUDAH</button>
+                  <button class="lang-option" id="wgDifficultyBtn" onclick="toggleWgDifficulty(event)" style="margin: 0; padding: 6px 0; width: 100%; border: none; text-align: center;"><i class="fa-solid fa-puzzle-piece" style="color: #38bdf8; margin-right: 6px;"></i> Kesulitan Board: MUDAH</button>
                   <span style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 4px; text-align: center; width: 100%;">Berlaku untuk: Word Grid</span>
                 </div>
                 <label class="settings-toggle-row" onclick="event.stopPropagation()">
                   <div style="display: flex; flex-direction: column; text-align: left;">
-                    <span class="settings-toggle-label">🟨 Tanpa Clue Kuning</span>
+                    <span class="settings-toggle-label"><i class="fa-solid fa-square" style="color: #eab308; margin-right: 6px;"></i> Tanpa Clue Kuning</span>
                     <span style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px;">Berlaku untuk: Wordle</span>
                   </div>
                   <div class="toggle-switch">
@@ -537,7 +538,7 @@
                 </label>
                 <label class="settings-toggle-row" onclick="event.stopPropagation()">
                   <div style="display: flex; flex-direction: column; text-align: left;">
-                    <span class="settings-toggle-label">🔡 Tanpa Huruf Ganda (Isogram)</span>
+                    <span class="settings-toggle-label"><i class="fa-solid fa-font" style="color: #06b6d4; margin-right: 6px;"></i> Tanpa Huruf Ganda (Isogram)</span>
                     <span style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px;">Berlaku untuk: Wordle, Word500, Word600, Word Fit, Word Loop, Word Fill</span>
                   </div>
                   <div class="toggle-switch">
@@ -547,7 +548,7 @@
                 </label>
                 <label class="settings-toggle-row" onclick="event.stopPropagation()">
                   <div style="display: flex; flex-direction: column; text-align: left;">
-                    <span class="settings-toggle-label">🔄 Auto-Starter Word</span>
+                    <span class="settings-toggle-label"><i class="fa-solid fa-repeat" style="color: #10b981; margin-right: 6px;"></i> Auto-Starter Word</span>
                     <span style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px;">Target sblm jika jumlah huruf sama, atau kata acak jika beda</span>
                   </div>
                   <div class="toggle-switch">
@@ -557,7 +558,7 @@
                 </label>
                 <label class="settings-toggle-row" onclick="event.stopPropagation()">
                   <div style="display: flex; flex-direction: column; text-align: left;">
-                    <span class="settings-toggle-label">💡 Bar Hints Discovered</span>
+                    <span class="settings-toggle-label"><i class="fa-solid fa-lightbulb" style="color: #fbbf24; margin-right: 6px;"></i> Bar Hints Discovered</span>
                     <span style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px;">Tampilkan bar huruf hijau yang terbuka di Wordle</span>
                   </div>
                   <div class="toggle-switch">
@@ -567,7 +568,7 @@
                 </label>
                 <label class="settings-toggle-row" onclick="event.stopPropagation()" id="w500StyleSetting">
                   <div style="display: flex; flex-direction: column; text-align: left;">
-                    <span class="settings-toggle-label">🧩 Word500 Mastermind Style</span>
+                    <span class="settings-toggle-label"><i class="fa-solid fa-circle-dot" style="color: #a855f7; margin-right: 6px;"></i> Word500 Mastermind Style</span>
                     <span style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px;">Gunakan visual peg warna Mastermind</span>
                   </div>
                   <div class="toggle-switch">
@@ -577,7 +578,7 @@
                 </label>
                 <label class="settings-toggle-row" onclick="event.stopPropagation()" title="Izinkan perebutan kotak di Word Grid menggunakan kata berskor lebih tinggi">
                   <div style="display: flex; flex-direction: column; text-align: left;">
-                    <span class="settings-toggle-label">⚔️ Perebutan Kotak (Word Grid)</span>
+                    <span class="settings-toggle-label"><i class="fa-solid fa-hand-fist" style="color: #f43f5e; margin-right: 6px;"></i> Perebutan Kotak (Word Grid)</span>
                     <span style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px;">Berlaku untuk: Word Grid</span>
                   </div>
                   <div class="toggle-switch">
@@ -588,7 +589,7 @@
                 <div class="settings-toggle-row slider-row" onclick="event.stopPropagation()" title="Durasi tanpa tebakan sebelum satu huruf bantuan terbuka secara otomatis di Word Grid" style="display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 10px 12px; background: rgba(0, 0, 0, 0.15); border-radius: 8px; margin: 4px 0;">
                   <div style="display: flex; justify-content: space-between; font-size: 13px; color: rgba(255, 255, 255, 0.85);">
                     <div style="display: flex; flex-direction: column; text-align: left;">
-                      <span>💡 Auto Hint Delay:</span>
+                      <span><i class="fa-solid fa-stopwatch" style="color: #a855f7; margin-right: 6px;"></i> Auto Hint Delay:</span>
                       <span style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px; font-weight: normal;">Berlaku untuk: Word Grid</span>
                     </div>
                     <span id="wgHintDelayLabel" style="font-weight: bold; color: #a855f7;">45 Detik</span>
@@ -601,7 +602,7 @@
             <!-- Group 4: 📺 Tampilan & Visual -->
             <div class="settings-group">
               <div class="settings-group-header" onclick="toggleSettingsGroup(this, event)">
-                <span>📺 Tampilan & Visual</span>
+                <span><i class="fa-solid fa-display" style="color: #a855f7; margin-right: 8px;"></i> Tampilan & Visual</span>
                 <span class="arrow">▼</span>
               </div>
               <div class="settings-group-content">
@@ -616,35 +617,35 @@
                   <button class="rows-btn" onclick="changeBoardScale(10, event)">+</button>
                 </div>
                 <label class="settings-toggle-row" onclick="event.stopPropagation()">
-                  <span class="settings-toggle-label">📢 Bar Top Supporter (Rotasi Fade)</span>
+                  <span class="settings-toggle-label"><i class="fa-solid fa-bullhorn" style="color: #38bdf8; margin-right: 6px;"></i> Bar Top Supporter (Rotasi Fade)</span>
                   <div class="toggle-switch">
                     <input type="checkbox" id="marqueeToggle" checked onchange="toggleMarquee(this.checked)">
                     <div class="toggle-track"></div>
                   </div>
                 </label>
                 <label class="settings-toggle-row" onclick="event.stopPropagation()">
-                  <span class="settings-toggle-label">💖 Animasi Hati (Like)</span>
+                  <span class="settings-toggle-label"><i class="fa-solid fa-heart" style="color: #f43f5e; margin-right: 6px;"></i> Animasi Hati (Like)</span>
                   <div class="toggle-switch">
                     <input type="checkbox" id="heartFlurryToggle" checked onchange="toggleHeartFlurry(this.checked)">
                     <div class="toggle-track"></div>
                   </div>
                 </label>
                 <label class="settings-toggle-row" onclick="event.stopPropagation()">
-                  <span class="settings-toggle-label">✨ Animasi Papan Game</span>
+                  <span class="settings-toggle-label"><i class="fa-solid fa-wand-magic-sparkles" style="color: #a855f7; margin-right: 6px;"></i> Animasi Papan Game</span>
                   <div class="toggle-switch">
                     <input type="checkbox" id="gameAnimationsToggle" checked onchange="toggleGameAnimations(this.checked)">
                     <div class="toggle-track"></div>
                   </div>
                 </label>
                 <label class="settings-toggle-row" onclick="event.stopPropagation()">
-                  <span class="settings-toggle-label">🖼️ Background Dinamis</span>
+                  <span class="settings-toggle-label"><i class="fa-solid fa-image" style="color: #06b6d4; margin-right: 6px;"></i> Background Dinamis</span>
                   <div class="toggle-switch">
                     <input type="checkbox" id="dynamicBgToggle" checked onchange="toggleDynamicBg(this.checked)">
                     <div class="toggle-track"></div>
                   </div>
                 </label>
                 <label class="settings-toggle" style="margin-top: 8px;">
-                  <span class="settings-toggle-label">🔲 Auto Fullscreen (Klik Layar)</span>
+                  <span class="settings-toggle-label"><i class="fa-solid fa-expand" style="color: #94a3b8; margin-right: 6px;"></i> Auto Fullscreen (Klik Layar)</span>
                   <div class="toggle-switch">
                     <input type="checkbox" id="autoFullscreenToggle" checked onchange="toggleAutoFullscreen(this.checked)">
                     <div class="toggle-track"></div>
@@ -656,7 +657,7 @@
             <!-- Group 5: 🎨 Kustomisasi Background -->
             <div class="settings-group">
               <div class="settings-group-header" onclick="toggleSettingsGroup(this, event)">
-                <span>🎨 Kustomisasi Background</span>
+                <span><i class="fa-solid fa-palette" style="color: #ec4899; margin-right: 8px;"></i> Kustomisasi Background</span>
                 <span class="arrow">▼</span>
               </div>
               <div class="settings-group-content">
@@ -667,8 +668,8 @@
 
                 <!-- Row: Terapkan + Hapus -->
                 <div style="display:flex; gap:6px; margin-bottom:10px;">
-                  <button class="lang-option" onclick="changeBackground()" style="flex:1; justify-content: center; background: rgba(255,255,255,0.08);">Terapkan Gambar</button>
-                  <button class="lang-option" onclick="clearBackground()" style="flex:0 0 auto; justify-content: center; background: rgba(254,44,85,0.15); border-color: rgba(254,44,85,0.35); color:#fe8080;" title="Hapus background custom">🗑️ Hapus BG</button>
+                  <button class="lang-option" onclick="changeBackground()" style="flex:1; justify-content: center; background: rgba(255,255,255,0.08);"><i class="fa-solid fa-check" style="margin-right: 6px;"></i> Terapkan Gambar</button>
+                  <button class="lang-option" onclick="clearBackground()" style="flex:0 0 auto; justify-content: center; background: rgba(254,44,85,0.15); border-color: rgba(254,44,85,0.35); color:#fe8080;" title="Hapus background custom"><i class="fa-solid fa-trash-can" style="margin-right: 4px;"></i> Hapus BG</button>
                 </div>
 
                 <!-- Separator: warna solid -->
@@ -697,7 +698,7 @@
                     <input type="range" id="rgbB" min="0" max="255" value="36" oninput="onRgbSliderChange()" style="width:100%; accent-color:#74c0fc; cursor:pointer;">
                   </div>
 
-                  <button class="lang-option" onclick="applyRgbBackground()" style="width:100%; justify-content:center; background: linear-gradient(135deg, rgba(254,44,85,0.25), rgba(37,244,238,0.15));">✅ Terapkan Warna Ini</button>
+                  <button class="lang-option" onclick="applyRgbBackground()" style="width:100%; justify-content:center; background: linear-gradient(135deg, rgba(254,44,85,0.25), rgba(37,244,238,0.15));"><i class="fa-solid fa-circle-check" style="margin-right: 6px;"></i> Terapkan Warna Ini</button>
                 </div>
 
                 <!-- Blur + Dim sliders -->
@@ -709,19 +710,19 @@
                   <label style="color: #ccc;">Kegelapan: <span id="bgDimValue" style="color: var(--primary); font-weight: bold;">60%</span></label>
                   <input type="range" id="bgDimSlider" min="0" max="100" value="60" oninput="updateBgEffects()" style="width: 55%; cursor: pointer;">
                 </div>
-                <button class="lang-option" onclick="resetBgEffects(event)" style="font-size: 10px; padding: 5px 8px; width: 100%; justify-content: center; color: #94a3b8; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px;">↺ Reset Blur & Kegelapan (Default)</button>
+                <button class="lang-option" onclick="resetBgEffects(event)" style="font-size: 10px; padding: 5px 8px; width: 100%; justify-content: center; color: #94a3b8; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px;"><i class="fa-solid fa-rotate-left" style="margin-right: 4px;"></i> Reset Blur & Kegelapan (Default)</button>
               </div>
             </div>
 
             <!-- Group 6: 🔊 Audio & Musik -->
             <div class="settings-group">
               <div class="settings-group-header" onclick="toggleSettingsGroup(this, event)">
-                <span>🔊 Audio & Musik</span>
+                <span><i class="fa-solid fa-volume-high" style="color: #10b981; margin-right: 8px;"></i> Audio & Musik</span>
                 <span class="arrow">▼</span>
               </div>
               <div class="settings-group-content">
                 <label class="settings-toggle-row" onclick="event.stopPropagation()">
-                  <span class="settings-toggle-label">🔊 Efek Suara (Web Audio)</span>
+                  <span class="settings-toggle-label"><i class="fa-solid fa-volume-high" style="color: #10b981; margin-right: 6px;"></i> Efek Suara (Web Audio)</span>
                   <div class="toggle-switch">
                     <input type="checkbox" id="webAudioToggle" checked onchange="toggleWebAudio(this.checked)">
                     <div class="toggle-track"></div>
@@ -729,8 +730,8 @@
                 </label>
                 <div class="settings-toggle-row" onclick="event.stopPropagation()" style="display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 8px 12px; background: rgba(0,0,0,0.15); border-radius: 8px; margin: 4px 0;">
                   <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 11px; color: #ddd; font-weight: 600;">🎨 Gaya Suara Ubin (Flip SFX):</span>
-                    <button onclick="previewCurrentSoundTheme(event)" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;">▶️ Test</button>
+                    <span style="font-size: 11px; color: #ddd; font-weight: 600;"><i class="fa-solid fa-music" style="color: #38bdf8; margin-right: 6px;"></i> Gaya Suara Ubin (Flip SFX):</span>
+                    <button onclick="previewCurrentSoundTheme(event)" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;"><i class="fa-solid fa-play" style="margin-right: 4px;"></i> Test</button>
                   </div>
                   <select id="soundThemeSelect" onchange="changeSoundTheme(this.value)" onclick="event.stopPropagation()" style="width: 100%; padding: 6px 8px; margin-top: 3px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; font-size: 12px; cursor: pointer;">
                     <option value="wood">🪵 ASMR Ubin Kayu (Scrabble)</option>
@@ -742,7 +743,7 @@
                 </div>
 
                 <div class="settings-toggle-row" onclick="event.stopPropagation()" style="display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 8px 12px; background: rgba(0,0,0,0.15); border-radius: 8px; margin: 4px 0;">
-                  <span style="font-size: 11px; color: #ddd; font-weight: 600;">🎨 Tampilan Pemutar Musik:</span>
+                  <span style="font-size: 11px; color: #ddd; font-weight: 600;"><i class="fa-solid fa-compact-disc" style="color: #f43f5e; margin-right: 6px;"></i> Tampilan Pemutar Musik:</span>
                   <select id="mainMusicPlayerStyleSelect" onchange="changeMusicPlayerStyle(this.value)" onclick="event.stopPropagation()" style="width: 100%; padding: 6px 8px; margin-top: 3px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; font-size: 12px; cursor: pointer;">
                     <option value="vinyl">💿 Piringan Hitam (Vinyl Disc)</option>
                     <option value="playlist">📋 Daftar Antrian Lagu (Playlist Queue)</option>
@@ -751,7 +752,7 @@
                 </div>
                 <label class="settings-toggle-row" onclick="event.stopPropagation()">
                   <div style="display: flex; flex-direction: column; text-align: left;">
-                    <span class="settings-toggle-label">📻 Suasana Radio / Vinyl</span>
+                    <span class="settings-toggle-label"><i class="fa-solid fa-radio" style="color: #f59e0b; margin-right: 6px;"></i> Suasana Radio / Vinyl</span>
                     <span style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px;">Desis udara FM & crackle vinil saat lagu berputar</span>
                   </div>
                   <div class="toggle-switch">
@@ -762,7 +763,7 @@
 
                 <label class="settings-toggle-row" onclick="event.stopPropagation()">
                   <div style="display: flex; flex-direction: column; text-align: left;">
-                    <span class="settings-toggle-label">📻 Jingle Notifikasi Request</span>
+                    <span class="settings-toggle-label"><i class="fa-solid fa-bell" style="color: #f59e0b; margin-right: 6px;"></i> Jingle Notifikasi Request</span>
                     <span style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px;">SFX frekuensi radio saat penonton request (!play)</span>
                   </div>
                   <div class="toggle-switch">
@@ -772,42 +773,42 @@
                 </label>
 
                 <label class="settings-toggle-row" onclick="event.stopPropagation()" title="Mainkan suara gift untuk setiap ketukan beruntun">
-                  <span class="settings-toggle-label">🎁 Bunyi Tiap Combo Gift</span>
+                  <span class="settings-toggle-label"><i class="fa-solid fa-gift" style="color: #ec4899; margin-right: 6px;"></i> Bunyi Tiap Combo Gift</span>
                   <div class="toggle-switch">
                     <input type="checkbox" id="playEveryGiftSoundToggle" onchange="togglePlayEveryGiftSound(this.checked)">
                     <div class="toggle-track"></div>
                   </div>
                 </label>
-                <button class="lang-option" onclick="openMusicSettings(event)">🎵 Pengaturan Musik YouTube (!play)</button>
-                <button class="lang-option" onclick="openTTSSettings(event)">🗣️ Pengaturan Suara (TTS)</button>
-                <button class="lang-option" onclick="openSocialAudioSettings(event)">🔔 Pengaturan Sound Alert</button>
-                <button class="lang-option" onclick="openCustomSFXSettings(event)">🎛️ Pengaturan SFX Kustom</button>
+                <button class="lang-option" onclick="openMusicSettings(event)"><i class="fa-brands fa-youtube" style="color: #ff0000; margin-right: 8px;"></i> Pengaturan Musik YouTube (!play)</button>
+                <button class="lang-option" onclick="openTTSSettings(event)"><i class="fa-solid fa-comment-dots" style="color: #38bdf8; margin-right: 8px;"></i> Pengaturan Suara (TTS)</button>
+                <button class="lang-option" onclick="openSocialAudioSettings(event)"><i class="fa-solid fa-bell" style="color: #10b981; margin-right: 8px;"></i> Pengaturan Sound Alert</button>
+                <button class="lang-option" onclick="openCustomSFXSettings(event)"><i class="fa-solid fa-sliders" style="color: #8b5cf6; margin-right: 8px;"></i> Pengaturan SFX Kustom</button>
               </div>
             </div>
 
             <!-- Group 7: 🤖 Live Stream & Otomasi -->
             <div class="settings-group">
               <div class="settings-group-header" onclick="toggleSettingsGroup(this, event)">
-                <span>🤖 Live Stream & Otomasi</span>
+                <span><i class="fa-solid fa-robot" style="color: #06b6d4; margin-right: 8px;"></i> Live Stream & Otomasi</span>
                 <span class="arrow">▼</span>
               </div>
               <div class="settings-group-content">
                 <label class="settings-toggle-row" onclick="event.stopPropagation()">
-                  <span class="settings-toggle-label">🤖 Auto-Jawab saat Join</span>
+                  <span class="settings-toggle-label"><i class="fa-solid fa-robot" style="color: #06b6d4; margin-right: 6px;"></i> Auto-Jawab saat Join</span>
                   <div class="toggle-switch">
                     <input type="checkbox" id="autoGuessJoinToggle" onchange="toggleAutoGuessJoin(this.checked)">
                     <div class="toggle-track"></div>
                   </div>
                 </label>
                 <label class="settings-toggle-row" onclick="event.stopPropagation()">
-                  <span class="settings-toggle-label">🚫 Filter Kata Kasar</span>
+                  <span class="settings-toggle-label"><i class="fa-solid fa-ban" style="color: #ef4444; margin-right: 6px;"></i> Filter Kata Kasar</span>
                   <div class="toggle-switch">
                     <input type="checkbox" id="badWordsToggle" checked onchange="toggleBadWords(this.checked)">
                     <div class="toggle-track"></div>
                   </div>
                 </label>
                 <label class="settings-toggle-row" onclick="event.stopPropagation()">
-                  <span class="settings-toggle-label">❤️ Restart dari Target Like</span>
+                  <span class="settings-toggle-label"><i class="fa-solid fa-heart" style="color: #f43f5e; margin-right: 6px;"></i> Restart dari Target Like</span>
                   <div class="toggle-switch">
                     <input type="checkbox" id="likeRestartToggle" onchange="toggleLikeRestart(this.checked)">
                     <div class="toggle-track"></div>
@@ -823,24 +824,24 @@
             <!-- Group 8: 📊 Alat & Reset Data -->
             <div class="settings-group">
               <div class="settings-group-header" onclick="toggleSettingsGroup(this, event)">
-                <span>📊 Alat & Reset Data</span>
+                <span><i class="fa-solid fa-toolbox" style="color: #fb923c; margin-right: 8px;"></i> Alat & Reset Data</span>
                 <span class="arrow">▼</span>
               </div>
               <div class="settings-group-content">
-                <button class="lang-option" id="recapBtn" onclick="event.stopPropagation(); document.getElementById('recapIframe').src='recap.html'; document.getElementById('recapOverlay').style.display='block';">🏆 Supporter Recap</button>
-                <button class="lang-option" id="gameRecapBtn" onclick="event.stopPropagation(); document.getElementById('recapIframe').src='game_recap.html'; document.getElementById('recapOverlay').style.display='block';">🎮 Game Solver Recap</button>
-                <button class="lang-option" id="wordGridSolverBtn" onclick="event.stopPropagation(); window.open('wordgrid_solver.html', '_blank');">🧮 Word Grid Solver</button>
+                <button class="lang-option" id="recapBtn" onclick="event.stopPropagation(); document.getElementById('recapIframe').src='recap.html'; document.getElementById('recapOverlay').style.display='block';"><i class="fa-solid fa-trophy" style="color: #ffd700; margin-right: 6px;"></i> Supporter Recap</button>
+                <button class="lang-option" id="gameRecapBtn" onclick="event.stopPropagation(); document.getElementById('recapIframe').src='game_recap.html'; document.getElementById('recapOverlay').style.display='block';"><i class="fa-solid fa-gamepad" style="color: #38bdf8; margin-right: 6px;"></i> Game Solver Recap</button>
+                <button class="lang-option" id="wordGridSolverBtn" onclick="event.stopPropagation(); window.open('wordgrid_solver.html', '_blank');"><i class="fa-solid fa-calculator" style="color: #10b981; margin-right: 6px;"></i> Word Grid Solver</button>
                 
                 <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
-                  <button class="lang-option" onclick="exportLeaderboardData(event)" style="color: #2ed573;">📤 Ekspor Data Leaderboard (.JSON)</button>
-                  <button class="lang-option" onclick="document.getElementById('importLeaderboardFileInput').click(); event.stopPropagation();" style="color: #70a1ff;">📥 Impor Data Leaderboard (.JSON)</button>
+                  <button class="lang-option" onclick="exportLeaderboardData(event)" style="color: #2ed573;"><i class="fa-solid fa-file-export" style="margin-right: 6px;"></i> Ekspor Data Leaderboard (.JSON)</button>
+                  <button class="lang-option" onclick="document.getElementById('importLeaderboardFileInput').click(); event.stopPropagation();" style="color: #70a1ff;"><i class="fa-solid fa-file-import" style="margin-right: 6px;"></i> Impor Data Leaderboard (.JSON)</button>
                   <input type="file" id="importLeaderboardFileInput" accept=".json" onchange="handleLeaderboardFileImport(this)" style="display: none;">
                 </div>
 
                 <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
-                  <button class="lang-option" onclick="resetDailyLeaderboard(event)" style="color: #ffa502;">🗑️ Reset Daily Only</button>
-                  <button class="lang-option" onclick="resetLeaderboard(event)" style="color: #ff6b6b;">🗑️ Reset Top Rank (Poin Game)</button>
-                  <button class="lang-option" onclick="resetTopSupporters(event)" style="color: #4bcffa;">🗑️ Reset Top Supporters</button>
+                  <button class="lang-option" onclick="resetDailyLeaderboard(event)" style="color: #ffa502;"><i class="fa-solid fa-trash" style="margin-right: 6px;"></i> Reset Daily Only</button>
+                  <button class="lang-option" onclick="resetLeaderboard(event)" style="color: #ff6b6b;"><i class="fa-solid fa-trash-can" style="margin-right: 6px;"></i> Reset Top Rank (Poin Game)</button>
+                  <button class="lang-option" onclick="resetTopSupporters(event)" style="color: #4bcffa;"><i class="fa-solid fa-user-xmark" style="margin-right: 6px;"></i> Reset Top Supporters</button>
                 </div>
               </div>
             </div>
@@ -848,7 +849,7 @@
             <!-- Tombol Kembali ke Daftar Game -->
             <div style="border-top: 1px solid rgba(255,255,255,0.15); padding: 8px 12px; margin-top: 5px;">
               <button class="back-menu-btn" onclick="backToGameList(event)">
-                🎮 KEMBALI KE DAFTAR GAME
+                <i class="fa-solid fa-gamepad" style="margin-right: 8px;"></i> KEMBALI KE DAFTAR GAME
               </button>
             </div>
 
@@ -860,7 +861,7 @@
     <!-- Leaderboard (Compact) -->
     <div class="leaderboard-container" id="leaderboardContainer">
       <div class="lb-header">
-        <div class="lb-title">🏅 TOP RANK</div>
+        <div class="lb-title"><i class="fa-solid fa-trophy" style="color: #ffd700; margin-right: 6px;"></i> TOP RANK</div>
         <div class="lb-tabs">
           <button class="lb-tab active" id="tab-session" onclick="switchLbTab('session')">Daily</button>
           <button class="lb-tab" id="tab-weekly" onclick="switchLbTab('weekly')">Weekly</button>
@@ -965,8 +966,13 @@
 
     <!-- Word Ladder Info -->
     <div id="wordLadderInfoContainer" style="display: none; max-width: 540px; width: 100%; margin: 0 auto 10px; text-align: center;">
-      <div id="wordLadderInfoText" style="color: rgba(255,255,255,0.85); font-size: 13px; font-weight: 700;">
-        Langkah: <span id="ladderCurrentSteps" style="color: #ffffff;">0</span> • Target: <span id="ladderMinSteps" style="color: var(--warning);">4</span> Langkah
+      <div style="display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+        <div id="wordLadderInfoText" style="color: rgba(255,255,255,0.85); font-size: 13px; font-weight: 700;">
+          Langkah: <span id="ladderCurrentSteps" style="color: #00f2fe;">0</span>
+        </div>
+        <button onclick="undoWordLadder()" class="btn-ladder-undo" title="Undo Langkah Terakhir (Host)" style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.45); border-radius: 6px; color: #fca5a5; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; font-size: 12px;" onmouseover="this.style.background='rgba(239, 68, 68, 0.45)'; this.style.transform='scale(1.1)';" onmouseout="this.style.background='rgba(239, 68, 68, 0.2)'; this.style.transform='scale(1)';">
+          <i class="fa-solid fa-rotate-left"></i>
+        </button>
       </div>
     </div>
 
@@ -991,7 +997,7 @@
 
       <!-- Word Tango Letter Pool -->
       <div id="tangoPoolContainer" class="tango-pool-container" style="display: none;">
-        <div class="tango-pool-title">🔤 LETTER POOL (HURUF TERSEDIA)</div>
+        <div class="tango-pool-title"><i class="fa-solid fa-spell-check" style="color: #ec4899; margin-right: 6px;"></i> LETTER POOL (HURUF TERSEDIA)</div>
         <div id="tangoPoolChips" class="tango-pool-chips"></div>
       </div>
 
@@ -1122,7 +1128,7 @@
     <div class="win-card">
       <div class="win-avatar-container">
         <img id="winAvatar" src="" alt="Winner">
-        <div class="crown-icon">👑</div>
+        <div class="crown-icon"><i class="fa-solid fa-crown" style="color: #ffd700; filter: drop-shadow(0 0 6px rgba(255,215,0,0.6));"></i></div>
       </div>
       <div class="win-title">WE HAVE A WINNER!</div>
       <div class="win-name" id="winName">@username</div>
@@ -1134,13 +1140,13 @@
       <!-- Like Progress Bar (di dalam Win Overlay) -->
       <div id="likeProgressContainer" class="like-progress-container" style="display: none; margin-top: 15px; background: rgba(0,0,0,0.6);">
         <div class="like-progress-header">
-          <span class="like-progress-title" style="color: #fff; font-size: 13px;">❤️ TAP UNTUK MULAI RONDE BARU!</span>
+          <span class="like-progress-title" style="color: #fff; font-size: 13px;"><i class="fa-solid fa-heart" style="color: #fe2c55; margin-right: 6px;"></i> TAP UNTUK MULAI RONDE BARU!</span>
           <span class="like-progress-text" id="likeProgressText" style="font-size: 13px; color: #ffd54f;">0 / 1000</span>
         </div>
         <div class="like-progress-bar-bg" style="height: 12px; background: rgba(255,255,255,0.2);">
           <div class="like-progress-bar-fill" id="likeProgressBarFill"></div>
         </div>
-        <button onclick="executeRestartTransition()" style="margin-top: 12px; padding: 6px 12px; font-size: 11px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; color: white; cursor: pointer;">Skip (Host)</button>
+        <button onclick="executeRestartTransition()" style="margin-top: 12px; padding: 6px 12px; font-size: 11px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; color: white; cursor: pointer;"><i class="fa-solid fa-forward" style="margin-right: 4px;"></i> Skip (Host)</button>
       </div>
 
       <div class="win-footer" id="winFooter">Next round starting soon...</div>
@@ -1159,13 +1165,13 @@
       <!-- Like Progress Bar for Multi Win -->
       <div id="multiLikeProgressContainer" class="like-progress-container" style="display: none; margin-top: 15px; background: rgba(0,0,0,0.6);">
         <div class="like-progress-header">
-          <span class="like-progress-title" style="color: #fff; font-size: 13px;">❤️ TAP UNTUK MULAI RONDE BARU!</span>
+          <span class="like-progress-title" style="color: #fff; font-size: 13px;"><i class="fa-solid fa-heart" style="color: #fe2c55; margin-right: 6px;"></i> TAP UNTUK MULAI RONDE BARU!</span>
           <span class="like-progress-text" id="multiLikeProgressText" style="font-size: 13px; color: #ffd54f;">0 / 1000</span>
         </div>
         <div class="like-progress-bar-bg" style="height: 12px; background: rgba(255,255,255,0.2);">
           <div class="like-progress-bar-fill" id="multiLikeProgressBarFill"></div>
         </div>
-        <button onclick="executeRestartTransition()" style="margin-top: 12px; padding: 6px 12px; font-size: 11px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; color: white; cursor: pointer;">Skip (Host)</button>
+        <button onclick="executeRestartTransition()" style="margin-top: 12px; padding: 6px 12px; font-size: 11px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; color: white; cursor: pointer;"><i class="fa-solid fa-forward" style="margin-right: 4px;"></i> Skip (Host)</button>
       </div>
 
       <div class="win-footer" id="multiWinFooter">Next round starting soon...</div>
@@ -1178,21 +1184,21 @@
     <div class="host-music-input" id="hostGuessInputContainer" style="margin-right: 10px;">
       <input type="text" id="hostGuessInput" placeholder="Tebak kata..." autocomplete="off">
     </div>
-    <button id="hostGuessBtn" class="host-music-btn" title="Kirim Tebakan Host">📝</button>
+    <button id="hostGuessBtn" class="host-music-btn" title="Kirim Tebakan Host"><i class="fa-solid fa-paper-plane"></i></button>
 
     <div style="width: 2px; background: rgba(255,255,255,0.2); margin: 0 10px; height: 24px;"></div>
 
-    <button id="hostSkipBtn" class="host-music-btn" style="display: none;" title="Skip Song">⏭️</button>
+    <button id="hostSkipBtn" class="host-music-btn" style="display: none;" title="Skip Song"><i class="fa-solid fa-forward-step"></i></button>
     <div class="host-music-input" id="hostMusicInputContainer">
       <input type="text" id="hostMusicInput" placeholder="Type song name..." autocomplete="off">
     </div>
-    <button id="hostMusicBtn" class="host-music-btn" title="Request Song">🎵</button>
+    <button id="hostMusicBtn" class="host-music-btn" title="Request Song"><i class="fa-solid fa-music"></i></button>
   </div>
 
   <!-- Music Settings Modal -->
   <div class="login-overlay" id="musicSettingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; background: rgba(0,0,0,0.65);">
     <div class="login-card" style="max-width: 380px; width: 90%; padding: 25px;">
-      <h2 style="margin-bottom: 20px; color: white; font-size: 1.2rem;">🎵 Pengaturan Request Musik</h2>
+      <h2 style="margin-bottom: 20px; color: white; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;"><i class="fa-brands fa-youtube" style="color: #ff0000;"></i> Pengaturan Request Musik</h2>
       
       <label style="text-align: left; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
         <span style="font-size: 13px; color: #ccc;">Aktifkan Request Musik (Penonton):</span>
@@ -1273,7 +1279,7 @@
   <!-- TTS Settings Modal -->
   <div class="login-overlay" id="ttsSettingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; background: rgba(0,0,0,0.65);">
     <div class="login-card" style="max-width: 380px; width: 90%; padding: 25px;">
-      <h2 style="margin-bottom: 20px; color: white; font-size: 1.2rem;">🗣️ Pengaturan Suara (TTS)</h2>
+      <h2 style="margin-bottom: 20px; color: white; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-comment-dots" style="color: #38bdf8;"></i> Pengaturan Suara (TTS)</h2>
       
       <label style="text-align: left; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
         <span style="font-size: 13px; color: #ccc;">Aktifkan Pembaca Suara:</span>
@@ -1318,7 +1324,7 @@
       <div style="text-align: left; margin-bottom: 20px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <label style="font-size: 13px; color: #ccc;">Pilih Suara (Voice):</label>
-          <button onclick="testTTS()" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;">▶️ TEST TTS</button>
+          <button onclick="testTTS()" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;"><i class="fa-solid fa-play" style="margin-right: 4px;"></i> TEST TTS</button>
         </div>
         <select id="ttsVoiceSelect" style="width: 100%; padding: 10px; margin-top: 5px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px;">
           <option value="">Default Browser Voice</option>
@@ -1327,7 +1333,7 @@
 
       <!-- MP3 Host Audio Auto -->
       <div style="margin-bottom: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
-        <h3 style="font-size: 14px; color: #fff; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">🎙️ Host Audio Otomatis (MP3)</h3>
+        <h3 style="font-size: 14px; color: #fff; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-microphone" style="color: #a855f7;"></i> Host Audio Otomatis (MP3)</h3>
         
         <label style="text-align: left; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
           <span style="font-size: 13px; color: #ccc;">Aktifkan Efek Suara Host:</span>
@@ -1345,7 +1351,7 @@
           <input type="range" id="hostAudioVolumeSlider" min="0" max="100" value="100" oninput="updateHostAudioVolumeUI(this.value)" style="width: 100%; margin-top: 5px; cursor: pointer;">
         </div>
         
-        <button onclick="testHostAudio()" style="width: 100%; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; margin-top: 5px;">▶️ TEST SUARA HOST ACAK</button>
+        <button onclick="testHostAudio()" style="width: 100%; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; margin-top: 5px;"><i class="fa-solid fa-play" style="margin-right: 4px;"></i> TEST SUARA HOST ACAK</button>
       </div>
 
       <div style="display: flex; gap: 10px;">
@@ -1358,7 +1364,7 @@
   <!-- Social Audio Settings Modal -->
   <div class="login-overlay" id="socialAudioSettingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; background: rgba(0,0,0,0.65);">
     <div class="login-card" style="max-width: 380px; width: 90%; padding: 25px;">
-      <h2 style="margin-bottom: 20px; color: white; font-size: 1.2rem;">🔊 Pengaturan Sound Alert</h2>
+      <h2 style="margin-bottom: 20px; color: white; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-bell" style="color: #10b981;"></i> Pengaturan Sound Alert</h2>
       
       <label style="text-align: left; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
         <span style="font-size: 13px; color: #ccc;">Aktifkan Sound Alert:</span>
@@ -1380,7 +1386,7 @@
         <label style="font-size: 13px; color: #ccc;">Sound URL Follower Baru:</label>
         <div style="display: flex; gap: 8px; align-items: center; margin-top: 5px;">
           <input type="text" id="socialAudioFollowUrl" placeholder="https://..." style="flex: 1; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit;">
-          <button onclick="previewAlertSound(document.getElementById('socialAudioFollowUrl').value)" style="padding: 10px 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 600; white-space: nowrap;">▶️ TEST</button>
+          <button onclick="previewAlertSound(document.getElementById('socialAudioFollowUrl').value)" style="padding: 10px 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 600; white-space: nowrap;"><i class="fa-solid fa-play" style="margin-right: 4px;"></i> TEST</button>
         </div>
       </div>
       
@@ -1388,7 +1394,7 @@
         <label style="font-size: 13px; color: #ccc;">Sound URL Gift Umum (All Gift):</label>
         <div style="display: flex; gap: 8px; align-items: center; margin-top: 5px;">
           <input type="text" id="socialAudioDefaultGiftUrl" placeholder="https://..." style="flex: 1; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit;">
-          <button onclick="previewAlertSound(document.getElementById('socialAudioDefaultGiftUrl').value)" style="padding: 10px 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 600; white-space: nowrap;">▶️ TEST</button>
+          <button onclick="previewAlertSound(document.getElementById('socialAudioDefaultGiftUrl').value)" style="padding: 10px 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 600; white-space: nowrap;"><i class="fa-solid fa-play" style="margin-right: 4px;"></i> TEST</button>
         </div>
       </div>
       
@@ -1397,7 +1403,7 @@
         <textarea id="socialAudioCustomGifts" rows="4" placeholder="Mawar = https://www.myinstants.com/media/sounds/uwu.mp3&#10;Universe = https://www.myinstants.com/media/sounds/tuturu.mp3" style="width: 100%; padding: 10px; margin-top: 5px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; resize: none; line-height: 1.4;"></textarea>
         <div style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
           <input type="text" id="socialAudioTestGiftName" placeholder="Nama gift untuk di-test..." style="flex: 1; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); color: white; border-radius: 8px; font-size: 12px; font-family: inherit;">
-          <button onclick="testCustomGiftSound()" style="padding: 10px 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 600; white-space: nowrap;">🔊 TEST GIFT</button>
+          <button onclick="testCustomGiftSound()" style="padding: 10px 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 600; white-space: nowrap;"><i class="fa-solid fa-volume-high" style="margin-right: 4px;"></i> TEST GIFT</button>
         </div>
       </div>
 
@@ -1411,7 +1417,7 @@
   <!-- Custom SFX Settings Modal -->
   <div class="login-overlay" id="customSfxSettingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; background: rgba(0,0,0,0.65);">
     <div class="login-card" style="max-width: 400px; width: 90%; padding: 25px; max-height: 90vh; overflow-y: auto;">
-      <h2 style="margin-bottom: 20px; color: white; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">🔊 Pengaturan SFX Kustom</h2>
+      <h2 style="margin-bottom: 20px; color: white; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-sliders" style="color: #8b5cf6;"></i> Pengaturan SFX Kustom</h2>
       
       <label style="text-align: left; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
         <span style="font-size: 13px; color: #ccc;">Aktifkan SFX Kustom:</span>

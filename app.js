@@ -958,6 +958,7 @@ function saveDailyPts(username, pts) {
 
 function addPoints(userData, points) {
   if (!userData || !userData.nickname) return;
+  if (userData.uniqueId === 'system') return;
   const username = userData.nickname;
   if (userData.profilePictureUrl) {
     try { localStorage.setItem('pts_avatar_' + username, userData.profilePictureUrl); } catch(e) {}
@@ -8824,7 +8825,8 @@ function startWordLadderRound() {
     wordLadderTargetWord = 'SUSU';
     wordLadderMinSteps = 4;
   } else {
-    const p = puzzles[wordLadderIndex % puzzles.length];
+    const randomIndex = Math.floor(Math.random() * puzzles.length);
+    const p = puzzles[randomIndex];
     wordLadderIndex++;
     wordLadderStartWord = (p.start || 'KOPI').toUpperCase();
     wordLadderTargetWord = (p.target || 'SUSU').toUpperCase();
@@ -9046,7 +9048,7 @@ function processWordLadderGuess(guessWord, userData) {
       if (multiWinList) {
         multiWinList.innerHTML = `
           <div style="text-align: center; margin-bottom: 12px; font-size: 13px; font-weight: 800; color: #00f2fe; text-transform: uppercase; letter-spacing: 0.5px;">
-            ${wordLadderStartWord} ➔ ${wordLadderTargetWord} (${stepNum} Langkah / Optimal: ${wordLadderMinSteps})
+            ${wordLadderStartWord} ➔ ${wordLadderTargetWord} (${stepNum} Langkah)
           </div>
         `;
 
@@ -9086,12 +9088,41 @@ function processWordLadderGuess(guessWord, userData) {
         }
         setTimeout(() => {
           if (!isWaitingForLikes) {
+            isWaitingForLikes = true;
             executeRestartTransition();
           }
         }, 8000);
       }
     }, 600);
   }
+}
+
+window.undoWordLadder = function() {
+  if (currentGameMode !== 'wordladder' || isGameOver || wordLadderHistory.length === 0) {
+    showToast('Tidak ada langkah yang bisa di-undo!', 1500);
+    return;
+  }
+  
+  // Ambil langkah terakhir
+  const lastStep = wordLadderHistory.pop();
+  
+  // Kembalikan poin/steps di data kontributor
+  const username = lastStep.userData.uniqueId || lastStep.userData.nickname || 'anon';
+  if (wordLadderContributors[username]) {
+    wordLadderContributors[username].points -= lastStep.pts;
+    wordLadderContributors[username].steps -= 1;
+    // Hapus kata terakhir dari array words
+    const wordIndex = wordLadderContributors[username].words.lastIndexOf(lastStep.word);
+    if (wordIndex !== -1) {
+      wordLadderContributors[username].words.splice(wordIndex, 1);
+    }
+  }
+  
+  // (Opsional) Kurangi poin global pemain jika punya fungsi deductPoints, tapi kita biarkan saja poin globalnya.
+  
+  renderWordLadderBoard();
+  showToast('Langkah terakhir dibatalkan oleh Host.', 1500);
+  if (window.playHostAudio) playHostAudio('click');
 }
 
 window.toggleRadioAmbianceUI = function(checked) {

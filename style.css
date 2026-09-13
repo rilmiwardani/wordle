@@ -19,6 +19,7 @@
   padding: 0;
   box-sizing: border-box;
   font-family: 'Outfit', sans-serif;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -29,6 +30,18 @@ body {
   width: 100vw;
   display: flex;
   flex-direction: column;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  cursor: default;
+}
+
+/* Kolom input form dan textarea tetap bisa diketik dan diblok teksnya */
+input, textarea, [contenteditable="true"] {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  cursor: text !important;
 }
 
 /* Backgrounds */
@@ -1763,6 +1776,9 @@ header {
   /* Mencegah teks mendorong tinggi tile melebihi lebarnya */
   min-height: 0;
   overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
 }
 
 .tile.filled {
@@ -3074,231 +3090,234 @@ header {
 }
 
 /* =========================================
-   SUPPORTER SPOTLIGHT (MATCHED TO TOP RANK THEME)
+   🏆 TOP SUPPORTER TICKER MARQUEE (PREMIUM TIKTOK LIVE STREAM DESIGN)
    ========================================= */
 .supporter-spotlight-container {
   width: 100%;
-  max-width: 420px;
+  max-width: var(--board-max-width, 480px);
   margin: 10px auto 0;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
-  padding: 6px 12px;
+  background: linear-gradient(135deg, rgba(13, 11, 24, 0.9) 0%, rgba(22, 16, 40, 0.85) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 4px 0;
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  justify-content: center;
-  min-height: 38px;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%);
+  height: 44px;
 }
 
 .supporter-spotlight-inner {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 100%;
-  transition: opacity 0.38s ease, transform 0.38s cubic-bezier(0.2, 0, 0, 1);
-  opacity: 1;
-  transform: translateY(0);
-  will-change: opacity, transform;
-}
-
-.supporter-spotlight-inner.fade-out {
-  opacity: 0;
-  transform: translateY(-2px);
-}
-
-.supporter-spotlight-inner.fade-in {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.spotlight-slide {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: 12px;
-  width: 100%;
-  min-height: 26px;
+  width: max-content;
+  white-space: nowrap;
+  will-change: transform;
+  animation: supporterTickerScroll 32s linear infinite;
 }
 
-.spotlight-header-pill {
+.supporter-spotlight-container:hover .supporter-spotlight-inner {
+  animation-play-state: paused;
+}
+
+@keyframes supporterTickerScroll {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+/* Supporter Pill Base */
+.marquee-supporter-pill {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 9px;
+  gap: 7px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  padding: 3px 10px 3px 5px;
+  flex-shrink: 0;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.marquee-supporter-pill:hover {
+  transform: translateY(-1px);
+}
+
+/* Category Badges with Glowing Colors */
+.pill-gift {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(217, 119, 6, 0.1));
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.22);
+}
+.pill-gift .marquee-cat-label { color: #fde047; }
+.pill-gift .marquee-user-val { color: #ffd54f; }
+
+.pill-like {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.22), rgba(220, 38, 38, 0.1));
+  border-color: rgba(239, 68, 68, 0.5);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.22);
+}
+.pill-like .marquee-cat-label { color: #fca5a5; }
+.pill-like .marquee-user-val { color: #ff6b81; }
+
+.pill-share {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(14, 165, 233, 0.1));
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.22);
+}
+.pill-share .marquee-cat-label { color: #7dd3fc; }
+.pill-share .marquee-user-val { color: #38bdf8; }
+
+.pill-active {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.22), rgba(147, 51, 234, 0.1));
+  border-color: rgba(168, 85, 247, 0.5);
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.22);
+}
+.pill-active .marquee-cat-label { color: #d8b4fe; }
+.pill-active .marquee-user-val { color: #c084fc; }
+
+/* Category Tag */
+.marquee-cat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 8.5px;
   font-weight: 800;
   letter-spacing: 0.6px;
   text-transform: uppercase;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 6px;
+  border-radius: 8px;
+}
+
+.marquee-cat-icon {
+  font-size: 10px;
+  filter: drop-shadow(0 0 4px rgba(255,255,255,0.4));
+}
+
+/* Avatar Wrap with Rank Crowns */
+.marquee-avatar-wrap {
+  position: relative;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
 }
 
-.spotlight-icon {
-  width: 12px;
-  height: 12px;
-  flex-shrink: 0;
+.marquee-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  background: #1e1e24;
 }
 
-/* Category Specific Badges (Matched Translucent) */
-.badge-gift { background: rgba(244, 114, 182, 0.15); color: #f472b6; border: 1px solid rgba(244, 114, 182, 0.3); }
-.badge-like { background: rgba(248, 113, 113, 0.15); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3); }
-.badge-share { background: rgba(96, 165, 250, 0.15); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); }
-.badge-active { background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
-.badge-live { background: rgba(74, 222, 128, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.3); }
+.is-top1 .marquee-avatar {
+  border-color: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.55);
+}
 
-.spotlight-list {
+.rank-2 .marquee-avatar {
+  border-color: #cbd5e1;
+  box-shadow: 0 0 6px rgba(203, 213, 225, 0.35);
+}
+
+.rank-3 .marquee-avatar {
+  border-color: #d97706;
+  box-shadow: 0 0 6px rgba(217, 119, 6, 0.35);
+}
+
+.marquee-rank-badge {
+  position: absolute;
+  bottom: -3px;
+  right: -4px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  font-family: 'Outfit', sans-serif;
+  font-size: 7.5px;
+  font-weight: 900;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  flex: 1;
-  min-width: 0;
+  justify-content: center;
+  background: #334155;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.6);
+  line-height: 1;
 }
 
-.spotlight-avatar-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 18px;
-  padding: 3px 9px 3px 4px;
-  transition: transform 0.15s ease, background 0.2s ease;
-  flex-shrink: 0;
-}
-
-/* Featured Rank 1 VIP Pill */
-.spotlight-avatar-item.spotlight-top1 {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(251, 191, 36, 0.09));
-  border: 1px solid rgba(245, 158, 11, 0.55);
-  box-shadow: 0 0 12px rgba(245, 158, 11, 0.22);
-  padding: 3px 10px 3px 4px;
-}
-
-.spotlight-top1 .spotlight-avatar {
-  border-color: #f59e0b;
-  box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
-}
-
-.spotlight-top1 .spotlight-rank {
+.is-top1 .marquee-rank-badge {
   background: #f59e0b;
   color: #1a0f00;
-  border: 1px solid #fef08a;
-  font-size: 7px;
+  border-color: #fef08a;
+  font-size: 6.5px;
 }
 
-.spotlight-user-info {
+.rank-2 .marquee-rank-badge {
+  background: #94a3b8;
+  color: #0f172a;
+  border-color: #f1f5f9;
+}
+
+.rank-3 .marquee-rank-badge {
+  background: #d97706;
+  color: #ffffff;
+  border-color: #fed7aa;
+}
+
+.marquee-pill-info {
   display: flex;
   flex-direction: column;
   line-height: 1.15;
   text-align: left;
 }
 
-.spotlight-user-name {
-  font-size: 10px;
-  font-weight: 800;
-  color: #fef08a;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 85px;
-}
-
-.spotlight-top1 .spotlight-val {
-  font-size: 9px;
-  font-weight: 800;
-  color: #fde047;
-  white-space: nowrap;
-}
-
-/* Compact Rank 2 & 3 Mini Pills */
-.spotlight-avatar-item.spotlight-mini {
-  padding: 2px 7px 2px 3px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  gap: 4px;
-}
-
-.spotlight-mini .spotlight-val {
-  font-size: 9.5px;
-  font-weight: 700;
-  color: #cbd5e1;
-}
-
-.spotlight-avatar-wrap {
-  position: relative;
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-}
-
-.spotlight-avatar {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 1.5px solid rgba(255, 255, 255, 0.25);
-  background: #1e1e24;
-}
-
-.spotlight-rank {
-  position: absolute;
-  bottom: -3px;
-  right: -3px;
-  font-family: 'Outfit', sans-serif;
-  font-size: 8px;
-  font-weight: 800;
-  line-height: 1;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
-}
-
-.rank-1 .spotlight-rank {
-  background: #f59e0b;
-  color: #1a0f00;
-  border: 1px solid #fef08a;
-}
-
-.rank-2 .spotlight-rank {
-  background: #94a3b8;
-  color: #0f172a;
-  border: 1px solid #f1f5f9;
-}
-
-.rank-3 .spotlight-rank {
-  background: #d97706;
-  color: #240c02;
-  border: 1px solid #fed7aa;
-}
-
-.rank-1 .spotlight-avatar { border-color: #f59e0b; }
-.rank-2 .spotlight-avatar { border-color: #cbd5e1; }
-.rank-3 .spotlight-avatar { border-color: #d97706; }
-
-.spotlight-val {
-  font-family: 'Outfit', sans-serif;
+.marquee-user-name {
   font-size: 10.5px;
   font-weight: 800;
-  color: #e2e8f0;
-  letter-spacing: 0.3px;
+  color: #ffffff;
+  white-space: nowrap;
 }
 
-.spotlight-fallback {
-  display: flex;
+.marquee-user-val {
+  font-size: 9px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* Separator Dot between Pills */
+.marquee-separator {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 8px;
+  margin: 0 4px;
+}
+
+/* Welcome Fallback Pill */
+.marquee-welcome-pill {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.7);
-  width: 100%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  padding: 4px 14px;
+  font-size: 11.5px;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.marquee-welcome-pill.alt {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.18), rgba(59, 130, 246, 0.1));
+  border-color: rgba(6, 182, 212, 0.4);
 }
 
 /* Custom Confirm Modal */
@@ -4261,6 +4280,100 @@ body.no-animations .win-wave {
   background: var(--empty);
   border: 2px solid rgba(255, 255, 255, 0.1);
 }
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   ⚡ MOBILE & LOW-POWER BATTERY SAVER OPTIMIZATION (ANTI-OVERHEATING & DINGIN)
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+/* 1. Otomatis Aktif di Layar Ponsel (width <= 600px) */
+@media (max-width: 600px) {
+  /* Hilangkan backdrop-filter blur yang menguras GPU 100% di HP */
+  *, *::before, *::after {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Gantikan efek kaca buram dengan latar solid transparan ringan */
+  .modal-content,
+  .leaderboard-container,
+  .music-widget,
+  .settings-modal,
+  .overlay,
+  .toast,
+  .music-notif,
+  .supporter-podium-card,
+  .game-select-overlay,
+  .login-overlay,
+  .music-modal-content {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background-color: rgba(16, 18, 27, 0.96) !important;
+  }
+
+  /* Matikan animasi infinite equalizer dan piringan musik yang memaksa 60 FPS non-stop */
+  .music-equalizer span {
+    animation: none !important;
+    transform: scaleY(0.4) !important;
+  }
+  .music-vinyl.playing {
+    animation: none !important;
+  }
+
+  /* Kurangi beban render bayangan berlebih di HP */
+  .tile, .guesser-avatar, .modal-content {
+    box-shadow: none !important;
+  }
+}
+
+/* 2. Mode Hemat Daya Manual (Bisa diaktifkan via Pengaturan di PC maupun HP) */
+body.low-power-mode *,
+body.low-power-mode *::before,
+body.low-power-mode *::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body.low-power-mode .modal-content,
+body.low-power-mode .leaderboard-container,
+body.low-power-mode .music-widget,
+body.low-power-mode .settings-modal,
+body.low-power-mode .overlay,
+body.low-power-mode .toast,
+body.low-power-mode .music-notif,
+body.low-power-mode .supporter-podium-card,
+body.low-power-mode .music-modal-content {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background-color: rgba(16, 18, 27, 0.96) !important;
+}
+
+body.low-power-mode .music-equalizer span {
+  animation: none !important;
+  transform: scaleY(0.4) !important;
+}
+
+body.low-power-mode .music-vinyl.playing {
+  animation: none !important;
+}
+
+body.low-power-mode .heart-particle {
+  display: none !important;
+}
+
+body.low-power-mode [style*="animation: livePulse"],
+body.low-power-mode [style*="animation: pulse"],
+body.low-power-mode .avatarPulse,
+body.low-power-mode .wordGlow,
+body.low-power-mode .disconnect-pulse,
+body.low-power-mode .sq-pulse-glow {
+  animation: none !important;
+}
+
+body.low-power-mode .tile,
+body.low-power-mode .guesser-avatar {
+  box-shadow: none !important;
+}
+
 
 
 

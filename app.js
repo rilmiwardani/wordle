@@ -105,6 +105,8 @@ let wordLadderTargetWord = '';
 let wordLadderMinSteps = 4;
 let wordLadderHistory = []; // array of { word, userData, changedIndex, stepNum, pts }
 let wordLadderContributors = {}; // map by username -> { userData, points, steps, words }
+let wordLadderPoolID = []; // Anti-duplicate pool for ID
+let wordLadderPoolEN = []; // Anti-duplicate pool for EN
 
 let currentGameMode = sessionStorage.getItem('wordle_gameMode') || '';
 let isWgTakeoverMode = localStorage.getItem('wordle_wgTakeover') === 'true';
@@ -229,6 +231,19 @@ window.toggleLikeRestart = function(checked) {
   if (container) container.style.display = checked ? 'block' : 'none';
   if (progressContainer) progressContainer.style.display = checked ? 'block' : 'none';
   updateLikeProgressBar();
+};
+
+let isLowPowerMode = localStorage.getItem('wordle_lowPowerMode') === 'true';
+window.toggleLowPowerMode = function(checked) {
+  isLowPowerMode = checked;
+  localStorage.setItem('wordle_lowPowerMode', checked);
+  if (checked) {
+    document.body.classList.add('low-power-mode');
+    showToast('⚡ Mode Hemat Daya Aktif (Anti-Panas)', 2000);
+  } else {
+    document.body.classList.remove('low-power-mode');
+    showToast('Mode Grafis Penuh Aktif', 2000);
+  }
 };
 
 let isHeartFlurryEnabled = localStorage.getItem('wordle_heartFlurryEnabled') !== 'false';
@@ -441,114 +456,84 @@ function formatShortNumber(num) {
   return num;
 }
 
-function buildSpotlightSlides() {
-  const slides = [];
+let marqueeUpdateTimer = null;
+let lastMarqueeHTML = "";
+
+function buildSupporterMarqueeTrackHTML() {
   const topGifters = getTop3(playerGifts);
   const topLikers = getTop3(playerLikes);
   const topSharers = getTop3(playerShares);
   const topActiveViewers = getTopActiveViewers();
 
-  function renderSpotlightItem(u, i, valPrefix, valText) {
-    const isTop1 = i === 0;
+  const items = [];
+
+  function createPill(categoryClass, iconHTML, catTitle, u, rank, valText) {
     const nameClean = escapeHTML(u.username || 'user');
-
-    if (isTop1) {
-      const shortName = nameClean.length > 12 ? nameClean.substring(0, 11) + '…' : nameClean;
-      return `
-        <div class="spotlight-avatar-item spotlight-top1 rank-1" title="${nameClean} • ${valText}">
-          <div class="spotlight-avatar-wrap">
-            <img src="${getUserAvatar(u.username)}" class="spotlight-avatar" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="${nameClean}">
-            <span class="spotlight-rank">👑</span>
-          </div>
-          <div class="spotlight-user-info">
-            <span class="spotlight-user-name">${shortName}</span>
-            <span class="spotlight-val">${valPrefix} ${valText}</span>
-          </div>
+    const shortName = nameClean.length > 10 ? nameClean.substring(0, 9) + '…' : nameClean;
+    const rankClass = rank === 1 ? 'rank-1 is-top1' : (rank === 2 ? 'rank-2' : 'rank-3');
+    const rankBadgeHTML = rank === 1 ? '<i class="fa-solid fa-crown"></i>' : rank;
+    
+    return `
+      <div class="marquee-supporter-pill ${categoryClass} ${rankClass}" title="@${nameClean} • ${valText}">
+        <div class="marquee-cat-badge">
+          <span class="marquee-cat-icon">${iconHTML}</span>
+          <span class="marquee-cat-label">${catTitle}</span>
         </div>
-      `;
-    } else {
-      return `
-        <div class="spotlight-avatar-item spotlight-mini rank-${i + 1}" title="${nameClean} • ${valText}">
-          <div class="spotlight-avatar-wrap">
-            <img src="${getUserAvatar(u.username)}" class="spotlight-avatar" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="${nameClean}">
-            <span class="spotlight-rank">${i + 1}</span>
-          </div>
-          <span class="spotlight-val">${valText}</span>
+        <div class="marquee-avatar-wrap">
+          <img src="${getUserAvatar(u.username)}" class="marquee-avatar" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="${nameClean}">
+          <span class="marquee-rank-badge">${rankBadgeHTML}</span>
         </div>
-      `;
-    }
-  }
-
-  // 1. Top Gifters Slide
-  if (topGifters.length > 0) {
-    const usersHTML = topGifters.map((u, i) => renderSpotlightItem(u, i, '🪙', formatShortNumber(u.count))).join('');
-    slides.push(`
-      <div class="spotlight-slide">
-        <div class="spotlight-header-pill badge-gift">
-          <svg class="spotlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg>
-          <span>TOP GIFTERS</span>
+        <div class="marquee-pill-info">
+          <span class="marquee-user-name">${shortName}</span>
+          <span class="marquee-user-val">${valText}</span>
         </div>
-        <div class="spotlight-list">${usersHTML}</div>
       </div>
-    `);
+    `;
   }
 
-  // 2. Top Likers Slide
-  if (topLikers.length > 0) {
-    const usersHTML = topLikers.map((u, i) => renderSpotlightItem(u, i, '❤️', formatShortNumber(u.count))).join('');
-    slides.push(`
-      <div class="spotlight-slide">
-        <div class="spotlight-header-pill badge-like">
-          <svg class="spotlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-          <span>TOP LIKERS</span>
-        </div>
-        <div class="spotlight-list">${usersHTML}</div>
-      </div>
-    `);
-  }
+  // 1. Top Gifters
+  topGifters.forEach((u, i) => {
+    items.push(createPill('pill-gift', '<i class="fa-solid fa-gift"></i>', 'GIFTER', u, i + 1, `${formatShortNumber(u.count)} Koin`));
+  });
 
-  // 3. Top Sharers Slide
-  if (topSharers.length > 0) {
-    const usersHTML = topSharers.map((u, i) => renderSpotlightItem(u, i, '🔁', formatShortNumber(u.count))).join('');
-    slides.push(`
-      <div class="spotlight-slide">
-        <div class="spotlight-header-pill badge-share">
-          <svg class="spotlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-          <span>TOP SHARERS</span>
-        </div>
-        <div class="spotlight-list">${usersHTML}</div>
-      </div>
-    `);
-  }
+  // 2. Top Likers
+  topLikers.forEach((u, i) => {
+    items.push(createPill('pill-like', '<i class="fa-solid fa-heart"></i>', 'LIKER', u, i + 1, `${formatShortNumber(u.count)} Likes`));
+  });
 
-  // 4. Top Active Viewers Slide
-  if (topActiveViewers.length > 0) {
-    const usersHTML = topActiveViewers.map((u, i) => renderSpotlightItem(u, i, '⏱️', formatActiveTime(u.count))).join('');
-    slides.push(`
-      <div class="spotlight-slide">
-        <div class="spotlight-header-pill badge-active">
-          <svg class="spotlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-          <span>TOP AKTIF</span>
-        </div>
-        <div class="spotlight-list">${usersHTML}</div>
-      </div>
-    `);
-  }
+  // 3. Top Sharers
+  topSharers.forEach((u, i) => {
+    items.push(createPill('pill-share', '<i class="fa-solid fa-share-nodes"></i>', 'SHARE', u, i + 1, `${formatShortNumber(u.count)} Share`));
+  });
+
+  // 4. Top Active Viewers
+  topActiveViewers.forEach((u, i) => {
+    items.push(createPill('pill-active', '<i class="fa-solid fa-clock"></i>', 'AKTIF', u, i + 1, formatActiveTime(u.count)));
+  });
 
   // Fallback if no supporters yet
-  if (slides.length === 0) {
-    slides.push(`
-      <div class="spotlight-fallback">
-        <div class="spotlight-header-pill badge-live">
-          <svg class="spotlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-          <span>LIVE CHAT</span>
-        </div>
-        <span>Ketik tebakan kata di live chat untuk ikut bermain!</span>
+  if (items.length === 0) {
+    const welcomeHTML = `
+      <div class="marquee-welcome-pill">
+        <span class="marquee-cat-icon" style="color: #f59e0b;"><i class="fa-solid fa-gift"></i></span>
+        <span class="welcome-text">Kirim Gift, Like, atau Share untuk tampil di Top Supporter Live</span>
       </div>
-    `);
+      <div class="marquee-welcome-pill alt">
+        <span class="marquee-cat-icon" style="color: #38bdf8;"><i class="fa-solid fa-comment-dots"></i></span>
+        <span class="welcome-text">Ketik tebakan kata di live chat untuk ikut bermain</span>
+      </div>
+    `;
+    return welcomeHTML + welcomeHTML + welcomeHTML + welcomeHTML;
   }
 
-  return slides;
+  const separator = `<span class="marquee-separator">•</span>`;
+  const singleSequence = items.join(separator) + separator;
+
+  let result = singleSequence + singleSequence;
+  if (items.length < 4) {
+    result += singleSequence + singleSequence;
+  }
+  return result;
 }
 
 function updateMarqueeUI(forceImmediate = false) {
@@ -558,52 +543,27 @@ function updateMarqueeUI(forceImmediate = false) {
 
   if (!isMarqueeEnabled) {
     marqueeContainer.style.display = 'none';
-    if (spotlightTimer) {
-      clearInterval(spotlightTimer);
-      spotlightTimer = null;
+    if (marqueeUpdateTimer) {
+      clearInterval(marqueeUpdateTimer);
+      marqueeUpdateTimer = null;
     }
     return;
   }
 
   marqueeContainer.style.display = 'flex';
-  currentSpotlightSlides = buildSpotlightSlides();
+  const newHTML = buildSupporterMarqueeTrackHTML();
 
-  if (forceImmediate || !contentEl.innerHTML || contentEl.innerHTML === "") {
-    spotlightIndex = 0;
-    contentEl.innerHTML = currentSpotlightSlides[0] || '';
-    contentEl.classList.remove('fade-out');
-    contentEl.classList.add('fade-in');
+  if (forceImmediate || newHTML !== lastMarqueeHTML) {
+    lastMarqueeHTML = newHTML;
+    contentEl.innerHTML = newHTML;
   }
 
-  if (!spotlightTimer) {
-    startSpotlightRotator();
+  if (!marqueeUpdateTimer) {
+    // Refresh track data smoothly every 8 seconds if supporters change
+    marqueeUpdateTimer = setInterval(() => {
+      if (isMarqueeEnabled) updateMarqueeUI();
+    }, 8000);
   }
-}
-
-function startSpotlightRotator() {
-  if (spotlightTimer) clearInterval(spotlightTimer);
-  spotlightTimer = setInterval(() => {
-    const marqueeContainer = document.getElementById('marqueeContainer');
-    const contentEl = document.getElementById('marqueeContent');
-    if (!marqueeContainer || !contentEl || !isMarqueeEnabled) return;
-
-    currentSpotlightSlides = buildSpotlightSlides();
-    if (currentSpotlightSlides.length === 0) return;
-
-    spotlightIndex = (spotlightIndex + 1) % currentSpotlightSlides.length;
-    const nextHTML = currentSpotlightSlides[spotlightIndex];
-
-    // Smooth Fade Out & In
-    contentEl.classList.remove('fade-in');
-    contentEl.classList.add('fade-out');
-
-    setTimeout(() => {
-      contentEl.innerHTML = nextHTML;
-      void contentEl.offsetWidth; // Force CSS reflow to guarantee smooth transition
-      contentEl.classList.remove('fade-out');
-      contentEl.classList.add('fade-in');
-    }, 380);
-  }, 4800);
 }
 
 window.updateLikeThreshold = function(val) {
@@ -653,7 +613,7 @@ const HEART_EMOJIS = ['❤️', '💖', '💗', '💕', '💓', '💘', '💝', 
 const MAX_HEARTS_ON_SCREEN = 12;
 
 function spawnHeartFlurry(count) {
-  if (!isHeartFlurryEnabled) return;
+  if (!isHeartFlurryEnabled || isLowPowerMode) return;
   const now = performance.now();
   if (now - lastHeartFlurryTime < 180) return; // Throttle flurry spawn
   lastHeartFlurryTime = now;
@@ -1062,6 +1022,7 @@ function renderLeaderboard() {
 
 // Auto-switch Leaderboard Tabs every 10 seconds for Live Stream automation
 setInterval(() => {
+  if (isLowPowerMode) return; // Skip constant DOM re-renders in low-power mode to save CPU/battery
   switchLbTab(currentLbTab === 'session' ? 'weekly' : 'session');
 }, 10000);
 
@@ -3738,7 +3699,8 @@ function triggerCellParticleEffect(row, col, score) {
 
 function triggerConfetti() {
   const colors = ['#a855f7', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#fde047'];
-  for (let i = 0; i < 100; i++) {
+  const count = isLowPowerMode ? 15 : 100;
+  for (let i = 0; i < count; i++) {
     const confetti = document.createElement('div');
     confetti.className = 'confetti';
     confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
@@ -7159,6 +7121,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const marqueeToggle = document.getElementById('marqueeToggle');
   if (marqueeToggle) marqueeToggle.checked = isMarqueeEnabled;
 
+  const lowPowerModeToggle = document.getElementById('lowPowerModeToggle');
+  if (lowPowerModeToggle) lowPowerModeToggle.checked = isLowPowerMode;
+  if (isLowPowerMode) {
+    document.body.classList.add('low-power-mode');
+  }
+
   const heartFlurryToggle = document.getElementById('heartFlurryToggle');
   if (heartFlurryToggle) heartFlurryToggle.checked = isHeartFlurryEnabled;
 
@@ -8813,24 +8781,46 @@ function getWordLadderFeedback(guess, target) {
   return result;
 }
 
-function startWordLadderRound() {
-  const isEn = (lastLang === 'en');
-  const puzzles = isEn 
+function getNextWordLadderPuzzle(isEn) {
+  const sourcePuzzles = isEn 
     ? (window.WORDLADDER_PUZZLES_EN || []) 
     : (window.WORDLADDER_PUZZLES_ID || []);
 
-  if (!puzzles || puzzles.length === 0) {
+  if (!sourcePuzzles || sourcePuzzles.length === 0) return null;
+
+  if (isEn) {
+    if (!wordLadderPoolEN || wordLadderPoolEN.length === 0) {
+      wordLadderPoolEN = [...sourcePuzzles];
+      shuffleArray(wordLadderPoolEN);
+      console.log(`[WordLadder] Pool EN diisi ulang & diacak (${wordLadderPoolEN.length} puzzle)`);
+    }
+    return wordLadderPoolEN.pop();
+  } else {
+    if (!wordLadderPoolID || wordLadderPoolID.length === 0) {
+      wordLadderPoolID = [...sourcePuzzles];
+      shuffleArray(wordLadderPoolID);
+      console.log(`[WordLadder] Pool ID diisi ulang & diacak (${wordLadderPoolID.length} puzzle)`);
+    }
+    return wordLadderPoolID.pop();
+  }
+}
+
+function startWordLadderRound() {
+  const isEn = (lastLang === 'en');
+  const p = getNextWordLadderPuzzle(isEn);
+
+  if (!p) {
     console.error('No Word Ladder puzzles found, using fallback');
     wordLadderStartWord = 'KOPI';
     wordLadderTargetWord = 'SUSU';
     wordLadderMinSteps = 4;
   } else {
-    const randomIndex = Math.floor(Math.random() * puzzles.length);
-    const p = puzzles[randomIndex];
     wordLadderIndex++;
     wordLadderStartWord = (p.start || 'KOPI').toUpperCase();
     wordLadderTargetWord = (p.target || 'SUSU').toUpperCase();
     wordLadderMinSteps = p.minSteps || 4;
+    const remainingCount = isEn ? wordLadderPoolEN.length : wordLadderPoolID.length;
+    console.log(`[WordLadder] Round ${wordLadderIndex}: ${wordLadderStartWord} ➔ ${wordLadderTargetWord} (${wordLadderMinSteps} langkah). Sisa puzzle: ${remainingCount}`);
   }
 
   const wordLen = wordLadderStartWord.length;

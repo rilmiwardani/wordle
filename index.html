@@ -617,9 +617,16 @@
                   <button class="rows-btn" onclick="changeBoardScale(10, event)">+</button>
                 </div>
                 <label class="settings-toggle-row" onclick="event.stopPropagation()">
-                  <span class="settings-toggle-label"><i class="fa-solid fa-bullhorn" style="color: #38bdf8; margin-right: 6px;"></i> Bar Top Supporter (Rotasi Fade)</span>
+                  <span class="settings-toggle-label"><i class="fa-solid fa-bullhorn" style="color: #38bdf8; margin-right: 6px;"></i> Ticker Marquee Top Supporter</span>
                   <div class="toggle-switch">
                     <input type="checkbox" id="marqueeToggle" checked onchange="toggleMarquee(this.checked)">
+                    <div class="toggle-track"></div>
+                  </div>
+                </label>
+                <label class="settings-toggle-row" onclick="event.stopPropagation()">
+                  <span class="settings-toggle-label"><i class="fa-solid fa-bolt" style="color: #eab308; margin-right: 6px;"></i> Mode Hemat Daya / HP (Anti-Panas)</span>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="lowPowerModeToggle" onchange="toggleLowPowerMode(this.checked)">
                     <div class="toggle-track"></div>
                   </div>
                 </label>

@@ -9375,6 +9375,7 @@ let betweenleBottomBound = null; // { word, index, isInitial, user, avatar }
 let betweenleInitialWordsCount = 0;
 let betweenleCurrentWordsCount = 0;
 let betweenleSortedDicts = {}; // cache array terurut per panjang huruf
+let allAvailableBetweenleWords = {}; // shuffle bag per letter length
 let betweenleGuessHistory = [];
 let betweenleUserCooldown = new Map();
 let betweenleIsGameOver = false;
@@ -9500,7 +9501,7 @@ function startBetweenleGame() {
     userGuessDedup.clear();
   }
 
-  // Pilih kata target rahasia dari target words yang umum/dikenal
+  // Pilih kata target rahasia dari target words yang umum/dikenal dengan sistem Anti-Pengulangan (Shuffle Bag)
   let chosenWord = '';
   let targetIndex = -1;
   const targetCandidates = (allTargetWords && allTargetWords[betweenleLetterLength] && allTargetWords[betweenleLetterLength].length > 0)
@@ -9511,13 +9512,24 @@ function startBetweenleGame() {
     : [];
 
   if (targetCandidates.length > 0) {
-    chosenWord = targetCandidates[Math.floor(Math.random() * targetCandidates.length)];
+    if (!allAvailableBetweenleWords[betweenleLetterLength] || allAvailableBetweenleWords[betweenleLetterLength].length === 0) {
+      allAvailableBetweenleWords[betweenleLetterLength] = [...targetCandidates];
+      shuffleArray(allAvailableBetweenleWords[betweenleLetterLength]);
+    }
+    chosenWord = allAvailableBetweenleWords[betweenleLetterLength].pop();
     targetIndex = activeDict.indexOf(chosenWord);
   } else {
-    const minIdx = Math.floor(activeDict.length * 0.1);
-    const maxIdx = Math.floor(activeDict.length * 0.9);
-    targetIndex = Math.floor(Math.random() * (maxIdx - minIdx + 1)) + minIdx;
-    chosenWord = activeDict[targetIndex];
+    // Fallback if no target candidates
+    if (!allAvailableBetweenleWords[betweenleLetterLength] || allAvailableBetweenleWords[betweenleLetterLength].length === 0) {
+      const minIdx = Math.floor(activeDict.length * 0.1);
+      const maxIdx = Math.floor(activeDict.length * 0.9);
+      const fallbackCandidates = [];
+      for(let i=minIdx; i<=maxIdx; i++) fallbackCandidates.push(activeDict[i]);
+      allAvailableBetweenleWords[betweenleLetterLength] = fallbackCandidates;
+      shuffleArray(allAvailableBetweenleWords[betweenleLetterLength]);
+    }
+    chosenWord = allAvailableBetweenleWords[betweenleLetterLength].pop();
+    targetIndex = activeDict.indexOf(chosenWord);
   }
 
   betweenleSecretWord = chosenWord;

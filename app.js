@@ -4916,7 +4916,8 @@ function startOfflineMode() {
       setupSocketListeners();
     }
     
-    if (!currentWord) {
+    const hasWord = (currentGameMode === 'betweenle') ? !!betweenleSecretWord : !!currentWord;
+    if (!hasWord) {
       startNewRound();
     }
   }).catch(err => {
@@ -5106,7 +5107,8 @@ function setupSocketListeners() {
       roomHost.textContent = `@${data.uniqueId}`;
 
       // Bug 7 fix: use boolean flag instead of empty string check
-      if (!currentWord) {
+      const hasWord = (currentGameMode === 'betweenle') ? !!betweenleSecretWord : !!currentWord;
+      if (!hasWord) {
         startNewRound();
       }
     } else if (data.status === 'connecting') {
@@ -5148,7 +5150,8 @@ function setupSocketListeners() {
       document.getElementById('hostMusicControl').style.display = 'flex';
     }
 
-    if (!currentWord) {
+    const hasWord = (currentGameMode === 'betweenle') ? !!betweenleSecretWord : !!currentWord;
+    if (!hasWord) {
       startNewRound();
     }
   });

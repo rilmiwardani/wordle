@@ -9913,14 +9913,14 @@ function triggerBetweenleNextAnimation() {
     if (item.word === betweenleSecretWord) {
       betweenleIsGameOver = true;
       betweenleGuessCount++;
-      const jackpotPts = 100;
+      const jackpotPts = 25;
 
       if (middleWrapper) middleWrapper.classList.add('animating-win');
       const trackDot = document.getElementById('betweenleTrackDot');
       if (trackDot) trackDot.classList.add('is-win');
 
-      if (typeof addPoints === 'function') {
-        addPoints(item.userId, jackpotPts, item.userData);
+      if (typeof addPoints === 'function' && item.userData) {
+        addPoints(item.userData, jackpotPts);
       }
       if (window.sounds && typeof window.sounds.playBetweenleWin === 'function') {
         window.sounds.playBetweenleWin();
@@ -9934,7 +9934,7 @@ function triggerBetweenleNextAnimation() {
         pts: jackpotPts
       });
 
-      showToast(`${item.userName} MENEBAK TEPAT: ${item.word}! (+100 Poin)`, 4000);
+      showToast(`${item.userName} MENEBAK TEPAT: ${item.word}! (+${jackpotPts} Poin)`, 4000);
       updateBetweenleTrackUI();
       updateBetweenleProximityHint();
 
@@ -9949,7 +9949,7 @@ function triggerBetweenleNextAnimation() {
         const winName = document.getElementById('winName');
         if (winName) winName.textContent = item.userName;
         const winPts = document.getElementById('winPts');
-        if (winPts) winPts.innerHTML = `🪙 +${jackpotPts} Pts (Jackpot)`;
+        if (winPts) winPts.innerHTML = `🪙 +${jackpotPts} Pts`;
         const winWord = document.getElementById('winWord');
         if (winWord) {
           winWord.style.display = '';
@@ -9965,9 +9965,6 @@ function triggerBetweenleNextAnimation() {
     if (item.guessIndex < betweenleSecretIndex) {
       if (item.guessIndex > betweenleTopBound.index) {
         betweenleGuessCount++;
-        const wordsCut = item.guessIndex - Math.max(0, betweenleTopBound.index);
-        const isBigCut = wordsCut >= (betweenleCurrentWordsCount * 0.4);
-        const earnedPts = isBigCut ? 10 : 5;
 
         if (middleWrapper) middleWrapper.classList.add('animating-slide-up');
 
@@ -9980,10 +9977,6 @@ function triggerBetweenleNextAnimation() {
             avatar: item.userAvatar
           };
           betweenleCurrentWordsCount = betweenleBottomBound.index - betweenleTopBound.index - 1;
-
-          if (typeof addPoints === 'function') {
-            addPoints(item.userId, earnedPts, item.userData);
-          }
 
           if (window.sounds) {
             if (betweenleCurrentWordsCount <= 10 && typeof window.sounds.playBetweenleCloseRange === 'function') {
@@ -9998,7 +9991,7 @@ function triggerBetweenleNextAnimation() {
             user: item.userName,
             badgeType: 'badge-narrow-top',
             badgeText: 'BATAS AWAL',
-            pts: earnedPts
+            pts: 0
           });
 
           // Efek flash pop pada baris batas atas
@@ -10029,10 +10022,6 @@ function triggerBetweenleNextAnimation() {
     if (item.guessIndex > betweenleSecretIndex) {
       if (item.guessIndex < betweenleBottomBound.index) {
         betweenleGuessCount++;
-        const dictLen = getBetweenleSortedDict(betweenleLetterLength).length;
-        const wordsCut = Math.min(betweenleBottomBound.index, dictLen) - item.guessIndex;
-        const isBigCut = wordsCut >= (betweenleCurrentWordsCount * 0.4);
-        const earnedPts = isBigCut ? 10 : 5;
 
         if (middleWrapper) middleWrapper.classList.add('animating-slide-down');
 
@@ -10045,10 +10034,6 @@ function triggerBetweenleNextAnimation() {
             avatar: item.userAvatar
           };
           betweenleCurrentWordsCount = betweenleBottomBound.index - betweenleTopBound.index - 1;
-
-          if (typeof addPoints === 'function') {
-            addPoints(item.userId, earnedPts, item.userData);
-          }
 
           if (window.sounds) {
             if (betweenleCurrentWordsCount <= 10 && typeof window.sounds.playBetweenleCloseRange === 'function') {
@@ -10063,7 +10048,7 @@ function triggerBetweenleNextAnimation() {
             user: item.userName,
             badgeType: 'badge-narrow-bottom',
             badgeText: 'BATAS AKHIR',
-            pts: earnedPts
+            pts: 0
           });
 
           // Efek flash pop pada baris batas bawah

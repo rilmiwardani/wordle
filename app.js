@@ -373,6 +373,132 @@ function flushStorageSaves() {
 }
 window.addEventListener('beforeunload', flushStorageSaves);
 
+const DEFAULT_HOST_AVATAR = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="hostGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fe2c55"/>
+      <stop offset="50%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="50" fill="url(#hostGrad)"/>
+  <circle cx="50" cy="38" r="18" fill="#ffffff"/>
+  <path d="M22 84c0-15.5 12.5-28 28-28s28 12.5 28 28z" fill="#ffffff"/>
+  <path d="M30 38c0-11 9-20 20-20s20 9 20 20" fill="none" stroke="#1e1b4b" stroke-width="4.5" stroke-linecap="round"/>
+  <rect x="25" y="32" width="8" height="14" rx="4" fill="#1e1b4b"/>
+  <rect x="67" y="32" width="8" height="14" rx="4" fill="#1e1b4b"/>
+  <path d="M32 44c2 7 8 9 15 9" fill="none" stroke="#1e1b4b" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="48" cy="53" r="3.5" fill="#fe2c55"/>
+</svg>`.trim());
+
+const DICT_TOP_ICON = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="dictTopGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="50" fill="url(#dictTopGrad)"/>
+  <rect x="24" y="24" width="52" height="52" rx="8" fill="#ffffff" opacity="0.15"/>
+  <path d="M28 32h20a4 4 0 0 1 4 4v34a4 4 0 0 0-4-4H28z" fill="#ffffff"/>
+  <path d="M72 32H52a4 4 0 0 0-4 4v34a4 4 0 0 1 4-4h20z" fill="#f1f5f9"/>
+  <circle cx="70" cy="28" r="14" fill="#f59e0b" stroke="#0369a1" stroke-width="2"/>
+  <text x="70" y="34" font-size="16" font-family="sans-serif" font-weight="900" fill="#ffffff" text-anchor="middle">A</text>
+</svg>`.trim());
+
+const DICT_BOTTOM_ICON = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="dictBottomGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#4338ca"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="50" fill="url(#dictBottomGrad)"/>
+  <rect x="24" y="24" width="52" height="52" rx="8" fill="#ffffff" opacity="0.15"/>
+  <path d="M28 32h20a4 4 0 0 1 4 4v34a4 4 0 0 0-4-4H28z" fill="#ffffff"/>
+  <path d="M72 32H52a4 4 0 0 0-4 4v34a4 4 0 0 1 4-4h20z" fill="#f1f5f9"/>
+  <circle cx="70" cy="72" r="14" fill="#ec4899" stroke="#4338ca" stroke-width="2"/>
+  <text x="70" y="78" font-size="16" font-family="sans-serif" font-weight="900" fill="#ffffff" text-anchor="middle">Z</text>
+</svg>`.trim());
+
+function getHostAvatar() {
+  try {
+    const saved = localStorage.getItem('host_avatar_url');
+    if (saved && saved.trim()) return saved.trim();
+  } catch(e) {}
+  return DEFAULT_HOST_AVATAR;
+}
+
+function setHostAvatar(url) {
+  const clean = (url || '').trim();
+  if (clean) {
+    localStorage.setItem('host_avatar_url', clean);
+  } else {
+    localStorage.removeItem('host_avatar_url');
+  }
+  syncHostAvatarUI();
+  if (typeof showToast === 'function') {
+    showToast(clean ? 'Foto profil Host berhasil diperbarui!' : 'Avatar Host dikembalikan ke default.', 2000);
+  }
+}
+
+function syncHostAvatarUI() {
+  const current = getHostAvatar();
+  const isCustom = !!(localStorage.getItem('host_avatar_url') && localStorage.getItem('host_avatar_url').trim());
+  
+  const preview = document.getElementById('hostAvatarPreview');
+  if (preview) {
+    preview.src = current;
+    preview.onerror = function() { this.onerror = null; this.src = DEFAULT_HOST_AVATAR; };
+  }
+  
+  const input = document.getElementById('hostAvatarUrlInput');
+  if (input && !input.matches(':focus')) {
+    input.value = isCustom ? localStorage.getItem('host_avatar_url').trim() : '';
+  }
+
+  const loginInput = document.getElementById('loginHostAvatarInput');
+  if (loginInput && !loginInput.matches(':focus')) {
+    loginInput.value = isCustom ? localStorage.getItem('host_avatar_url').trim() : '';
+  }
+
+  const bottomHostAvatar = document.getElementById('bottomHostAvatarImg');
+  if (bottomHostAvatar) {
+    bottomHostAvatar.src = current;
+    bottomHostAvatar.onerror = function() { this.onerror = null; this.src = DEFAULT_HOST_AVATAR; };
+  }
+}
+
+function saveHostAvatarFromInput() {
+  const input = document.getElementById('hostAvatarUrlInput');
+  if (input) {
+    setHostAvatar(input.value);
+  }
+}
+
+function resetHostAvatarDefault() {
+  setHostAvatar('');
+}
+
+function toggleHostAvatarQuickModal(e) {
+  if (e) e.stopPropagation();
+  const currentUrl = localStorage.getItem('host_avatar_url') || '';
+  const newUrl = prompt('Masukkan URL foto profil / avatar external untuk Host:\n(Bisa link Discord, Imgur, TikTok CDN, atau link web apa saja. Kosongkan untuk kembali ke default)', currentUrl);
+  if (newUrl !== null) {
+    setHostAvatar(newUrl);
+  }
+}
+
+window.getHostAvatar = getHostAvatar;
+window.setHostAvatar = setHostAvatar;
+window.syncHostAvatarUI = syncHostAvatarUI;
+window.saveHostAvatarFromInput = saveHostAvatarFromInput;
+window.resetHostAvatarDefault = resetHostAvatarDefault;
+window.toggleHostAvatarQuickModal = toggleHostAvatarQuickModal;
+
 function setUserAvatar(username, url) {
   if (!username || !url) return;
   if (avatarMemoryCache[username] === url) return;
@@ -381,6 +507,9 @@ function setUserAvatar(username, url) {
 }
 
 function getUserAvatar(username) {
+  if (username === 'Host' || username === 'host_offline' || username === 'host' || username === '@HostOffline') {
+    return getHostAvatar();
+  }
   if (typeof playerPoints !== 'undefined' && playerPoints[username] && playerPoints[username].avatar) {
     return playerPoints[username].avatar;
   }
@@ -394,7 +523,7 @@ function getUserAvatar(username) {
       return saved;
     }
   } catch(e) {}
-  return 'assets/bg_nature.png';
+  return DEFAULT_HOST_AVATAR;
 }
 
 function recordActivity(username, profilePictureUrl = null) {
@@ -849,6 +978,7 @@ function getPtsPrefix() {
   if (currentGameMode === 'wordgrid') return 'pts_wgrid_';
   if (currentGameMode === 'squareword') return 'pts_sqword_';
   if (currentGameMode === 'wordladder') return 'pts_wladder_';
+  if (currentGameMode === 'betweenle') return 'pts_betweenle_';
   return 'pts_';
 }
 
@@ -860,7 +990,7 @@ function initWeeklyLeaderboard() {
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key && key.startsWith(prefix)) {
-      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wfit_') || key.startsWith('pts_colorfit_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_') || key.startsWith('pts_sqword_') || key.startsWith('pts_wladder_'))) continue;
+      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wfit_') || key.startsWith('pts_colorfit_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_') || key.startsWith('pts_sqword_') || key.startsWith('pts_wladder_') || key.startsWith('pts_betweenle_'))) continue;
       
       if (key.startsWith(prefix + 'like_') || 
           key.startsWith(prefix + 'share_') || 
@@ -1403,6 +1533,7 @@ function loadWordLists(lang) {
       });
 
       wordsLoaded = true;
+      betweenleSortedDicts = {};
       syncValidWordsSet();
       console.log(`Loaded target words - Length 3: ${allTargetWords[3].length}, 4: ${allTargetWords[4].length}, 5: ${allTargetWords[5].length}, 6: ${allTargetWords[6].length}, 7: ${allTargetWords[7].length}, 8: ${allTargetWords[8].length}`);
       
@@ -1512,7 +1643,8 @@ function selectGame(mode) {
     wordtango: 'WORD TANGO',
     wordgrid: 'WORD GRID',
     squareword: 'SQUAREWORD 5×5',
-    wordladder: 'WORD LADDER'
+    wordladder: 'WORD LADDER',
+    betweenle: 'BETWEENLE'
   };
   const titleName = gameNames[mode] || mode.toUpperCase();
 
@@ -1624,6 +1756,8 @@ function applyGameModeUI() {
   if (squarewordBoardContainer) squarewordBoardContainer.style.display = 'none';
   const wordLadderInfoContainer = document.getElementById('wordLadderInfoContainer');
   if (wordLadderInfoContainer) wordLadderInfoContainer.style.display = 'none';
+  const betweenleContainer = document.getElementById('betweenleContainer');
+  if (betweenleContainer) betweenleContainer.style.display = 'none';
 
 
   if (wordLoopInfoContainer) wordLoopInfoContainer.style.display = 'none';
@@ -1704,7 +1838,19 @@ function applyGameModeUI() {
     if (bestGuessContainer) bestGuessContainer.style.display = 'none';
     if (wordLadderInfoContainer) wordLadderInfoContainer.style.display = '';
     if (boardObj) boardObj.style.display = '';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Betweenle';
+  } else if (currentGameMode === 'betweenle') {
+    if (headerTitle) headerTitle.textContent = 'BETWEENLE';
+    if (hintContainer) hintContainer.style.display = 'none';
+    if (bestGuessContainer) bestGuessContainer.style.display = 'none';
+    if (boardObj) boardObj.style.display = 'none';
+    if (betweenleContainer) betweenleContainer.style.display = 'flex';
     if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
+    if (!betweenleTopBound) {
+      startBetweenleGame();
+    } else {
+      renderBetweenleUI();
+    }
   } else {
     if (headerTitle) headerTitle.textContent = 'WORDLE';
     if (hintContainer) hintContainer.style.display = isShowHintsDiscovered ? '' : 'none';
@@ -3815,6 +3961,12 @@ function showWordGridWinOverlay() {
 function startNewRound() {
   applyGameModeUI();
   hasPlayedCloseAudio = false;
+
+  if (currentGameMode === 'betweenle') {
+    betweenleRound = round;
+    startBetweenleGame();
+    return;
+  }
   if (currentGameMode === 'squareword') {
     WORD_LENGTH = 5;
     document.documentElement.style.setProperty('--word-length', 5);
@@ -5268,7 +5420,8 @@ function handleAutoGuessOnJoin(memberData) {
 
 // Handle Guesses from Chat
 function handleChatGuess(data) {
-  if (isGameOver) return;
+  const isCurrentOver = (currentGameMode === 'betweenle') ? betweenleIsGameOver : isGameOver;
+  if (isCurrentOver) return;
 
   const rawMsg = data.comment.trim().toLowerCase();
   
@@ -5288,14 +5441,18 @@ function handleChatGuess(data) {
     isAllowedLength = (msg.length >= 3 && msg.length <= 6);
   } else if (currentGameMode === 'wordgrid') {
     isAllowedLength = (msg.length >= 3);
+  } else if (currentGameMode === 'betweenle') {
+    isAllowedLength = (msg.length === betweenleLetterLength);
   }
 
   if (isAllowedLength) {
-    // Tolak jika user sudah pernah kirim kata yang sama di ronde ini
-    const userId = data.uniqueId || data.nickname || 'anon';
-    const dedupKey = `${userId}:${msg}`;
-    if (userGuessDedup.has(dedupKey)) return; // skip duplikat
-    userGuessDedup.add(dedupKey);
+    // Tolak jika user sudah pernah kirim kata yang sama di ronde ini (kecuali mode betweenle)
+    if (currentGameMode !== 'betweenle') {
+      const userId = data.uniqueId || data.nickname || 'anon';
+      const dedupKey = `${userId}:${msg}`;
+      if (userGuessDedup.has(dedupKey)) return; // skip duplikat
+      userGuessDedup.add(dedupKey);
+    }
 
     if (guessQueue.length < 50) {
       guessQueue.push({ guessWord: msg, userData: data });
@@ -5305,7 +5462,8 @@ function handleChatGuess(data) {
 }
 
 async function processQueue() {
-  if (isProcessing || guessQueue.length === 0 || isGameOver) return;
+  const isCurrentOver = (currentGameMode === 'betweenle') ? betweenleIsGameOver : isGameOver;
+  if (isProcessing || guessQueue.length === 0 || isCurrentOver) return;
   isProcessing = true;
   
   const queueLen = guessQueue.length;
@@ -5322,7 +5480,7 @@ async function processQueue() {
   }
   
   isProcessing = false;
-  if (guessQueue.length > 0 && !isGameOver) {
+  if (guessQueue.length > 0 && !isCurrentOver) {
     let nextDelay = 10;
     if (isGameAnimationsEnabled && currentGameMode !== 'squareword') {
       if (guessQueue.length <= 1) {
@@ -5518,6 +5676,11 @@ function processGuess(guessWord, userData, queueLen = 0) {
         return; // Reject silently from the board
       }
     }
+  }
+
+  if (currentGameMode === 'betweenle') {
+    processBetweenleGuess(guessWord, userData);
+    return;
   }
 
   if (currentGameMode === 'squareword') {
@@ -6510,7 +6673,7 @@ if (hostGuessBtn && hostGuessInput && hostGuessInputContainer) {
         comment: guess,
         uniqueId: 'host_offline',
         nickname: 'Host',
-        profilePictureUrl: 'assets/bg_nature.png'
+        profilePictureUrl: getHostAvatar()
       });
       hostGuessInput.value = '';
     }
@@ -9193,3 +9356,795 @@ function unlockMediaAutoplay() {
 document.addEventListener('click', unlockMediaAutoplay, { passive: true });
 document.addEventListener('touchstart', unlockMediaAutoplay, { passive: true });
 document.addEventListener('keydown', unlockMediaAutoplay, { passive: true });
+
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 12. BETWEENLE (TEBAK ABJAD KAMUS A-Z) - AUTHENTIC OFFICIAL RULES ENGINE
+// ═════════════════════════════════════════════════════════════════════════════
+
+let betweenleLetterLength = 5; // Default 5 huruf (bisa 4, 5, 6, 7)
+let betweenleLengthMode = 'fixed'; // 'fixed' atau 'random'
+let betweenleRound = 1;
+let betweenleSecretWord = '';
+let betweenleSecretIndex = -1;
+let betweenleTopBound = null; // { word, index, isInitial, user, avatar }
+let betweenleBottomBound = null; // { word, index, isInitial, user, avatar }
+let betweenleInitialWordsCount = 0;
+let betweenleCurrentWordsCount = 0;
+let betweenleSortedDicts = {}; // cache array terurut per panjang huruf
+let betweenleGuessHistory = [];
+let betweenleUserCooldown = new Map();
+let betweenleIsGameOver = false;
+let betweenleGuessCount = 0; // Jumlah tebakan valid yang dievaluasi dalam ronde ini
+
+// Queue untuk animasi tebakan masuk secara berurutan & halus
+let betweenleGuessQueue = [];
+let betweenleIsAnimating = false;
+
+// Membuka dan menutup Modal Cara Bermain Betweenle
+function openBetweenleHowToPlay() {
+  const modal = document.getElementById('betweenleHowToPlayModal');
+  if (modal) modal.style.display = 'flex';
+}
+window.openBetweenleHowToPlay = openBetweenleHowToPlay;
+
+function closeBetweenleHowToPlay() {
+  const modal = document.getElementById('betweenleHowToPlayModal');
+  if (modal) modal.style.display = 'none';
+}
+window.closeBetweenleHowToPlay = closeBetweenleHowToPlay;
+
+// Mendapatkan kamus terurut secara leksikografis (abjad A-Z)
+function getBetweenleSortedDict(length) {
+  if (betweenleSortedDicts[length] && betweenleSortedDicts[length].length > 50) {
+    return betweenleSortedDicts[length];
+  }
+
+  const wordSet = new Set();
+  if (allValidWords && allValidWords[length] && Array.isArray(allValidWords[length])) {
+    for (let i = 0; i < allValidWords[length].length; i++) {
+      const w = allValidWords[length][i];
+      if (w && w.length === length) wordSet.add(w.trim().toUpperCase());
+    }
+  }
+  if (allTargetWords && allTargetWords[length] && Array.isArray(allTargetWords[length])) {
+    for (let i = 0; i < allTargetWords[length].length; i++) {
+      const w = allTargetWords[length][i];
+      if (w && w.length === length) wordSet.add(w.trim().toUpperCase());
+    }
+  }
+  if (allValidWordsSets && allValidWordsSets[length] && allValidWordsSets[length].size > 0) {
+    allValidWordsSets[length].forEach(w => {
+      if (w && w.length === length) wordSet.add(w.trim().toUpperCase());
+    });
+  }
+  if (fullValidDictionary && fullValidDictionary.size > 0) {
+    fullValidDictionary.forEach(w => {
+      if (w && w.length === length) wordSet.add(w.trim().toUpperCase());
+    });
+  }
+
+  // Filter hanya alfabet murni A-Z dengan panjang yang tepat
+  let words = Array.from(wordSet)
+    .map(w => w.trim().toUpperCase())
+    .filter(w => w.length === length && /^[A-Z]+$/.test(w));
+
+  // PENTING: Urutkan secara leksikografis standar (A ke Z) tanpa localeCompare yang membuat urutan teracak
+  words.sort((a, b) => (a < b ? -1 : (a > b ? 1 : 0)));
+
+  if (words.length > 50) {
+    betweenleSortedDicts[length] = words;
+  }
+  console.log(`[Betweenle] Initialized sorted dictionary for length ${length}: ${words.length} words. First: ${words[0]}, Last: ${words[words.length - 1]}`);
+  return words;
+}
+
+// Mengatur panjang huruf (4, 5, 6, 7, atau acak)
+function setBetweenleLength(len) {
+  if (betweenleIsAnimating) return;
+  if (len === 'random') {
+    betweenleLengthMode = 'random';
+    const options = [4, 5, 6];
+    betweenleLetterLength = options[Math.floor(Math.random() * options.length)];
+  } else {
+    betweenleLengthMode = 'fixed';
+    betweenleLetterLength = parseInt(len);
+  }
+
+  // Mulai game baru dengan panjang huruf baru
+  betweenleGuessQueue = [];
+  betweenleIsAnimating = false;
+  startBetweenleGame();
+}
+
+// Memulai atau me-reset ronde permainan Betweenle sesuai aturan resmi
+function startBetweenleGame() {
+  // Ambil panjang kata yang diizinkan dari pengaturan game
+  try {
+    const savedLengths = JSON.parse(localStorage.getItem('allowed_lengths') || '[5,6,7,8]');
+    const validBetweenle = savedLengths.filter(l => [4, 5, 6, 7].includes(l));
+    if (validBetweenle.length > 0) {
+      betweenleLetterLength = validBetweenle[Math.floor(Math.random() * validBetweenle.length)];
+    }
+  } catch(e) {}
+
+  const activeDict = getBetweenleSortedDict(betweenleLetterLength);
+  if (!activeDict || activeDict.length < 10) {
+    console.warn(`[Betweenle] Kamus kata belum siap atau sedang dimuat, memuat ulang wordlists...`);
+    if (!wordsLoaded) {
+      const currentLang = localStorage.getItem('wordle_lang') || 'id';
+      loadWordLists(currentLang).then(() => {
+        startBetweenleGame();
+      }).catch(() => {
+        showToast(`Gagal memuat kamus kata Betweenle!`, 3000);
+      });
+      return;
+    }
+    showToast(`Kamus kata ${betweenleLetterLength} huruf tidak mencukupi!`, 3000);
+    return;
+  }
+
+  // Reset flag game over dan antrean
+  isGameOver = false;
+  betweenleIsGameOver = false;
+  isProcessing = false;
+  guessQueue = [];
+  betweenleGuessQueue = [];
+  betweenleIsAnimating = false;
+  betweenleGuessCount = 0;
+  betweenleUserCooldown.clear();
+  if (typeof userGuessDedup !== 'undefined' && userGuessDedup.clear) {
+    userGuessDedup.clear();
+  }
+
+  // Pilih kata target rahasia dari target words yang umum/dikenal
+  let chosenWord = '';
+  let targetIndex = -1;
+  const targetCandidates = (allTargetWords && allTargetWords[betweenleLetterLength] && allTargetWords[betweenleLetterLength].length > 0)
+    ? allTargetWords[betweenleLetterLength].filter(w => {
+        const idx = activeDict.indexOf(w);
+        return idx >= Math.floor(activeDict.length * 0.05) && idx <= Math.floor(activeDict.length * 0.95);
+      })
+    : [];
+
+  if (targetCandidates.length > 0) {
+    chosenWord = targetCandidates[Math.floor(Math.random() * targetCandidates.length)];
+    targetIndex = activeDict.indexOf(chosenWord);
+  } else {
+    const minIdx = Math.floor(activeDict.length * 0.1);
+    const maxIdx = Math.floor(activeDict.length * 0.9);
+    targetIndex = Math.floor(Math.random() * (maxIdx - minIdx + 1)) + minIdx;
+    chosenWord = activeDict[targetIndex];
+  }
+
+  betweenleSecretWord = chosenWord;
+  betweenleSecretIndex = targetIndex;
+
+  // Inisialisasi batas awal (A...A) dan batas akhir (Z...Z) sesuai aturan resmi Betweenle
+  betweenleTopBound = {
+    word: 'A'.repeat(betweenleLetterLength),
+    index: -1,
+    isInitial: true,
+    user: 'Kamus Awal (A...A)',
+    avatar: DICT_TOP_ICON
+  };
+
+  betweenleBottomBound = {
+    word: 'Z'.repeat(betweenleLetterLength),
+    index: activeDict.length,
+    isInitial: true,
+    user: 'Kamus Akhir (Z...Z)',
+    avatar: DICT_BOTTOM_ICON
+  };
+
+  betweenleInitialWordsCount = activeDict.length;
+  betweenleCurrentWordsCount = betweenleInitialWordsCount;
+
+  // Sinkronkan ronde dengan badge ronde di header utama
+  const roundNumEl = document.getElementById('roundNumber');
+  if (roundNumEl) roundNumEl.textContent = betweenleRound;
+
+  // Sinkronkan data-len pada board dan placeholder host
+  const mainBoard = document.querySelector('.betweenle-main-board');
+  if (mainBoard) mainBoard.setAttribute('data-len', betweenleLetterLength);
+  const hostInput = document.getElementById('hostGuessInput');
+  if (hostInput) hostInput.placeholder = `Tebak kata ${betweenleLetterLength} huruf...`;
+
+  resetBetweenleMiddleRow();
+  renderBetweenleUI();
+  console.log(`[Betweenle] Ronde ${betweenleRound} dimulai. Kata Rahasia: "${betweenleSecretWord}" (${betweenleLetterLength}H, idx: ${betweenleSecretIndex}/${activeDict.length}). Rentang awal: ${betweenleTopBound.word} - ${betweenleBottomBound.word} (${betweenleCurrentWordsCount} kata).`);
+}
+
+// Merender seluruh elemen antarmuka Betweenle
+function renderBetweenleUI() {
+  const mainBoard = document.querySelector('.betweenle-main-board');
+  if (mainBoard) mainBoard.setAttribute('data-len', betweenleLetterLength);
+
+  // 1. Batas Awal (Top Bound Row: Ubin Kata + Avatar Penebak di Kanan)
+  const topRowEl = document.getElementById('betweenleTopRow');
+  if (topRowEl && betweenleTopBound) {
+    topRowEl.setAttribute('data-len', betweenleLetterLength);
+    topRowEl.innerHTML = '';
+    for (let i = 0; i < betweenleLetterLength; i++) {
+      const tile = document.createElement('div');
+      tile.className = 'betweenle-tile';
+      tile.textContent = betweenleTopBound.word[i] || '';
+      topRowEl.appendChild(tile);
+    }
+    const topAvatar = document.createElement('img');
+    topAvatar.className = 'betweenle-avatar';
+    topAvatar.id = 'betweenleTopAvatar';
+    topAvatar.src = betweenleTopBound.avatar || DICT_TOP_ICON;
+    topAvatar.onerror = function() { this.onerror = null; this.src = DICT_TOP_ICON; };
+    topRowEl.appendChild(topAvatar);
+  }
+
+  // 2. Baris Tengah (Middle Input Row - dalam kondisi idle)
+  if (!betweenleIsAnimating) {
+    resetBetweenleMiddleRow();
+  }
+
+  // 3. Batas Akhir (Bottom Bound Row: Ubin Kata + Avatar Penebak di Kanan)
+  const bottomRowEl = document.getElementById('betweenleBottomRow');
+  if (bottomRowEl && betweenleBottomBound) {
+    bottomRowEl.setAttribute('data-len', betweenleLetterLength);
+    bottomRowEl.innerHTML = '';
+    for (let i = 0; i < betweenleLetterLength; i++) {
+      const tile = document.createElement('div');
+      tile.className = 'betweenle-tile';
+      tile.textContent = betweenleBottomBound.word[i] || '';
+      bottomRowEl.appendChild(tile);
+    }
+    const bottomAvatar = document.createElement('img');
+    bottomAvatar.className = 'betweenle-avatar';
+    bottomAvatar.id = 'betweenleBottomAvatar';
+    bottomAvatar.src = betweenleBottomBound.avatar || DICT_BOTTOM_ICON;
+    bottomAvatar.onerror = function() { this.onerror = null; this.src = DICT_BOTTOM_ICON; };
+    bottomRowEl.appendChild(bottomAvatar);
+  }
+
+  // 4. Vertical Range Track (Pin & Dot)
+  updateBetweenleTrackUI();
+
+  // 5. Alphabet Strip Tracker (A-Z)
+  updateBetweenleAlphabetUI();
+}
+
+// Reset baris tengah ke kursor menunggu (dot '•') dengan slot avatar di kanan
+function resetBetweenleMiddleRow() {
+  const middleRowEl = document.getElementById('betweenleMiddleRow');
+  const middleWrapper = document.getElementById('betweenleMiddleWrapper');
+
+  if (middleWrapper) {
+    middleWrapper.classList.remove('animating-slide-up', 'animating-slide-down', 'animating-shake', 'animating-win');
+    middleWrapper.style.transform = '';
+    middleWrapper.style.opacity = '';
+  }
+
+  if (middleRowEl) {
+    middleRowEl.setAttribute('data-len', betweenleLetterLength);
+    middleRowEl.innerHTML = '';
+    for (let i = 0; i < betweenleLetterLength; i++) {
+      const tile = document.createElement('div');
+      tile.className = 'betweenle-tile';
+      if (i === 0) {
+        tile.classList.add('has-dot');
+      }
+      middleRowEl.appendChild(tile);
+    }
+    const middleAvatar = document.createElement('img');
+    middleAvatar.className = 'betweenle-avatar idle-hidden';
+    middleAvatar.id = 'betweenleMiddleAvatar';
+    middleAvatar.src = getHostAvatar();
+    middleAvatar.onerror = function() { this.onerror = null; this.src = DEFAULT_HOST_AVATAR; };
+    middleRowEl.appendChild(middleAvatar);
+  }
+}
+
+// Format nilai persentase pada balon pin Betweenle:
+// >= 10: bilangan bulat integer (contoh: 71, 12)
+// 1.0 s.d 9.9: 1 desimal (contoh: 6.6, 2.7)
+// < 1.0: 2 desimal (contoh: 0.83)
+function formatBetweenlePinPct(pct) {
+  if (pct === null || pct === undefined || isNaN(pct)) return '?';
+  if (pct >= 10) return Math.round(pct).toString();
+  if (pct >= 1) return pct.toFixed(1);
+  return pct.toFixed(2);
+}
+
+// Memperbarui posisi slider vertikal dan balon pin persentase kamus
+function updateBetweenleTrackUI() {
+  const pinTopVal = document.getElementById('betweenlePinTopVal');
+  const pinBottomVal = document.getElementById('betweenlePinBottomVal');
+  const trackDot = document.getElementById('betweenleTrackDot');
+
+  if (!betweenleTopBound || !betweenleBottomBound) return;
+  const activeDict = getBetweenleSortedDict(betweenleLetterLength);
+  const totalDictWords = activeDict ? activeDict.length : 1000;
+
+  // Jika ronde baru dimulai dan belum ada tebakan yang masuk: tampilkan tanda '?'
+  if (betweenleGuessCount === 0) {
+    if (pinTopVal) pinTopVal.textContent = '?';
+    if (pinBottomVal) pinBottomVal.textContent = '?';
+    if (trackDot) {
+      trackDot.style.top = '50%';
+      trackDot.classList.remove('is-win');
+    }
+    return;
+  }
+
+  // Jarak persentase (%) terhadap seluruh kamus kata (sesuai aturan resmi Betweenle)
+  let distToTop = 0;
+  if (betweenleTopBound.isInitial) {
+    distToTop = betweenleSecretIndex;
+  } else {
+    distToTop = Math.max(0, betweenleSecretIndex - betweenleTopBound.index);
+  }
+
+  let distToBottom = 0;
+  if (betweenleBottomBound.isInitial) {
+    distToBottom = Math.max(0, totalDictWords - 1 - betweenleSecretIndex);
+  } else {
+    distToBottom = Math.max(0, betweenleBottomBound.index - betweenleSecretIndex);
+  }
+
+  const topPct = (distToTop / totalDictWords) * 100;
+  const bottomPct = (distToBottom / totalDictWords) * 100;
+
+  if (pinTopVal) pinTopVal.textContent = formatBetweenlePinPct(topPct);
+  if (pinBottomVal) pinBottomVal.textContent = formatBetweenlePinPct(bottomPct);
+
+  if (trackDot) {
+    if (betweenleIsGameOver) {
+      trackDot.classList.add('is-win');
+    } else {
+      trackDot.classList.remove('is-win');
+      const sum = topPct + bottomPct;
+      if (sum > 0) {
+        // Rasio jarak: semakin kecil bottomPct (semakin dekat ke bawah), ratio makin mendekati 1
+        const ratio = topPct / sum;
+        // Rentang pergerakan dot pada rel vertikal (15% s.d 85% agar pas di antara balon pin)
+        const clampedPct = Math.min(85, Math.max(15, 15 + ratio * 70));
+        trackDot.style.top = `${clampedPct}%`;
+      } else {
+        trackDot.style.top = '50%';
+      }
+    }
+  }
+}
+
+// Memperbarui deretan huruf abjad A-Z (menyalakan huruf yang masih valid)
+function updateBetweenleAlphabetUI() {
+  const row1 = document.getElementById('betweenleAlphaRow1');
+  const row2 = document.getElementById('betweenleAlphaRow2');
+  if (!row1 || !row2 || !betweenleTopBound || !betweenleBottomBound) return;
+
+  const topChar = betweenleTopBound.word[0];
+  const bottomChar = betweenleBottomBound.word[0];
+
+  const lettersRow1 = 'ABCDEFGHIJKLM'.split('');
+  const lettersRow2 = 'NOPQRSTUVWXYZ'.split('');
+
+  function renderRow(letters, targetEl) {
+    targetEl.innerHTML = '';
+    letters.forEach(ch => {
+      const chip = document.createElement('div');
+      chip.className = 'betweenle-alpha-chip';
+      chip.textContent = ch;
+
+      if (ch === topChar || ch === bottomChar) {
+        chip.classList.add('is-bound');
+      } else if (ch > topChar && ch < bottomChar) {
+        chip.classList.add('in-range');
+      } else {
+        chip.classList.add('out-of-range');
+      }
+
+      targetEl.appendChild(chip);
+    });
+  }
+
+  renderRow(lettersRow1, row1);
+  renderRow(lettersRow2, row2);
+}
+
+// Memperbarui teks petunjuk kedekatan
+function updateBetweenleProximityHint() {
+  const proxEl = document.getElementById('betweenleProximityText');
+  if (!proxEl) return;
+
+  if (betweenleIsGameOver) {
+    proxEl.textContent = `KATA RAHASIA BERHASIL DITEMUKAN: ${betweenleSecretWord}!`;
+    return;
+  }
+
+  if (betweenleGuessCount === 0) {
+    proxEl.textContent = `TEBAK KATA ${betweenleLetterLength} HURUF DI ANTARA ${betweenleTopBound.word} - ${betweenleBottomBound.word}`;
+    return;
+  }
+
+  const activeDict = getBetweenleSortedDict(betweenleLetterLength);
+  const totalDictWords = activeDict ? activeDict.length : 1000;
+  const distToTop = betweenleTopBound.isInitial ? betweenleSecretIndex : (betweenleSecretIndex - betweenleTopBound.index);
+  const distToBottom = betweenleBottomBound.isInitial ? (totalDictWords - 1 - betweenleSecretIndex) : (betweenleBottomBound.index - betweenleSecretIndex);
+
+  if (distToTop < distToBottom) {
+    proxEl.textContent = `TITIK ORANYE: LEBIH DEKAT KE KATA ATAS (${distToTop} kata jaraknya)`;
+  } else if (distToBottom < distToTop) {
+    proxEl.textContent = `TITIK ORANYE: LEBIH DEKAT KE KATA BAWAH (${distToBottom} kata jaraknya)`;
+  } else {
+    proxEl.textContent = `TITIK ORANYE: TEPAT DI TENGAH-TENGAH (${betweenleCurrentWordsCount} kata tersisa)`;
+  }
+}
+
+// Menambahkan entri ke feed tebakan penonton (opsional jika feed diaktifkan)
+function addBetweenleFeedItem(item) {
+  const feedList = document.getElementById('betweenleFeedList');
+  if (!feedList) return;
+
+  const emptyEl = feedList.querySelector('.betweenle-feed-empty');
+  if (emptyEl) emptyEl.remove();
+
+  const el = document.createElement('div');
+  el.className = 'betweenle-feed-item';
+  el.innerHTML = `
+    <div class="betweenle-feed-left">
+      <span class="betweenle-feed-word">${item.word}</span>
+      <span class="betweenle-feed-user">${item.user}</span>
+    </div>
+    <div class="betweenle-feed-right">
+      <span class="betweenle-feed-badge ${item.badgeType}">${item.badgeText}</span>
+      ${item.pts > 0 ? `<span class="betweenle-feed-pts">+${item.pts} Pts</span>` : ''}
+    </div>
+  `;
+
+  feedList.insertBefore(el, feedList.firstChild);
+
+  while (feedList.children.length > 7) {
+    feedList.removeChild(feedList.lastChild);
+  }
+}
+
+// Menerima tebakan dan memasukkannya ke antrean animasi
+function processBetweenleGuess(guessWord, userData) {
+  if (currentGameMode !== 'betweenle' || betweenleIsGameOver) return;
+  if (!guessWord) return;
+
+  const word = guessWord.trim().toUpperCase();
+  const userId = userData.userId || userData.uniqueId || 'host';
+  const userName = userData.nickname || userData.uniqueId || 'Pemain';
+  const isHost = (userId === 'host' || userId === 'host_offline' || (typeof userId === 'string' && userId.toLowerCase().includes('host')));
+  const userAvatar = (userData && userData.profilePictureUrl && userData.profilePictureUrl !== 'assets/bg_nature.png') ? userData.profilePictureUrl : (isHost ? getHostAvatar() : DEFAULT_HOST_AVATAR);
+  const now = Date.now();
+
+  // 1. Validasi panjang huruf harus sesuai panjang aktif
+  if (word.length !== betweenleLetterLength) {
+    if (isHost) {
+      showToast(`Kata harus ${betweenleLetterLength} huruf!`, 2000);
+    }
+    return;
+  }
+
+  // 2. Cooldown 1 detik per user (kecuali host)
+  if (!isHost) {
+    if (betweenleUserCooldown.has(userId) && (now - betweenleUserCooldown.get(userId) < 1000)) {
+      return;
+    }
+    betweenleUserCooldown.set(userId, now);
+  }
+
+  // 3. Validasi kamus baku
+  const dict = getBetweenleSortedDict(betweenleLetterLength);
+  const guessIndex = dict.indexOf(word);
+  if (guessIndex === -1) {
+    console.log(`[Betweenle] Kata "${word}" tidak ditemukan di kamus baku (${dict.length} kata)`);
+    if (isHost) {
+      showToast(`"${word}" bukan kata baku di kamus!`, 2500);
+    }
+    triggerBetweenleShakeAnimation({
+      word,
+      userName,
+      userAvatar,
+      userId,
+      isHost
+    }, `"${word}" bukan kata baku di kamus!`);
+    return;
+  }
+
+  // Masukkan tebakan ke antrean animasi
+  betweenleGuessQueue.push({
+    word,
+    guessIndex,
+    userId,
+    userName,
+    userAvatar,
+    userData,
+    isHost
+  });
+
+  triggerBetweenleNextAnimation();
+}
+
+// Mengeksekusi animasi tebakan satu per satu secara berurutan & halus
+function triggerBetweenleNextAnimation() {
+  if (betweenleIsAnimating || betweenleGuessQueue.length === 0 || betweenleIsGameOver) {
+    return;
+  }
+
+  const item = betweenleGuessQueue.shift();
+  betweenleIsAnimating = true;
+
+  const middleWrapper = document.getElementById('betweenleMiddleWrapper');
+  const middleRowEl = document.getElementById('betweenleMiddleRow');
+  const guessMeta = document.getElementById('betweenleGuessMeta');
+  const guessAvatar = document.getElementById('betweenleGuessAvatar');
+  const guessUser = document.getElementById('betweenleGuessUser');
+  const guessStatus = document.getElementById('betweenleGuessStatus');
+
+  // 1. Masukkan kata ke baris tengah dengan ubin oranye
+  const effectiveAvatar = item.userAvatar || (item.isHost ? getHostAvatar() : DEFAULT_HOST_AVATAR);
+  if (guessAvatar) {
+    guessAvatar.src = effectiveAvatar;
+    guessAvatar.onerror = function() { this.onerror = null; this.src = (item.isHost ? getHostAvatar() : DEFAULT_HOST_AVATAR); };
+  }
+  if (guessUser) guessUser.textContent = item.userName;
+  if (guessStatus) guessStatus.textContent = '';
+  if (guessMeta) guessMeta.style.opacity = '1';
+
+  if (middleRowEl) {
+    middleRowEl.innerHTML = '';
+    for (let i = 0; i < item.word.length; i++) {
+      const tile = document.createElement('div');
+      tile.className = 'betweenle-tile filled-tile';
+      tile.textContent = item.word[i];
+      middleRowEl.appendChild(tile);
+    }
+    const middleAvatar = document.createElement('img');
+    middleAvatar.className = 'betweenle-avatar spring-in';
+    middleAvatar.id = 'betweenleMiddleAvatar';
+    middleAvatar.src = effectiveAvatar;
+    middleAvatar.onerror = function() { this.onerror = null; this.src = (item.isHost ? getHostAvatar() : DEFAULT_HOST_AVATAR); };
+    middleRowEl.appendChild(middleAvatar);
+  }
+
+  // Jeda visual 400ms agar pemain melihat kata tebakan oranye di tengah sebelum bergerak
+  setTimeout(() => {
+    // KASUS A: KEMENANGAN / JACKPOT!
+    if (item.word === betweenleSecretWord) {
+      betweenleIsGameOver = true;
+      betweenleGuessCount++;
+      const jackpotPts = 100;
+
+      if (middleWrapper) middleWrapper.classList.add('animating-win');
+      const trackDot = document.getElementById('betweenleTrackDot');
+      if (trackDot) trackDot.classList.add('is-win');
+
+      if (typeof addPoints === 'function') {
+        addPoints(item.userId, jackpotPts, item.userData);
+      }
+      if (window.sounds && typeof window.sounds.playBetweenleWin === 'function') {
+        window.sounds.playBetweenleWin();
+      }
+
+      addBetweenleFeedItem({
+        word: item.word,
+        user: item.userName,
+        badgeType: 'badge-win',
+        badgeText: 'MENANG!',
+        pts: jackpotPts
+      });
+
+      showToast(`${item.userName} MENEBAK TEPAT: ${item.word}! (+100 Poin)`, 4000);
+      updateBetweenleTrackUI();
+      updateBetweenleProximityHint();
+
+      // Tampilkan Win Overlay estetis setelah ubin hijau beranimasi (1.2 detik)
+      setTimeout(() => {
+        const winAvatar = document.getElementById('winAvatar');
+        if (winAvatar) {
+          const effectiveAvatar = item.userAvatar || (item.isHost ? getHostAvatar() : DEFAULT_HOST_AVATAR);
+          winAvatar.src = effectiveAvatar;
+          winAvatar.onerror = function() { this.onerror = null; this.src = (item.isHost ? getHostAvatar() : DEFAULT_HOST_AVATAR); };
+        }
+        const winName = document.getElementById('winName');
+        if (winName) winName.textContent = item.userName;
+        const winPts = document.getElementById('winPts');
+        if (winPts) winPts.innerHTML = `🪙 +${jackpotPts} Pts (Jackpot)`;
+        const winWord = document.getElementById('winWord');
+        if (winWord) {
+          winWord.style.display = '';
+          winWord.textContent = betweenleSecretWord;
+        }
+
+        triggerWinTransition(4500, false);
+      }, 1200);
+      return;
+    }
+
+    // KASUS B: MEMPERSEMPIT BATAS AWAL (Meluncur ke ATAS)
+    if (item.guessIndex < betweenleSecretIndex) {
+      if (item.guessIndex > betweenleTopBound.index) {
+        betweenleGuessCount++;
+        const wordsCut = item.guessIndex - Math.max(0, betweenleTopBound.index);
+        const isBigCut = wordsCut >= (betweenleCurrentWordsCount * 0.4);
+        const earnedPts = isBigCut ? 10 : 5;
+
+        if (middleWrapper) middleWrapper.classList.add('animating-slide-up');
+
+        setTimeout(() => {
+          betweenleTopBound = {
+            word: item.word,
+            index: item.guessIndex,
+            isInitial: false,
+            user: item.userName,
+            avatar: item.userAvatar
+          };
+          betweenleCurrentWordsCount = betweenleBottomBound.index - betweenleTopBound.index - 1;
+
+          if (typeof addPoints === 'function') {
+            addPoints(item.userId, earnedPts, item.userData);
+          }
+
+          if (window.sounds) {
+            if (betweenleCurrentWordsCount <= 10 && typeof window.sounds.playBetweenleCloseRange === 'function') {
+              window.sounds.playBetweenleCloseRange();
+            } else if (typeof window.sounds.playBetweenleNarrow === 'function') {
+              window.sounds.playBetweenleNarrow();
+            }
+          }
+
+          addBetweenleFeedItem({
+            word: item.word,
+            user: item.userName,
+            badgeType: 'badge-narrow-top',
+            badgeText: 'BATAS AWAL',
+            pts: earnedPts
+          });
+
+          // Efek flash pop pada baris batas atas
+          const topWrapper = document.querySelector('.top-bound-wrapper');
+          if (topWrapper) {
+            topWrapper.classList.add('bound-flashing');
+            setTimeout(() => topWrapper.classList.remove('bound-flashing'), 400);
+          }
+
+          betweenleIsAnimating = false;
+          if (middleWrapper) {
+            middleWrapper.classList.remove('animating-slide-up');
+          }
+          resetBetweenleMiddleRow();
+          renderBetweenleUI();
+
+          setTimeout(triggerBetweenleNextAnimation, 120);
+        }, 440);
+        return;
+      } else {
+        // Lewat Batas Awal (Di luar rentang)
+        triggerBetweenleShakeAnimation(item, `"${item.word}" sebelum batas awal "${betweenleTopBound.word}"`);
+        return;
+      }
+    }
+
+    // KASUS C: MEMPERSEMPIT BATAS AKHIR (Meluncur ke BAWAH)
+    if (item.guessIndex > betweenleSecretIndex) {
+      if (item.guessIndex < betweenleBottomBound.index) {
+        betweenleGuessCount++;
+        const dictLen = getBetweenleSortedDict(betweenleLetterLength).length;
+        const wordsCut = Math.min(betweenleBottomBound.index, dictLen) - item.guessIndex;
+        const isBigCut = wordsCut >= (betweenleCurrentWordsCount * 0.4);
+        const earnedPts = isBigCut ? 10 : 5;
+
+        if (middleWrapper) middleWrapper.classList.add('animating-slide-down');
+
+        setTimeout(() => {
+          betweenleBottomBound = {
+            word: item.word,
+            index: item.guessIndex,
+            isInitial: false,
+            user: item.userName,
+            avatar: item.userAvatar
+          };
+          betweenleCurrentWordsCount = betweenleBottomBound.index - betweenleTopBound.index - 1;
+
+          if (typeof addPoints === 'function') {
+            addPoints(item.userId, earnedPts, item.userData);
+          }
+
+          if (window.sounds) {
+            if (betweenleCurrentWordsCount <= 10 && typeof window.sounds.playBetweenleCloseRange === 'function') {
+              window.sounds.playBetweenleCloseRange();
+            } else if (typeof window.sounds.playBetweenleNarrow === 'function') {
+              window.sounds.playBetweenleNarrow();
+            }
+          }
+
+          addBetweenleFeedItem({
+            word: item.word,
+            user: item.userName,
+            badgeType: 'badge-narrow-bottom',
+            badgeText: 'BATAS AKHIR',
+            pts: earnedPts
+          });
+
+          // Efek flash pop pada baris batas bawah
+          const bottomWrapper = document.querySelector('.bottom-bound-wrapper');
+          if (bottomWrapper) {
+            bottomWrapper.classList.add('bound-flashing');
+            setTimeout(() => bottomWrapper.classList.remove('bound-flashing'), 400);
+          }
+
+          betweenleIsAnimating = false;
+          if (middleWrapper) {
+            middleWrapper.classList.remove('animating-slide-down');
+          }
+          resetBetweenleMiddleRow();
+          renderBetweenleUI();
+
+          setTimeout(triggerBetweenleNextAnimation, 120);
+        }, 440);
+        return;
+      } else {
+        // Lewat Batas Akhir (Di luar rentang)
+        triggerBetweenleShakeAnimation(item, `"${item.word}" sesudah batas akhir "${betweenleBottomBound.word}"`);
+        return;
+      }
+    }
+  }, 400);
+}
+
+// Animasi getar untuk tebakan di luar rentang atau tidak valid
+function triggerBetweenleShakeAnimation(item, toastMsg) {
+  const middleWrapper = document.getElementById('betweenleMiddleWrapper');
+  const middleRowEl = document.getElementById('betweenleMiddleRow');
+
+  if (middleRowEl && item && item.word) {
+    middleRowEl.innerHTML = '';
+    for (let i = 0; i < item.word.length; i++) {
+      const tile = document.createElement('div');
+      tile.className = 'betweenle-tile';
+      tile.textContent = item.word[i];
+      middleRowEl.appendChild(tile);
+    }
+    const middleAvatar = document.createElement('img');
+    middleAvatar.className = 'betweenle-avatar';
+    middleAvatar.id = 'betweenleMiddleAvatar';
+    const effectiveAvatar = item.userAvatar || (item.isHost ? getHostAvatar() : DEFAULT_HOST_AVATAR);
+    middleAvatar.src = effectiveAvatar;
+    middleAvatar.onerror = function() { this.onerror = null; this.src = (item.isHost ? getHostAvatar() : DEFAULT_HOST_AVATAR); };
+    middleRowEl.appendChild(middleAvatar);
+  }
+
+  if (middleWrapper) middleWrapper.classList.add('animating-shake');
+
+  if (window.sounds && typeof window.sounds.playBetweenleOutOfRange === 'function') {
+    window.sounds.playBetweenleOutOfRange();
+  }
+
+  addBetweenleFeedItem({
+    word: item.word,
+    user: item.userName,
+    badgeType: 'badge-out',
+    badgeText: 'LEWAT BATAS',
+    pts: 0
+  });
+
+  const isHost = (item.userId === 'host' || item.userId === 'host_offline' || (typeof item.userId === 'string' && item.userId.toLowerCase().includes('host')));
+  if (isHost && toastMsg) {
+    showToast(toastMsg, 2500);
+  }
+
+  setTimeout(() => {
+    resetBetweenleMiddleRow();
+    betweenleIsAnimating = false;
+    setTimeout(triggerBetweenleNextAnimation, 120);
+  }, 520);
+}
+
+// Inisialisasi sinkronisasi Avatar Host saat halaman siap
+if (typeof syncHostAvatarUI === 'function') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', syncHostAvatarUI);
+  } else {
+    syncHostAvatarUI();
+  }
+}

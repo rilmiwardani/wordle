@@ -2323,6 +2323,35 @@ header {
   gap: 10px;
 }
 
+.host-avatar-btn-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(56, 189, 248, 0.7);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), 0 0 12px rgba(56, 189, 248, 0.35);
+  transition: all 0.3s;
+  background: rgba(0, 0, 0, 0.5);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.host-avatar-btn-wrap:hover {
+  transform: scale(1.1);
+  border-color: #38bdf8;
+  box-shadow: 0 4px 15px rgba(56, 189, 248, 0.65);
+}
+
+.host-control-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
 .host-music-btn {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -3756,6 +3785,7 @@ header {
 .badge-wordladder { background: rgba(99, 102, 241, 0.18); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); }
 .badge-squareword { background: rgba(20, 184, 166, 0.18); color: #2dd4bf; border: 1px solid rgba(20, 184, 166, 0.3); }
 .badge-colorfit { background: rgba(244, 63, 94, 0.18); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
+.badge-betweenle { background: rgba(2, 132, 199, 0.18); color: #38bdf8; border: 1px solid rgba(2, 132, 199, 0.35); }
 
 .game-card-text {
   display: flex;
@@ -4281,36 +4311,546 @@ body.no-animations .win-wave {
   border: 2px solid rgba(255, 255, 255, 0.1);
 }
 
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   12. BETWEENLE (TEBAK ABJAD KAMUS A-Z) - AUTHENTIC OFFICIAL DESIGN
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+.betweenle-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  gap: 12px;
+  padding: 4px 8px;
+  box-sizing: border-box;
+}
+
+/* Action Bar with Cara Bermain Button */
+.betweenle-action-bar {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  max-width: 380px;
+}
+
+.betweenle-help-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+  font-family: 'Outfit', sans-serif;
+}
+
+.betweenle-help-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Main Board: Left Vertical Tracker + Right 3-Row Tiles */
+.betweenle-main-board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 410px;
+  position: relative;
+  padding: 4px 0;
+}
+
+/* Left Vertical Range Track */
+.betweenle-track-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  width: 44px;
+  height: 156px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.betweenle-main-board[data-len="4"] .betweenle-track-col { height: 180px; }
+.betweenle-main-board[data-len="5"] .betweenle-track-col { height: 156px; }
+.betweenle-main-board[data-len="6"] .betweenle-track-col { height: 138px; }
+.betweenle-main-board[data-len="7"] .betweenle-track-col { height: 123px; }
+
+.betweenle-track-pin {
+  background: #0284c7;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 4px 6px;
+  border-radius: 6px;
+  min-width: 38px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: 0.3px;
+  z-index: 2;
+}
+
+.betweenle-track-pin.pin-top::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px 4px 0;
+  border-style: solid;
+  border-color: #0284c7 transparent;
+}
+
+.betweenle-track-pin.pin-bottom::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 0 4px 5px;
+  border-style: solid;
+  border-color: transparent transparent #0284c7;
+}
+
+.betweenle-track-line {
+  width: 4px;
+  flex: 1;
+  background: #0284c7;
+  border-radius: 2px;
+  position: relative;
+  margin: 4px 0;
+}
+
+.betweenle-track-dot {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  background: #f97316;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.85);
+  transition: top 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 3;
+}
+
+.betweenle-track-dot.is-win {
+  background: #22c55e !important;
+  box-shadow: 0 0 14px rgba(34, 197, 94, 0.95) !important;
+}
+
+/* Right: 3-Row Tile Column (Wordle-Style Compact 6px Gap) */
+.betweenle-tiles-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  max-width: 345px;
+  position: relative;
+  margin: 0;
+  padding: 0;
+}
+
+.betweenle-row-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+}
+
+.betweenle-bound-meta {
+  display: none !important;
+}
+
+.betweenle-meta-user {
+  display: none !important;
+}
+
+.betweenle-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+/* Square Letter Tile */
+.betweenle-tile {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 900;
+  border-radius: 6px;
+  font-family: 'Outfit', sans-serif;
+  text-transform: uppercase;
+  user-select: none;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+/* 4-letter to 7-letter responsive tile & avatar sizes */
+.betweenle-row[data-len="4"] .betweenle-tile,
+.betweenle-row[data-len="4"] .betweenle-avatar { width: 56px; height: 56px; font-size: 28px; }
+
+.betweenle-row[data-len="5"] .betweenle-tile,
+.betweenle-row[data-len="5"] .betweenle-avatar { width: 48px; height: 48px; font-size: 24px; }
+
+.betweenle-row[data-len="6"] .betweenle-tile,
+.betweenle-row[data-len="6"] .betweenle-avatar { width: 42px; height: 42px; font-size: 21px; }
+
+.betweenle-row[data-len="7"] .betweenle-tile,
+.betweenle-row[data-len="7"] .betweenle-avatar { width: 37px; height: 37px; font-size: 19px; }
+
+/* Guesser Avatar (Right of the tiles - Wordle Style) */
+.betweenle-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.32);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  object-fit: cover;
+  background: #1e293b;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  transition: opacity 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.betweenle-avatar.idle-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.betweenle-avatar.spring-in {
+  animation: avatarSpringIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes avatarSpringIn {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Bound Tiles (Solid Vibrant Sky Blue - Official Betweenle) */
+.betweenle-bound-row .betweenle-tile {
+  background: #0284c7;
+  border: 2px solid #0284c7;
+  color: #ffffff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.bound-flashing .betweenle-tile {
+  animation: boundFlashPop 0.35s ease-out;
+}
+
+@keyframes boundFlashPop {
+  0% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.08); filter: brightness(1.35); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+/* Middle Active Guess Row */
+.middle-guess-wrapper {
+  position: relative;
+  z-index: 10;
+}
+
+.betweenle-middle-row .betweenle-tile {
+  background: rgba(255, 255, 255, 0.04);
+  border: 2px solid #475569;
+  color: #cbd5e1;
+}
+
+/* Dot cursor on active waiting tile */
+.betweenle-middle-row .betweenle-tile.has-dot::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: #64748b;
+  border-radius: 50%;
+  animation: dotPulse 1.2s infinite ease-in-out;
+}
+
+@keyframes dotPulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* Active Guess Tiles: Vibrant Orange with white text (Official Betweenle Rule 1 & 3) */
+.betweenle-middle-row .betweenle-tile.filled-tile {
+  background: #ea580c;
+  border: 2px solid #ea580c;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.45);
+  animation: tileLetterPop 0.15s ease-out;
+}
+
+@keyframes tileLetterPop {
+  0% { transform: scale(0.85); opacity: 0; }
+  70% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Seamless Sliding Animations matching the exact 54px distance (48px tile + 6px gap) */
+.middle-guess-wrapper.animating-slide-up {
+  animation: slideRowUp 0.44s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes slideRowUp {
+  0% { transform: translateY(0); opacity: 1; }
+  80% { transform: translateY(-54px); opacity: 0.95; }
+  100% { transform: translateY(-54px); opacity: 0; }
+}
+
+.middle-guess-wrapper.animating-slide-down {
+  animation: slideRowDown 0.44s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes slideRowDown {
+  0% { transform: translateY(0); opacity: 1; }
+  80% { transform: translateY(54px); opacity: 0.95; }
+  100% { transform: translateY(54px); opacity: 0; }
+}
+
+/* Out of bounds shake */
+.middle-guess-wrapper.animating-shake {
+  animation: rowShake 0.45s ease-in-out;
+}
+
+.middle-guess-wrapper.animating-shake .betweenle-tile {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: #ef4444 !important;
+  color: #fca5a5 !important;
+}
+
+@keyframes rowShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+/* Win Jackpot Flip */
+.middle-guess-wrapper.animating-win .betweenle-tile {
+  animation: winTileFlip 0.5s ease forwards;
+}
+
+@keyframes winTileFlip {
+  0% { transform: rotateX(0); }
+  50% { transform: rotateX(90deg); }
+  100% {
+    transform: rotateX(0);
+    background: #16a34a;
+    border-color: #16a34a;
+    color: #ffffff;
+    box-shadow: 0 0 16px rgba(22, 163, 74, 0.7);
+  }
+}
+
+/* Alphabet Strip Tracker (A-Z) */
+.betweenle-alphabet-tracker {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  width: 100%;
+  margin: 4px 0;
+  user-select: none;
+}
+
+.betweenle-alpha-row {
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+}
+
+.betweenle-alpha-chip {
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  font-family: 'Outfit', sans-serif;
+  transition: all 0.25s ease;
+  box-sizing: border-box;
+}
+
+/* Valid active range (warm beige/brown like the original) */
+.betweenle-alpha-chip.in-range {
+  background: #d6bfa8;
+  color: #3b2210;
+  font-weight: 900;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Out of active bounds (dimmed) */
+.betweenle-alpha-chip.out-of-range {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.22);
+}
+
+/* Bound first letter chips */
+.betweenle-alpha-chip.is-bound {
+  background: #0284c7;
+  color: #ffffff;
+  font-weight: 900;
+  transform: scale(1.15);
+  box-shadow: 0 0 6px rgba(2, 132, 199, 0.6);
+}
+
+/* Betweenle Live Guess Feed */
+.betweenle-feed-container {
+  width: 100%;
+  max-width: 380px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  margin-top: 6px;
+}
+
+.betweenle-feed-title {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #94a3b8;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.betweenle-feed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 110px;
+  overflow-y: auto;
+}
+
+.betweenle-feed-empty {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  text-align: center;
+  padding: 8px 0;
+  font-style: italic;
+}
+
+.betweenle-feed-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 4px 8px;
+  animation: feedItemSlideIn 0.25s ease-out;
+}
+
+@keyframes feedItemSlideIn {
+  0% { opacity: 0; transform: translateY(-6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.betweenle-feed-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.betweenle-feed-word {
+  font-weight: 800;
+  font-size: 13px;
+  color: #ffffff;
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: 0.5px;
+}
+
+.betweenle-feed-user {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.betweenle-feed-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.betweenle-feed-badge {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.betweenle-feed-badge.badge-narrow-top {
+  background: rgba(2, 132, 199, 0.2);
+  color: #38bdf8;
+  border: 1px solid rgba(2, 132, 199, 0.4);
+}
+
+.betweenle-feed-badge.badge-narrow-bottom {
+  background: rgba(168, 85, 247, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.4);
+}
+
+.betweenle-feed-badge.badge-out {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.betweenle-feed-badge.badge-win {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.betweenle-feed-pts {
+  font-size: 11px;
+  font-weight: 800;
+  color: #facc15;
+}
+
+
 /* ═════════════════════════════════════════════════════════════════════════════
    ⚡ MOBILE & LOW-POWER BATTERY SAVER OPTIMIZATION (ANTI-OVERHEATING & DINGIN)
    ═════════════════════════════════════════════════════════════════════════════ */
 
-/* 1. Otomatis Aktif di Layar Ponsel (width <= 600px) */
+/* 1. Mode Ringan di Layar Ponsel (width <= 600px) - Efek blur tetap aktif kecuali Mode Hemat Daya dinyalakan */
 @media (max-width: 600px) {
-  /* Hilangkan backdrop-filter blur yang menguras GPU 100% di HP */
-  *, *::before, *::after {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-
-  /* Gantikan efek kaca buram dengan latar solid transparan ringan */
-  .modal-content,
-  .leaderboard-container,
-  .music-widget,
-  .settings-modal,
-  .overlay,
-  .toast,
-  .music-notif,
-  .supporter-podium-card,
-  .game-select-overlay,
-  .login-overlay,
-  .music-modal-content {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    background-color: rgba(16, 18, 27, 0.96) !important;
-  }
-
-  /* Matikan animasi infinite equalizer dan piringan musik yang memaksa 60 FPS non-stop */
   .music-equalizer span {
     animation: none !important;
     transform: scaleY(0.4) !important;
@@ -4318,17 +4858,15 @@ body.no-animations .win-wave {
   .music-vinyl.playing {
     animation: none !important;
   }
-
-  /* Kurangi beban render bayangan berlebih di HP */
-  .tile, .guesser-avatar, .modal-content {
+  .tile, .guesser-avatar {
     box-shadow: none !important;
   }
 }
 
 /* 2. Mode Hemat Daya Manual (Bisa diaktifkan via Pengaturan di PC maupun HP) */
-body.low-power-mode *,
-body.low-power-mode *::before,
-body.low-power-mode *::after {
+body.low-power-mode *:not(.glass-overlay),
+body.low-power-mode *:not(.glass-overlay)::before,
+body.low-power-mode *:not(.glass-overlay)::after {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }

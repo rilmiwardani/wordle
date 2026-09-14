@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=overlays-content">
   <title>TikTok Live Games</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=53">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
   <script src="https://www.youtube.com/iframe_api"></script>
@@ -20,7 +20,7 @@
   <div class="game-select-overlay" id="gameSelectOverlay">
     <div class="game-select-container">
       <div class="game-select-header">
-        <div class="game-select-badge">TIKTOK LIVE PARTY • 11 GAMES</div>
+        <div class="game-select-badge">TIKTOK LIVE PARTY • 12 GAMES</div>
         <h1 class="game-select-title">PILIH PERMAINAN</h1>
         <p class="game-select-subtitle" id="gameSelectSubtitle">Pilih mode tebak kata untuk dimainkan bersama penonton di live chat TikTok</p>
       </div>
@@ -194,6 +194,20 @@
             <div class="card-body">
               <div class="card-top-row">
                 <span class="card-title">WORD LADDER</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 12. Betweenle -->
+          <div class="game-card card-nyt-betweenle" onclick="selectGame('betweenle')" id="cardBetweenle">
+            <div class="card-visual" style="display: flex; align-items: center; justify-content: center; gap: 4px;">
+              <span class="mini-tile" style="background: #0284c7; color: white; width: 22px; height: 22px; font-size: 11px; font-weight: 900; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center;">A</span>
+              <span style="color: #f97316; font-size: 13px; font-weight: 900;">⬍</span>
+              <span class="mini-tile" style="background: #0284c7; color: white; width: 22px; height: 22px; font-size: 11px; font-weight: 900; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center;">Z</span>
+            </div>
+            <div class="card-body">
+              <div class="card-top-row">
+                <span class="card-title">BETWEENLE</span>
               </div>
             </div>
           </div>
@@ -465,7 +479,7 @@
                   </div>
 
                   <!-- Color Fit -->
-                  <div class="game-card" data-value="colorfit" onclick="selectCustomGame('colorfit', event)" style="grid-column: span 2;">
+                  <div class="game-card" data-value="colorfit" onclick="selectCustomGame('colorfit', event)">
                     <div class="game-card-icon badge-colorfit">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
@@ -476,6 +490,21 @@
                     <div class="game-card-text">
                       <div class="game-card-title">Color Fit</div>
                       <div class="game-card-desc">Warna & Huruf Mastermind</div>
+                    </div>
+                  </div>
+
+                  <!-- Betweenle -->
+                  <div class="game-card" data-value="betweenle" onclick="selectCustomGame('betweenle', event)">
+                    <div class="game-card-icon badge-betweenle">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="3" x2="12" y2="21"></line>
+                        <polyline points="8 7 12 3 16 7"></polyline>
+                        <polyline points="8 17 12 21 16 17"></polyline>
+                      </svg>
+                    </div>
+                    <div class="game-card-text">
+                      <div class="game-card-title">Betweenle</div>
+                      <div class="game-card-desc">Tebak di Antara Kata (A-Z)</div>
                     </div>
                   </div>
                 </div>
@@ -828,6 +857,29 @@
               </div>
             </div>
 
+            <!-- Group: 👤 Profil & Avatar Host -->
+            <div class="settings-group">
+              <div class="settings-group-header" onclick="toggleSettingsGroup(this, event)">
+                <span><i class="fa-solid fa-user-gear" style="color: #38bdf8; margin-right: 8px;"></i> Profil & Avatar Host</span>
+                <span class="arrow">▼</span>
+              </div>
+              <div class="settings-group-content" style="padding: 10px 12px;">
+                <div style="font-size: 10px; color: #aaa; margin-bottom: 8px; font-weight: 700; text-transform: uppercase; text-align: left;">Avatar Host Offline / Kustom</div>
+                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                  <img id="hostAvatarPreview" src="" alt="Host Preview" style="width: 46px; height: 46px; border-radius: 50%; object-fit: cover; border: 2px solid #38bdf8; background: #111; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.4);">
+                  <div style="flex: 1; text-align: left;">
+                    <div style="font-size: 12px; color: #fff; font-weight: 700;">Foto Profil Host</div>
+                    <div style="font-size: 10px; color: #94a3b8; line-height: 1.3;">Digunakan saat menebak offline di Wordle, Betweenle, Word500, dll.</div>
+                  </div>
+                </div>
+                <input type="text" id="hostAvatarUrlInput" class="custom-input" placeholder="Masukkan URL Foto Profil (https://...)" oninput="const p = document.getElementById('hostAvatarPreview'); if(p && this.value.trim()) p.src = this.value.trim();" onkeyup="if(event.key === 'Enter') saveHostAvatarFromInput();" style="width: 100%; margin-bottom: 8px; padding: 7px 10px; border-radius: 6px; border: 1px solid #555; background: #1a1a1a; color: #fff; font-size: 11px; box-sizing: border-box;">
+                <div style="display: flex; gap: 6px;">
+                  <button class="lang-option" onclick="saveHostAvatarFromInput()" style="flex: 1; justify-content: center; background: rgba(56, 189, 248, 0.2); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; font-weight: bold; padding: 6px 10px; border-radius: 6px;"><i class="fa-solid fa-check" style="margin-right: 5px;"></i> Simpan</button>
+                  <button class="lang-option" onclick="resetHostAvatarDefault()" style="flex: 0 0 auto; justify-content: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #ccc; padding: 6px 10px; border-radius: 6px;" title="Kembalikan ke Default"><i class="fa-solid fa-rotate-left" style="margin-right: 4px;"></i> Default</button>
+                </div>
+              </div>
+            </div>
+
             <!-- Group 8: 📊 Alat & Reset Data -->
             <div class="settings-group">
               <div class="settings-group-header" onclick="toggleSettingsGroup(this, event)">
@@ -1109,6 +1161,57 @@
         </div>
       </div>
 
+      <!-- Betweenle Container -->
+      <div id="betweenleContainer" class="betweenle-container" style="display: none;">
+        <!-- Main Board: Left Range Track + Right 3-Row Tiles -->
+        <div class="betweenle-main-board" data-len="5">
+          <!-- Left: Vertical Range Track -->
+          <div class="betweenle-track-col">
+            <div class="betweenle-track-pin pin-top" id="betweenlePinTop">
+              <span id="betweenlePinTopVal">?</span>
+            </div>
+            <div class="betweenle-track-line">
+              <div class="betweenle-track-dot" id="betweenleTrackDot"></div>
+            </div>
+            <div class="betweenle-track-pin pin-bottom" id="betweenlePinBottom">
+              <span id="betweenlePinBottomVal">?</span>
+            </div>
+          </div>
+
+          <!-- Right: 3-Row Tile Column (Top Bound, Middle Guess, Bottom Bound) -->
+          <div class="betweenle-tiles-col">
+            <!-- Row 1: Top Bound (A...A atau kata batas atas) -->
+            <div class="betweenle-row-wrapper top-bound-wrapper">
+              <div class="betweenle-row betweenle-bound-row" id="betweenleTopRow" data-len="5"></div>
+            </div>
+
+            <!-- Row 2: Middle Active Guess Row -->
+            <div class="betweenle-row-wrapper middle-guess-wrapper" id="betweenleMiddleWrapper">
+              <div class="betweenle-row betweenle-middle-row" id="betweenleMiddleRow" data-len="5"></div>
+            </div>
+
+            <!-- Row 3: Bottom Bound (Z...Z atau kata batas bawah) -->
+            <div class="betweenle-row-wrapper bottom-bound-wrapper">
+              <div class="betweenle-row betweenle-bound-row" id="betweenleBottomRow" data-len="5"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alphabet Strip Tracker (A-Z) -->
+        <div class="betweenle-alphabet-tracker">
+          <div class="betweenle-alpha-row" id="betweenleAlphaRow1"></div>
+          <div class="betweenle-alpha-row" id="betweenleAlphaRow2"></div>
+        </div>
+
+        <!-- Live Guess History Feed -->
+        <div class="betweenle-feed-container" id="betweenleFeedContainer">
+          <div class="betweenle-feed-title"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat Tebakan</div>
+          <div class="betweenle-feed-list" id="betweenleFeedList">
+            <div class="betweenle-feed-empty">Belum ada tebakan...</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Supporter Spotlight Rotator (Fade In/Out) -->
       <div id="marqueeContainer" class="supporter-spotlight-container" style="display: none;">
         <div class="supporter-spotlight-inner" id="marqueeContent"></div>
@@ -1188,6 +1291,9 @@
 
   <!-- Host Control Area -->
   <div class="host-music-control" id="hostMusicControl" style="display: none;">
+    <div class="host-avatar-btn-wrap" id="hostAvatarQuickBtn" onclick="toggleHostAvatarQuickModal(event)" title="Ganti Avatar Host">
+      <img id="bottomHostAvatarImg" class="host-control-avatar" src="" alt="Host Avatar">
+    </div>
     <div class="host-music-input" id="hostGuessInputContainer" style="margin-right: 10px;">
       <input type="text" id="hostGuessInput" placeholder="Tebak kata..." autocomplete="off">
     </div>
@@ -1541,7 +1647,200 @@
       <span id="socialAlertGiftCount" class="social-alert-gift-count" style="display: none;">x1</span>
     </div>
 
+            <div class="toggle-track"></div>
+          </div>
+        </label>
+        
+        <div style="text-align: left; margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between;">
+            <label style="font-size: 13px; color: #ccc;">Volume Host MP3:</label>
+            <span id="hostAudioVolumeLabel" style="font-size: 13px; color: white; font-weight: 600;">100%</span>
+          </div>
+          <input type="range" id="hostAudioVolumeSlider" min="0" max="100" value="100" oninput="updateHostAudioVolumeUI(this.value)" style="width: 100%; margin-top: 5px; cursor: pointer;">
+        </div>
+        
+        <button onclick="testHostAudio()" style="width: 100%; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; margin-top: 5px;"><i class="fa-solid fa-play" style="margin-right: 4px;"></i> TEST SUARA HOST ACAK</button>
+      </div>
 
+      <div style="display: flex; gap: 10px;">
+        <button onclick="saveTTSSettings()" style="flex: 1; padding: 12px; background: #3b82f6; border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Simpan</button>
+        <button onclick="document.getElementById('ttsSettingsModal').style.display='none'" style="flex: 1; padding: 12px; background: rgba(255,255,255,0.2); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Batal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Social Audio Settings Modal -->
+  <div class="login-overlay" id="socialAudioSettingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; background: rgba(0,0,0,0.65);">
+    <div class="login-card" style="max-width: 380px; width: 90%; padding: 25px;">
+      <h2 style="margin-bottom: 20px; color: white; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-bell" style="color: #10b981;"></i> Pengaturan Sound Alert</h2>
+      
+      <label style="text-align: left; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+        <span style="font-size: 13px; color: #ccc;">Aktifkan Sound Alert:</span>
+        <div class="toggle-switch">
+          <input type="checkbox" id="socialAudioEnabled">
+          <div class="toggle-track"></div>
+        </div>
+      </label>
+      
+      <div style="text-align: left; margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between;">
+          <label style="font-size: 13px; color: #ccc;">Volume Sound Alert:</label>
+          <span id="socialAudioVolumeLabel" style="font-size: 13px; color: white; font-weight: 600;">80%</span>
+        </div>
+        <input type="range" id="socialAudioVolumeSlider" min="0" max="100" value="80" oninput="document.getElementById('socialAudioVolumeLabel').textContent = this.value + '%'" style="width: 100%; margin-top: 5px; cursor: pointer;">
+      </div>
+      
+      <div style="text-align: left; margin-bottom: 12px;">
+        <label style="font-size: 13px; color: #ccc;">Sound URL Follower Baru:</label>
+        <div style="display: flex; gap: 8px; align-items: center; margin-top: 5px;">
+          <input type="text" id="socialAudioFollowUrl" placeholder="https://..." style="flex: 1; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit;">
+          <button onclick="previewAlertSound(document.getElementById('socialAudioFollowUrl').value)" style="padding: 10px 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 600; white-space: nowrap;"><i class="fa-solid fa-play" style="margin-right: 4px;"></i> TEST</button>
+        </div>
+      </div>
+      
+      <div style="text-align: left; margin-bottom: 12px;">
+        <label style="font-size: 13px; color: #ccc;">Sound URL Gift Umum (All Gift):</label>
+        <div style="display: flex; gap: 8px; align-items: center; margin-top: 5px;">
+          <input type="text" id="socialAudioDefaultGiftUrl" placeholder="https://..." style="flex: 1; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit;">
+          <button onclick="previewAlertSound(document.getElementById('socialAudioDefaultGiftUrl').value)" style="padding: 10px 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 600; white-space: nowrap;"><i class="fa-solid fa-play" style="margin-right: 4px;"></i> TEST</button>
+        </div>
+      </div>
+      
+      <div style="text-align: left; margin-bottom: 25px;">
+        <label style="font-size: 13px; color: #ccc;">Sound Gift Spesifik (Format: NamaGift = URL):</label>
+        <textarea id="socialAudioCustomGifts" rows="4" placeholder="Mawar = https://www.myinstants.com/media/sounds/uwu.mp3&#10;Universe = https://www.myinstants.com/media/sounds/tuturu.mp3" style="width: 100%; padding: 10px; margin-top: 5px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; resize: none; line-height: 1.4;"></textarea>
+        <div style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
+          <input type="text" id="socialAudioTestGiftName" placeholder="Nama gift untuk di-test..." style="flex: 1; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); color: white; border-radius: 8px; font-size: 12px; font-family: inherit;">
+          <button onclick="testCustomGiftSound()" style="padding: 10px 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 600; white-space: nowrap;"><i class="fa-solid fa-volume-high" style="margin-right: 4px;"></i> TEST GIFT</button>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button onclick="saveSocialAudioSettings()" style="flex: 1; padding: 12px; background: #3b82f6; border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Simpan</button>
+        <button onclick="document.getElementById('socialAudioSettingsModal').style.display='none'" style="flex: 1; padding: 12px; background: rgba(255,255,255,0.2); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Batal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom SFX Settings Modal -->
+  <div class="login-overlay" id="customSfxSettingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; background: rgba(0,0,0,0.65);">
+    <div class="login-card" style="max-width: 400px; width: 90%; padding: 25px; max-height: 90vh; overflow-y: auto;">
+      <h2 style="margin-bottom: 20px; color: white; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-sliders" style="color: #8b5cf6;"></i> Pengaturan SFX Kustom</h2>
+      
+      <label style="text-align: left; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+        <span style="font-size: 13px; color: #ccc;">Aktifkan SFX Kustom:</span>
+        <div class="toggle-switch">
+          <input type="checkbox" id="customSfxEnabled">
+          <div class="toggle-track"></div>
+        </div>
+      </label>
+      
+      <div style="text-align: left; margin-bottom: 15px;">
+        <div style="display: flex; justify-content: space-between;">
+          <label style="font-size: 13px; color: #ccc;">Volume SFX:</label>
+          <span id="customSfxVolumeLabel" style="font-size: 13px; color: white; font-weight: 600;">80%</span>
+        </div>
+        <input type="range" id="customSfxVolumeSlider" min="0" max="100" value="80" oninput="document.getElementById('customSfxVolumeLabel').textContent = this.value + '%'" style="width: 100%; margin-top: 5px; cursor: pointer;">
+      </div>
+      
+      <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-bottom: 15px;">
+        <div style="font-size: 11px; color: #aaa; margin-bottom: 10px; font-weight: 700; text-transform: uppercase; text-align: left;">Daftar Efek Suara (URL atau File Audio)</div>
+        
+        <!-- start -->
+        <div style="text-align: left; margin-bottom: 12px;">
+          <label style="font-size: 11px; color: #ccc; display: block; margin-bottom: 4px;">Game Start (Mulai Game):</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="customSfxStartUrl" placeholder="https://... atau upload file 📂" style="flex: 1; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; font-size: 12px;">
+            <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'start')" style="display: none;" id="customSfxStartFile">
+            <button onclick="document.getElementById('customSfxStartFile').click()" style="padding: 8px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal">📂</button>
+            <button onclick="previewCustomSfxSound('start')" style="padding: 8px 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap;">▶️ TEST</button>
+          </div>
+        </div>
+
+        <!-- win -->
+        <div style="text-align: left; margin-bottom: 12px;">
+          <label style="font-size: 11px; color: #ccc; display: block; margin-bottom: 4px;">Game Win (Kemenangan):</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="customSfxWinUrl" placeholder="https://... atau upload file 📂" style="flex: 1; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; font-size: 12px;">
+            <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'win')" style="display: none;" id="customSfxWinFile">
+            <button onclick="document.getElementById('customSfxWinFile').click()" style="padding: 8px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal">📂</button>
+            <button onclick="previewCustomSfxSound('win')" style="padding: 8px 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap;">▶️ TEST</button>
+          </div>
+        </div>
+
+        <!-- close -->
+        <div style="text-align: left; margin-bottom: 12px;">
+          <label style="font-size: 11px; color: #ccc; display: block; margin-bottom: 4px;">Hampir Benar (Close):</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="customSfxCloseUrl" placeholder="https://... atau upload file 📂" style="flex: 1; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; font-size: 12px;">
+            <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'close')" style="display: none;" id="customSfxCloseFile">
+            <button onclick="document.getElementById('customSfxCloseFile').click()" style="padding: 8px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal">📂</button>
+            <button onclick="previewCustomSfxSound('close')" style="padding: 8px 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap;">▶️ TEST</button>
+          </div>
+        </div>
+
+        <!-- correct -->
+        <div style="text-align: left; margin-bottom: 12px;">
+          <label style="font-size: 11px; color: #ccc; display: block; margin-bottom: 4px;">Kata Terpecahkan (Correct):</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="customSfxCorrectUrl" placeholder="https://... atau upload file 📂" style="flex: 1; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; font-size: 12px;">
+            <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'correct')" style="display: none;" id="customSfxCorrectFile">
+            <button onclick="document.getElementById('customSfxCorrectFile').click()" style="padding: 8px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal">📂</button>
+            <button onclick="previewCustomSfxSound('correct')" style="padding: 8px 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap;">▶️ TEST</button>
+          </div>
+        </div>
+
+        <!-- interaction -->
+        <div style="text-align: left; margin-bottom: 12px;">
+          <label style="font-size: 11px; color: #ccc; display: block; margin-bottom: 4px;">Tebakan Masuk (Interaction):</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="customSfxInteractionUrl" placeholder="https://... atau upload file 📂" style="flex: 1; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; font-size: 12px;">
+            <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'interaction')" style="display: none;" id="customSfxInteractionFile">
+            <button onclick="document.getElementById('customSfxInteractionFile').click()" style="padding: 8px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal">📂</button>
+            <button onclick="previewCustomSfxSound('interaction')" style="padding: 8px 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap;">▶️ TEST</button>
+          </div>
+        </div>
+
+        <!-- click -->
+        <div style="text-align: left; margin-bottom: 12px;">
+          <label style="font-size: 11px; color: #ccc; display: block; margin-bottom: 4px;">Bocoran Huruf (Click Clue):</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="customSfxClickUrl" placeholder="https://... atau upload file 📂" style="flex: 1; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; font-size: 12px;">
+            <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'click')" style="display: none;" id="customSfxClickFile">
+            <button onclick="document.getElementById('customSfxClickFile').click()" style="padding: 8px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal">📂</button>
+            <button onclick="previewCustomSfxSound('click')" style="padding: 8px 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap;">▶️ TEST</button>
+          </div>
+        </div>
+
+        <!-- invalid -->
+        <div style="text-align: left; margin-bottom: 12px;">
+          <label style="font-size: 11px; color: #ccc; display: block; margin-bottom: 4px;">Tebakan Tidak Valid (Invalid):</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="customSfxInvalidUrl" placeholder="https://... atau upload file 📂" style="flex: 1; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; font-size: 12px;">
+            <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'invalid')" style="display: none;" id="customSfxInvalidFile">
+            <button onclick="document.getElementById('customSfxInvalidFile').click()" style="padding: 8px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal">📂</button>
+            <button onclick="previewCustomSfxSound('invalid')" style="padding: 8px 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap;">▶️ TEST</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button onclick="saveCustomSFXSettings()" style="flex: 1; padding: 12px; background: #3b82f6; border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Simpan</button>
+        <button onclick="document.getElementById('customSfxSettingsModal').style.display='none'" style="flex: 1; padding: 12px; background: rgba(255,255,255,0.2); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Batal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Social Alerts (Follow / Share / Gift) -->
+    <div id="socialAlertContainer" class="social-alert-container">
+      <img id="socialAlertAvatar" class="social-alert-avatar" src="assets/default-avatar.png" alt="Avatar">
+      <div class="social-alert-text">
+        <span id="socialAlertName" class="social-alert-name">Nama</span>
+        <span id="socialAlertAction" class="social-alert-action">Telah Share Live!</span>
+      </div>
+      <img id="socialAlertGiftImg" class="social-alert-gift-img" src="" style="display: none;" alt="Gift">
+      <span id="socialAlertGiftCount" class="social-alert-gift-count" style="display: none;">x1</span>
+    </div>
 
   <!-- Recap Overlay -->
   <div id="recapOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: rgba(0,0,0,0.9);">
@@ -1569,6 +1868,6 @@
   <script src="squareword_puzzles_en.js"></script>
   <script src="wordladder_puzzles.js"></script>
   <script src="wordladder_puzzles_en.js"></script>
-  <script src="app.js?v=40"></script>
+  <script src="app.js?v=53"></script>
 </body>
 </html>

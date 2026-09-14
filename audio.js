@@ -571,6 +571,114 @@ class SoundEngine {
             this.isRadioAmbiancePlaying = false;
         } catch(e) {}
     }
+
+    // ─── Betweenle (Tebak Kata Urutan Abjad Kamus) Audio Effects ───
+
+    // Suara nada jernih saat batas rentang kata berhasil dipersempit
+    playBetweenleNarrow() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        try {
+            const now = this.ctx.currentTime;
+            // Dual chime yang naik cepat (clean and crisp)
+            [659.25, 880.00].forEach((freq, idx) => {
+                const noteTime = now + (idx * 0.05);
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, noteTime);
+
+                gain.gain.setValueAtTime(0.18, noteTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.18);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(noteTime);
+                osc.stop(noteTime + 0.18);
+            });
+        } catch(e) {}
+    }
+
+    // Suara tebakan berada di luar rentang aktif (lembut, tidak bising)
+    playBetweenleOutOfRange() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        try {
+            const now = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(180, now);
+            osc.frequency.exponentialRampToValueAtTime(90, now + 0.12);
+
+            gain.gain.setValueAtTime(0.14, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.14);
+        } catch(e) {}
+    }
+
+    // Suara peringatan rentang sangat sempit (sisa <= 10 kata)
+    playBetweenleCloseRange() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        try {
+            const now = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1200, now);
+            osc.frequency.exponentialRampToValueAtTime(1600, now + 0.06);
+
+            gain.gain.setValueAtTime(0.20, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.12);
+        } catch(e) {}
+    }
+
+    // Suara selebrasi akord kemenangan saat kata rahasia tepat tertebak
+    playBetweenleWin() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        try {
+            const now = this.ctx.currentTime;
+            const arpeggio = [523.25, 659.25, 783.99, 1046.50, 1318.51]; // C5, E5, G5, C6, E6
+            arpeggio.forEach((freq, idx) => {
+                const noteTime = now + (idx * 0.07);
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, noteTime);
+
+                gain.gain.setValueAtTime(0.22, noteTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.35);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(noteTime);
+                osc.stop(noteTime + 0.35);
+            });
+        } catch(e) {}
+    }
 }
 
 window.sounds = new SoundEngine();

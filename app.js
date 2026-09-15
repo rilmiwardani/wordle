@@ -1770,7 +1770,12 @@ function applyGameModeUI() {
   if (tangoGuessFeed) tangoGuessFeed.style.display = 'none';
   if (wordGridInfoContainer) wordGridInfoContainer.style.display = 'none';
   if (wordGridContainer) wordGridContainer.style.display = 'none';
-  if (boardObj) boardObj.style.display = '';
+  if (boardObj) {
+    boardObj.style.display = '';
+    if (currentGameMode !== 'wordladder') {
+      boardObj.classList.remove('wordladder-board');
+    }
+  }
 
   // Synchronize active game card in settings panel
   const gameCards = document.querySelectorAll('.game-card');
@@ -8974,26 +8979,12 @@ document.addEventListener('DOMContentLoaded', () => {
 function getWordLadderFeedback(guess, target) {
   const len = guess.length;
   const result = Array(len).fill('absent');
-  const targetLetters = target.split('');
-  const guessLetters = guess.split('');
 
-  // 1st pass: green (correct position)
+  // Hanya warna hijau (correct) untuk huruf yang posisinya sama persis dengan target.
+  // Tidak ada warna kuning (present) agar penonton tidak mengira huruf bisa digeser posisi seperti Wordle.
   for (let i = 0; i < len; i++) {
-    if (guessLetters[i] === targetLetters[i]) {
+    if (guess[i] === target[i]) {
       result[i] = 'correct';
-      targetLetters[i] = null;
-      guessLetters[i] = null;
-    }
-  }
-
-  // 2nd pass: yellow (present in target)
-  for (let i = 0; i < len; i++) {
-    if (guessLetters[i] !== null) {
-      const idx = targetLetters.indexOf(guessLetters[i]);
-      if (idx !== -1) {
-        result[i] = 'present';
-        targetLetters[idx] = null;
-      }
     }
   }
 
@@ -9062,43 +9053,92 @@ function renderWordLadderBoard() {
   const boardEl = document.getElementById('board');
   if (!boardEl) return;
   boardEl.innerHTML = '';
-  boardEl.className = '';
+  boardEl.className = 'wordladder-board';
 
   const wordLen = wordLadderStartWord ? wordLadderStartWord.length : 4;
   document.documentElement.style.setProperty('--word-length', wordLen);
 
-  // 1. Top Row: Start Word (Prefilled Cyan)
-  const startRow = document.createElement('div');
-  startRow.className = 'board-row wordladder-row wordladder-start-row';
-  
-  const startSpacer = document.createElement('div');
-  startSpacer.className = 'guesser-avatar';
-  startSpacer.style.visibility = 'hidden';
-  startRow.appendChild(startSpacer);
+  // 1. TOP ROW: Target Word (Puncak Tangga / Gold / Checkered Flag)
+  const targetRow = document.createElement('div');
+  targetRow.className = 'board-row wordladder-row wordladder-target-row';
+
+  const targetPin = document.createElement('div');
+  targetPin.className = 'ladder-pin-avatar target-pin';
+  targetPin.title = 'Target Kata (Puncak Tangga)';
+  targetPin.innerHTML = '<i class="fa-solid fa-flag-checkered"></i>';
+  targetRow.appendChild(targetPin);
 
   for (let i = 0; i < wordLen; i++) {
     const tile = document.createElement('div');
-    tile.className = 'tile prefilled';
-    tile.textContent = wordLadderStartWord[i] || '';
-    startRow.appendChild(tile);
+    tile.className = 'tile target-tile prefilled';
+    tile.textContent = wordLadderTargetWord[i] || '';
+    targetRow.appendChild(tile);
   }
-  boardEl.appendChild(startRow);
+  boardEl.appendChild(targetRow);
 
-  // 2. Middle Rows: Guessed Steps
-  for (let s = 0; s < wordLadderHistory.length; s++) {
+  // 2. CLIMB DIVIDER: Upward Vector Arrows Track (Bukan Emoji, Seperti Betweenle)
+  const climbDivider = document.createElement('div');
+  climbDivider.className = 'ladder-climb-divider';
+  climbDivider.innerHTML = `
+    <div class="ladder-divider-line"></div>
+    <div class="ladder-climb-pill">
+      <i class="fa-solid fa-angles-up"></i>
+      <i class="fa-solid fa-arrow-up"></i>
+      <i class="fa-solid fa-angles-up"></i>
+    </div>
+    <div class="ladder-divider-line"></div>
+  `;
+  boardEl.appendChild(climbDivider);
+
+  // 3. ACTIVE NEXT ROW: Empty placeholder row (hanya jika game masih aktif)
+  if (!isGameOver) {
+    const emptyRow = document.createElement('div');
+    emptyRow.className = 'board-row wordladder-row wordladder-empty-row';
+    
+    const inputPin = document.createElement('div');
+    inputPin.className = 'ladder-pin-avatar input-pin';
+    inputPin.title = 'Tebak kata berikutnya (Ubah tepat 1 huruf)';
+    inputPin.innerHTML = '<i class="fa-solid fa-arrow-up"></i>';
+    emptyRow.appendChild(inputPin);
+
+    for (let i = 0; i < wordLen; i++) {
+      const tile = document.createElement('div');
+      tile.className = 'tile tile-empty';
+      emptyRow.appendChild(tile);
+    }
+    boardEl.appendChild(emptyRow);
+  }
+
+  // 4. MIDDLE ROWS: Guessed Steps (DIBALIK: Tebakan terbaru paling atas!)
+  for (let s = wordLadderHistory.length - 1; s >= 0; s--) {
     const item = wordLadderHistory[s];
     const row = document.createElement('div');
     row.className = 'board-row wordladder-row';
-    if (s === wordLadderHistory.length - 1 && isGameAnimationsEnabled) {
-      row.classList.add('pop-in');
+    
+    // Tebakan terbaru diberi highlight khusus dan animasi pop-in
+    if (s === wordLadderHistory.length - 1) {
+      row.classList.add('wordladder-latest-row');
+      if (isGameAnimationsEnabled) {
+        row.classList.add('pop-in');
+      }
     }
+
+    const avatarWrap = document.createElement('div');
+    avatarWrap.className = 'ladder-avatar-wrap';
 
     const avatar = document.createElement('img');
     avatar.className = 'guesser-avatar show';
     avatar.id = `ladder-avatar-${s + 1}`;
     avatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
     avatar.src = (item.userData && item.userData.profilePictureUrl) ? item.userData.profilePictureUrl : 'assets/bg_nature.png';
-    row.appendChild(avatar);
+    avatarWrap.appendChild(avatar);
+
+    const stepChip = document.createElement('span');
+    stepChip.className = 'ladder-step-num';
+    stepChip.innerHTML = `<i class="fa-solid fa-arrow-up"></i> #${s + 1}`;
+    avatarWrap.appendChild(stepChip);
+
+    row.appendChild(avatarWrap);
 
     const feedback = getWordLadderFeedback(item.word, wordLadderTargetWord);
 
@@ -9111,51 +9151,40 @@ function renderWordLadderBoard() {
     boardEl.appendChild(row);
   }
 
-  // 3. Active Next Row: Empty placeholder row (if game is still active)
-  if (!isGameOver) {
-    const emptyRow = document.createElement('div');
-    emptyRow.className = 'board-row wordladder-row wordladder-empty-row';
-    
-    const emptySpacer = document.createElement('div');
-    emptySpacer.className = 'guesser-avatar';
-    emptySpacer.style.visibility = 'hidden';
-    emptyRow.appendChild(emptySpacer);
-
-    for (let i = 0; i < wordLen; i++) {
-      const tile = document.createElement('div');
-      tile.className = 'tile';
-      emptyRow.appendChild(tile);
-    }
-    boardEl.appendChild(emptyRow);
-  }
-
-  // 4. Bottom Row: Target Word (Prefilled Gold/Orange)
-  const targetRow = document.createElement('div');
-  targetRow.className = 'board-row wordladder-row wordladder-target-row';
-
-  const targetSpacer = document.createElement('div');
-  targetSpacer.className = 'guesser-avatar';
-  targetSpacer.style.visibility = 'hidden';
-  targetRow.appendChild(targetSpacer);
+  // 5. BOTTOM ROW: Start Word (Dasar Tangga / Cyan)
+  const startRow = document.createElement('div');
+  startRow.className = 'board-row wordladder-row wordladder-start-row';
+  
+  const startPin = document.createElement('div');
+  startPin.className = 'ladder-pin-avatar start-pin';
+  startPin.title = 'Kata Awal (Dasar Tangga)';
+  startPin.innerHTML = '<i class="fa-solid fa-play"></i>';
+  startRow.appendChild(startPin);
 
   for (let i = 0; i < wordLen; i++) {
     const tile = document.createElement('div');
-    tile.className = 'tile prefilled';
-    tile.textContent = wordLadderTargetWord[i] || '';
-    targetRow.appendChild(tile);
+    tile.className = 'tile start-tile prefilled';
+    tile.textContent = wordLadderStartWord[i] || '';
+    startRow.appendChild(tile);
   }
-  boardEl.appendChild(targetRow);
+  boardEl.appendChild(startRow);
 
-  // Update info bar text
+  // Update info bar text & mission badge (Opsi 1)
   const stepCountEl = document.getElementById('ladderCurrentSteps');
   const minStepsEl = document.getElementById('ladderMinSteps');
   if (stepCountEl) stepCountEl.textContent = wordLadderHistory.length;
   if (minStepsEl) minStepsEl.textContent = wordLadderMinSteps;
 
-  // Auto-scroll to show active bottom rows if board gets long
+  const missionStartEl = document.getElementById('ladderMissionStart');
+  const missionTargetEl = document.getElementById('ladderMissionTarget');
+  if (missionStartEl) missionStartEl.textContent = wordLadderStartWord;
+  if (missionTargetEl) missionTargetEl.textContent = wordLadderTargetWord;
+
+  // Auto-scroll ke puncak agar tebakan terbaru & kata target selalu terlihat di atas
+  boardEl.scrollTop = 0;
   const container = document.querySelector('.board-container');
   if (container) {
-    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+    container.scrollTop = 0;
   }
 }
 
@@ -9261,7 +9290,7 @@ function processWordLadderGuess(guessWord, userData) {
       const multiWinList = document.getElementById('multiWinList');
       if (multiWinList) {
         multiWinList.innerHTML = `
-          <div style="text-align: center; margin-bottom: 12px; font-size: 13px; font-weight: 800; color: #00f2fe; text-transform: uppercase; letter-spacing: 0.5px;">
+          <div style="text-align: center; margin-bottom: 12px; font-size: 13px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px;">
             ${wordLadderStartWord} ➔ ${wordLadderTargetWord} (${stepNum} Langkah)
           </div>
         `;
@@ -9274,7 +9303,7 @@ function processWordLadderGuess(guessWord, userData) {
             <img class="multi-win-avatar" src="${c.userData.profilePictureUrl || 'assets/bg_nature.png'}" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="Avatar">
             <div class="multi-win-info">
               <div class="multi-win-name">${isMvp ? '👑 ' : ''}${c.userData.nickname || 'Unknown'} <span style="font-size: 11px; opacity: 0.8;">(#${idx + 1})</span></div>
-              <div class="multi-win-word" style="font-size: 12px; color: #00f2fe;">${c.steps} Langkah: ${c.words.join(' ➔ ')}</div>
+              <div class="multi-win-word" style="font-size: 12px; color: #38bdf8;">${c.steps} Langkah: ${c.words.join(' ➔ ')}</div>
             </div>
             <div class="multi-win-pts" style="font-size: 14px; font-weight: 900; color: #ffd54f;">🪙 +${c.points} Pts</div>
           `;

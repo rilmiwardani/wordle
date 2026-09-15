@@ -2601,6 +2601,7 @@ header {
 /* Fix for compact vertical screens */
 @media (max-height: 750px) {
   #board, .hint-container { max-width: 340px; }
+  #board.wordladder-board { height: 310px; max-height: 310px; }
   .tile, .guesser-avatar { font-size: 1.5rem; border-radius: 8px; }
   .hint-tile { font-size: 1.1rem; border-radius: 6px; height: 28px; }
   .hint-container { padding: 4px 8px; margin-bottom: 4px; }
@@ -4294,24 +4295,238 @@ body.no-animations .win-wave {
 }
 
 /* ═════════════════════════════════════════════════════════════════════════════
-   WORD LADDER (TANGGA KATA / WEAVER) - SIMPLE WORDLE BOARD STYLES
+   WORD LADDER (TANGGA KATA MEMANJAT KE ATAS) - CLEAN & SOLID BETWEENLE STYLE
    ═════════════════════════════════════════════════════════════════════════════ */
-.board-row.wordladder-row {
-  transition: all 0.25s ease;
+#board.wordladder-board {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center;
+  width: 100%;
+  max-width: var(--board-max-width, 420px);
+  /* Kunci tinggi tetap 360px agar posisi Top Supporter di bawah tidak bergeser/terdorong */
+  height: 360px;
+  max-height: 360px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 6px;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  gap: 6px;
 }
 
-.wordladder-start-row .tile,
-.wordladder-target-row .tile {
-  background: rgba(255, 255, 255, 0.12);
-  border: 2px solid rgba(255, 255, 255, 0.25);
+#board.wordladder-board::-webkit-scrollbar {
+  width: 4px;
+}
+
+#board.wordladder-board::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+/* Individual Row */
+.board-row.wordladder-row {
+  display: grid;
+  flex-shrink: 0;
+  grid-template-columns: 1fr repeat(var(--word-length, 4), 1fr);
+  gap: clamp(4px, 1.5vw, 8px);
+  align-items: center;
+  width: 100%;
+  padding: 2px 4px;
+  border-radius: 8px;
+  box-sizing: border-box;
+  transition: background 0.2s ease;
+}
+
+/* Target Row (Puncak Tangga - Solid Emerald Green) */
+.wordladder-target-row {
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  border-radius: 8px;
+}
+
+.wordladder-target-row .tile.target-tile {
+  background: #16a34a;
+  border: 2px solid #15803d;
+  color: #ffffff;
+  font-weight: 900;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+/* Start Row (Dasar Tangga - Solid Sky Blue Gaya Betweenle) */
+.wordladder-start-row {
+  background: rgba(2, 132, 199, 0.08);
+  border: 1px solid rgba(2, 132, 199, 0.25);
+  border-radius: 8px;
+}
+
+.wordladder-start-row .tile.start-tile {
+  background: #0284c7;
+  border: 2px solid #0369a1;
+  color: #ffffff;
+  font-weight: 900;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+/* Empty Input Row (Sedang Ditebak - Clean Minimalist) */
+.wordladder-empty-row {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+}
+
+.wordladder-empty-row .tile.tile-empty {
+  background: #1e293b;
+  border: 2px solid #334155;
+  color: #64748b;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Latest Guess Row */
+.wordladder-latest-row {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+}
+
+/* Visual Climb Upward Divider (Panah Naik Vektor Bersih Tanpa Efek Neon) */
+.ladder-climb-divider {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 10px;
+  margin: 1px 0;
+  box-sizing: border-box;
+}
+
+.ladder-divider-line {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.18);
+  flex: 1;
+}
+
+.ladder-climb-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #0f172a;
+  border: 1px solid #0284c7;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #38bdf8;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Avatar / Pin Column Styling (Solid Clean Betweenle Pin) */
+.ladder-pin-avatar {
+  width: 100%;
+  aspect-ratio: 1/1;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  box-sizing: border-box;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.ladder-pin-avatar.target-pin {
+  background: #16a34a;
+  border: 2px solid #15803d;
   color: #ffffff;
 }
 
-.wordladder-empty-row .tile {
-  background: var(--empty);
-  border: 2px solid rgba(255, 255, 255, 0.1);
+.ladder-pin-avatar.start-pin {
+  background: #0284c7;
+  border: 2px solid #0369a1;
+  color: #ffffff;
 }
 
+.ladder-pin-avatar.input-pin {
+  background: #1e293b;
+  border: 2px solid #0284c7;
+  color: #38bdf8;
+}
+
+/* Avatar Wrap for Guesses with Mini Step Number */
+.ladder-avatar-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1/1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ladder-avatar-wrap .guesser-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  object-fit: cover;
+  box-sizing: border-box;
+}
+
+.ladder-step-num {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  background: #0f172a;
+  border: 1px solid #0284c7;
+  color: #38bdf8;
+  font-size: 8px;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+
+/* Word Ladder Info Bar Mission Badge (Opsi 1) */
+.ladder-mission-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.ladder-badge-start {
+  background: #0284c7;
+  color: #ffffff;
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.ladder-badge-arrow {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 10px;
+}
+
+.ladder-badge-target {
+  background: #16a34a;
+  color: #ffffff;
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
 
 /* ═════════════════════════════════════════════════════════════════════════════
    12. BETWEENLE (TEBAK ABJAD KAMUS A-Z) - AUTHENTIC OFFICIAL DESIGN
@@ -4877,72 +5092,22 @@ body.low-power-mode .leaderboard-container,
 body.low-power-mode .music-widget,
 body.low-power-mode .settings-modal,
 body.low-power-mode .overlay,
+body.low-power-mode .win-overlay,
+body.low-power-mode .win-overlay.show,
 body.low-power-mode .toast,
 body.low-power-mode .music-notif,
 body.low-power-mode .supporter-podium-card,
 body.low-power-mode .music-modal-content {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  background-color: rgba(16, 18, 27, 0.96) !important;
+  background: rgba(10, 12, 20, 0.95) !important;
 }
 
-body.low-power-mode .music-equalizer span {
-  animation: none !important;
-  transform: scaleY(0.4) !important;
-}
-
-body.low-power-mode .music-vinyl.playing {
-  animation: none !important;
-}
-
-body.low-power-mode .heart-particle {
-  display: none !important;
-}
-
-body.low-power-mode [style*="animation: livePulse"],
-body.low-power-mode [style*="animation: pulse"],
-body.low-power-mode .avatarPulse,
-body.low-power-mode .wordGlow,
-
-
-/* ═════════════════════════════════════════════════════════════════════════════
-   ⚡ MOBILE & LOW-POWER BATTERY SAVER OPTIMIZATION (ANTI-OVERHEATING & DINGIN)
-   ═════════════════════════════════════════════════════════════════════════════ */
-
-/* 1. Mode Ringan di Layar Ponsel (width <= 600px) - Efek blur tetap aktif kecuali Mode Hemat Daya dinyalakan */
-@media (max-width: 600px) {
-  .music-equalizer span {
-    animation: none !important;
-    transform: scaleY(0.4) !important;
-  }
-  .music-vinyl.playing {
-    animation: none !important;
-  }
-  .tile, .guesser-avatar {
-    box-shadow: none !important;
-  }
-}
-
-/* 2. Mode Hemat Daya Manual (Bisa diaktifkan via Pengaturan di PC maupun HP) */
-body.low-power-mode *:not(.glass-overlay),
-body.low-power-mode *:not(.glass-overlay)::before,
-body.low-power-mode *:not(.glass-overlay)::after {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-body.low-power-mode .modal-content,
-body.low-power-mode .leaderboard-container,
-body.low-power-mode .music-widget,
-body.low-power-mode .settings-modal,
-body.low-power-mode .overlay,
-body.low-power-mode .toast,
-body.low-power-mode .music-notif,
-body.low-power-mode .supporter-podium-card,
-body.low-power-mode .music-modal-content {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  background-color: rgba(16, 18, 27, 0.96) !important;
+body.low-power-mode .win-card,
+body.low-power-mode .multi-win-card {
+  background: #151a28 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
 }
 
 body.low-power-mode .music-equalizer span {

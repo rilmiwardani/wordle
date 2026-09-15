@@ -979,6 +979,7 @@ function getPtsPrefix() {
   if (currentGameMode === 'squareword') return 'pts_sqword_';
   if (currentGameMode === 'wordladder') return 'pts_wladder_';
   if (currentGameMode === 'betweenle') return 'pts_betweenle_';
+  if (currentGameMode === 'cascadle') return 'pts_cascadle_';
   return 'pts_';
 }
 
@@ -990,7 +991,7 @@ function initWeeklyLeaderboard() {
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key && key.startsWith(prefix)) {
-      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wfit_') || key.startsWith('pts_colorfit_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_') || key.startsWith('pts_sqword_') || key.startsWith('pts_wladder_') || key.startsWith('pts_betweenle_'))) continue;
+      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wfit_') || key.startsWith('pts_colorfit_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_') || key.startsWith('pts_sqword_') || key.startsWith('pts_wladder_') || key.startsWith('pts_betweenle_') || key.startsWith('pts_cascadle_'))) continue;
       
       if (key.startsWith(prefix + 'like_') || 
           key.startsWith(prefix + 'share_') || 
@@ -1644,7 +1645,8 @@ function selectGame(mode) {
     wordgrid: 'WORD GRID',
     squareword: 'SQUAREWORD 5×5',
     wordladder: 'WORD LADDER',
-    betweenle: 'BETWEENLE'
+    betweenle: 'BETWEENLE',
+    cascadle: 'CASCADLE'
   };
   const titleName = gameNames[mode] || mode.toUpperCase();
 
@@ -1688,7 +1690,6 @@ function switchGameMode(e) {
   }
 
   // Seamless switch
-  // Seamless switch
   if (currentGameMode === 'wordle') currentGameMode = 'word500';
   else if (currentGameMode === 'word500') currentGameMode = 'word600';
   else if (currentGameMode === 'word600') currentGameMode = 'wordfit';
@@ -1699,6 +1700,8 @@ function switchGameMode(e) {
   else if (currentGameMode === 'wordtango') currentGameMode = 'wordgrid';
   else if (currentGameMode === 'wordgrid') currentGameMode = 'squareword';
   else if (currentGameMode === 'squareword') currentGameMode = 'wordladder';
+  else if (currentGameMode === 'wordladder') currentGameMode = 'betweenle';
+  else if (currentGameMode === 'betweenle') currentGameMode = 'cascadle';
   else currentGameMode = 'wordle';
   try { sessionStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
 
@@ -1758,7 +1761,8 @@ function applyGameModeUI() {
   if (wordLadderInfoContainer) wordLadderInfoContainer.style.display = 'none';
   const betweenleContainer = document.getElementById('betweenleContainer');
   if (betweenleContainer) betweenleContainer.style.display = 'none';
-
+  const cascadleContainer = document.getElementById('cascadleContainer');
+  if (cascadleContainer) cascadleContainer.style.display = 'none';
 
   if (wordLoopInfoContainer) wordLoopInfoContainer.style.display = 'none';
   if (wordTangoInfoContainer) wordTangoInfoContainer.style.display = 'none';
@@ -1845,11 +1849,23 @@ function applyGameModeUI() {
     if (bestGuessContainer) bestGuessContainer.style.display = 'none';
     if (boardObj) boardObj.style.display = 'none';
     if (betweenleContainer) betweenleContainer.style.display = 'flex';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Cascadle';
     if (!betweenleTopBound) {
       startBetweenleGame();
     } else {
       renderBetweenleUI();
+    }
+  } else if (currentGameMode === 'cascadle') {
+    if (headerTitle) headerTitle.textContent = 'CASCADLE';
+    if (hintContainer) hintContainer.style.display = 'none';
+    if (bestGuessContainer) bestGuessContainer.style.display = 'none';
+    if (boardObj) boardObj.style.display = 'none';
+    if (cascadleContainer) cascadleContainer.style.display = 'flex';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
+    if (!cascadleTargets || !cascadleTargets[3]) {
+      startCascadleGame();
+    } else {
+      renderCascadleUI();
     }
   } else {
     if (headerTitle) headerTitle.textContent = 'WORDLE';
@@ -3967,6 +3983,11 @@ function startNewRound() {
     startBetweenleGame();
     return;
   }
+  if (currentGameMode === 'cascadle') {
+    cascadleRound = round;
+    startCascadleGame();
+    return;
+  }
   if (currentGameMode === 'squareword') {
     WORD_LENGTH = 5;
     document.documentElement.style.setProperty('--word-length', 5);
@@ -4916,7 +4937,7 @@ function startOfflineMode() {
       setupSocketListeners();
     }
     
-    const hasWord = (currentGameMode === 'betweenle') ? !!betweenleSecretWord : !!currentWord;
+    const hasWord = (currentGameMode === 'betweenle') ? !!betweenleSecretWord : ((currentGameMode === 'cascadle') ? !!(cascadleTargets && cascadleTargets[cascadleCurrentLevel]) : !!currentWord);
     if (!hasWord) {
       startNewRound();
     }
@@ -5107,7 +5128,7 @@ function setupSocketListeners() {
       roomHost.textContent = `@${data.uniqueId}`;
 
       // Bug 7 fix: use boolean flag instead of empty string check
-      const hasWord = (currentGameMode === 'betweenle') ? !!betweenleSecretWord : !!currentWord;
+      const hasWord = (currentGameMode === 'betweenle') ? !!betweenleSecretWord : ((currentGameMode === 'cascadle') ? !!(cascadleTargets && cascadleTargets[cascadleCurrentLevel]) : !!currentWord);
       if (!hasWord) {
         startNewRound();
       }
@@ -5150,7 +5171,7 @@ function setupSocketListeners() {
       document.getElementById('hostMusicControl').style.display = 'flex';
     }
 
-    const hasWord = (currentGameMode === 'betweenle') ? !!betweenleSecretWord : !!currentWord;
+    const hasWord = (currentGameMode === 'betweenle') ? !!betweenleSecretWord : ((currentGameMode === 'cascadle') ? !!(cascadleTargets && cascadleTargets[cascadleCurrentLevel]) : !!currentWord);
     if (!hasWord) {
       startNewRound();
     }
@@ -5423,7 +5444,7 @@ function handleAutoGuessOnJoin(memberData) {
 
 // Handle Guesses from Chat
 function handleChatGuess(data) {
-  const isCurrentOver = (currentGameMode === 'betweenle') ? betweenleIsGameOver : isGameOver;
+  const isCurrentOver = (currentGameMode === 'betweenle') ? betweenleIsGameOver : ((currentGameMode === 'cascadle') ? cascadleIsGameOver : isGameOver);
   if (isCurrentOver) return;
 
   const rawMsg = data.comment.trim().toLowerCase();
@@ -5446,11 +5467,13 @@ function handleChatGuess(data) {
     isAllowedLength = (msg.length >= 3);
   } else if (currentGameMode === 'betweenle') {
     isAllowedLength = (msg.length === betweenleLetterLength);
+  } else if (currentGameMode === 'cascadle') {
+    isAllowedLength = (msg.length === cascadleCurrentLevel);
   }
 
   if (isAllowedLength) {
-    // Tolak jika user sudah pernah kirim kata yang sama di ronde ini (kecuali mode betweenle)
-    if (currentGameMode !== 'betweenle') {
+    // Tolak jika user sudah pernah kirim kata yang sama di ronde ini (kecuali mode betweenle dan cascadle)
+    if (currentGameMode !== 'betweenle' && currentGameMode !== 'cascadle') {
       const userId = data.uniqueId || data.nickname || 'anon';
       const dedupKey = `${userId}:${msg}`;
       if (userGuessDedup.has(dedupKey)) return; // skip duplikat
@@ -5465,7 +5488,7 @@ function handleChatGuess(data) {
 }
 
 async function processQueue() {
-  const isCurrentOver = (currentGameMode === 'betweenle') ? betweenleIsGameOver : isGameOver;
+  const isCurrentOver = (currentGameMode === 'betweenle') ? betweenleIsGameOver : ((currentGameMode === 'cascadle') ? cascadleIsGameOver : isGameOver);
   if (isProcessing || guessQueue.length === 0 || isCurrentOver) return;
   isProcessing = true;
   
@@ -5683,6 +5706,11 @@ function processGuess(guessWord, userData, queueLen = 0) {
 
   if (currentGameMode === 'betweenle') {
     processBetweenleGuess(guessWord, userData);
+    return;
+  }
+
+  if (currentGameMode === 'cascadle') {
+    processCascadleGuess(guessWord, userData);
     return;
   }
 
@@ -6618,12 +6646,37 @@ function processGuess(guessWord, userData, queueLen = 0) {
   }
 }
 
-// Toast System (Smooth Fade In / Fade Out)
+// Toast System (Smooth Fade In / Fade Out + Anti-Flooding Protection)
+let lastToastMsg = '';
+let lastToastTime = 0;
+
 function showToast(message, duration = 2800) {
+  if (!message) return;
+  const now = Date.now();
+  
+  // 1. Anti-spam: Cegah pesan yang persis sama muncul bertubi-tubi dalam waktu 1.5 detik
+  if (message === lastToastMsg && (now - lastToastTime < 1500)) {
+    return;
+  }
+  lastToastMsg = message;
+  lastToastTime = now;
+
+  // 2. Anti-flooding: Batasi maksimal 2 toast sekaligus di layar
+  if (typeof toastContainer !== 'undefined' && toastContainer) {
+    const activeToasts = toastContainer.querySelectorAll('.toast');
+    if (activeToasts.length >= 2) {
+      activeToasts[0].remove();
+    }
+  }
+
   const toast = document.createElement('div');
   toast.className = 'toast';
   toast.textContent = message;
-  toastContainer.appendChild(toast);
+  if (typeof toastContainer !== 'undefined' && toastContainer) {
+    toastContainer.appendChild(toast);
+  } else {
+    document.body.appendChild(toast);
+  }
   
   // Smooth fade-in
   requestAnimationFrame(() => {
@@ -9116,10 +9169,13 @@ function processWordLadderGuess(guessWord, userData) {
   const dict = (allValidWords && allValidWords[wordLen]) ? allValidWords[wordLen] : (VALID_WORDS || []);
   const validSet = (allValidWordsSets && allValidWordsSets[wordLen]) ? allValidWordsSets[wordLen] : VALID_WORDS_SET;
   const isValid = (validSet && validSet.size > 0 && validSet.has(word)) || (dict && dict.includes(word)) || (fullValidDictionary && (fullValidDictionary.has(word) || fullValidDictionary.has(word.toLowerCase())));
+  const isHost = !userData || userData.uniqueId === 'HOST_LOCAL' || userData.uniqueId === 'host';
   if (!isValid) {
     if (window.sounds) window.sounds.playInvalid();
     if (window.playHostAudio) playHostAudio('invalid');
-    showToast(`"${word}" tidak ada di kamus!`, 1500);
+    if (isHost) {
+      showToast(`"${word}" tidak ada di kamus!`, 1500);
+    }
     return;
   }
 
@@ -9128,7 +9184,9 @@ function processWordLadderGuess(guessWord, userData) {
   if (isAlreadyUsed) {
     if (window.sounds) window.sounds.playInvalid();
     if (window.playHostAudio) playHostAudio('invalid');
-    showToast(`"${word}" sudah digunakan di ronde ini!`, 1800);
+    if (isHost) {
+      showToast(`"${word}" sudah digunakan di ronde ini!`, 1800);
+    }
     return;
   }
 
@@ -10147,4 +10205,635 @@ if (typeof syncHostAvatarUI === 'function') {
   } else {
     syncHostAvatarUI();
   }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 13. CASCADLE GAME ENGINE (RANTAI 5 KATA: 3-7 HURUF & CASCADING CLUES)
+// ═════════════════════════════════════════════════════════════════════════════
+
+let cascadleRound = 1;
+let cascadleCurrentLevel = 3; // 3, 4, 5, 6, 7
+let cascadleTargets = {}; // { 3: "...", 4: "...", 5: "...", 6: "...", 7: "..." }
+let cascadleGuesses = []; // [{ word, length, level, userData, colors }]
+let cascadleSolvedWords = []; // [{ level, word, userName, userAvatar, userData, points }]
+let cascadleIsGameOver = false;
+let cascadleIsAnimating = false;
+let cascadleShowcaseTimer = null;
+let cascadleUserCooldown = new Map();
+
+// Helper: hitung jumlah huruf yang beririsan (overlap) antara kata lama dan kata baru
+function getWordOverlapScore(oldWord, newWord) {
+  const letters = newWord.split('');
+  let matches = 0;
+  for (let i = 0; i < oldWord.length; i++) {
+    const idx = letters.indexOf(oldWord[i]);
+    if (idx !== -1) {
+      matches++;
+      letters.splice(idx, 1);
+    }
+  }
+  return matches;
+}
+
+// Mulai atau reset ronde permainan Cascadle
+function startCascadleGame() {
+  if (!wordsLoaded) {
+    const currentLang = localStorage.getItem('wordle_lang') || 'id';
+    loadWordLists(currentLang).then(() => {
+      startCascadleGame();
+    }).catch(() => {
+      showToast('Gagal memuat kamus kata Cascadle!', 3000);
+    });
+    return;
+  }
+
+  // Pilih rantai 5 kata berjenjang 3-7 huruf dengan overlap huruf yang maksimal
+  cascadleTargets = {};
+
+  // Level 1: 3 huruf
+  const pool3 = (allTargetWords[3] && allTargetWords[3].length > 0) ? allTargetWords[3] : allValidWords[3];
+  if (!pool3 || pool3.length === 0) {
+    showToast('Kamus 3 huruf tidak tersedia!', 3000);
+    return;
+  }
+  const w3 = pool3[Math.floor(Math.random() * pool3.length)].trim().toUpperCase();
+  cascadleTargets[3] = w3;
+
+  // Level 2 sampai 5 (4, 5, 6, 7 huruf)
+  let prevWord = w3;
+  for (let len = 4; len <= 7; len++) {
+    const pool = (allTargetWords[len] && allTargetWords[len].length > 0) ? allTargetWords[len] : allValidWords[len];
+    if (pool && pool.length > 0) {
+      // Cari kata-kata dengan overlap huruf terbesar dengan kata sebelumnya
+      let bestCandidates = [];
+      let maxOverlap = 0;
+
+      // Sample hingga 300 kandidat acak untuk performa instan
+      const sampleSize = Math.min(pool.length, 300);
+      for (let i = 0; i < sampleSize; i++) {
+        const candidate = pool[Math.floor(Math.random() * pool.length)].trim().toUpperCase();
+        if (/^[A-Z]+$/.test(candidate) && candidate.length === len) {
+          const score = getWordOverlapScore(prevWord, candidate);
+          if (score > maxOverlap) {
+            maxOverlap = score;
+            bestCandidates = [candidate];
+          } else if (score === maxOverlap) {
+            bestCandidates.push(candidate);
+          }
+        }
+      }
+
+      if (bestCandidates.length > 0) {
+        prevWord = bestCandidates[Math.floor(Math.random() * bestCandidates.length)];
+      } else {
+        prevWord = pool[Math.floor(Math.random() * pool.length)].trim().toUpperCase();
+      }
+      cascadleTargets[len] = prevWord;
+    }
+  }
+
+  cascadleCurrentLevel = 3;
+  cascadleGuesses = [];
+  cascadleSolvedWords = [];
+  cascadleIsGameOver = false;
+  cascadleIsAnimating = false;
+  if (cascadleShowcaseTimer) {
+    clearInterval(cascadleShowcaseTimer);
+    cascadleShowcaseTimer = null;
+  }
+  cascadleUserCooldown.clear();
+  if (typeof userGuessDedup !== 'undefined' && userGuessDedup.clear) {
+    userGuessDedup.clear();
+  }
+
+  console.log(`[Cascadle] Ronde ${cascadleRound} dimulai. Target Chain: 3H="${cascadleTargets[3]}", 4H="${cascadleTargets[4]}", 5H="${cascadleTargets[5]}", 6H="${cascadleTargets[6]}", 7H="${cascadleTargets[7]}"`);
+
+  renderCascadleUI();
+}
+
+// Algoritma pewarnaan Wordle murni: mendukung tebakan yang lebih pendek dari target (Cascading Clues)
+function evaluateCascadleColors(guessWord, targetWord) {
+  const guess = guessWord.trim().toUpperCase();
+  const target = targetWord.trim().toUpperCase();
+  const result = new Array(guess.length).fill('absent');
+  const targetFreq = {};
+
+  for (let i = 0; i < target.length; i++) {
+    const ch = target[i];
+    targetFreq[ch] = (targetFreq[ch] || 0) + 1;
+  }
+
+  // Pass 1: Huruf tepat di posisi yang sama (Green / Correct)
+  for (let i = 0; i < guess.length; i++) {
+    if (i < target.length && guess[i] === target[i]) {
+      result[i] = 'correct';
+      targetFreq[guess[i]]--;
+    }
+  }
+
+  // Pass 2: Huruf ada di kata target tapi posisi berbeda (Yellow / Present)
+  for (let i = 0; i < guess.length; i++) {
+    if (result[i] !== 'correct') {
+      const ch = guess[i];
+      if (targetFreq[ch] && targetFreq[ch] > 0) {
+        result[i] = 'present';
+        targetFreq[ch]--;
+      }
+    }
+  }
+
+  return result;
+}
+
+// Validasi Hard Mode & Ultra Hard Mode khusus untuk alur kata bertingkat Cascadle
+function validateCascadleHardMode(guessWord) {
+  if (typeof hardModeState === 'undefined' || hardModeState === 'off' || cascadleGuesses.length === 0) {
+    return { valid: true };
+  }
+
+  const currentTarget = cascadleTargets[cascadleCurrentLevel];
+  if (!currentTarget) return { valid: true };
+
+  // Periksa terhadap semua tebakan sebelumnya yang dievaluasi ke target aktif saat ini
+  for (const past of cascadleGuesses) {
+    const pastColors = evaluateCascadleColors(past.word, currentTarget);
+    const newLetters = guessWord.split('');
+
+    // ── 1. ULTRA HARD MODE ──
+    if (hardModeState === 'ultra') {
+      // a) Huruf yang 100% abu-abu di kata ini tidak boleh dipakai lagi
+      const completelyGray = new Set();
+      for (let i = 0; i < past.word.length; i++) {
+        if (pastColors[i] === 'absent') {
+          let hasMatch = false;
+          for (let j = 0; j < past.word.length; j++) {
+            if (past.word[j] === past.word[i] && (pastColors[j] === 'correct' || pastColors[j] === 'present')) {
+              hasMatch = true;
+              break;
+            }
+          }
+          if (!hasMatch) completelyGray.add(past.word[i]);
+        }
+      }
+
+      for (let i = 0; i < guessWord.length; i++) {
+        if (completelyGray.has(guessWord[i])) {
+          return {
+            valid: false,
+            msg: `Huruf "${guessWord[i]}" (abu-abu) tidak boleh digunakan lagi!`
+          };
+        }
+      }
+
+      // b) Huruf kuning tidak boleh ditaruh di posisi yang sama saat kuning
+      for (let i = 0; i < Math.min(past.word.length, guessWord.length); i++) {
+        if (pastColors[i] === 'present' && guessWord[i] === past.word[i]) {
+          return {
+            valid: false,
+            msg: `Huruf "${past.word[i]}" kuning di posisi ke-${i+1}, harus dipindah ke posisi lain!`
+          };
+        }
+      }
+    }
+
+    // ── 2. HARD MODE (Greens & Yellows) ──
+    // a) Huruf Hijau: jika posisi i hijau, tebakan baru harus sama di posisi tersebut
+    for (let i = 0; i < Math.min(past.word.length, guessWord.length); i++) {
+      if (pastColors[i] === 'correct') {
+        if (newLetters[i] !== past.word[i]) {
+          return {
+            valid: false,
+            msg: `Huruf ke-${i+1} harus "${past.word[i]}" (Petunjuk dari "${past.word}")!`
+          };
+        }
+        newLetters[i] = null;
+      }
+    }
+
+    // b) Huruf Kuning: huruf kuning harus tetap disertakan di tebakan baru
+    for (let i = 0; i < past.word.length; i++) {
+      if (pastColors[i] === 'present') {
+        const ch = past.word[i];
+        if (!newLetters.includes(ch)) {
+          return {
+            valid: false,
+            msg: `Harus mengandung huruf "${ch}" (Petunjuk dari "${past.word}")!`
+          };
+        }
+        newLetters[newLetters.indexOf(ch)] = null;
+      }
+    }
+  }
+
+  return { valid: true };
+}
+
+// Memproses tebakan masuk untuk mode Cascadle
+function processCascadleGuess(guessWord, userData) {
+  if (currentGameMode !== 'cascadle' || cascadleIsGameOver) return;
+  if (!guessWord) return;
+
+  const word = guessWord.trim().toUpperCase();
+  const userId = userData.userId || userData.uniqueId || 'host';
+  const userName = userData.nickname || userData.uniqueId || 'Pemain';
+  const isHost = (userId === 'host' || userId === 'host_offline' || (typeof userId === 'string' && userId.toLowerCase().includes('host')));
+  const userAvatar = (userData && userData.profilePictureUrl && userData.profilePictureUrl !== 'assets/bg_nature.png') ? userData.profilePictureUrl : (isHost ? getHostAvatar() : DEFAULT_HOST_AVATAR);
+  const now = Date.now();
+
+  // 1. Validasi panjang kata harus tepat sama dengan level aktif
+  if (word.length !== cascadleCurrentLevel) {
+    if (isHost) {
+      showToast(`Kata harus ${cascadleCurrentLevel} huruf!`, 2000);
+    }
+    return;
+  }
+
+  // 2. Cooldown 1 detik per penonton
+  if (!isHost) {
+    if (cascadleUserCooldown.has(userId) && (now - cascadleUserCooldown.get(userId) < 1000)) {
+      return;
+    }
+    cascadleUserCooldown.set(userId, now);
+  }
+
+  // 3. Validasi kamus kata
+  const validSet = allValidWordsSets[cascadleCurrentLevel];
+  const isValid = (validSet && validSet.size > 0) ? validSet.has(word) : (allValidWords[cascadleCurrentLevel] && allValidWords[cascadleCurrentLevel].includes(word));
+  if (!isValid) {
+    if (isHost) {
+      showToast(`"${word}" bukan kata baku di kamus!`, 2000);
+    }
+    // Shake active input row
+    const activeRow = document.querySelector('.cascadle-row.active-input');
+    if (activeRow) {
+      activeRow.classList.add('animating-shake');
+      setTimeout(() => activeRow.classList.remove('animating-shake'), 450);
+    }
+    return;
+  }
+
+  // 3b. Validasi Hard Mode & Ultra Hard Mode
+  if (typeof hardModeState !== 'undefined' && hardModeState !== 'off') {
+    const hmCheck = validateCascadleHardMode(word);
+    if (!hmCheck.valid) {
+      if (window.sounds && typeof window.sounds.playInvalid === 'function') {
+        window.sounds.playInvalid();
+      }
+      if (window.playHostAudio) playHostAudio('invalid');
+
+      if (isHost) {
+        showToast(hmCheck.msg, 2500);
+      }
+
+      const activeRow = document.querySelector('.cascadle-row.active-input');
+      if (activeRow) {
+        activeRow.classList.add('animating-shake');
+        setTimeout(() => activeRow.classList.remove('animating-shake'), 450);
+      }
+      return;
+    }
+  }
+
+  // 4. Hitung warna tebakan terhadap target aktif
+  const currentTarget = cascadleTargets[cascadleCurrentLevel];
+  const colors = evaluateCascadleColors(word, currentTarget);
+
+  const guessRecord = {
+    word,
+    length: word.length,
+    level: cascadleCurrentLevel,
+    userName,
+    userAvatar,
+    userData,
+    colors
+  };
+  cascadleGuesses.unshift(guessRecord);
+
+  if (window.sounds && typeof window.sounds.playLetter === 'function') {
+    window.sounds.playLetter();
+  }
+
+  renderCascadleUI();
+
+  // 5. Cek apakah tebakan tepat sama dengan target level saat ini
+  if (word === currentTarget) {
+    const isJackpot = (cascadleCurrentLevel === 7);
+    const ptsAwarded = isJackpot ? 25 : 5;
+
+    cascadleSolvedWords.push({
+      level: cascadleCurrentLevel,
+      word,
+      userName,
+      userAvatar,
+      userData,
+      points: ptsAwarded
+    });
+
+    if (cascadleCurrentLevel < 7) {
+      // ── LEVEL INTERMEDIATE BERHASIL TERPECAHKAN (3H / 4H / 5H / 6H) ──
+      if (typeof addPoints === 'function' && userData) {
+        addPoints(userData, ptsAwarded);
+      }
+      showFloatingPoints(ptsAwarded, 'cascadleContainer');
+
+      if (window.sounds && typeof window.sounds.playCascadleLevelUp === 'function') {
+        window.sounds.playCascadleLevelUp();
+      }
+
+      showToast(`🎉 ${userName} MENEBAK TEPAT: ${word}! (+${ptsAwarded} Poin) ➔ Level ${cascadleCurrentLevel - 1} Terbuka!`, 3500);
+
+      // Naik ke level berikutnya
+      cascadleCurrentLevel++;
+
+      // Cascading Recoloring: Re-evaluasi seluruh tebakan lama terhadap kata target baru!
+      setTimeout(() => {
+        triggerCascadleRecolor();
+      }, 500);
+
+    } else {
+      // ── LEVEL 7 (FINAL / JACKPOT CASCADLE SELESAI!) ──
+      cascadleIsGameOver = true;
+      if (typeof addPoints === 'function' && userData) {
+        addPoints(userData, ptsAwarded);
+      }
+      showFloatingPoints(ptsAwarded, 'cascadleContainer');
+
+      if (window.sounds && typeof window.sounds.playWin === 'function') {
+        window.sounds.playWin();
+      }
+
+      showToast(`🏆 ${userName} MENYELESAIKAN CASCADLE: ${word}! (+${ptsAwarded} Poin Jackpot)`, 4500);
+      renderCascadleUI();
+
+      // Luncurkan animasi tangga kata kemenangan 3-7 huruf langsung di layar papan game!
+      setTimeout(() => {
+        launchCascadleVictoryShowcase();
+      }, 800);
+    }
+  }
+}
+
+// Fitur unik Cascadle: Menghitung ulang dan menganimasikan ubin lama dengan warna baru
+function triggerCascadleRecolor() {
+  const newTarget = cascadleTargets[cascadleCurrentLevel];
+  if (!newTarget) return;
+
+  // Update data warna tiap tebakan lama
+  for (let i = 0; i < cascadleGuesses.length; i++) {
+    const g = cascadleGuesses[i];
+    g.colors = evaluateCascadleColors(g.word, newTarget);
+  }
+
+  if (window.sounds && typeof window.sounds.playCascadleRecolor === 'function') {
+    window.sounds.playCascadleRecolor();
+  }
+
+  // Render ulang UI dan beri animasi flip pada ubin
+  renderCascadleUI();
+
+  const boardArea = document.getElementById('cascadleBoardArea');
+  if (boardArea) {
+    const tiles = boardArea.querySelectorAll('.cascadle-tile:not(.tile-empty)');
+    tiles.forEach((t, idx) => {
+      t.classList.remove('recoloring-flip');
+      void t.offsetWidth; // trigger reflow
+      t.style.animationDelay = `${(idx % 12) * 35}ms`;
+      t.classList.add('recoloring-flip');
+    });
+  }
+}
+
+// Merender UI papan permainan Cascadle
+function renderCascadleUI() {
+  const container = document.getElementById('cascadleContainer');
+  if (!container || currentGameMode !== 'cascadle') return;
+
+  // 1. Update Stages Progress Bar (3H s/d 7H)
+  for (let len = 3; len <= 7; len++) {
+    const chip = document.getElementById(`cascadleChip${len}`);
+    if (chip) {
+      chip.className = 'cascadle-stage-chip';
+      const iconSpan = chip.querySelector('.chip-icon');
+      if (len < cascadleCurrentLevel) {
+        chip.classList.add('completed');
+        if (iconSpan) iconSpan.innerHTML = '<i class="fa-solid fa-check"></i>';
+      } else if (len === cascadleCurrentLevel) {
+        chip.classList.add('active');
+        if (iconSpan) iconSpan.innerHTML = '<i class="fa-solid fa-play"></i>';
+      } else {
+        chip.classList.add('locked');
+        if (iconSpan) iconSpan.innerHTML = (len === 7) ? '<i class="fa-solid fa-star"></i>' : '<i class="fa-solid fa-lock"></i>';
+      }
+    }
+  }
+
+  // 2. Render Guess Rows
+  const rowsContainer = document.getElementById('cascadleRowsContainer');
+  if (!rowsContainer) return;
+  rowsContainer.innerHTML = '';
+
+  // 3a. Baris input aktif (placeholder kotak kosong berdenyut) SELALU DI PALING ATAS
+  if (!cascadleIsGameOver) {
+    const activeRow = document.createElement('div');
+    activeRow.className = 'cascadle-row active-input';
+    activeRow.setAttribute('data-len', cascadleCurrentLevel);
+
+    const activeTiles = document.createElement('div');
+    activeTiles.className = 'cascadle-row-tiles';
+    for (let i = 0; i < cascadleCurrentLevel; i++) {
+      const tile = document.createElement('div');
+      tile.className = 'cascadle-tile tile-empty';
+      activeTiles.appendChild(tile);
+    }
+    activeRow.appendChild(activeTiles);
+
+    const dummyMeta = document.createElement('div');
+    dummyMeta.className = 'cascadle-row-meta';
+    dummyMeta.innerHTML = `<span style="font-size: 10px; color: #10b981; font-weight: 700;"><i class="fa-solid fa-angles-left"></i> ${cascadleCurrentLevel}H</span>`;
+    activeRow.appendChild(dummyMeta);
+
+    rowsContainer.appendChild(activeRow);
+  }
+
+  // 3b. Render Tebakan dari yang terbaru ke terlama (seperti Wordle)
+  let lastSeenLevel = cascadleCurrentLevel;
+  cascadleGuesses.forEach((g, idx) => {
+    // Sisipkan divider jika level tebakan berpindah ke level yang lebih awal
+    if (g.level < lastSeenLevel) {
+      const divider = document.createElement('div');
+      divider.className = 'cascadle-level-divider';
+      const solvedObj = cascadleSolvedWords.find(s => s.level === g.level);
+      const solvedWordText = solvedObj ? `: ${solvedObj.word}` : '';
+      divider.innerHTML = `
+        <div class="cascadle-divider-line"></div>
+        <div class="cascadle-divider-badge"><i class="fa-solid fa-check"></i> LEVEL ${g.level - 2} SELESAI${solvedWordText}</div>
+        <div class="cascadle-divider-line"></div>
+      `;
+      rowsContainer.appendChild(divider);
+      lastSeenLevel = g.level;
+    }
+
+    const rowEl = document.createElement('div');
+    rowEl.className = 'cascadle-row';
+    rowEl.setAttribute('data-len', g.length);
+
+    const tilesCol = document.createElement('div');
+    tilesCol.className = 'cascadle-row-tiles';
+    for (let i = 0; i < g.length; i++) {
+      const tile = document.createElement('div');
+      const stateClass = g.colors && g.colors[i] ? `tile-${g.colors[i]}` : 'tile-absent';
+      tile.className = `cascadle-tile ${stateClass}`;
+      tile.textContent = g.word[i] || '';
+      tilesCol.appendChild(tile);
+    }
+    rowEl.appendChild(tilesCol);
+
+    // Meta Avatar & Name
+    const metaEl = document.createElement('div');
+    metaEl.className = 'cascadle-row-meta';
+    const avatarImg = document.createElement('img');
+    avatarImg.className = 'cascadle-avatar';
+    avatarImg.src = g.userAvatar || DEFAULT_HOST_AVATAR;
+    avatarImg.onerror = function() { this.onerror = null; this.src = DEFAULT_HOST_AVATAR; };
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'cascadle-user-name';
+    nameSpan.textContent = g.userName || 'Pemain';
+    nameSpan.title = g.userName || 'Pemain';
+    metaEl.appendChild(avatarImg);
+    metaEl.appendChild(nameSpan);
+    rowEl.appendChild(metaEl);
+
+    rowsContainer.appendChild(rowEl);
+  });
+
+  // Pinned ke baris paling atas (seperti Wordle)
+  const boardArea = document.getElementById('cascadleBoardArea');
+  if (boardArea) {
+    boardArea.scrollTop = 0;
+  }
+}
+
+// Menampilkan animasi susunan tangga kata kemenangan 3-7 huruf langsung di layar papan game
+function launchCascadleVictoryShowcase() {
+  const container = document.getElementById('cascadleContainer');
+  const rowsContainer = document.getElementById('cascadleRowsContainer');
+  if (!container || !rowsContainer) return;
+
+  if (cascadleShowcaseTimer) {
+    clearInterval(cascadleShowcaseTimer);
+    cascadleShowcaseTimer = null;
+  }
+
+  // 1. Update Chips progress agar semua tampak selesai (centang hijau)
+  for (let len = 3; len <= 7; len++) {
+    const chip = document.getElementById(`cascadleChip${len}`);
+    if (chip) {
+      chip.className = 'cascadle-stage-chip completed';
+      const iconSpan = chip.querySelector('.chip-icon');
+      if (iconSpan) iconSpan.innerHTML = '<i class="fa-solid fa-check"></i>';
+    }
+  }
+
+  // 2. Render Wadah Showcase di dalam rowsContainer
+  rowsContainer.innerHTML = `
+    <div class="cascadle-showcase-box">
+      <div class="cascadle-showcase-header">
+        <div class="cascadle-showcase-badge"><i class="fa-solid fa-crown" style="color: #fbbf24;"></i> CASCADLE HALL OF FAME</div>
+        <div class="cascadle-showcase-sub">Pemenang Rantai 5 Kata (3 hingga 7 Huruf)</div>
+      </div>
+      <div class="cascadle-showcase-rows" id="cascadleShowcaseRows"></div>
+      <div class="cascadle-showcase-footer">
+        <div class="cascadle-showcase-countdown">
+          <i class="fa-solid fa-clock-rotate-left"></i> Ronde berikutnya dalam <span id="cascadleCountdownNum" class="cascadle-countdown-val">10</span>s
+        </div>
+        <button class="cascadle-showcase-btn" onclick="startNewRound()">
+          Ronde Baru <i class="fa-solid fa-forward-step"></i>
+        </button>
+      </div>
+    </div>
+  `;
+
+  const showcaseRowsEl = document.getElementById('cascadleShowcaseRows');
+  if (!showcaseRowsEl) return;
+
+  // 4. Render 5 baris kata (Level 3 sampai 7) secara berurutan dengan animasi bertingkat
+  const levels = [3, 4, 5, 6, 7];
+  levels.forEach((lvl, idx) => {
+    const solved = cascadleSolvedWords.find(s => s.level === lvl) || {
+      level: lvl,
+      word: (cascadleTargets && cascadleTargets[lvl]) ? cascadleTargets[lvl] : 'KATA',
+      userName: 'Penebak Cepat',
+      userAvatar: DEFAULT_HOST_AVATAR,
+      points: (lvl === 7 ? 25 : 5)
+    };
+
+    const isJackpot = (lvl === 7);
+    const rowEl = document.createElement('div');
+    rowEl.className = `cascadle-showcase-row ${isJackpot ? 'is-jackpot-row' : ''}`;
+    rowEl.style.opacity = '0';
+    rowEl.style.transform = 'translateY(14px) scale(0.95)';
+
+    // Tiles Huruf Hijau Menyala (Rata Kiri, Lebar 310px agar membentuk tangga piramida)
+    const tilesCol = document.createElement('div');
+    tilesCol.className = 'cascadle-row-tiles';
+    for (let c = 0; c < solved.word.length; c++) {
+      const tile = document.createElement('div');
+      tile.className = 'cascadle-tile tile-correct showcase-tile';
+      tile.textContent = solved.word[c] || '';
+      tilesCol.appendChild(tile);
+    }
+    rowEl.appendChild(tilesCol);
+
+    // Info Pemenang & Poin di Sebelah Kanan
+    const metaEl = document.createElement('div');
+    metaEl.className = 'cascadle-showcase-meta';
+    metaEl.innerHTML = `
+      <img class="cascadle-avatar ${isJackpot ? 'jackpot-avatar' : ''}" src="${solved.userAvatar || DEFAULT_HOST_AVATAR}" onerror="this.onerror=null; this.src=DEFAULT_HOST_AVATAR;">
+      <div class="cascadle-showcase-userinfo">
+        <span class="cascadle-showcase-name" title="${solved.userName}">${solved.userName}</span>
+        ${isJackpot 
+          ? `<span class="cascadle-badge-jackpot"><i class="fa-solid fa-crown"></i> +25 PTS</span>` 
+          : `<span class="cascadle-badge-pts">+${solved.points || 5} PTS</span>`
+        }
+      </div>
+    `;
+    rowEl.appendChild(metaEl);
+    showcaseRowsEl.appendChild(rowEl);
+
+    // Staggered Reveal Animation per Baris (Ding... Ding... Ding... Jackpot!)
+    setTimeout(() => {
+      rowEl.classList.add('reveal-active');
+      rowEl.style.opacity = '1';
+      rowEl.style.transform = 'translateY(0) scale(1)';
+
+      if (window.sounds) {
+        if (isJackpot) {
+          if (typeof window.sounds.playWin === 'function') window.sounds.playWin();
+          if (typeof triggerConfetti === 'function') triggerConfetti();
+        } else {
+          if (typeof window.sounds.playScanRow === 'function') {
+            window.sounds.playScanRow(idx);
+          } else if (typeof window.sounds.playCorrect === 'function') {
+            window.sounds.playCorrect();
+          }
+        }
+      }
+    }, (idx + 1) * 450);
+  });
+
+  // 5. Countdown timer otomatis untuk ronde berikutnya (10 detik)
+  let timeLeft = 10;
+  cascadleShowcaseTimer = setInterval(() => {
+    timeLeft--;
+    const numEl = document.getElementById('cascadleCountdownNum');
+    if (numEl) numEl.textContent = timeLeft;
+
+    if (timeLeft <= 0) {
+      clearInterval(cascadleShowcaseTimer);
+      cascadleShowcaseTimer = null;
+      if (currentGameMode === 'cascadle') {
+        startNewRound();
+      }
+    }
+  }, 1000);
 }

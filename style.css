@@ -3786,6 +3786,7 @@ header {
 .badge-squareword { background: rgba(20, 184, 166, 0.18); color: #2dd4bf; border: 1px solid rgba(20, 184, 166, 0.3); }
 .badge-colorfit { background: rgba(244, 63, 94, 0.18); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
 .badge-betweenle { background: rgba(2, 132, 199, 0.18); color: #38bdf8; border: 1px solid rgba(2, 132, 199, 0.35); }
+.badge-cascadle { background: rgba(16, 185, 129, 0.18); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
 
 .game-card-text {
   display: flex;
@@ -4902,17 +4903,620 @@ body.low-power-mode [style*="animation: livePulse"],
 body.low-power-mode [style*="animation: pulse"],
 body.low-power-mode .avatarPulse,
 body.low-power-mode .wordGlow,
+
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   ⚡ MOBILE & LOW-POWER BATTERY SAVER OPTIMIZATION (ANTI-OVERHEATING & DINGIN)
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+/* 1. Mode Ringan di Layar Ponsel (width <= 600px) - Efek blur tetap aktif kecuali Mode Hemat Daya dinyalakan */
+@media (max-width: 600px) {
+  .music-equalizer span {
+    animation: none !important;
+    transform: scaleY(0.4) !important;
+  }
+  .music-vinyl.playing {
+    animation: none !important;
+  }
+  .tile, .guesser-avatar {
+    box-shadow: none !important;
+  }
+}
+
+/* 2. Mode Hemat Daya Manual (Bisa diaktifkan via Pengaturan di PC maupun HP) */
+body.low-power-mode *:not(.glass-overlay),
+body.low-power-mode *:not(.glass-overlay)::before,
+body.low-power-mode *:not(.glass-overlay)::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body.low-power-mode .modal-content,
+body.low-power-mode .leaderboard-container,
+body.low-power-mode .music-widget,
+body.low-power-mode .settings-modal,
+body.low-power-mode .overlay,
+body.low-power-mode .toast,
+body.low-power-mode .music-notif,
+body.low-power-mode .supporter-podium-card,
+body.low-power-mode .music-modal-content {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background-color: rgba(16, 18, 27, 0.96) !important;
+}
+
+body.low-power-mode .music-equalizer span {
+  animation: none !important;
+  transform: scaleY(0.4) !important;
+}
+
+body.low-power-mode .music-vinyl.playing {
+  animation: none !important;
+}
+
+body.low-power-mode .heart-particle {
+  display: none !important;
+}
+
+body.low-power-mode [style*="animation: livePulse"],
+body.low-power-mode [style*="animation: pulse"],
+body.low-power-mode .avatarPulse,
+body.low-power-mode .wordGlow,
 body.low-power-mode .disconnect-pulse,
 body.low-power-mode .sq-pulse-glow {
   animation: none !important;
 }
 
 body.low-power-mode .tile,
-body.low-power-mode .guesser-avatar {
+body.low-power-mode .guesser-avatar,
+body.low-power-mode .cascadle-tile {
   box-shadow: none !important;
 }
 
+/* ═════════════════════════════════════════════════════════════════════════════
+   13. CASCADLE (RANTAI 5 KATA BERJENJANG 3-7 HURUF & CASCADING CLUES)
+   ═════════════════════════════════════════════════════════════════════════════ */
 
+.cascadle-container {
+  --cascadle-tile-size: 38px;
+  --cascadle-tile-gap: 4px;
+  --cascadle-font-size: 18px;
+  --cascadle-meta-width: 82px;
+  --cascadle-avatar-size: 26px;
+  --cascadle-row-gap: 8px;
 
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  gap: 8px;
+  padding: 4px 6px;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
 
+/* Stage Progress Bar (3H -> 4H -> 5H -> 6H -> 7H) */
+.cascadle-stages-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  max-width: 420px;
+  padding: 6px 10px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-sizing: border-box;
+}
 
+.cascadle-stage-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cascadle-stage-chip .chip-num {
+  letter-spacing: 0.5px;
+}
+
+.cascadle-stage-chip .chip-icon {
+  font-size: 9px;
+}
+
+.cascadle-stage-chip.active {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(5, 150, 105, 0.4));
+  border-color: #10b981;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.35);
+  transform: scale(1.05);
+}
+
+.cascadle-stage-chip.completed {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
+.cascadle-stage-arrow {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 10px;
+  font-weight: bold;
+}
+
+/* Cascadle Board Area */
+.cascadle-board-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  /* Kunci tinggi tetap stabil agar posisi Top Supporter di bawah tidak bergeser/terdorong sama sekali */
+  height: 360px;
+  max-height: 360px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 2px;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.cascadle-board-area::-webkit-scrollbar {
+  width: 4px;
+}
+
+.cascadle-board-area::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.cascadle-rows-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+/* Individual Guess Row */
+.cascadle-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cascadle-row-gap);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  transition: all 0.25s ease;
+}
+
+.cascadle-row-tiles {
+  display: flex;
+  gap: var(--cascadle-tile-gap);
+  align-items: center;
+  justify-content: flex-start;
+  width: calc(7 * var(--cascadle-tile-size) + 6 * var(--cascadle-tile-gap));
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+/* Individual Tiles - Ukuran dinamis & responsif agar tidak pernah terpotong di HP */
+.cascadle-tile {
+  width: var(--cascadle-tile-size);
+  height: var(--cascadle-tile-size);
+  background: rgba(30, 41, 59, 0.7);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--cascadle-font-size);
+  font-weight: 800;
+  color: #ffffff;
+  text-transform: uppercase;
+  transition: transform 0.35s ease, background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+  backface-visibility: hidden;
+  box-sizing: border-box;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+/* Tile States - Menggunakan warna resmi yang identik dengan Wordle */
+.cascadle-tile.tile-correct {
+  background: var(--correct);
+  border-color: var(--correct);
+  color: #ffffff;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.4);
+}
+
+.cascadle-tile.tile-present {
+  background: var(--present);
+  border-color: var(--present);
+  color: #ffffff;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  box-shadow: 0 2px 8px rgba(198, 170, 36, 0.4);
+}
+
+.cascadle-tile.tile-absent {
+  background: var(--absent);
+  border-color: transparent;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.cascadle-tile.tile-empty {
+  background: var(--empty);
+  border: 1.5px dashed rgba(255, 255, 255, 0.25);
+  color: transparent;
+}
+
+.cascadle-row.active-input .cascadle-tile.tile-empty {
+  animation: cascadleSlotPulse 2s infinite ease-in-out;
+}
+
+@keyframes cascadleSlotPulse {
+  0%, 100% { border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.05); }
+  50% { border-color: rgba(16, 185, 129, 0.65); background: rgba(16, 185, 129, 0.15); }
+}
+
+/* Cascading Clue Flip Animation */
+.cascadle-tile.recoloring-flip {
+  animation: cascadleFlipRecolor 0.5s ease forwards;
+}
+
+@keyframes cascadleFlipRecolor {
+  0% { transform: rotateX(0deg); }
+  50% { transform: rotateX(90deg); }
+  100% { transform: rotateX(0deg); }
+}
+
+/* Avatar slot at right of row */
+.cascadle-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: var(--cascadle-meta-width);
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.cascadle-avatar {
+  width: var(--cascadle-avatar-size);
+  height: var(--cascadle-avatar-size);
+  border-radius: 6px;
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  object-fit: cover;
+  background: #1e293b;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
+}
+
+.cascadle-user-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #cbd5e1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(var(--cascadle-meta-width) - var(--cascadle-avatar-size) - 6px);
+  font-family: 'Outfit', sans-serif;
+}
+
+/* Solved Level Badge Divider */
+.cascadle-level-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin: 4px 0;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE TWEAKS (LAYAR HANDPHONE & LAYAR VERTIKAL TIKTOK LIVE)
+   ═════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+  .cascadle-container {
+    --cascadle-tile-size: 32px;
+    --cascadle-tile-gap: 3px;
+    --cascadle-font-size: 15px;
+    --cascadle-meta-width: 70px;
+    --cascadle-avatar-size: 24px;
+    --cascadle-row-gap: 6px;
+    padding: 2px 4px;
+    max-width: 100vw;
+  }
+  .cascadle-board-area {
+    padding: 4px 2px;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  .cascadle-stages-bar {
+    padding: 4px 6px;
+    gap: 4px;
+    max-width: 98%;
+  }
+  .cascadle-stage-chip {
+    padding: 3px 5px;
+    font-size: 10px;
+    gap: 3px;
+  }
+  .cascadle-user-name {
+    font-size: 10px;
+  }
+  .cascadle-showcase-box {
+    padding: 12px 6px;
+    max-width: 98%;
+  }
+  .cascadle-showcase-meta {
+    width: 70px;
+  }
+}
+
+@media (max-width: 360px) {
+  .cascadle-container {
+    --cascadle-tile-size: 28px;
+    --cascadle-tile-gap: 2.5px;
+    --cascadle-font-size: 13px;
+    --cascadle-meta-width: 64px;
+    --cascadle-avatar-size: 22px;
+    --cascadle-row-gap: 4px;
+  }
+  .cascadle-user-name {
+    font-size: 9px;
+  }
+  .cascadle-stage-chip {
+    padding: 2px 4px;
+  }
+}
+
+.cascadle-divider-line {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.4), transparent);
+  flex: 1;
+}
+
+.cascadle-divider-badge {
+  font-size: 10px;
+  font-weight: 800;
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 10px;
+  padding: 2px 8px;
+  letter-spacing: 0.5px;
+  font-family: 'Outfit', sans-serif;
+}
+
+/* Info Banner at bottom */
+.cascadle-info-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  font-size: 12px;
+  color: #cbd5e1;
+  font-family: 'Outfit', sans-serif;
+  text-align: center;
+  max-width: 420px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   CASCADLE VICTORY SHOWCASE (HALL OF FAME 3-7 WORDS)
+   ═════════════════════════════════════════════════════════════════════════════ */
+.cascadle-showcase-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 440px;
+  background: rgba(18, 24, 38, 0.85);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 16px 12px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.7);
+  margin-top: 4px;
+  animation: cascadleBoxFloat 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+@keyframes cascadleBoxFloat {
+  0% { opacity: 0; transform: translateY(20px) scale(0.95); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.cascadle-showcase-header {
+  text-align: center;
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+.cascadle-showcase-badge {
+  font-size: 13px;
+  font-weight: 800;
+  color: #fbbf24;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  padding: 4px 14px;
+  border-radius: 20px;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+}
+
+.cascadle-showcase-sub {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.65);
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+.cascadle-showcase-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.cascadle-showcase-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  transition: all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cascadle-showcase-row.is-jackpot-row {
+  background: rgba(245, 158, 11, 0.1);
+  border-radius: 10px;
+  padding: 3px 6px;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.15);
+}
+
+.cascadle-showcase-row.reveal-active .showcase-tile {
+  animation: cascadleTilePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes cascadleTilePop {
+  0% { transform: scale(0.8); }
+  60% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.cascadle-showcase-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100px;
+  flex-shrink: 0;
+}
+
+.cascadle-showcase-userinfo {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  max-width: 68px;
+}
+
+.cascadle-showcase-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cascadle-badge-pts {
+  font-size: 10px;
+  font-weight: 800;
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: 6px;
+  padding: 1px 5px;
+  width: fit-content;
+  margin-top: 1px;
+}
+
+.cascadle-badge-jackpot {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #fbbf24;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(217, 119, 6, 0.35));
+  border: 1px solid #fbbf24;
+  border-radius: 6px;
+  padding: 1px 6px;
+  width: fit-content;
+  margin-top: 1px;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+  text-transform: uppercase;
+}
+
+.cascadle-avatar.jackpot-avatar {
+  border: 2px solid #fbbf24 !important;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5) !important;
+}
+
+.cascadle-showcase-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 10px;
+  box-sizing: border-box;
+}
+
+.cascadle-showcase-countdown {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+}
+
+.cascadle-countdown-val {
+  color: #34d399;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.cascadle-showcase-btn {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 800;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}
+
+.cascadle-showcase-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.6);
+}
+
+.cascadle-showcase-btn:active {
+  transform: translateY(1px);
+}

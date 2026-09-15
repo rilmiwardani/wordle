@@ -679,6 +679,63 @@ class SoundEngine {
             });
         } catch(e) {}
     }
+
+    // ─── Cascadle Audio Effects ───
+
+    // Suara harmonis naik saat level (3H/4H/5H/6H) berhasil dipecahkan
+    playCascadleLevelUp() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        try {
+            const now = this.ctx.currentTime;
+            // Chord arpeggio ceria (E5, G#5, B5, E6)
+            [659.25, 830.61, 987.77, 1318.51].forEach((freq, idx) => {
+                const noteTime = now + (idx * 0.05);
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, noteTime);
+
+                gain.gain.setValueAtTime(0.20, noteTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.22);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(noteTime);
+                osc.stop(noteTime + 0.22);
+            });
+        } catch(e) {}
+    }
+
+    // Suara flutter/whoosh lembut saat ubin lama berganti warna (cascading recolor)
+    playCascadleRecolor() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        try {
+            const now = this.ctx.currentTime;
+            [440, 554.37, 659.25].forEach((freq, idx) => {
+                const noteTime = now + (idx * 0.04);
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, noteTime);
+
+                gain.gain.setValueAtTime(0.12, noteTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.14);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(noteTime);
+                osc.stop(noteTime + 0.14);
+            });
+        } catch(e) {}
+    }
 }
 
 window.sounds = new SoundEngine();

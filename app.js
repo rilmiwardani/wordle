@@ -263,6 +263,65 @@ window.toggleGameAnimations = function(checked) {
   }
 };
 
+// ─── SISTEM COOLDOWN DINAMIS (Anti-Dominasi) ───────────────────────────────
+// Makin banyak user menang berturut-turut, makin lama cooldown submit berikutnya.
+// Ini memberi kesempatan penonton lain ikut berkontribusi.
+// Map: userId → { wins: number, lastWinTime: ms, cooldownUntil: ms }
+const playerWinStreaks = new Map();
+
+/**
+ * Catat kemenangan user dan set cooldown berikutnya.
+ * @param {string} userId
+ */
+function recordWin(userId) {
+  if (!userId || userId === 'host' || userId === 'host_offline') return;
+  const now = Date.now();
+  const entry = playerWinStreaks.get(userId) || { wins: 0, cooldownUntil: 0 };
+
+  // Anggap "berturut-turut" jika menang dalam 3 menit terakhir
+  const isStreak = entry.lastWinTime && (now - entry.lastWinTime < 3 * 60 * 1000);
+  entry.wins = isStreak ? entry.wins + 1 : 1;
+  entry.lastWinTime = now;
+
+  // Cooldown berikutnya:
+  // menang 1x → 0s, 2x → 4s, 3x → 8s, 4x+ → 15s
+  const cooldownMs = entry.wins <= 1 ? 0
+    : entry.wins === 2 ? 4000
+    : entry.wins === 3 ? 8000
+    : 15000;
+  entry.cooldownUntil = now + cooldownMs;
+
+  playerWinStreaks.set(userId, entry);
+
+  if (cooldownMs > 0) {
+    const cdSec = Math.round(cooldownMs / 1000);
+    // Tidak perlu toast — cooldown diam-diam agar tidak mematikan semangat
+    console.log(`[Anti-dominasi] ${userId} menang ${entry.wins}x berturut → cooldown ${cdSec}s`);
+  }
+}
+
+/**
+ * Cek apakah user sedang dalam cooldown anti-dominasi.
+ * Return sisa millisecond cooldown (0 = tidak cooldown).
+ * @param {string} userId
+ * @returns {number}
+ */
+function getWinCooldownRemaining(userId) {
+  if (!userId || userId === 'host' || userId === 'host_offline') return 0;
+  const entry = playerWinStreaks.get(userId);
+  if (!entry || !entry.cooldownUntil) return 0;
+  const remaining = entry.cooldownUntil - Date.now();
+  return remaining > 0 ? remaining : 0;
+}
+
+/**
+ * Reset semua streak kemenangan (dipanggil saat ganti ronde/mode).
+ */
+function resetWinStreaks() {
+  playerWinStreaks.clear();
+}
+// ──────────────────────────────────────────────────────────────────────────────
+
 let isMarqueeEnabled = localStorage.getItem('wordle_marqueeEnabled') !== 'false';
 let playerLikes = {};
 let playerShares = {};
@@ -1563,7 +1622,7 @@ function shuffleArray(array) {
 
 function getRandomWord() {
   if (currentGameMode === 'colorfit') {
-    const colors = ['R', 'G', 'B', 'Y', 'P', 'O', 'C', 'W'];
+    const colors = ['R', 'G', 'B', 'Y', 'P', 'O'];
     let result = '';
     let availableColors = [...colors];
     for (let i = 0; i < WORD_LENGTH; i++) {
@@ -1764,16 +1823,39 @@ function applyGameModeUI() {
   const cascadleContainer = document.getElementById('cascadleContainer');
   if (cascadleContainer) cascadleContainer.style.display = 'none';
 
+  const colorFitLegend = document.getElementById('colorFitLegend');
+  if (colorFitLegend) colorFitLegend.style.display = (currentGameMode === 'colorfit') ? 'flex' : 'none';
+  if (boardObj && boardObj.parentElement) {
+    if (currentGameMode === 'colorfit') {
+      boardObj.parentElement.classList.add('colorfit-mode');
+    } else {
+      boardObj.parentElement.classList.remove('colorfit-mode');
+    }
+  }
+
   if (wordLoopInfoContainer) wordLoopInfoContainer.style.display = 'none';
   if (wordTangoInfoContainer) wordTangoInfoContainer.style.display = 'none';
-  if (tangoPoolContainer) tangoPoolContainer.style.display = 'none';
-  if (tangoGuessFeed) tangoGuessFeed.style.display = 'none';
+  if (tangoPoolContainer) {
+    tangoPoolContainer.style.display = 'none';
+    const chips = document.getElementById('tangoPoolChips');
+    if (currentGameMode !== 'wordtango' && chips) chips.innerHTML = '';
+  }
+  if (tangoGuessFeed) {
+    tangoGuessFeed.style.display = 'none';
+    if (currentGameMode !== 'wordtango') tangoGuessFeed.innerHTML = '';
+  }
+  if (currentGameMode !== 'wordtango') {
+    if (typeof tangoGuessedWords !== 'undefined' && tangoGuessedWords.clear) tangoGuessedWords.clear();
+  }
   if (wordGridInfoContainer) wordGridInfoContainer.style.display = 'none';
   if (wordGridContainer) wordGridContainer.style.display = 'none';
   if (boardObj) {
     boardObj.style.display = '';
     if (currentGameMode !== 'wordladder') {
       boardObj.classList.remove('wordladder-board');
+    }
+    if (currentGameMode !== 'wordtango') {
+      boardObj.classList.remove('tango-board');
     }
   }
 
@@ -1832,13 +1914,21 @@ function applyGameModeUI() {
     if (bestGuessContainer) bestGuessContainer.style.display = 'none';
     if (wordGridInfoContainer) wordGridInfoContainer.style.display = '';
     if (wordGridContainer) wordGridContainer.style.display = 'grid';
-    if (boardObj) boardObj.style.display = 'none';
+    if (boardObj) {
+      boardObj.style.display = 'none';
+      boardObj.innerHTML = '';
+      boardObj.className = '';
+    }
     if (switchBtn) switchBtn.textContent = '🔄 Switch to Squareword';
   } else if (currentGameMode === 'squareword') {
     if (headerTitle) headerTitle.textContent = 'SQUAREWORD 5×5';
     if (hintContainer) hintContainer.style.display = 'none';
     if (bestGuessContainer) bestGuessContainer.style.display = 'none';
-    if (boardObj) boardObj.style.display = 'none';
+    if (boardObj) {
+      boardObj.style.display = 'none';
+      boardObj.innerHTML = '';
+      boardObj.className = '';
+    }
     if (squarewordBoardContainer) squarewordBoardContainer.style.display = 'flex';
     if (switchBtn) switchBtn.textContent = '🔄 Switch to Word Ladder';
   } else if (currentGameMode === 'wordladder') {
@@ -1852,7 +1942,11 @@ function applyGameModeUI() {
     if (headerTitle) headerTitle.textContent = 'BETWEENLE';
     if (hintContainer) hintContainer.style.display = 'none';
     if (bestGuessContainer) bestGuessContainer.style.display = 'none';
-    if (boardObj) boardObj.style.display = 'none';
+    if (boardObj) {
+      boardObj.style.display = 'none';
+      boardObj.innerHTML = '';
+      boardObj.className = '';
+    }
     if (betweenleContainer) betweenleContainer.style.display = 'flex';
     if (switchBtn) switchBtn.textContent = '🔄 Switch to Cascadle';
     if (!betweenleTopBound) {
@@ -1864,7 +1958,11 @@ function applyGameModeUI() {
     if (headerTitle) headerTitle.textContent = 'CASCADLE';
     if (hintContainer) hintContainer.style.display = 'none';
     if (bestGuessContainer) bestGuessContainer.style.display = 'none';
-    if (boardObj) boardObj.style.display = 'none';
+    if (boardObj) {
+      boardObj.style.display = 'none';
+      boardObj.innerHTML = '';
+      boardObj.className = '';
+    }
     if (cascadleContainer) cascadleContainer.style.display = 'flex';
     if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
     if (!cascadleTargets || !cascadleTargets[3]) {
@@ -2027,7 +2125,11 @@ function createEmptyW500Row(idx) {
 }
 
 function renderWord500Board(revealAllColors = false) {
-  document.querySelectorAll('.is-invalid-tooltip').forEach(el => el.remove());
+  document.querySelectorAll('.is-invalid-tooltip').forEach(el => {
+    if (el._fadeTimer) clearTimeout(el._fadeTimer);
+    if (el._removeTimer) clearTimeout(el._removeTimer);
+    el.remove();
+  });
   board.innerHTML = '';
   word500PendingInvalidRow = null; // DOM-nya sudah dihapus oleh innerHTML=''
   board.classList.add('w500-board');
@@ -2158,7 +2260,11 @@ function createEmptyWordFitRow(idx) {
 }
 
 function renderWordFitBoard(revealAllColors = false) {
-  document.querySelectorAll('.is-invalid-tooltip').forEach(el => el.remove());
+  document.querySelectorAll('.is-invalid-tooltip').forEach(el => {
+    if (el._fadeTimer) clearTimeout(el._fadeTimer);
+    if (el._removeTimer) clearTimeout(el._removeTimer);
+    el.remove();
+  });
   board.innerHTML = '';
   word500PendingInvalidRow = null; // Reusing word500 logic for invalid row
   board.classList.add('w500-board'); // Use same general board styling
@@ -2235,7 +2341,11 @@ function renderTangoPool() {
 
 // Initialize Board
 function initBoard() {
-  document.querySelectorAll('.is-invalid-tooltip').forEach(el => el.remove());
+  document.querySelectorAll('.is-invalid-tooltip').forEach(el => {
+    if (el._fadeTimer) clearTimeout(el._fadeTimer);
+    if (el._removeTimer) clearTimeout(el._removeTimer);
+    el.remove();
+  });
   board.innerHTML = '';
   board.className = '';
   const colorLegend = document.getElementById('colorFitLegend');
@@ -3982,6 +4092,7 @@ function showWordGridWinOverlay() {
 function startNewRound() {
   applyGameModeUI();
   hasPlayedCloseAudio = false;
+  resetWinStreaks(); // Reset cooldown anti-dominasi setiap ronde baru
 
   if (currentGameMode === 'betweenle') {
     betweenleRound = round;
@@ -4699,7 +4810,7 @@ function validateHardMode(guessWord) {
 
   let validPastGuesses;
   if (currentGameMode === 'colorfit') {
-    validPastGuesses = guesses.filter(g => /^[RGBYPOCW]+$/.test(g));
+    validPastGuesses = guesses.filter(g => /^[RGBYPO]+$/.test(g));
   } else {
     validPastGuesses = guesses.filter(g => VALID_WORDS.includes(g));
   }
@@ -4790,10 +4901,18 @@ function validateHardMode(guessWord) {
 }
 
 // Connection Logic
-function showDisconnectBanner(message) {
+function showDisconnectBanner(message, type = 'error') {
   const banner = document.getElementById('disconnectBanner');
   if (banner) {
-    document.getElementById('disconnectMsg').textContent = message || 'Koneksi terputus';
+    const msg = document.getElementById('disconnectMsg');
+    if (msg) msg.textContent = message || 'Koneksi terputus';
+    
+    banner.classList.remove('banner-warning', 'banner-reconnecting');
+    if (type === 'warning') {
+      banner.classList.add('banner-warning');
+    } else if (type === 'reconnecting') {
+      banner.classList.add('banner-reconnecting');
+    }
     banner.classList.add('show');
   }
 }
@@ -4801,7 +4920,7 @@ function showDisconnectBanner(message) {
 function hideDisconnectBanner() {
   const banner = document.getElementById('disconnectBanner');
   if (banner) {
-    banner.classList.remove('show');
+    banner.classList.remove('show', 'banner-warning', 'banner-reconnecting');
   }
 }
 
@@ -4809,13 +4928,24 @@ function attemptReconnect() {
   if (reconnectTimer) clearTimeout(reconnectTimer);
   if (!lastUsername) return;
 
+  // Jika backend IndoFinity
+  if (socket instanceof IndoFinitySocket) {
+    reconnectTimer = setTimeout(() => {
+      console.log('[Reconnect] Attempting to reconnect IndoFinity...');
+      showToast('🔄 Reconnecting IndoFinity...', 3000);
+      connectToLive();
+    }, 5000);
+    return;
+  }
+
+  // Jika backend server.js lokal, server sudah otomatis auto-reconnect.
+  // Fallback cadangan jika server perlu disenggol:
   reconnectTimer = setTimeout(() => {
-    console.log('[Reconnect] Attempting to reconnect to TikTok...');
-    showToast('🔄 Reconnecting...', 3000);
-    if (socket && socket.connected) {
+    if (!isConnectedToTikTok && socket && socket.connected) {
+      console.log('[Reconnect] Fallback ping to local server for @' + lastUsername);
       socket.emit('connect-tiktok', { uniqueId: lastUsername, sessionId: lastSessionId });
     }
-  }, 5000);
+  }, 8000);
 }
 
 window.toggleAdvancedSettings = function() {
@@ -5123,6 +5253,12 @@ function setupSocketListeners() {
       hideDisconnectBanner();
       if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
 
+      const badge = document.querySelector('.live-badge');
+      if (badge) {
+        badge.textContent = 'LIVE';
+        badge.classList.remove('is-warning', 'is-stalled', 'is-reconnecting');
+      }
+
       // Persist gameMode to sessionStorage NOW (after successful connection),
       // so autoReconnect works correctly on page refresh while in-game.
       try { if (currentGameMode) sessionStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
@@ -5138,25 +5274,78 @@ function setupSocketListeners() {
         startNewRound();
       }
     } else if (data.status === 'connecting') {
-      // Bug 6 fix: show connecting feedback
       loginStatus.textContent = "Connecting to TikTok Live...";
       if (gameContainer.style.display !== 'none') {
-        showDisconnectBanner('Reconnecting to TikTok Live...');
+        showDisconnectBanner('Menyambungkan ke TikTok Live...', 'reconnecting');
+      }
+      const badge = document.querySelector('.live-badge');
+      if (badge) {
+        badge.textContent = 'CONNECT';
+        badge.classList.add('is-reconnecting');
       }
     } else if (data.status === 'disconnected') {
-      // Bug 1 fix: always re-enable button, not just when error exists
       isConnectedToTikTok = false;
-      const errorMsg = data.error || 'Connection lost';
+      const errorMsg = data.error || 'Koneksi terputus';
 
       if (gameContainer.style.display === 'none') {
-        // Still on login screen
         loginStatus.textContent = "Error: " + errorMsg;
         connectBtn.disabled = false;
-        connectBtn.textContent = "Try Again";
+        connectBtn.textContent = "Coba Lagi";
       } else {
-        // Bug 2 fix: already in game → show banner + auto-reconnect
         showDisconnectBanner(errorMsg);
-        attemptReconnect();
+        if (socket instanceof IndoFinitySocket) {
+          attemptReconnect();
+        }
+      }
+      const badge = document.querySelector('.live-badge');
+      if (badge) {
+        badge.textContent = 'OFFLINE';
+        badge.classList.remove('is-warning', 'is-stalled', 'is-reconnecting');
+      }
+    }
+  });
+
+  // --- Watchdog & Auto-Reconnect listeners ---
+  socket.on('tiktokReconnecting', (data) => {
+    console.log('[TikTok] Auto-reconnecting...', data);
+    isConnectedToTikTok = false;
+    const msg = `🔄 Menyambung ulang TikTok (ke-${data.attempt}/${data.maxAttempts})...`;
+    if (gameContainer.style.display !== 'none') {
+      showDisconnectBanner(msg, 'reconnecting');
+    }
+    const badge = document.querySelector('.live-badge');
+    if (badge) {
+      badge.textContent = 'RETRY';
+      badge.classList.remove('is-stalled');
+      badge.classList.add('is-reconnecting');
+    }
+  });
+
+  socket.on('tiktokStalled', (data) => {
+    console.warn('[TikTok] Aliran data freeze:', data);
+    const msg = `⚠️ Aliran chat hening (${data.seconds}d). Memeriksa koneksi...`;
+    if (gameContainer.style.display !== 'none') {
+      showDisconnectBanner(msg, 'warning');
+    }
+    const badge = document.querySelector('.live-badge');
+    if (badge) {
+      badge.textContent = 'STALLED';
+      badge.classList.remove('is-reconnecting');
+      badge.classList.add('is-stalled');
+    }
+  });
+
+  socket.on('tiktokPulse', (data) => {
+    const badge = document.querySelector('.live-badge');
+    if (!badge) return;
+    if (data.status === 'connected') {
+      if (data.secondsSinceLastEvent > 25) {
+        badge.classList.add('is-warning');
+        badge.title = `Data TikTok terakhir: ${data.secondsSinceLastEvent}d lalu`;
+      } else {
+        badge.classList.remove('is-warning', 'is-stalled', 'is-reconnecting');
+        badge.textContent = 'LIVE';
+        badge.title = 'Koneksi TikTok aktif';
       }
     }
   });
@@ -5166,6 +5355,14 @@ function setupSocketListeners() {
     console.log('[TikTok] Connected event received', data);
     isConnectedToTikTok = true;
     hideDisconnectBanner();
+    showToast('✅ Terhubung ke TikTok Live!', 2500);
+
+    const badge = document.querySelector('.live-badge');
+    if (badge) {
+      badge.textContent = 'LIVE';
+      badge.classList.remove('is-warning', 'is-stalled', 'is-reconnecting');
+      badge.title = 'Koneksi TikTok aktif';
+    }
 
     // Persist gameMode to sessionStorage after successful connection
     try { if (currentGameMode) sessionStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
@@ -5189,13 +5386,19 @@ function setupSocketListeners() {
 
     let message = 'TikTok connection lost';
     if (reason === 'tiktok.live_ended') message = 'Live stream ended';
-    else if (reason === 'tiktok.disconnected') message = 'TikTok disconnected';
+    else if (reason === 'tiktok.disconnected') message = 'Koneksi TikTok terputus';
     else if (reason === 'manual_disconnect') message = 'Disconnected manually';
+
+    const badge = document.querySelector('.live-badge');
+    if (badge) {
+      badge.textContent = (reason === 'tiktok.live_ended') ? 'ENDED' : 'OFFLINE';
+      badge.classList.remove('is-warning', 'is-stalled', 'is-reconnecting');
+    }
 
     if (gameContainer.style.display !== 'none') {
       showDisconnectBanner(message);
       // Auto-reconnect unless manually disconnected
-      if (reason !== 'manual_disconnect') {
+      if (reason !== 'manual_disconnect' && socket instanceof IndoFinitySocket) {
         attemptReconnect();
       }
     }
@@ -5477,15 +5680,52 @@ function handleChatGuess(data) {
   }
 
   if (isAllowedLength) {
-    // Tolak jika user sudah pernah kirim kata yang sama di ronde ini (kecuali mode betweenle dan cascadle)
-    if (currentGameMode !== 'betweenle' && currentGameMode !== 'cascadle') {
-      const userId = data.uniqueId || data.nickname || 'anon';
+    const userId = data.uniqueId || data.nickname || 'anon';
+    const isHost = (userId === 'host' || userId === 'host_offline' || (typeof userId === 'string' && userId.toLowerCase().includes('host')));
+
+    // Deduplikasi dan pra-validasi cerdas untuk Betweenle agar antrean tidak tersumbat
+    if (currentGameMode === 'betweenle') {
+      if (!isHost) {
+        // Abaikan kata duplikat yang sudah pernah dievaluasi di ronde ini
+        if (typeof betweenleGuessedWords !== 'undefined' && betweenleGuessedWords.has(msg)) return;
+        const dedupKey = `${userId}:${msg}`;
+        if (userGuessDedup.has(dedupKey)) return;
+        userGuessDedup.add(dedupKey);
+
+        // Pra-validasi kamus: abaikan obrolan/typo penonton non-baku sebelum masuk queue
+        if (typeof getBetweenleWordIndex === 'function') {
+          const wordIdx = getBetweenleWordIndex(msg, betweenleLetterLength);
+          if (wordIdx === -1) return; // Drop chat typo penonton agar queue tidak penuh
+        }
+      }
+    } else if (currentGameMode === 'squareword') {
+      if (!isHost) {
+        const dedupKey = `${userId}:${msg}`;
+        if (userGuessDedup.has(dedupKey)) return; // skip duplikat user
+        userGuessDedup.add(dedupKey);
+
+        // Pra-validasi kamus: abaikan obrolan biasa/typo penonton agar queue tidak tersumbat
+        const isValid = (allValidWordsSets && allValidWordsSets[5] && allValidWordsSets[5].has(msg)) ||
+                        (VALID_WORDS_SET && VALID_WORDS_SET.has(msg)) ||
+                        (allValidWords && allValidWords[5] && allValidWords[5].includes(msg)) ||
+                        (fullValidDictionary && fullValidDictionary.has(msg));
+        if (!isValid) return; // Drop chat biasa yang bukan kata baku KBBI
+
+        // Jika kata sudah pernah dievaluasi di ronde ini & antrean sedang ramai, skip agar stream responsif
+        if (squarewordGuesses && squarewordGuesses.includes(msg) && guessQueue.length >= 2) return;
+      }
+    } else if (currentGameMode !== 'cascadle') {
       const dedupKey = `${userId}:${msg}`;
       if (userGuessDedup.has(dedupKey)) return; // skip duplikat
       userGuessDedup.add(dedupKey);
     }
 
     if (guessQueue.length < 50) {
+      // Cek cooldown anti-dominasi (diam-diam — user tidak diberitahu)
+      const cdUserId = data.uniqueId || data.nickname || 'anon';
+      const cdIsHost = (cdUserId === 'host' || cdUserId === 'host_offline' || (typeof cdUserId === 'string' && cdUserId.toLowerCase().includes('host')));
+      if (!cdIsHost && getWinCooldownRemaining(cdUserId) > 0) return; // silently drop
+
       guessQueue.push({ guessWord: msg, userData: data });
       processQueue();
     }
@@ -5787,6 +6027,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
     target.solver = userData;
     const pts = target.points || 15;
     addPoints(userData, pts);
+    recordWin(userData && (userData.uniqueId || userData.nickname));
 
     const row = document.getElementById(`tango-row-${matchedIndex}`);
     if (row) {
@@ -5879,7 +6120,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
 
   let isValidWord = (VALID_WORDS_SET && VALID_WORDS_SET.size > 0) ? VALID_WORDS_SET.has(guessWord) : VALID_WORDS.includes(guessWord);
   if (currentGameMode === 'colorfit') {
-    isValidWord = /^[RGBYPOCW]+$/.test(guessWord) && guessWord.length === WORD_LENGTH;
+    isValidWord = /^[RGBYPO]+$/.test(guessWord) && guessWord.length === WORD_LENGTH;
   }
 
   if (currentGameMode === 'fillblanks') {
@@ -5932,6 +6173,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
         const pts = fillBlanksTargets[matchedIndex].isYellowRow ? 15 : 10;
         fillBlanksTargets[matchedIndex].points = pts;
         addPoints(userData, pts);
+        recordWin(userData && (userData.uniqueId || userData.nickname));
         
         if (row) {
           const avatar = row.querySelector('.guesser-avatar');
@@ -6188,7 +6430,12 @@ function processGuess(guessWord, userData, queueLen = 0) {
     invalidRows.forEach(el => el.remove());
   }
   const invalidTooltips = document.querySelectorAll('.is-invalid-tooltip');
-  invalidTooltips.forEach(el => el.remove());
+  invalidTooltips.forEach(el => {
+    // Batalkan timer auto-dismiss agar tidak terjadi konflik
+    if (el._fadeTimer) clearTimeout(el._fadeTimer);
+    if (el._removeTimer) clearTimeout(el._removeTimer);
+    el.remove();
+  });
 
   const currentRow = guesses.length;
   
@@ -6233,6 +6480,25 @@ function processGuess(guessWord, userData, queueLen = 0) {
       tooltip.style.top = (rowRect.top - tooltipHeight - 8) + 'px';
       tooltip.style.zIndex = '9999';
     });
+
+    // Auto-dismiss setelah 2.5 detik dengan fade-out
+    // (tetap langsung hilang jika tebakan lain masuk via invalidTooltips.forEach(el => el.remove()))
+    const TOOLTIP_LIFETIME = 2500;
+    const FADE_DURATION = 400;
+    const autoRemove = ((t) => {
+      // Mulai fade-out 400ms sebelum hilang
+      const fadeTimer = setTimeout(() => {
+        if (t.parentNode) t.classList.add('is-fading-out');
+      }, TOOLTIP_LIFETIME - FADE_DURATION);
+
+      const removeTimer = setTimeout(() => {
+        if (t.parentNode) t.remove();
+      }, TOOLTIP_LIFETIME);
+
+      // Simpan timer ID di elemen agar bisa dibatalkan jika tooltip dihapus paksa lebih awal
+      t._fadeTimer = fadeTimer;
+      t._removeTimer = removeTimer;
+    })(tooltip);
   }
   
   const avatar = document.createElement('img');
@@ -6572,6 +6838,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
     } else {
       if (winPts > 0) {
         addPoints(userData, winPts);
+        recordWin(userData && (userData.uniqueId || userData.nickname));
         showFloatingPoints(winPts, `avatar-${currentRow}`);
       }
       const winnerName = userData ? (userData.nickname || userData.uniqueId || 'Someone') : 'Someone';
@@ -8627,6 +8894,8 @@ async function processSquarewordGuess(guessWord, userData) {
   const guessUpper = (guessWord || '').trim().toUpperCase().replace(/[^A-Z]/g, '');
   if (guessUpper.length !== 5) return;
 
+  const isHost = (userData && (userData.userId === 'host' || userData.userId === 'host_offline' || (typeof userData.userId === 'string' && userData.userId.toLowerCase().includes('host'))));
+
   // 1. Strict Dictionary Validation against valid KBBI words
   let isValidWord = false;
   if (allValidWordsSets && allValidWordsSets[5] && allValidWordsSets[5].size > 0) {
@@ -8642,67 +8911,77 @@ async function processSquarewordGuess(guessWord, userData) {
   }
 
   if (!isValidWord) {
-    console.log('[Squareword] Rejected invalid KBBI word:', guessUpper);
-    const inputRow = document.getElementById('squarewordInputRow');
-    if (inputRow) {
-      inputRow.classList.remove('shake');
-      void inputRow.offsetWidth;
-      inputRow.classList.add('shake');
+    if (isHost) {
+      console.log('[Squareword] Rejected invalid KBBI word from host:', guessUpper);
+      const inputRow = document.getElementById('squarewordInputRow');
+      if (inputRow) {
+        inputRow.classList.remove('shake');
+        void inputRow.offsetWidth;
+        inputRow.classList.add('shake');
+      }
+      if (typeof showToast === 'function') {
+        const errMsg = (typeof lastLang !== 'undefined' && (lastLang === 'en' || lastLang === 'mixed')) 
+          ? '❌ "' + guessUpper + '" not in dictionary!' 
+          : '❌ "' + guessUpper + '" tidak ada dalam kamus KBBI!';
+        showToast(errMsg, 1800);
+      }
+      if (window.sounds) window.sounds.playInvalid();
+      if (window.playHostAudio) playHostAudio('invalid');
     }
-    if (typeof showToast === 'function') {
-      const errMsg = (typeof lastLang !== 'undefined' && (lastLang === 'en' || lastLang === 'mixed')) 
-        ? '❌ "' + guessUpper + '" not in dictionary!' 
-        : '❌ "' + guessUpper + '" tidak ada dalam kamus KBBI!';
-      showToast(errMsg, 1800);
-    }
-    if (window.sounds) window.sounds.playInvalid();
-    if (window.playHostAudio) playHostAudio('invalid');
     return;
   }
 
   isSquarewordScanning = true;
-
-  // 1. Update Top Input Row Preview with Guesser Avatar & Word
-  const inputAvatar = document.getElementById('sqInputAvatar');
-  const inputName = document.getElementById('sqInputName');
-  const inputAvatarContainer = document.getElementById('sqInputAvatarContainer');
-  
-  if (inputAvatar) {
-    inputAvatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
-    inputAvatar.src = (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : 'assets/bg_nature.png';
-  }
-  if (inputName) {
-    inputName.textContent = (userData.nickname || userData.uniqueId || 'GUESSER').slice(0, 8);
-  }
-  if (inputAvatarContainer) {
-    inputAvatarContainer.classList.add('show', 'active');
-  }
-
-  for (let c = 0; c < 5; c++) {
-    const tile = document.getElementById('sqInputTile' + c);
-    if (tile) {
-      tile.textContent = guessUpper[c];
-      tile.className = 'tile sq-tile sq-input-tile typed';
-    }
-  }
-
-  // Record guess
-  squarewordGuesses.push(guessUpper);
-
-  const prevSolvedRows = [...squarewordSolvedRows];
-  const prevSolvedCols = [...squarewordSolvedCols];
-
-  let newRevealedInRound = 0;
-
-  // 2. Downwards Scan Wave (Rows 0 to 4)
-  for (let r = 0; r < 5; r++) {
-    if (window.sounds) window.sounds.playScanRow(r);
-    const rowElem = document.getElementById('sqRow_' + r);
-    if (rowElem) {
-      rowElem.classList.add('row-scanning');
+  try {
+    const queueLen = (typeof guessQueue !== 'undefined') ? guessQueue.length : 0;
+    let scanDelay = 120; // Default santai
+    if (queueLen >= 5) {
+      scanDelay = 25;   // Turbo saat banjir komentar
+    } else if (queueLen >= 2) {
+      scanDelay = 60;   // Gesit saat ada antrean
     }
 
-    const targetRowUpper = squarewordGrid[r].toUpperCase();
+    // 1. Update Top Input Row Preview with Guesser Avatar & Word
+    const inputAvatar = document.getElementById('sqInputAvatar');
+    const inputName = document.getElementById('sqInputName');
+    const inputAvatarContainer = document.getElementById('sqInputAvatarContainer');
+    
+    if (inputAvatar) {
+      inputAvatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
+      inputAvatar.src = (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : 'assets/bg_nature.png';
+    }
+    if (inputName) {
+      inputName.textContent = (userData.nickname || userData.uniqueId || 'GUESSER').slice(0, 8);
+    }
+    if (inputAvatarContainer) {
+      inputAvatarContainer.classList.add('show', 'active');
+    }
+
+    for (let c = 0; c < 5; c++) {
+      const tile = document.getElementById('sqInputTile' + c);
+      if (tile) {
+        tile.textContent = guessUpper[c];
+        tile.className = 'tile sq-tile sq-input-tile typed';
+      }
+    }
+
+    // Record guess
+    squarewordGuesses.push(guessUpper);
+
+    const prevSolvedRows = [...squarewordSolvedRows];
+    const prevSolvedCols = [...squarewordSolvedCols];
+
+    let newRevealedInRound = 0;
+
+    // 2. Downwards Scan Wave (Rows 0 to 4)
+    for (let r = 0; r < 5; r++) {
+      if (window.sounds && queueLen < 4) window.sounds.playScanRow(r);
+      const rowElem = document.getElementById('sqRow_' + r);
+      if (rowElem) {
+        rowElem.classList.add('row-scanning');
+      }
+
+      const targetRowUpper = squarewordGrid[r].toUpperCase();
     let rowRevealedNew = false;
     const newlyRevealedCols = [];
 
@@ -8797,7 +9076,7 @@ async function processSquarewordGuess(guessWord, userData) {
     // Update yellow clue box for row r
     renderSquarewordRowClues(r, true);
 
-    await new Promise(res => setTimeout(res, 140));
+    await new Promise(res => setTimeout(res, scanDelay));
 
     if (rowElem) {
       rowElem.classList.remove('row-scanning');
@@ -8835,7 +9114,8 @@ async function processSquarewordGuess(guessWord, userData) {
           tile.classList.add('sq-tile-wave');
         }
       }
-      await new Promise(res => setTimeout(res, 250));
+      const colWaveDelay = (queueLen >= 3) ? 80 : 250;
+      await new Promise(res => setTimeout(res, colWaveDelay));
     }
   }
 
@@ -8858,8 +9138,9 @@ async function processSquarewordGuess(guessWord, userData) {
 
   // Ensure all revealed tiles across ALL rows stay permanently green
   renderSquarewordGrid();
-
-  isSquarewordScanning = false;
+  } finally {
+    isSquarewordScanning = false;
+  }
 
   // 5. Check Win Condition (All 25 tiles revealed)
   let allTilesSolved = true;
@@ -9462,6 +9743,9 @@ let betweenleBottomBound = null; // { word, index, isInitial, user, avatar }
 let betweenleInitialWordsCount = 0;
 let betweenleCurrentWordsCount = 0;
 let betweenleSortedDicts = {}; // cache array terurut per panjang huruf
+let betweenleDictMap = {}; // cache Map word -> index untuk O(1) instant lookup
+let betweenleGuessedWords = new Set(); // melacak kata yang sudah dievaluasi dalam ronde aktif
+let lastBetweenleAudioTime = 0; // debounce throttle untuk SFX audio
 let allAvailableBetweenleWords = {}; // shuffle bag per letter length
 let betweenleGuessHistory = [];
 let betweenleUserCooldown = new Map();
@@ -9471,6 +9755,15 @@ let betweenleGuessCount = 0; // Jumlah tebakan valid yang dievaluasi dalam ronde
 // Queue untuk animasi tebakan masuk secara berurutan & halus
 let betweenleGuessQueue = [];
 let betweenleIsAnimating = false;
+
+// Helper: pemutaran audio Betweenle dengan throttle perlindungan audio overlap
+function playBetweenleSoundSafely(soundMethodName) {
+  if (!window.sounds || typeof window.sounds[soundMethodName] !== 'function') return;
+  const now = Date.now();
+  if (now - lastBetweenleAudioTime < 120) return; // minimal 120ms antar suara
+  lastBetweenleAudioTime = now;
+  window.sounds[soundMethodName]();
+}
 
 // Membuka dan menutup Modal Cara Bermain Betweenle
 function openBetweenleHowToPlay() {
@@ -9525,9 +9818,52 @@ function getBetweenleSortedDict(length) {
 
   if (words.length > 50) {
     betweenleSortedDicts[length] = words;
+    const map = new Map();
+    for (let i = 0; i < words.length; i++) {
+      map.set(words[i], i);
+    }
+    betweenleDictMap[length] = map;
   }
   console.log(`[Betweenle] Initialized sorted dictionary for length ${length}: ${words.length} words. First: ${words[0]}, Last: ${words[words.length - 1]}`);
   return words;
+}
+
+// Helper: pencarian indeks kata instan O(1)
+function getBetweenleWordIndex(word, length) {
+  if (betweenleDictMap[length]) {
+    const idx = betweenleDictMap[length].get(word);
+    return idx !== undefined ? idx : -1;
+  }
+  const dict = getBetweenleSortedDict(length);
+  return dict ? dict.indexOf(word) : -1;
+}
+
+// Helper: membersihkan antrean dari tebakan yang posisinya sudah berada di luar batas rentang baru
+function pruneBetweenleQueue() {
+  if (!betweenleTopBound || !betweenleBottomBound || betweenleGuessQueue.length === 0) return;
+  const validQueue = [];
+  for (let i = 0; i < betweenleGuessQueue.length; i++) {
+    const item = betweenleGuessQueue[i];
+    // Kata rahasia jackpot jangan pernah di-prune
+    if (item.word === betweenleSecretWord) {
+      validQueue.push(item);
+      continue;
+    }
+    // Jika posisi tebakan sudah di luar rentang baru:
+    if (item.guessIndex <= betweenleTopBound.index || item.guessIndex >= betweenleBottomBound.index) {
+      // Masukkan langsung ke feed penonton tanpa menyita antrean visual papan utama
+      addBetweenleFeedItem({
+        word: item.word,
+        user: item.userName,
+        badgeType: 'badge-out',
+        badgeText: 'LEWAT BATAS',
+        pts: 0
+      });
+    } else {
+      validQueue.push(item);
+    }
+  }
+  betweenleGuessQueue = validQueue;
 }
 
 // Mengatur panjang huruf (4, 5, 6, 7, atau acak)
@@ -9584,6 +9920,9 @@ function startBetweenleGame() {
   betweenleIsAnimating = false;
   betweenleGuessCount = 0;
   betweenleUserCooldown.clear();
+  if (typeof betweenleGuessedWords !== 'undefined' && betweenleGuessedWords.clear) {
+    betweenleGuessedWords.clear();
+  }
   if (typeof userGuessDedup !== 'undefined' && userGuessDedup.clear) {
     userGuessDedup.clear();
   }
@@ -9652,7 +9991,7 @@ function startBetweenleGame() {
   const hostInput = document.getElementById('hostGuessInput');
   if (hostInput) hostInput.placeholder = `Tebak kata ${betweenleLetterLength} huruf...`;
 
-  resetBetweenleMiddleRow();
+  resetBetweenleMiddleRow(true);
   renderBetweenleUI();
   console.log(`[Betweenle] Ronde ${betweenleRound} dimulai. Kata Rahasia: "${betweenleSecretWord}" (${betweenleLetterLength}H, idx: ${betweenleSecretIndex}/${activeDict.length}). Rentang awal: ${betweenleTopBound.word} - ${betweenleBottomBound.word} (${betweenleCurrentWordsCount} kata).`);
 }
@@ -9682,7 +10021,7 @@ function renderBetweenleUI() {
   }
 
   // 2. Baris Tengah (Middle Input Row - dalam kondisi idle)
-  if (!betweenleIsAnimating) {
+  if (!betweenleIsAnimating && !betweenleIsGameOver) {
     resetBetweenleMiddleRow();
   }
 
@@ -9713,7 +10052,8 @@ function renderBetweenleUI() {
 }
 
 // Reset baris tengah ke kursor menunggu (dot '•') dengan slot avatar di kanan
-function resetBetweenleMiddleRow() {
+function resetBetweenleMiddleRow(force = false) {
+  if (betweenleIsGameOver && !force) return;
   const middleRowEl = document.getElementById('betweenleMiddleRow');
   const middleWrapper = document.getElementById('betweenleMiddleWrapper');
 
@@ -9935,23 +10275,35 @@ function processBetweenleGuess(guessWord, userData) {
     betweenleUserCooldown.set(userId, now);
   }
 
-  // 3. Validasi kamus baku
-  const dict = getBetweenleSortedDict(betweenleLetterLength);
-  const guessIndex = dict.indexOf(word);
-  if (guessIndex === -1) {
-    console.log(`[Betweenle] Kata "${word}" tidak ditemukan di kamus baku (${dict.length} kata)`);
+  // 3. Deduplikasi kata: tolak jika kata sudah pernah dievaluasi di ronde ini
+  if (betweenleGuessedWords.has(word)) {
     if (isHost) {
-      showToast(`"${word}" bukan kata baku di kamus!`, 2500);
+      showToast(`"${word}" sudah pernah ditebak!`, 2000);
     }
-    triggerBetweenleShakeAnimation({
-      word,
-      userName,
-      userAvatar,
-      userId,
-      isHost
-    }, `"${word}" bukan kata baku di kamus!`);
     return;
   }
+
+  // 4. Validasi kamus baku (pencarian instan O(1))
+  const guessIndex = getBetweenleWordIndex(word, betweenleLetterLength);
+  if (guessIndex === -1) {
+    if (isHost) {
+      showToast(`"${word}" bukan kata baku di kamus!`, 2500);
+      if (!betweenleIsAnimating && betweenleGuessQueue.length === 0) {
+        triggerBetweenleShakeAnimation({
+          word,
+          userName,
+          userAvatar,
+          userId,
+          isHost
+        }, `"${word}" bukan kata baku di kamus!`);
+      }
+    }
+    // Jika dari chat penonton: abaikan secara senyap tanpa merusak animasi papan
+    return;
+  }
+
+  // Tandai kata sudah ditebak di ronde ini
+  betweenleGuessedWords.add(word);
 
   // Masukkan tebakan ke antrean animasi
   betweenleGuessQueue.push({
@@ -9967,7 +10319,33 @@ function processBetweenleGuess(guessWord, userData) {
   triggerBetweenleNextAnimation();
 }
 
-// Mengeksekusi animasi tebakan satu per satu secara berurutan & halus
+// Menangani tebakan di luar rentang aktif secara adaptif
+function handleBetweenleOutOfRange(item, toastMsg, nextDelay = 80) {
+  const isHost = (item.userId === 'host' || item.userId === 'host_offline' || (typeof item.userId === 'string' && item.userId.toLowerCase().includes('host')));
+  if (isHost && toastMsg) {
+    showToast(toastMsg, 2500);
+  }
+
+  // Jika antrean sedang ada kata lain yang mengantre, jangan tahan papan dengan getaran panjang
+  if (betweenleGuessQueue.length > 0) {
+    playBetweenleSoundSafely('playBetweenleOutOfRange');
+    addBetweenleFeedItem({
+      word: item.word,
+      user: item.userName,
+      badgeType: 'badge-out',
+      badgeText: 'LEWAT BATAS',
+      pts: 0
+    });
+    betweenleIsAnimating = false;
+    resetBetweenleMiddleRow();
+    setTimeout(triggerBetweenleNextAnimation, nextDelay);
+  } else {
+    // Antrean santai: jalankan getar papan visual estetik
+    triggerBetweenleShakeAnimation(item, toastMsg);
+  }
+}
+
+// Mengeksekusi animasi tebakan satu per satu secara adaptif, berurutan & halus
 function triggerBetweenleNextAnimation() {
   if (betweenleIsAnimating || betweenleGuessQueue.length === 0 || betweenleIsGameOver) {
     return;
@@ -9982,6 +10360,26 @@ function triggerBetweenleNextAnimation() {
   const guessAvatar = document.getElementById('betweenleGuessAvatar');
   const guessUser = document.getElementById('betweenleGuessUser');
   const guessStatus = document.getElementById('betweenleGuessStatus');
+
+  // Kecepatan adaptif berdasarkan jumlah antrean (Adaptive Pacing)
+  const queueLen = betweenleGuessQueue.length;
+  let previewDelay = 350;
+  let slideDuration = 400;
+  let nextDelay = 80;
+
+  if (queueLen >= 4) {
+    previewDelay = 60;
+    slideDuration = 120;
+    nextDelay = 15;
+  } else if (queueLen >= 2) {
+    previewDelay = 150;
+    slideDuration = 220;
+    nextDelay = 30;
+  }
+
+  if (middleWrapper) {
+    middleWrapper.style.animationDuration = `${slideDuration}ms`;
+  }
 
   // 1. Masukkan kata ke baris tengah dengan ubin oranye
   const effectiveAvatar = item.userAvatar || (item.isHost ? getHostAvatar() : DEFAULT_HOST_AVATAR);
@@ -10009,24 +10407,44 @@ function triggerBetweenleNextAnimation() {
     middleRowEl.appendChild(middleAvatar);
   }
 
-  // Jeda visual 400ms agar pemain melihat kata tebakan oranye di tengah sebelum bergerak
+  // Jeda visual adaptif agar tebakan oranye terlihat sebelum bergerak
   setTimeout(() => {
     // KASUS A: KEMENANGAN / JACKPOT!
     if (item.word === betweenleSecretWord) {
       betweenleIsGameOver = true;
+      betweenleIsAnimating = true;
       betweenleGuessCount++;
       const jackpotPts = 25;
 
-      if (middleWrapper) middleWrapper.classList.add('animating-win');
+      // Pastikan ubin tengah berisi kata rahasia yang tepat & terkunci hijau (tidak kosong)
+      if (middleRowEl) {
+        middleRowEl.innerHTML = '';
+        for (let i = 0; i < item.word.length; i++) {
+          const tile = document.createElement('div');
+          tile.className = 'betweenle-tile filled-tile win-tile';
+          tile.textContent = item.word[i];
+          middleRowEl.appendChild(tile);
+        }
+        const middleAvatar = document.createElement('img');
+        middleAvatar.className = 'betweenle-avatar spring-in';
+        middleAvatar.id = 'betweenleMiddleAvatar';
+        middleAvatar.src = effectiveAvatar;
+        middleAvatar.onerror = function() { this.onerror = null; this.src = (item.isHost ? getHostAvatar() : DEFAULT_HOST_AVATAR); };
+        middleRowEl.appendChild(middleAvatar);
+      }
+
+      if (middleWrapper) {
+        middleWrapper.classList.remove('animating-slide-up', 'animating-slide-down', 'animating-shake');
+        middleWrapper.classList.add('animating-win');
+      }
       const trackDot = document.getElementById('betweenleTrackDot');
       if (trackDot) trackDot.classList.add('is-win');
 
       if (typeof addPoints === 'function' && item.userData) {
         addPoints(item.userData, jackpotPts);
+        recordWin(item.userData.uniqueId || item.userData.nickname);
       }
-      if (window.sounds && typeof window.sounds.playBetweenleWin === 'function') {
-        window.sounds.playBetweenleWin();
-      }
+      playBetweenleSoundSafely('playBetweenleWin');
 
       addBetweenleFeedItem({
         word: item.word,
@@ -10063,6 +10481,11 @@ function triggerBetweenleNextAnimation() {
       return;
     }
 
+    if (betweenleIsGameOver) {
+      betweenleIsAnimating = false;
+      return;
+    }
+
     // KASUS B: MEMPERSEMPIT BATAS AWAL (Meluncur ke ATAS)
     if (item.guessIndex < betweenleSecretIndex) {
       if (item.guessIndex > betweenleTopBound.index) {
@@ -10080,12 +10503,13 @@ function triggerBetweenleNextAnimation() {
           };
           betweenleCurrentWordsCount = betweenleBottomBound.index - betweenleTopBound.index - 1;
 
-          if (window.sounds) {
-            if (betweenleCurrentWordsCount <= 10 && typeof window.sounds.playBetweenleCloseRange === 'function') {
-              window.sounds.playBetweenleCloseRange();
-            } else if (typeof window.sounds.playBetweenleNarrow === 'function') {
-              window.sounds.playBetweenleNarrow();
-            }
+          // Bersihkan sisa antrean yang sudah di luar rentang baru
+          pruneBetweenleQueue();
+
+          if (betweenleCurrentWordsCount <= 10) {
+            playBetweenleSoundSafely('playBetweenleCloseRange');
+          } else {
+            playBetweenleSoundSafely('playBetweenleNarrow');
           }
 
           addBetweenleFeedItem({
@@ -10106,16 +10530,17 @@ function triggerBetweenleNextAnimation() {
           betweenleIsAnimating = false;
           if (middleWrapper) {
             middleWrapper.classList.remove('animating-slide-up');
+            middleWrapper.style.animationDuration = '';
           }
           resetBetweenleMiddleRow();
           renderBetweenleUI();
 
-          setTimeout(triggerBetweenleNextAnimation, 120);
-        }, 440);
+          setTimeout(triggerBetweenleNextAnimation, nextDelay);
+        }, slideDuration);
         return;
       } else {
         // Lewat Batas Awal (Di luar rentang)
-        triggerBetweenleShakeAnimation(item, `"${item.word}" sebelum batas awal "${betweenleTopBound.word}"`);
+        handleBetweenleOutOfRange(item, `"${item.word}" sebelum batas awal "${betweenleTopBound.word}"`, nextDelay);
         return;
       }
     }
@@ -10137,12 +10562,13 @@ function triggerBetweenleNextAnimation() {
           };
           betweenleCurrentWordsCount = betweenleBottomBound.index - betweenleTopBound.index - 1;
 
-          if (window.sounds) {
-            if (betweenleCurrentWordsCount <= 10 && typeof window.sounds.playBetweenleCloseRange === 'function') {
-              window.sounds.playBetweenleCloseRange();
-            } else if (typeof window.sounds.playBetweenleNarrow === 'function') {
-              window.sounds.playBetweenleNarrow();
-            }
+          // Bersihkan sisa antrean yang sudah di luar rentang baru
+          pruneBetweenleQueue();
+
+          if (betweenleCurrentWordsCount <= 10) {
+            playBetweenleSoundSafely('playBetweenleCloseRange');
+          } else {
+            playBetweenleSoundSafely('playBetweenleNarrow');
           }
 
           addBetweenleFeedItem({
@@ -10163,24 +10589,28 @@ function triggerBetweenleNextAnimation() {
           betweenleIsAnimating = false;
           if (middleWrapper) {
             middleWrapper.classList.remove('animating-slide-down');
+            middleWrapper.style.animationDuration = '';
           }
           resetBetweenleMiddleRow();
           renderBetweenleUI();
 
-          setTimeout(triggerBetweenleNextAnimation, 120);
-        }, 440);
+          setTimeout(triggerBetweenleNextAnimation, nextDelay);
+        }, slideDuration);
         return;
       } else {
         // Lewat Batas Akhir (Di luar rentang)
-        triggerBetweenleShakeAnimation(item, `"${item.word}" sesudah batas akhir "${betweenleBottomBound.word}"`);
+        handleBetweenleOutOfRange(item, `"${item.word}" sesudah batas akhir "${betweenleBottomBound.word}"`, nextDelay);
         return;
       }
     }
-  }, 400);
+  }, previewDelay);
 }
 
-// Animasi getar untuk tebakan di luar rentang atau tidak valid
+// Animasi getar untuk tebakan di luar rentang atau tidak valid saat antrean tenang
 function triggerBetweenleShakeAnimation(item, toastMsg) {
+  if (betweenleIsGameOver) return;
+  betweenleIsAnimating = true;
+
   const middleWrapper = document.getElementById('betweenleMiddleWrapper');
   const middleRowEl = document.getElementById('betweenleMiddleRow');
 
@@ -10201,11 +10631,12 @@ function triggerBetweenleShakeAnimation(item, toastMsg) {
     middleRowEl.appendChild(middleAvatar);
   }
 
-  if (middleWrapper) middleWrapper.classList.add('animating-shake');
-
-  if (window.sounds && typeof window.sounds.playBetweenleOutOfRange === 'function') {
-    window.sounds.playBetweenleOutOfRange();
+  if (middleWrapper) {
+    middleWrapper.classList.add('animating-shake');
+    middleWrapper.style.animationDuration = '';
   }
+
+  playBetweenleSoundSafely('playBetweenleOutOfRange');
 
   addBetweenleFeedItem({
     word: item.word,
@@ -10220,11 +10651,13 @@ function triggerBetweenleShakeAnimation(item, toastMsg) {
     showToast(toastMsg, 2500);
   }
 
+  const shakeDuration = (betweenleGuessQueue.length > 0) ? 250 : 500;
+
   setTimeout(() => {
     resetBetweenleMiddleRow();
     betweenleIsAnimating = false;
-    setTimeout(triggerBetweenleNextAnimation, 120);
-  }, 520);
+    setTimeout(triggerBetweenleNextAnimation, (betweenleGuessQueue.length > 0) ? 30 : 100);
+  }, shakeDuration);
 }
 
 // Inisialisasi sinkronisasi Avatar Host saat halaman siap
@@ -10537,6 +10970,8 @@ function processCascadleGuess(guessWord, userData) {
     colors
   };
   cascadleGuesses.unshift(guessRecord);
+  // Tandai sebagai tebakan baru agar renderCascadleUI() bisa memberi animasi flip
+  cascadleGuesses[0]._isNew = true;
 
   if (window.sounds && typeof window.sounds.playLetter === 'function') {
     window.sounds.playLetter();
@@ -10546,8 +10981,10 @@ function processCascadleGuess(guessWord, userData) {
 
   // 5. Cek apakah tebakan tepat sama dengan target level saat ini
   if (word === currentTarget) {
+    // Poin berbeda per panjang huruf: makin panjang kata, makin besar hadiahnya
+    const CASCADLE_LEVEL_POINTS = { 3: 3, 4: 5, 5: 7, 6: 10, 7: 20 };
+    const ptsAwarded = CASCADLE_LEVEL_POINTS[cascadleCurrentLevel] || 5;
     const isJackpot = (cascadleCurrentLevel === 7);
-    const ptsAwarded = isJackpot ? 25 : 5;
 
     cascadleSolvedWords.push({
       level: cascadleCurrentLevel,
@@ -10558,10 +10995,11 @@ function processCascadleGuess(guessWord, userData) {
       points: ptsAwarded
     });
 
-    if (cascadleCurrentLevel < 7) {
+    if (!isJackpot) {
       // ── LEVEL INTERMEDIATE BERHASIL TERPECAHKAN (3H / 4H / 5H / 6H) ──
       if (typeof addPoints === 'function' && userData) {
         addPoints(userData, ptsAwarded);
+        recordWin(userData.uniqueId || userData.nickname);
       }
       showFloatingPoints(ptsAwarded, 'cascadleContainer');
 
@@ -10569,7 +11007,8 @@ function processCascadleGuess(guessWord, userData) {
         window.sounds.playCascadleLevelUp();
       }
 
-      showToast(`🎉 ${userName} MENEBAK TEPAT: ${word}! (+${ptsAwarded} Poin) ➔ Level ${cascadleCurrentLevel - 1} Terbuka!`, 3500);
+      const nextLevel = cascadleCurrentLevel + 1;
+      showToast(`🎉 ${userName} MENEBAK TEPAT: ${word}! (+${ptsAwarded} Poin) ➔ Level ${nextLevel} (${nextLevel} Huruf) Terbuka!`, 3500);
 
       // Naik ke level berikutnya
       cascadleCurrentLevel++;
@@ -10584,6 +11023,7 @@ function processCascadleGuess(guessWord, userData) {
       cascadleIsGameOver = true;
       if (typeof addPoints === 'function' && userData) {
         addPoints(userData, ptsAwarded);
+        recordWin(userData.uniqueId || userData.nickname);
       }
       showFloatingPoints(ptsAwarded, 'cascadleContainer');
 
@@ -10591,7 +11031,7 @@ function processCascadleGuess(guessWord, userData) {
         window.sounds.playWin();
       }
 
-      showToast(`🏆 ${userName} MENYELESAIKAN CASCADLE: ${word}! (+${ptsAwarded} Poin Jackpot)`, 4500);
+      showToast(`🏆 ${userName} MENYELESAIKAN CASCADLE: ${word}! (+${ptsAwarded} Poin Jackpot!)`, 4500);
       renderCascadleUI();
 
       // Luncurkan animasi tangga kata kemenangan 3-7 huruf langsung di layar papan game!
@@ -10708,12 +11148,42 @@ function renderCascadleUI() {
 
     const tilesCol = document.createElement('div');
     tilesCol.className = 'cascadle-row-tiles';
+
+    const isNewest = (idx === 0) && g._isNew && isGameAnimationsEnabled;
+    const stepDelay = 90; // ms antar huruf (sedikit lebih cepat dari wordle 100ms)
+
     for (let i = 0; i < g.length; i++) {
       const tile = document.createElement('div');
       const stateClass = g.colors && g.colors[i] ? `tile-${g.colors[i]}` : 'tile-absent';
-      tile.className = `cascadle-tile ${stateClass}`;
-      tile.textContent = g.word[i] || '';
+
+      if (isNewest) {
+        // Mulai tanpa warna, flip dulu, baru reveal warna
+        tile.className = 'cascadle-tile cascadle-flip';
+        tile.style.animationDelay = `${i * stepDelay}ms`;
+        tile.textContent = g.word[i] || '';
+
+        // Bunyikan flip sound sinkron per huruf (IIFE untuk tangkap nilai i yang benar)
+        if (window.sounds && typeof window.sounds.playFlip === 'function') {
+          setTimeout(((idx_) => () => window.sounds.playFlip(idx_))(i), i * stepDelay);
+        }
+
+        // Reveal warna di titik tengah flip (setelah 45% animasi = ~180ms + delay)
+        const colorRevealDelay = (i * stepDelay) + 180;
+        setTimeout(((t, cls) => () => {
+          t.classList.add(cls);
+        })(tile, stateClass), colorRevealDelay);
+      } else {
+        tile.className = `cascadle-tile ${stateClass}`;
+        tile.textContent = g.word[i] || '';
+      }
+
       tilesCol.appendChild(tile);
+    }
+
+    // Hapus flag _isNew setelah semua animasi selesai
+    if (isNewest) {
+      const totalAnimDuration = (g.length - 1) * stepDelay + 400;
+      setTimeout(() => { if (cascadleGuesses[0]) cascadleGuesses[0]._isNew = false; }, totalAnimDuration);
     }
     rowEl.appendChild(tilesCol);
 
@@ -10821,7 +11291,7 @@ function launchCascadleVictoryShowcase() {
       <div class="cascadle-showcase-userinfo">
         <span class="cascadle-showcase-name" title="${solved.userName}">${solved.userName}</span>
         ${isJackpot 
-          ? `<span class="cascadle-badge-jackpot"><i class="fa-solid fa-crown"></i> +25 PTS</span>` 
+          ? `<span class="cascadle-badge-jackpot"><i class="fa-solid fa-crown"></i> +${solved.points || 20} PTS</span>` 
           : `<span class="cascadle-badge-pts">+${solved.points || 5} PTS</span>`
         }
       </div>

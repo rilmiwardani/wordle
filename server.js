@@ -254,20 +254,163 @@ dashApp.listen(DASHBOARD_PORT, '0.0.0.0', () => {
 // ═══════════════════════════════════════════════════════
 //  HELPER
 // ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+//  WATCHDOG & AUTO-RECONNECT STATE
+// ═══════════════════════════════════════════════════════
+let lastTikTokUniqueId = null;
+let lastTikTokSessionId = null;
+let lastTikTokEventTime = 0;
+let isManualDisconnect = false;
+let watchdogInterval = null;
+let reconnectTimer = null;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 12;
+const WATCHDOG_INTERVAL_MS = 10000;   // Cek status setiap 10 detik
+const INACTIVITY_TIMEOUT_MS = 45000;  // 45 detik tanpa data/event sama sekali dari TikTok
+
+// ═══════════════════════════════════════════════════════
+//  HELPER
+// ═══════════════════════════════════════════════════════
 function getStatusPayload() {
   return {
     ...connectionState,
     eventStats,
     recentEventsCount: recentEvents.length,
     connectedClients: io.engine?.clientsCount || 0,
+    lastEventSecAgo: lastTikTokEventTime ? Math.round((Date.now() - lastTikTokEventTime) / 1000) : null,
+    reconnectAttempts,
+    isWatchdogActive: !!watchdogInterval,
   };
+}
+
+// ═══════════════════════════════════════════════════════
+//  WATCHDOG (SILENT FREEZE DETECTOR)
+// ═══════════════════════════════════════════════════════
+function startWatchdog() {
+  stopWatchdog();
+  watchdogInterval = setInterval(async () => {
+    if (connectionState.status !== "connected" || isManualDisconnect) return;
+
+    const timeSinceLastEvent = Date.now() - lastTikTokEventTime;
+    const sec = Math.round(timeSinceLastEvent / 1000);
+
+    // Kirim heartbeat pulse ke frontend setiap 10 detik
+    io.emit("tiktokPulse", {
+      status: connectionState.status,
+      secondsSinceLastEvent: sec,
+      reconnectAttempts,
+    });
+
+    // Jika hening melebihi ambang batas (silent connection freeze)
+    if (timeSinceLastEvent >= INACTIVITY_TIMEOUT_MS) {
+      console.warn(`[TikTok Watchdog] ⚠️ Inactivity alert: Tidak ada data dari TikTok selama ${sec}s!`);
+
+      io.emit("tiktokStalled", {
+        seconds: sec,
+        reason: "Aliran data chat TikTok hening / freeze",
+      });
+
+      // Lakukan probe aktif: apakah streamer masih live di TikTok?
+      let isLive = true;
+      if (tiktokConnection && typeof tiktokConnection.fetchIsLive === "function") {
+        try {
+          isLive = await Promise.race([
+            tiktokConnection.fetchIsLive(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("Probe timeout")), 6000)),
+          ]);
+        } catch (e) {
+          console.warn(`[TikTok Watchdog] Probe check error/timeout:`, e.message);
+          isLive = false;
+        }
+      }
+
+      if (!isLive) {
+        console.log(`[TikTok Watchdog] Host tampak offline atau koneksi tidak dapat dihubungi.`);
+        connectionState.status = "disconnected";
+        connectionState.error = "Koneksi TikTok terputus / Host offline";
+        io.emit("tiktokDisconnected", "tiktok.disconnected");
+        io.emit("statusUpdate", getStatusPayload());
+        scheduleAutoReconnect("live_offline_or_unreachable");
+      } else {
+        console.log(`[TikTok Watchdog] Host MASIH LIVE, namun WebSocket macet/silent freeze (Zombie Connection). Auto-reconnecting sekarang!`);
+        scheduleAutoReconnect("zombie_websocket_reconnect");
+      }
+    }
+  }, WATCHDOG_INTERVAL_MS);
+}
+
+function stopWatchdog() {
+  if (watchdogInterval) {
+    clearInterval(watchdogInterval);
+    watchdogInterval = null;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  AUTO-RECONNECT SCHEDULER
+// ═══════════════════════════════════════════════════════
+function scheduleAutoReconnect(reason) {
+  if (isManualDisconnect) return;
+  if (!lastTikTokUniqueId) return;
+  if (reconnectTimer) return; // sudah ada jadwal aktif
+
+  if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+    console.warn(`[TikTok Auto-Reconnect] Batas percobaan maksimal (${MAX_RECONNECT_ATTEMPTS}) tercapai.`);
+    io.emit("tiktokDisconnected", "Batas reconnect tercapai. Periksa koneksi.");
+    return;
+  }
+
+  reconnectAttempts++;
+  // Exponential backoff: ~3s, ~4s, ~5s, max 15s
+  const delay = Math.min(3000 * Math.pow(1.25, reconnectAttempts - 1), 15000);
+  const delaySec = Math.round(delay / 1000);
+
+  console.log(`[TikTok Auto-Reconnect] Menjadwalkan reconnect #${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS} dalam ${delaySec}s (Alasan: ${reason})...`);
+
+  io.emit("tiktokReconnecting", {
+    attempt: reconnectAttempts,
+    maxAttempts: MAX_RECONNECT_ATTEMPTS,
+    delaySeconds: delaySec,
+    reason,
+  });
+
+  connectionState.status = "connecting";
+  io.emit("statusUpdate", getStatusPayload());
+
+  reconnectTimer = setTimeout(async () => {
+    reconnectTimer = null;
+    if (isManualDisconnect) return;
+    try {
+      console.log(`[TikTok Auto-Reconnect] Mencoba reconnect #${reconnectAttempts} ke @${lastTikTokUniqueId}...`);
+      await connectToTikTok(lastTikTokUniqueId, lastTikTokSessionId, true);
+    } catch (err) {
+      console.error(`[TikTok Auto-Reconnect] Percobaan #${reconnectAttempts} gagal:`, err.message);
+      scheduleAutoReconnect("retry_after_failure");
+    }
+  }, delay);
 }
 
 // ═══════════════════════════════════════════════════════
 //  TIKTOK CONNECTION
 // ═══════════════════════════════════════════════════════
-async function connectToTikTok(uniqueId, sessionId = null) {
+async function connectToTikTok(uniqueId, sessionId = null, isAutoReconnect = false) {
   if (!uniqueId) return;
+
+  if (!isAutoReconnect) {
+    isManualDisconnect = false;
+    reconnectAttempts = 0;
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+  }
+
+  lastTikTokUniqueId = uniqueId;
+  if (sessionId) {
+    lastTikTokSessionId = sessionId;
+  } else if (!lastTikTokSessionId && process.env.TIKTOK_SESSION_ID) {
+    lastTikTokSessionId = process.env.TIKTOK_SESSION_ID;
+  }
 
   // Disconnect existing — remove all listeners first to prevent duplicates
   if (tiktokConnection) {
@@ -291,7 +434,7 @@ async function connectToTikTok(uniqueId, sessionId = null) {
   };
   io.emit("statusUpdate", getStatusPayload());
 
-  console.log(`\n[TikTok] Connecting to @${uniqueId}...`);
+  console.log(`\n[TikTok] Connecting to @${uniqueId}...${isAutoReconnect ? " (Auto-Reconnect)" : ""}`);
 
   try {
     let options = {
@@ -306,8 +449,8 @@ async function connectToTikTok(uniqueId, sessionId = null) {
       }
     };
 
-    if (sessionId) {
-      options.sessionId = sessionId;
+    if (lastTikTokSessionId) {
+      options.sessionId = lastTikTokSessionId;
     }
 
     let currentConnection = new WebcastPushConnection(uniqueId, options);
@@ -324,6 +467,13 @@ async function connectToTikTok(uniqueId, sessionId = null) {
     connectionState.status = "connected";
     connectionState.roomId = state.roomId;
     connectionState.connectedAt = Date.now();
+    lastTikTokEventTime = Date.now();
+    reconnectAttempts = 0;
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+
     connectionState.roomInfo = {
       uniqueId,
       roomId: state.roomId,
@@ -346,8 +496,10 @@ async function connectToTikTok(uniqueId, sessionId = null) {
     // ─── Register all event handlers ───
     registerTikTokEvents(currentConnection);
 
+    // ─── Start Inactivity Watchdog ───
+    startWatchdog();
+
     // Handle websocket upgrade (v2 library fires this after polling→ws)
-    // This is informational only; do NOT re-register events here
     currentConnection.on('websocketConnected', (wsState) => {
       console.log(`[TikTok] WebSocket upgraded! (${wsState.upgradedToWebsocket ? 'WebSocket' : 'Polling'})`);
     });
@@ -358,10 +510,22 @@ async function connectToTikTok(uniqueId, sessionId = null) {
     connectionState.error = err.message;
     io.emit("tiktokDisconnected", err.message);
     io.emit("statusUpdate", getStatusPayload());
+
+    if (!isManualDisconnect) {
+      scheduleAutoReconnect("connection_failed");
+    }
   }
 }
 
 function disconnectFromTikTok() {
+  isManualDisconnect = true;
+  stopWatchdog();
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+  reconnectAttempts = 0;
+
   if (tiktokConnection) {
     try {
       tiktokConnection.removeAllListeners();
@@ -371,7 +535,7 @@ function disconnectFromTikTok() {
   }
   connectionState.status = "disconnected";
   connectionState.error = null;
-  console.log("[TikTok] Disconnected.");
+  console.log("[TikTok] Disconnected manually.");
   io.emit("tiktokDisconnected", "manual_disconnect");
   io.emit("statusUpdate", getStatusPayload());
 }
@@ -380,8 +544,18 @@ function disconnectFromTikTok() {
 //  TIKTOK EVENT HANDLERS
 // ═══════════════════════════════════════════════════════
 function registerTikTokEvents(connection) {
+  const markActivity = () => {
+    lastTikTokEventTime = Date.now();
+  };
+
+  // Monitor raw websocket data frames as heartbeat
+  connection.on("websocketData", markActivity);
+  connection.on("decodedData", markActivity);
+  connection.on("rawData", markActivity);
+
   // ─── Chat Messages ───
   connection.on("chat", async (data) => {
+    markActivity();
     const payload = formatUser(data);
     payload.comment = data.comment;
     payload.emotes = data.emotes || [];
@@ -426,6 +600,7 @@ function registerTikTokEvents(connection) {
 
   // ─── Gift Messages ───
   connection.on("gift", (data) => {
+    markActivity();
     const payload = formatUser(data);
     payload.giftId = data.giftId;
     payload.giftName = data.giftName || `Gift #${data.giftId}`;
@@ -452,6 +627,7 @@ function registerTikTokEvents(connection) {
 
   // ─── Like Messages ───
   connection.on("like", (data) => {
+    markActivity();
     const payload = formatUser(data);
     payload.likeCount = data.likeCount || 1;
     payload.totalLikeCount = data.totalLikeCount || 0;
@@ -462,6 +638,7 @@ function registerTikTokEvents(connection) {
 
   // ─── Member Join ───
   connection.on("member", (data) => {
+    markActivity();
     const payload = formatUser(data);
     payload.actionId = data.actionId;
     payload.label = data.label || "joined";
@@ -471,6 +648,7 @@ function registerTikTokEvents(connection) {
 
   // ─── Social Events (follow, share) ───
   connection.on("social", (data) => {
+    markActivity();
     const payload = formatUser(data);
     payload.displayType = data.displayType || "";
     payload.label = data.label || "";
@@ -490,6 +668,7 @@ function registerTikTokEvents(connection) {
 
   // ─── Room Stats ───
   connection.on("roomUser", (data) => {
+    markActivity();
     connectionState.viewers = data.viewerCount || 0;
     const payload = {
       viewerCount: data.viewerCount || 0,
@@ -504,6 +683,7 @@ function registerTikTokEvents(connection) {
 
   // ─── Question / Q&A ───
   connection.on("questionNew", (data) => {
+    markActivity();
     const payload = formatUser(data);
     payload.questionText = data.questionText || "";
     logEvent("questionNew", payload);
@@ -512,6 +692,7 @@ function registerTikTokEvents(connection) {
 
   // ─── Emote Chat ───
   connection.on("emote", (data) => {
+    markActivity();
     const payload = formatUser(data);
     payload.emoteImageUrl = data.emoteImageUrl || "";
     payload.emoteId = data.emoteId || "";
@@ -521,6 +702,7 @@ function registerTikTokEvents(connection) {
 
   // ─── Envelope / Treasure Box ───
   connection.on("envelope", (data) => {
+    markActivity();
     const payload = formatUser(data);
     payload.coins = data.coins || 0;
     payload.canOpen = data.canOpen || 0;
@@ -531,6 +713,7 @@ function registerTikTokEvents(connection) {
 
   // ─── Subscribe ───
   connection.on("subscribe", (data) => {
+    markActivity();
     const payload = formatUser(data);
     payload.subMonth = data.subMonth || 0;
     logEvent("subscribe", payload);
@@ -539,24 +722,28 @@ function registerTikTokEvents(connection) {
 
   // ─── Link Mic Battle ───
   connection.on("linkMicBattle", (data) => {
+    markActivity();
     logEvent("linkMicBattle", data);
     io.emit("linkMicBattle", data);
   });
 
   // ─── Link Mic Armies ───
   connection.on("linkMicArmies", (data) => {
+    markActivity();
     logEvent("linkMicArmies", data);
     io.emit("linkMicArmies", data);
   });
 
   // ─── Live Intro ───
   connection.on("liveIntro", (data) => {
+    markActivity();
     logEvent("liveIntro", data);
     io.emit("liveIntro", data);
   });
 
   // ─── Barrage ───
   connection.on("barrage", (data) => {
+    markActivity();
     const payload = formatUser(data);
     payload.caption = data.caption || "";
     logEvent("barrage", payload);
@@ -566,6 +753,11 @@ function registerTikTokEvents(connection) {
   // ─── Stream End ───
   connection.on("streamEnd", (actionId) => {
     console.log(`[TikTok] Stream ended (action: ${actionId})`);
+    stopWatchdog();
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
     connectionState.status = "disconnected";
     connectionState.error = "Stream ended";
     io.emit("streamEnd", { actionId });
@@ -575,6 +767,7 @@ function registerTikTokEvents(connection) {
 
   // ─── WebSocket Connected ───
   connection.on("websocketConnected", (wsState) => {
+    markActivity();
     console.log(
       `[TikTok] WebSocket upgraded! (${wsState.isWebsocketUpgrade ? "WS" : "Polling"})`
     );
@@ -586,6 +779,10 @@ function registerTikTokEvents(connection) {
     connectionState.status = "disconnected";
     io.emit("tiktokDisconnected", "tiktok.disconnected");
     io.emit("statusUpdate", getStatusPayload());
+
+    if (!isManualDisconnect) {
+      scheduleAutoReconnect("tiktok.disconnected_event");
+    }
   });
 
   // ─── Error ───

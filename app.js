@@ -1,8 +1,9 @@
 // Auto-detect hostname so it works on web browser, WiFi devices, and Tauri desktop
 const isTauriHost = window.location.hostname === 'tauri.localhost' || !window.location.hostname;
 const socketHost = isTauriHost ? 'localhost' : window.location.hostname;
-const socketProto = window.location.protocol === 'https:' ? 'https:' : 'http:';
-const SOCKET_URL = `${socketProto}//${socketHost}:9200`;
+const SOCKET_URL = (window.location.port === '3500' || !window.location.port)
+  ? (window.location.origin || `${socketProto}//${socketHost}:3500`)
+  : `${socketProto}//${socketHost}:9200`;
 // Max visible rows on board — per mode, configurable via Settings
 const DISPLAY_ROWS_DEFAULT = { wordle: 6, word500: 8, word600: 8, wordfit: 8 };
 const DISPLAY_ROWS_MIN = 3;
@@ -4727,7 +4728,84 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   const fsToggle = document.getElementById('autoFullscreenToggle');
   if (fsToggle) fsToggle.checked = isAutoFullscreen;
+
+  // Initialize visual theme UI
+  syncVisualThemeUI(currentVisualTheme);
 });
+
+// ═══════════════════════════════════════════════════════
+//  VISUAL THEME SYSTEM (Dark Modern / Sepia Cream Pastel)
+// ═══════════════════════════════════════════════════════
+let currentVisualTheme = localStorage.getItem('wordle_theme') || 'dark';
+
+function syncVisualThemeUI(theme) {
+  const isSepia = theme === 'sepia';
+  document.body.classList.toggle('theme-sepia', isSepia);
+  document.body.setAttribute('data-theme', theme);
+  document.documentElement.classList.toggle('theme-sepia', isSepia);
+
+  // Update Settings Buttons
+  const btnDark = document.getElementById('themeBtnDark');
+  const btnSepia = document.getElementById('themeBtnSepia');
+  if (btnDark) btnDark.classList.toggle('active', !isSepia);
+  if (btnSepia) btnSepia.classList.toggle('active', isSepia);
+
+  // Update Header Theme Icon & Title
+  const headerIcon = document.getElementById('headerThemeIcon');
+  if (headerIcon) {
+    headerIcon.className = isSepia ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+  }
+  const headerBtn = document.getElementById('themeToggleBtn');
+  if (headerBtn) {
+    headerBtn.title = isSepia ? 'Ganti ke Tema Gelap (Dark Mode)' : 'Ganti ke Tema Sepia Cream Pastel (Sore Hari)';
+  }
+
+  // Update Front Menu Toggle Label & Icon
+  const frontLabel = document.getElementById('frontThemeLabel');
+  if (frontLabel) {
+    frontLabel.textContent = isSepia ? 'Tema: Gelap' : 'Tema: Sepia Cream';
+  }
+  const frontIcon = document.getElementById('frontThemeIcon');
+  if (frontIcon) {
+    frontIcon.className = isSepia ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+  }
+}
+
+// Initial theme apply before DOMContentLoaded
+try {
+  const initialTheme = localStorage.getItem('wordle_theme') || 'dark';
+  currentVisualTheme = initialTheme;
+  const isSepia = initialTheme === 'sepia';
+  if (document.body) {
+    document.body.classList.toggle('theme-sepia', isSepia);
+    document.body.setAttribute('data-theme', initialTheme);
+  }
+  document.documentElement.classList.toggle('theme-sepia', isSepia);
+} catch(e) {}
+
+window.setVisualTheme = function(theme, e) {
+  if (e) e.stopPropagation();
+  currentVisualTheme = theme;
+  try {
+    localStorage.setItem('wordle_theme', theme);
+  } catch(err) {}
+
+  syncVisualThemeUI(theme);
+
+  // Re-apply static bg if active to harmonize colors
+  if (!isDynamicBg) {
+    applyStaticBg();
+  }
+
+  const isSepia = theme === 'sepia';
+  showToast(isSepia ? '🌅 Tema Sepia Cream Pastel (Sore Hari) Aktif' : '🌙 Tema Gelap Modern Aktif', 1800);
+};
+
+window.toggleVisualTheme = function(e) {
+  if (e) e.stopPropagation();
+  const nextTheme = (currentVisualTheme === 'sepia') ? 'dark' : 'sepia';
+  window.setVisualTheme(nextTheme, e);
+};
 
 window.toggleAutoFullscreen = function(enabled) {
   isAutoFullscreen = enabled;
@@ -4747,9 +4825,15 @@ function applyStaticBg() {
     bgLayer.style.backgroundImage = 'none';
     bgLayer.style.backgroundColor = customColor;
   } else {
-    // Warna background tab header Google Chrome: #202124
-    bgLayer.style.backgroundImage = 'none';
-    bgLayer.style.backgroundColor = '#202124';
+    // If sepia theme is active, let CSS gradient shine without solid black override
+    if (document.body.classList.contains('theme-sepia')) {
+      bgLayer.style.backgroundImage = '';
+      bgLayer.style.backgroundColor = '';
+    } else {
+      // Warna background tab header Google Chrome: #202124
+      bgLayer.style.backgroundImage = 'none';
+      bgLayer.style.backgroundColor = '#202124';
+    }
   }
 }
 
@@ -6445,7 +6529,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
   row.id = `row-${currentRow}`;
   row.style.position = 'relative';
   if (!isValidWord) {
-    row.style.zIndex = "999";
+    row.style.zIndex = "5";
     if (isGameAnimationsEnabled) {
       row.classList.add('elastic-shake');
     }
@@ -6478,7 +6562,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
       tooltip.style.bottom = 'auto';
       tooltip.style.left = (rowRect.left + rowRect.width / 2) + 'px';
       tooltip.style.top = (rowRect.top - tooltipHeight - 8) + 'px';
-      tooltip.style.zIndex = '9999';
+      tooltip.style.zIndex = '50';
     });
 
     // Auto-dismiss setelah 2.5 detik dengan fade-out

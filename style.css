@@ -781,6 +781,8 @@ input, textarea, [contenteditable="true"] {
 }
 
 header {
+  position: relative;
+  z-index: 5000;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1319,6 +1321,7 @@ header {
 .settings-wrapper {
   position: relative;
   display: inline-block;
+  z-index: 5001;
 }
 
 .settings-btn {
@@ -1353,7 +1356,7 @@ header {
   pointer-events: none;
   transform: translateY(-4px);
   transition: opacity 0.15s, transform 0.15s;
-  z-index: 300;
+  z-index: 5002;
   box-shadow: 0 8px 32px rgba(0,0,0,0.5);
   max-height: 65vh;
   overflow-y: auto;
@@ -1533,6 +1536,66 @@ header {
   align-items: center;
   gap: 6px;
   white-space: nowrap;
+}
+
+.settings-subtext {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 2px;
+  line-height: 1.35;
+}
+
+.settings-subtext.is-center {
+  margin-top: 4px;
+  text-align: center;
+  width: 100%;
+  display: block;
+}
+
+.settings-card-box {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.settings-section-heading {
+  font-size: 10px;
+  color: #aaa;
+  margin: 4px 0 6px;
+  font-weight: 700;
+  text-transform: uppercase;
+  text-align: left;
+  letter-spacing: 0.5px;
+}
+
+.settings-item-title {
+  font-size: 12px;
+  color: #fff;
+  font-weight: 700;
+}
+
+.settings-control-title {
+  font-size: 11px;
+  color: #ddd;
+  font-weight: 600;
+}
+
+.settings-checkboxes {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.settings-apply-btn {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #ffffff;
+}
+
+.slider-row-header {
+  color: rgba(255, 255, 255, 0.85);
 }
 
 /* iOS-style toggle */
@@ -5792,3 +5855,1330 @@ body.low-power-mode .cascadle-tile {
 .cascadle-showcase-btn:active {
   transform: translateY(1px);
 }
+
+/* ==========================================================================
+   THEME SYSTEM: 🌅 SEPIA PASTEL SORE HARI (CREAM SUNSET WARMTH) & THEME SWITCHER
+   "Agak terang namun tidak silau, nuansa sepia pastel sore hari agak cream"
+   ========================================================================== */
+
+/* Theme Toggle & Choice Buttons */
+.theme-choice-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: center;
+  font-family: inherit;
+}
+
+.theme-choice-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.theme-choice-btn.active {
+  background: rgba(196, 93, 60, 0.18);
+  border-color: #c45d3c;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(196, 93, 60, 0.25);
+}
+
+.theme-choice-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.theme-choice-name {
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+.theme-choice-desc {
+  font-size: 9.5px;
+  opacity: 0.7;
+  line-height: 1.2;
+}
+
+/* Front Menu Theme Toggle Pill */
+.front-theme-toggle-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  color: rgba(255, 255, 255, 0.85);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.front-theme-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BODY.THEME-SEPIA OVERRIDES (SOLID WARM CREAM - NO GLASSMORPHISM)
+   ══════════════════════════════════════════════════════════════ */
+body.theme-sepia {
+  --primary: #c45d3c;
+  --primary-glow: rgba(196, 93, 60, 0.25);
+  --success: #558b5a;
+  --warning: #c8872b;
+  --dark: #ede4d3;
+  --text: #2d2016;
+  --text-muted: #735f4f;
+
+  /* Wordle Tile Colors (Comfortable, warm, earthy tones) */
+  --correct: #558b5a;
+  --present: #cb8f34;
+  --absent: #8f7f72;
+  --empty: #fdfbf7;
+
+  background-color: #ede4d3 !important;
+  color: #2d2016 !important;
+}
+
+/* ❌ HAPUS SEMUA GLASSMORPHISM DI MODE SEPIA (SOLID SURFACES ONLY) */
+body.theme-sepia,
+body.theme-sepia * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body.theme-sepia .glass-overlay {
+  display: none !important;
+}
+
+/* Background Atmosphere (Solid Warm Linen & Subtle Matte Gradient) */
+body.theme-sepia .bg-layer:not([style*="data:image"]):not([style*="blob:"]) {
+  background: linear-gradient(145deg, #f7f1e5 0%, #ede1cd 40%, #dfceb7 80%, #d6c1a6 100%) !important;
+}
+
+/* Header & Navigation */
+body.theme-sepia header {
+  position: relative;
+  z-index: 5000;
+  border-bottom: 1px solid rgba(140, 110, 80, 0.2) !important;
+}
+
+body.theme-sepia .header-title {
+  color: #2d2016 !important;
+  text-shadow: none !important;
+}
+
+body.theme-sepia .room-info {
+  background: #faf5ed !important;
+  border: 1px solid #d8cab8 !important;
+  color: #2d2016 !important;
+  box-shadow: 0 2px 8px rgba(90, 65, 40, 0.08) !important;
+}
+
+body.theme-sepia .switch-btn {
+  color: #634f40 !important;
+}
+
+body.theme-sepia .switch-btn:hover {
+  background: #ede4d4 !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .round-badge {
+  background: #faf5ed !important;
+  border: 1px solid #d8cab8 !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .lang-badge {
+  background: #fdf2ee !important;
+  border: 1px solid #f2bcad !important;
+  color: #a84828 !important;
+}
+
+body.theme-sepia .settings-btn {
+  background: #faf5ed !important;
+  border: 1px solid #d8cab8 !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .settings-btn:hover {
+  background: #ffffff !important;
+  color: #c45d3c !important;
+}
+
+body.theme-sepia .front-theme-toggle-btn {
+  background: #faf5ed !important;
+  border: 1.5px solid #d4c4b0 !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .front-theme-toggle-btn:hover {
+  background: #ffffff !important;
+  border-color: #c45d3c !important;
+  color: #c45d3c !important;
+}
+
+/* Front Selection Modal & Cards */
+body.theme-sepia .game-select-overlay {
+  background: #ede4d3 !important;
+}
+
+body.theme-sepia .game-select-container {
+  background: #faf5ed !important;
+  border: 2px solid #d4c4b0 !important;
+  box-shadow: 0 16px 48px rgba(90, 65, 40, 0.16) !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .game-select-title {
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .game-select-subtitle {
+  color: #6b5646 !important;
+}
+
+body.theme-sepia .game-select-badge {
+  background: #fdf2ee !important;
+  border: 1px solid #f2bcad !important;
+  color: #b84f2e !important;
+}
+
+body.theme-sepia .game-card {
+  background: #fbf7f0 !important;
+  border: 1.5px solid #ded0be !important;
+  box-shadow: 0 4px 12px rgba(90, 65, 40, 0.06) !important;
+}
+
+body.theme-sepia .game-card:hover {
+  background: #ffffff !important;
+  border-color: #c45d3c !important;
+  box-shadow: 0 6px 20px rgba(196, 93, 60, 0.16) !important;
+}
+
+body.theme-sepia .card-title,
+body.theme-sepia .game-card-title {
+  color: #2d2016 !important;
+  font-weight: 800 !important;
+}
+
+body.theme-sepia .card-desc,
+body.theme-sepia .game-card-desc {
+  color: #6b5646 !important;
+}
+
+body.theme-sepia .game-card:hover .card-title,
+body.theme-sepia .game-card:hover .game-card-title {
+  color: #c45d3c !important;
+}
+
+body.theme-sepia .game-card.active {
+  background: #fdf2ee !important;
+  border-color: #c45d3c !important;
+  box-shadow: 0 4px 16px rgba(196, 93, 60, 0.2) !important;
+}
+
+body.theme-sepia .game-card.active .card-title,
+body.theme-sepia .game-card.active .game-card-title {
+  color: #c45d3c !important;
+}
+
+body.theme-sepia .game-select-connected-banner {
+  background: #edf5ee !important;
+  border: 1px solid #c2dec6 !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .connected-username {
+  color: #407545 !important;
+}
+
+/* Game Board & Tiles (Wordle, Word500, Word600, Wordfit, Fillblanks, Wordtango, Squareword) */
+body.theme-sepia .tile {
+  background: #fbf7f0 !important;
+  border: 2px solid #d8cab8 !important;
+  color: #2d2016 !important;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 2px 6px rgba(90, 65, 40, 0.08) !important;
+}
+
+body.theme-sepia .tile.filled {
+  border-color: #8c735d !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .tile.correct {
+  background: #558b5a !important;
+  border-color: #558b5a !important;
+  color: #ffffff !important;
+  text-shadow: none !important;
+  box-shadow: 0 2px 8px rgba(85, 139, 90, 0.3) !important;
+}
+
+body.theme-sepia .tile.present {
+  background: #cb8f34 !important;
+  border-color: #cb8f34 !important;
+  color: #ffffff !important;
+  text-shadow: none !important;
+  box-shadow: 0 2px 8px rgba(203, 143, 52, 0.3) !important;
+}
+
+body.theme-sepia .tile.absent {
+  background: #8f7f72 !important;
+  border-color: transparent !important;
+  color: #f7f2eb !important;
+  text-shadow: none !important;
+}
+
+body.theme-sepia .tile.prefilled {
+  background: #edf4f8 !important;
+  border-color: #9bbcd2 !important;
+  color: #29475c !important;
+}
+
+/* Leaderboard Bar */
+body.theme-sepia .leaderboard-container {
+  background: #faf5ed !important;
+  border: 1.5px solid #d8cab8 !important;
+  box-shadow: 0 6px 20px rgba(90, 65, 40, 0.08) !important;
+}
+
+body.theme-sepia .lb-title {
+  color: #b06520 !important;
+}
+
+body.theme-sepia .lb-tabs {
+  background: #ede4d4 !important;
+}
+
+body.theme-sepia .lb-tab {
+  color: #634f40 !important;
+}
+
+body.theme-sepia .lb-tab.active {
+  background: #c45d3c !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(196, 93, 60, 0.3) !important;
+}
+
+body.theme-sepia .lb-item {
+  background: #fdfbf7 !important;
+  border: 1px solid #e2d6c6 !important;
+}
+
+body.theme-sepia .lb-name {
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .lb-score {
+  color: #b06520 !important;
+}
+
+body.theme-sepia .lb-avatar {
+  border-color: #d8cab8 !important;
+  background: #ede4d4 !important;
+}
+
+body.theme-sepia .lb-rank {
+  background: #5c4737 !important;
+  color: #ffffff !important;
+  border-color: #d8cab8 !important;
+}
+
+body.theme-sepia .instruction {
+  color: #735f4f !important;
+}
+
+body.theme-sepia #bestGuessBoard > div {
+  color: #735f4f !important;
+}
+
+body.theme-sepia #wordLoopCount {
+  color: #2d2016 !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   🏆 TOP SUPPORTER TICKER (FULL SEPIA OVERHAUL - SOLID CREAM - NO GLASS)
+   ══════════════════════════════════════════════════════════════ */
+body.theme-sepia .supporter-spotlight-container {
+  background: #faf5ed !important;
+  border: 1.5px solid #d8cab8 !important;
+  box-shadow: 0 4px 16px rgba(90, 65, 40, 0.08) !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .marquee-supporter-pill {
+  background: #fdfbf7 !important;
+  border: 1px solid #dcd0bf !important;
+  color: #2d2016 !important;
+  box-shadow: none !important;
+}
+
+body.theme-sepia .marquee-user-name {
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .marquee-cat-badge {
+  background: rgba(140, 110, 80, 0.12) !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .marquee-cat-icon {
+  filter: none !important;
+}
+
+body.theme-sepia .marquee-avatar {
+  border-color: #d8cab8 !important;
+  background: #ede4d4 !important;
+}
+
+body.theme-sepia .is-top1 .marquee-avatar {
+  border-color: #f59e0b !important;
+  box-shadow: 0 1px 4px rgba(245, 158, 11, 0.25) !important;
+}
+
+body.theme-sepia .rank-2 .marquee-avatar {
+  border-color: #94a3b8 !important;
+  box-shadow: 0 1px 4px rgba(148, 163, 184, 0.25) !important;
+}
+
+body.theme-sepia .rank-3 .marquee-avatar {
+  border-color: #d97706 !important;
+  box-shadow: 0 1px 4px rgba(217, 119, 6, 0.25) !important;
+}
+
+body.theme-sepia .marquee-rank-badge {
+  background: #ede4d4 !important;
+  color: #2d2016 !important;
+  border-color: #d8cab8 !important;
+  box-shadow: 0 1px 2px rgba(90, 65, 40, 0.15) !important;
+}
+
+body.theme-sepia .is-top1 .marquee-rank-badge {
+  background: #f59e0b !important;
+  color: #ffffff !important;
+  border-color: #fde68a !important;
+}
+
+body.theme-sepia .rank-2 .marquee-rank-badge {
+  background: #cbd5e1 !important;
+  color: #1e293b !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.theme-sepia .rank-3 .marquee-rank-badge {
+  background: #d97706 !important;
+  color: #ffffff !important;
+  border-color: #fed7aa !important;
+}
+
+body.theme-sepia .marquee-separator {
+  color: rgba(140, 110, 80, 0.4) !important;
+}
+
+/* Category Pills in Sepia Warm Pastels */
+body.theme-sepia .pill-gift {
+  background: #fff8ee !important;
+  border-color: #f3bc65 !important;
+  box-shadow: none !important;
+}
+body.theme-sepia .pill-gift .marquee-cat-label { color: #b06520 !important; }
+body.theme-sepia .pill-gift .marquee-user-val { color: #8c4e0b !important; }
+
+body.theme-sepia .pill-like {
+  background: #fff3f3 !important;
+  border-color: #f7a8a8 !important;
+  box-shadow: none !important;
+}
+body.theme-sepia .pill-like .marquee-cat-label { color: #c44040 !important; }
+body.theme-sepia .pill-like .marquee-user-val { color: #9c2424 !important; }
+
+body.theme-sepia .pill-share {
+  background: #f0f8ff !important;
+  border-color: #93c5fd !important;
+  box-shadow: none !important;
+}
+body.theme-sepia .pill-share .marquee-cat-label { color: #1d4ed8 !important; }
+body.theme-sepia .pill-share .marquee-user-val { color: #1e3a8a !important; }
+
+body.theme-sepia .pill-active {
+  background: #faf5ff !important;
+  border-color: #d8b4fe !important;
+  box-shadow: none !important;
+}
+body.theme-sepia .pill-active .marquee-cat-label { color: #7e22ce !important; }
+body.theme-sepia .pill-active .marquee-user-val { color: #581c87 !important; }
+
+body.theme-sepia .marquee-welcome-pill {
+  background: #f5ede1 !important;
+  border: 1px solid #d8cab8 !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .marquee-welcome-pill.alt {
+  background: #eef6fb !important;
+  border-color: #b9d8ee !important;
+  color: #1e4767 !important;
+}
+
+body.theme-sepia .welcome-text {
+  color: #2d2016 !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   🎉 LAYAR KEMENANGAN (WIN OVERLAY & MULTI-WIN - SOLID CREAM - NO GLASS)
+   ══════════════════════════════════════════════════════════════ */
+body.theme-sepia .win-overlay {
+  background: rgba(237, 228, 212, 0.96) !important;
+}
+
+body.theme-sepia .win-card {
+  background: #faf5ed !important;
+  border: 2px solid #d4c4b0 !important;
+  border-radius: 32px !important;
+  box-shadow: 0 16px 48px rgba(90, 65, 40, 0.18) !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .win-title {
+  color: #b06520 !important;
+}
+
+body.theme-sepia .win-name {
+  color: #2d2016 !important;
+  text-shadow: none !important;
+}
+
+body.theme-sepia .win-pts {
+  background: #edf5ee !important;
+  border: 1px solid #c2dec6 !important;
+  color: #407545 !important;
+}
+
+body.theme-sepia .win-divider {
+  background: #e2d4c3 !important;
+}
+
+body.theme-sepia .win-subtitle {
+  color: #735f4f !important;
+}
+
+body.theme-sepia .win-word {
+  color: #407545 !important;
+  text-shadow: none !important;
+}
+
+body.theme-sepia .win-footer {
+  color: #735f4f !important;
+}
+
+body.theme-sepia #winAvatar {
+  border-color: #558b5a !important;
+  box-shadow: 0 4px 16px rgba(85, 139, 90, 0.25) !important;
+}
+
+body.theme-sepia .win-overlay.show #winAvatar {
+  animation: none !important;
+  box-shadow: 0 4px 20px rgba(85, 139, 90, 0.3) !important;
+}
+
+body.theme-sepia .win-overlay.show .win-word {
+  animation: none !important;
+  text-shadow: none !important;
+}
+
+body.theme-sepia .crown-icon {
+  filter: drop-shadow(0 2px 6px rgba(180, 110, 40, 0.35)) !important;
+}
+
+/* Multi-Winner Screen */
+body.theme-sepia .multi-win-card {
+  background: #faf5ed !important;
+  border: 2px solid #d4c4b0 !important;
+  box-shadow: 0 16px 48px rgba(90, 65, 40, 0.18) !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .multi-win-list::-webkit-scrollbar-track {
+  background: #ede4d4 !important;
+}
+
+body.theme-sepia .multi-win-list::-webkit-scrollbar-thumb {
+  background: #cbbaa6 !important;
+}
+
+body.theme-sepia .multi-win-item {
+  background: #fdfbf7 !important;
+  border: 1px solid #d8cab8 !important;
+  box-shadow: 0 2px 6px rgba(90, 65, 40, 0.06) !important;
+}
+
+body.theme-sepia .multi-win-item:hover {
+  background: #ffffff !important;
+}
+
+body.theme-sepia .multi-win-item.mvp {
+  background: #fef8ee !important;
+  border: 1.5px solid #d99b38 !important;
+  box-shadow: 0 2px 10px rgba(217, 155, 56, 0.15) !important;
+}
+
+body.theme-sepia .multi-win-name {
+  color: #2d2016 !important;
+  text-shadow: none !important;
+}
+
+body.theme-sepia .multi-win-word {
+  color: #407545 !important;
+}
+
+body.theme-sepia .multi-win-points,
+body.theme-sepia .multi-win-pts {
+  background: #fef3e2 !important;
+  border: 1px solid #fed7aa !important;
+  color: #b06520 !important;
+  text-shadow: none !important;
+  padding: 4px 10px !important;
+  border-radius: 12px !important;
+}
+
+body.theme-sepia .multi-win-avatar {
+  border-color: #558b5a !important;
+  background: #ede4d4 !important;
+}
+
+body.theme-sepia .multi-win-letter {
+  background: #ede4d4 !important;
+  color: #2d2016 !important;
+  border: 1px solid #d8cab8 !important;
+}
+
+body.theme-sepia .multi-win-item > div:first-child[style*="color:#ffffff"],
+body.theme-sepia .multi-win-item > div:first-child[style*="color: #ffffff"],
+body.theme-sepia .multi-win-item > div:first-child[style*="color: rgb(255, 255, 255)"] {
+  color: #735f4f !important;
+}
+
+body.theme-sepia .multi-win-item > div:first-child[style*="color:#ffd700"],
+body.theme-sepia .multi-win-item > div:first-child[style*="color: #ffd700"] {
+  color: #b45309 !important;
+}
+
+body.theme-sepia .multi-win-item > div:first-child[style*="color:#c0c0c0"],
+body.theme-sepia .multi-win-item > div:first-child[style*="color: #c0c0c0"] {
+  color: #64748b !important;
+}
+
+body.theme-sepia .multi-win-item > div:first-child[style*="color:#cd7f32"],
+body.theme-sepia .multi-win-item > div:first-child[style*="color: #cd7f32"] {
+  color: #9a3412 !important;
+}
+
+body.theme-sepia #multiWinList > div:first-child {
+  color: #b06520 !important;
+}
+
+/* Like Progress Bar (In-Game & In Win Overlay) */
+body.theme-sepia #likeProgressContainer,
+body.theme-sepia #multiLikeProgressContainer,
+body.theme-sepia .like-progress-container {
+  background: #f5ede1 !important;
+  border: 1.5px solid #d8cab8 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 14px rgba(90, 65, 40, 0.08) !important;
+}
+
+body.theme-sepia .like-progress-title {
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .like-progress-text,
+body.theme-sepia #likeProgressText,
+body.theme-sepia #multiLikeProgressText {
+  color: #b06520 !important;
+}
+
+body.theme-sepia .like-progress-bar-bg {
+  background: #e3d5c3 !important;
+}
+
+body.theme-sepia .like-progress-bar-fill {
+  background: #c45d3c !important;
+  box-shadow: none !important;
+}
+
+body.theme-sepia .like-progress-container button {
+  background: #ede4d4 !important;
+  border: 1px solid #d4c4b0 !important;
+  color: #2d2016 !important;
+  box-shadow: 0 1px 3px rgba(90, 65, 40, 0.1) !important;
+}
+
+body.theme-sepia .like-progress-container button:hover {
+  background: #ffffff !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   🏆 CASCADLE VICTORY SHOWCASE
+   ══════════════════════════════════════════════════════════════ */
+body.theme-sepia .cascadle-showcase-box {
+  background: #faf5ed !important;
+  border: 2px solid #d4c4b0 !important;
+  box-shadow: 0 16px 40px rgba(90, 65, 40, 0.16) !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .cascadle-showcase-badge {
+  background: #fef3e2 !important;
+  border: 1px solid #fed7aa !important;
+  color: #b06520 !important;
+  box-shadow: none !important;
+}
+
+body.theme-sepia .cascadle-showcase-sub {
+  color: #735f4f !important;
+}
+
+body.theme-sepia .cascadle-showcase-row {
+  background: #fdfbf7 !important;
+  border: 1px solid #e2d6c6 !important;
+}
+
+body.theme-sepia .cascadle-showcase-name {
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .cascadle-showcase-footer {
+  border-top: 1px solid #e2d6c6 !important;
+}
+
+body.theme-sepia .cascadle-showcase-countdown {
+  color: #735f4f !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SETTINGS DROPDOWN & MODALS (SOLID SURFACES ONLY)
+   ══════════════════════════════════════════════════════════════ */
+body.theme-sepia .settings-dropdown,
+body.theme-sepia .login-container {
+  background: #faf5ed !important;
+  border: 1.5px solid #d4c4b0 !important;
+  box-shadow: 0 16px 40px rgba(90, 65, 40, 0.2) !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .settings-group-header {
+  background: #f2e9dc !important;
+  border-bottom: 1px solid #e2d6c6 !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .settings-group-content {
+  background: #f7f1e6 !important;
+}
+
+body.theme-sepia .settings-toggle-label {
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .settings-subtext {
+  color: #735f4f !important;
+}
+
+body.theme-sepia .settings-card-box,
+body.theme-sepia .slider-row,
+body.theme-sepia #rgbPickerContainer,
+body.theme-sepia #likeThresholdContainer {
+  background: #ede4d4 !important;
+  border: 1px solid #d8cab8 !important;
+}
+
+body.theme-sepia .settings-section-heading {
+  color: #8c735d !important;
+}
+
+body.theme-sepia .settings-item-title,
+body.theme-sepia .settings-control-title,
+body.theme-sepia .slider-row-header,
+body.theme-sepia .settings-checkboxes,
+body.theme-sepia .rows-label,
+body.theme-sepia .rows-label strong {
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .settings-apply-btn {
+  background: #fdf2ee !important;
+  border: 1px solid #f2bcad !important;
+  color: #c45d3c !important;
+}
+
+body.theme-sepia .rows-btn {
+  background: #ede4d4 !important;
+  border: 1px solid #d8cab8 !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .rows-btn:hover {
+  background: #ffffff !important;
+}
+
+body.theme-sepia .settings-toggle-row:hover {
+  background: rgba(140, 110, 80, 0.08) !important;
+}
+
+body.theme-sepia .lang-option {
+  background: #fcf9f2 !important;
+  border: 1px solid #d4c4b0 !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .lang-option:hover {
+  background: #ffffff !important;
+  border-color: #c45d3c !important;
+}
+
+body.theme-sepia .custom-input,
+body.theme-sepia input[type="text"],
+body.theme-sepia input[type="number"],
+body.theme-sepia select {
+  background: #fcf9f2 !important;
+  border: 1px solid #cbbaa6 !important;
+  color: #2d2016 !important;
+}
+
+/* Fallback menyeluruh untuk elemen di dalam settings modal agar tidak ada teks putih di background cream */
+body.theme-sepia .settings-dropdown [style*="color: #aaa"],
+body.theme-sepia .settings-dropdown [style*="color: #888"],
+body.theme-sepia .settings-dropdown [style*="color: #94a3b8"],
+body.theme-sepia .settings-dropdown [style*="color: #ddd"],
+body.theme-sepia .settings-dropdown [style*="color: #ccc"],
+body.theme-sepia .settings-dropdown [style*="rgba(255,255,255"],
+body.theme-sepia .settings-dropdown [style*="rgba(255, 255, 255"] {
+  color: #735f4f !important;
+}
+
+body.theme-sepia .settings-dropdown [style*="color: #fff"],
+body.theme-sepia .settings-dropdown [style*="color: white"],
+body.theme-sepia .settings-dropdown [style*="color:#fff"],
+body.theme-sepia .settings-dropdown [style*="color:#ffffff"] {
+  color: #2d2016 !important;
+}
+
+/* Confirm & Dialog Overlays */
+body.theme-sepia .confirm-modal-overlay {
+  background: rgba(235, 224, 207, 0.9) !important;
+}
+
+body.theme-sepia .confirm-modal-box {
+  background: #faf5ed !important;
+  border: 2px solid #d4c4b0 !important;
+  box-shadow: 0 16px 40px rgba(90, 65, 40, 0.16) !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .confirm-modal-title {
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .confirm-modal-message {
+  color: #6b5646 !important;
+}
+
+body.theme-sepia .confirm-btn-cancel {
+  background: #ede4d4 !important;
+  border: 1px solid #d4c4b0 !important;
+  color: #2d2016 !important;
+}
+
+/* Login Overlay & Card (Settings Submodals) */
+body.theme-sepia .login-overlay {
+  background: rgba(235, 224, 207, 0.94) !important;
+}
+
+body.theme-sepia .login-card {
+  background: #faf5ed !important;
+  border: 2px solid #d4c4b0 !important;
+  box-shadow: 0 16px 40px rgba(90, 65, 40, 0.18) !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .login-card h2,
+body.theme-sepia .login-card h3,
+body.theme-sepia .login-card label,
+body.theme-sepia .login-card span {
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .login-card button {
+  background: #ede4d4 !important;
+  border: 1px solid #d4c4b0 !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .login-card button:hover {
+  background: #ffffff !important;
+}
+
+/* Recap Overlay */
+body.theme-sepia #recapOverlay {
+  background: rgba(237, 228, 212, 0.96) !important;
+}
+
+/* Host Music Control Bar (Bottom Floating) */
+body.theme-sepia .host-avatar-btn-wrap {
+  background: #faf5ed !important;
+  border-color: #c45d3c !important;
+  box-shadow: 0 4px 10px rgba(90, 65, 40, 0.15) !important;
+}
+
+body.theme-sepia .host-music-btn {
+  background: #faf5ed !important;
+  border: 1.5px solid #d8cab8 !important;
+  color: #2d2016 !important;
+  box-shadow: 0 4px 10px rgba(90, 65, 40, 0.15) !important;
+}
+
+body.theme-sepia .host-music-btn:hover {
+  background: #ffffff !important;
+  color: #c45d3c !important;
+}
+
+body.theme-sepia .host-music-input {
+  background: #faf5ed !important;
+  border: 1.5px solid #d8cab8 !important;
+}
+
+body.theme-sepia .host-music-input input {
+  color: #2d2016 !important;
+  background: transparent !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TOASTS, TOOLTIPS, HINTS & SYSTEM BANNERS
+   ══════════════════════════════════════════════════════════════ */
+body.theme-sepia .toast {
+  background: #faf5ed !important;
+  border: 1.5px solid #d4c4b0 !important;
+  color: #2d2016 !important;
+  box-shadow: 0 8px 24px rgba(90, 65, 40, 0.18) !important;
+}
+
+body.theme-sepia .hint-container {
+  background: #faf5ed !important;
+  border: 1.5px solid #d8cab8 !important;
+  box-shadow: 0 4px 14px rgba(90, 65, 40, 0.08) !important;
+}
+
+body.theme-sepia .hint-label {
+  color: #b06520 !important;
+}
+
+body.theme-sepia .hint-tile {
+  background: #fdfbf7 !important;
+  border: 1.5px dashed #d8cab8 !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .hint-tile.discovered {
+  background: #558b5a !important;
+  border: 1.5px solid #558b5a !important;
+  color: #ffffff !important;
+}
+
+body.theme-sepia .row-tooltip {
+  background: #b91c1c !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.25) !important;
+  text-shadow: none !important;
+}
+
+body.theme-sepia .row-tooltip.clue-conflict-tooltip {
+  background: #d97706 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25) !important;
+}
+
+body.theme-sepia .disconnect-banner {
+  background: #fdf2f2 !important;
+  border-color: #f87171 !important;
+  color: #991b1b !important;
+}
+
+body.theme-sepia .disconnect-banner.banner-warning {
+  background: #fffbeb !important;
+  border-color: #f59e0b !important;
+  color: #92400e !important;
+}
+
+body.theme-sepia .disconnect-banner.banner-reconnecting {
+  background: #eff6ff !important;
+  border-color: #60a5fa !important;
+  color: #1e40af !important;
+}
+
+body.theme-sepia .w500-count.empty-clue {
+  border-color: #d8cab8 !important;
+  color: #735f4f !important;
+}
+
+body.theme-sepia .guesser-avatar {
+  border-color: #d8cab8 !important;
+  box-shadow: 0 2px 6px rgba(90, 65, 40, 0.12) !important;
+}
+
+body.theme-sepia .tile.invalid {
+  background: #fdf2f2 !important;
+  border-color: #dc2626 !important;
+  color: #dc2626 !important;
+  text-shadow: none !important;
+}
+
+body.theme-sepia .tile.clue-conflict {
+  background: #fffbeb !important;
+  border-color: #d97706 !important;
+  color: #b45309 !important;
+  text-shadow: none !important;
+}
+
+body.theme-sepia .tile.blind {
+  background: #8f7f72 !important;
+  border-color: #735f4f !important;
+  color: #ffffff !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MODE SPECIFIC: BETWEENLE & LIVE GUESS FEED
+   ══════════════════════════════════════════════════════════════ */
+body.theme-sepia .betweenle-container {
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .betweenle-bound-row .betweenle-tile {
+  background: #3e7296 !important;
+  border-color: #315c7a !important;
+  color: #ffffff !important;
+}
+
+body.theme-sepia .betweenle-middle-row .betweenle-tile {
+  background: #fcf9f2 !important;
+  border-color: #d6c6b3 !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .betweenle-middle-row .betweenle-tile.filled-tile {
+  background: #cb8f34 !important;
+  border-color: #cb8f34 !important;
+  color: #ffffff !important;
+}
+
+body.theme-sepia .betweenle-track-line {
+  background: rgba(140, 110, 80, 0.3) !important;
+}
+
+body.theme-sepia .betweenle-alphabet-tracker {
+  background: #faf5ed !important;
+  border: 1px solid #d8cab8 !important;
+}
+
+body.theme-sepia .alphabet-letter {
+  color: #634f40 !important;
+}
+
+body.theme-sepia .betweenle-feed-container {
+  background: #faf5ed !important;
+  border: 1.5px solid #d8cab8 !important;
+  color: #2d2016 !important;
+  box-shadow: 0 4px 14px rgba(90, 65, 40, 0.06) !important;
+}
+
+body.theme-sepia .betweenle-feed-title {
+  color: #735f4f !important;
+}
+
+body.theme-sepia .betweenle-feed-empty {
+  color: #a89887 !important;
+}
+
+body.theme-sepia .betweenle-feed-item {
+  background: #fdfbf7 !important;
+  border: 1px solid #e2d6c6 !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .betweenle-feed-word {
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .betweenle-feed-user {
+  color: #735f4f !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MODE SPECIFIC: WORD LADDER & WORD TANGO
+   ══════════════════════════════════════════════════════════════ */
+body.theme-sepia .ladder-row .ladder-tile {
+  background: #fbf7f0 !important;
+  border-color: #d8cab8 !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .ladder-step.active .ladder-tile {
+  border-color: #c45d3c !important;
+}
+
+body.theme-sepia .ladder-step.completed .ladder-tile {
+  background: #558b5a !important;
+  border-color: #558b5a !important;
+  color: #ffffff !important;
+}
+
+body.theme-sepia .tango-guess-item {
+  background: #faf5ed !important;
+  border: 1px solid #d8cab8 !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .tango-guess-item.correct {
+  background: #eef7ee !important;
+  border-color: #86efac !important;
+  color: #166534 !important;
+}
+
+body.theme-sepia .tango-guess-item.wrong {
+  background: #fef2f2 !important;
+  border-color: #fca5a5 !important;
+  color: #991b1b !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MODE SPECIFIC: CASCADLE
+   ══════════════════════════════════════════════════════════════ */
+body.theme-sepia .cascadle-tile {
+  background: #fbf7f0 !important;
+  border-color: #d8cab8 !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .cascadle-tile.tile-correct {
+  background: #558b5a !important;
+  border-color: #558b5a !important;
+  color: #ffffff !important;
+}
+
+body.theme-sepia .cascadle-tile.tile-present {
+  background: #cb8f34 !important;
+  border-color: #cb8f34 !important;
+  color: #ffffff !important;
+}
+
+body.theme-sepia .cascadle-tile.tile-absent {
+  background: #8f7f72 !important;
+  border-color: transparent !important;
+  color: #f7f2eb !important;
+}
+
+body.theme-sepia .cascadle-stage-chip {
+  background: #faf5ed !important;
+  border: 1px solid #d8cab8 !important;
+  color: #2d2016 !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MODE SPECIFIC: SQUAREWORD
+   ══════════════════════════════════════════════════════════════ */
+body.theme-sepia .sq-avatar-container {
+  background: #ede4d4 !important;
+  border-color: #c45d3c !important;
+}
+
+body.theme-sepia .sq-tile {
+  background: #fdfbf7 !important;
+  border-color: #d8cab8 !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .sq-puzzle-tile {
+  background: #f5ede1 !important;
+  border-color: #dcd0bf !important;
+}
+
+body.theme-sepia .sq-puzzle-tile.correct {
+  background: #558b5a !important;
+  border-color: #407545 !important;
+  color: #ffffff !important;
+}
+
+body.theme-sepia .sq-input-tile {
+  background: #fff8f5 !important;
+  border-color: #f3bcad !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .sq-input-tile.typed {
+  background: #fbe6e0 !important;
+  border-color: #c45d3c !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .sq-last-guess-tile {
+  background: #f5ede1 !important;
+  border-color: #d8cab8 !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .sq-last-guess-tile.correct {
+  background: #558b5a !important;
+  border-color: #558b5a !important;
+  color: #ffffff !important;
+}
+
+body.theme-sepia .sq-last-guess-tile.present {
+  background: #cb8f34 !important;
+  border-color: #cb8f34 !important;
+  color: #ffffff !important;
+}
+
+body.theme-sepia .sq-last-guess-tile.absent {
+  background: #8f7f72 !important;
+  border-color: #8f7f72 !important;
+  color: #ffffff !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MUSIC WIDGET & THEME CHOICES (SOLID CREAM - NO WHITE TEXT)
+   ══════════════════════════════════════════════════════════════ */
+body.theme-sepia .music-widget,
+body.theme-sepia .music-widget.music-style-playlist,
+body.theme-sepia .music-widget.music-style-compact,
+body.theme-sepia .radio-compact-bar {
+  background: #faf5ed !important;
+  border: 1.5px solid #d8cab8 !important;
+  color: #2d2016 !important;
+  box-shadow: 0 8px 24px rgba(90, 65, 40, 0.14) !important;
+}
+
+body.theme-sepia .music-widget .music-title {
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .music-widget .music-requester {
+  color: #735f4f !important;
+}
+
+body.theme-sepia .music-widget #musicRequester {
+  color: #558b5a !important;
+}
+
+body.theme-sepia .music-widget #musicTimeProgress,
+body.theme-sepia .music-widget .music-dot {
+  color: #735f4f !important;
+  opacity: 0.85 !important;
+}
+
+body.theme-sepia .music-widget .music-progress-bar {
+  background: #e2d4c3 !important;
+}
+
+body.theme-sepia .music-widget .music-progress-fill {
+  background: #c45d3c !important;
+  box-shadow: 0 0 5px rgba(196, 93, 60, 0.4) !important;
+}
+
+/* 🎵 Tulisan Lagu Berikutnya di Tema Sepia (Next: [Judul Lagu]) */
+body.theme-sepia .music-next {
+  color: #735f4f !important;
+}
+
+body.theme-sepia .music-next span,
+body.theme-sepia #musicNextSongName {
+  color: #2d2016 !important;
+  font-weight: 600 !important;
+  font-style: italic !important;
+}
+
+/* 📋 Daftar Antrian Lagu (Playlist Queue) di Tema Sepia */
+body.theme-sepia .music-queue-container {
+  border-top: 1px solid #d8cab8 !important;
+}
+
+body.theme-sepia .music-queue-header {
+  color: #735f4f !important;
+}
+
+body.theme-sepia .music-queue-count {
+  background: rgba(196, 93, 60, 0.15) !important;
+  color: #c45d3c !important;
+}
+
+body.theme-sepia .music-queue-item {
+  background: #ede4d4 !important;
+  border: 1px solid #d8cab8 !important;
+}
+
+body.theme-sepia .music-queue-idx {
+  color: #c45d3c !important;
+}
+
+body.theme-sepia .music-queue-title {
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .music-queue-user {
+  color: #735f4f !important;
+}
+
+body.theme-sepia .music-queue-more {
+  color: #735f4f !important;
+}
+
+body.theme-sepia .music-now-playing-header {
+  border-bottom: 1px solid #e2d4c3 !important;
+}
+
+body.theme-sepia .music-live-badge {
+  background: rgba(85, 139, 90, 0.15) !important;
+  border-color: rgba(85, 139, 90, 0.35) !important;
+}
+
+body.theme-sepia .music-live-pulse {
+  background: #558b5a !important;
+  box-shadow: 0 0 6px rgba(85, 139, 90, 0.6) !important;
+}
+
+body.theme-sepia .music-live-text {
+  color: #558b5a !important;
+}
+
+body.theme-sepia .theme-choice-btn {
+  background: #ede4d4 !important;
+  border: 1px solid #d4c4b0 !important;
+  color: #2d2016 !important;
+}
+
+body.theme-sepia .theme-choice-btn:hover {
+  background: #f7f0e3 !important;
+  border-color: #c45d3c !important;
+}
+
+body.theme-sepia .theme-choice-btn.active {
+  background: #fdf2ee !important;
+  border: 2px solid #c45d3c !important;
+  color: #2d2016 !important;
+  box-shadow: 0 2px 8px rgba(196, 93, 60, 0.2) !important;
+}
+
+

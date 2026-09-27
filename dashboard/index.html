@@ -461,7 +461,7 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
   <script>
     // ═══ SOCKET CONNECTION ═══
-    const socket = io("http://localhost:9200");
+    const socket = (window.location.port === '3500' || !window.location.port) ? io() : io("http://localhost:9200");
     let currentFilter = "all";
     let events = [];
 

@@ -245,7 +245,10 @@ dashApp.get("/api/stats", (req, res) => {
   res.json(eventStats);
 });
 
-dashApp.listen(DASHBOARD_PORT, '0.0.0.0', () => {
+const dashHttpServer = http.createServer(dashApp);
+io.attach(dashHttpServer);
+
+dashHttpServer.listen(DASHBOARD_PORT, '0.0.0.0', () => {
   console.log(`╔═══════════════════════════════════════════════════╗`);
   console.log(`║  🖥️  Dashboard: http://0.0.0.0:${DASHBOARD_PORT}            ║`);
   console.log(`╚═══════════════════════════════════════════════════╝\n`);

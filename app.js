@@ -5730,6 +5730,9 @@ function initObsMode() {
   }
 }
 
+// Cache of known followers in current session
+const knownFollowers = new Set();
+
 function setupSocketListeners() {
   // --- Socket.IO connection lifecycle (Bug 3 fix) ---
   socket.on('connect', () => {
@@ -5927,11 +5930,29 @@ function setupSocketListeners() {
     const username = data.nickname || data.uniqueId;
     if (username) recordActivity(username);
 
+    // Cache follower if detected
+    if (data.isFollower || data.isFollowerOfAnchor || data.followRole === 1 || data.followRole === 2) {
+      if (data.uniqueId) knownFollowers.add(data.uniqueId.toLowerCase());
+      if (data.nickname) knownFollowers.add(data.nickname.toLowerCase());
+      if (data.userId) knownFollowers.add(data.userId.toString());
+    }
+
     // Check for music request when using IndoFinity (local server handles it otherwise)
     if (socket instanceof IndoFinitySocket && data.comment && data.comment.toLowerCase().startsWith('!play ')) {
       if (musicSettings.requestsEnabled !== false) {
         const isHost = (data.uniqueId === 'host' || data.uniqueId === 'host_offline' || (typeof data.uniqueId === 'string' && data.uniqueId.toLowerCase().includes('host')));
-        const isFollower = Boolean(data.isFollower || data.followRole === 1 || data.followRole === 2 || data.isModerator || isHost);
+        const isFollower = Boolean(
+          data.isFollower || 
+          data.isFollowerOfAnchor ||
+          data.userIdentity?.isFollowerOfAnchor ||
+          data.followRole === 1 || 
+          data.followRole === 2 || 
+          data.isModerator || 
+          data.isSubscriber ||
+          isHost ||
+          knownFollowers.has((data.uniqueId || '').toLowerCase()) ||
+          knownFollowers.has((data.nickname || '').toLowerCase())
+        );
         if (musicSettings.followerOnly && !isFollower) {
           console.log('[Music] Blocked !play request from non-follower (IndoFinity):', data.uniqueId);
           showMusicFollowerWarningNotif(data.nickname || data.uniqueId);
@@ -6060,6 +6081,9 @@ function setupSocketListeners() {
   });
 
   socket.on('follow', (data) => {
+    if (data.uniqueId) knownFollowers.add(data.uniqueId.toLowerCase());
+    if (data.nickname) knownFollowers.add(data.nickname.toLowerCase());
+    if (data.userId) knownFollowers.add(data.userId.toString());
     showSocialAlert(data, 'follow');
     const username = data.nickname || data.uniqueId;
     if (username) recordActivity(username, data.profilePictureUrl);
@@ -6240,10 +6264,39 @@ function handleChatGuess(data) {
   if (isAllowedLength) {
     const userId = data.uniqueId || data.nickname || 'anon';
     const isHost = (userId === 'host' || userId === 'host_offline' || (typeof userId === 'string' && userId.toLowerCase().includes('host')));
-    const isFollower = Boolean(data.isFollower || data.followRole === 1 || data.followRole === 2 || data.isModerator || isHost);
+    const uIdLower = (data.uniqueId || '').toLowerCase();
+    const nickLower = (data.nickname || '').toLowerCase();
+    const uIdStr = (data.userId || '').toString();
+
+    const isCachedFollower = Boolean(
+      (uIdLower && knownFollowers.has(uIdLower)) ||
+      (nickLower && knownFollowers.has(nickLower)) ||
+      (uIdStr && knownFollowers.has(uIdStr))
+    );
+
+    const isFollower = Boolean(
+      data.isFollower ||
+      data.isFollowerOfAnchor ||
+      data.userIdentity?.isFollowerOfAnchor ||
+      data.userIdentity?.isMutualFollowingWithAnchor ||
+      data.followRole === 1 ||
+      data.followRole === 2 ||
+      data.isModerator ||
+      data.isSubscriber ||
+      (data.teamMemberLevel && data.teamMemberLevel > 0) ||
+      isHost ||
+      isCachedFollower
+    );
+
+    if (isFollower) {
+      if (uIdLower) knownFollowers.add(uIdLower);
+      if (nickLower) knownFollowers.add(nickLower);
+      if (uIdStr) knownFollowers.add(uIdStr);
+    }
 
     // Follower-only filter for word guesses
     if (isFollowerOnlyGuess && !isFollower) {
+      console.log(`[Follower Filter] Tebakan "${msg}" dari @${userId} diabaikan karena belum follow (isFollower: ${isFollower}, followRole: ${data.followRole}).`);
       return;
     }
 
@@ -8817,9 +8870,12 @@ window.testTTS = function() {
 function readTTS(nickname, comment, followRole, isFollower) {
   if (!ttsSettings.enabled || !window.speechSynthesis) return;
   
+  const nickLower = (nickname || '').toLowerCase();
+  const isCached = knownFollowers.has(nickLower);
+
   if (ttsSettings.followerOnly) {
-    // Check if the user is a follower (followRole 1 or 2, or isFollower boolean)
-    if (followRole !== 1 && followRole !== 2 && !isFollower) return;
+    // Check if the user is a follower (followRole 1 or 2, or isFollower boolean, or cached)
+    if (followRole !== 1 && followRole !== 2 && !isFollower && !isCached) return;
   }
   
   const msg = comment.trim();

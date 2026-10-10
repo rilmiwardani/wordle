@@ -124,6 +124,10 @@ let eventStats = {
 
 // Recent events log (last 100)
 let recentEvents = [];
+
+// Followers cache (populated from follow events, userIdentity, chat, etc.)
+const knownFollowers = new Set();
+
 function logEvent(type, data) {
   const entry = {
     type,
@@ -816,6 +820,11 @@ function registerTikTokEvents(connection) {
 
     // Also emit specific sub-events
     if (payload.displayType?.includes("follow")) {
+      const uId = (payload.uniqueId || "").toLowerCase();
+      if (uId) knownFollowers.add(uId);
+      if (payload.userId) knownFollowers.add(payload.userId.toString());
+      payload.isFollower = true;
+      payload.followRole = payload.followRole || 1;
       logEvent("follow", payload);
       io.emit("follow", payload);
     }
@@ -823,6 +832,19 @@ function registerTikTokEvents(connection) {
       logEvent("share", payload);
       io.emit("share", payload);
     }
+  });
+
+  // Direct follow event if emitted by connector
+  connection.on("follow", (data) => {
+    markActivity();
+    const payload = formatUser(data);
+    const uId = (payload.uniqueId || "").toLowerCase();
+    if (uId) knownFollowers.add(uId);
+    if (payload.userId) knownFollowers.add(payload.userId.toString());
+    payload.isFollower = true;
+    payload.followRole = payload.followRole || 1;
+    logEvent("follow", payload);
+    io.emit("follow", payload);
   });
 
   // ─── Room Stats ───
@@ -970,21 +992,98 @@ function formatUser(data) {
     avatar = userObj.avatarUrl;
   }
 
+  const uniqueId = userObj.uniqueId || data.uniqueId || null;
+  const uniqueIdLower = (uniqueId || "").toLowerCase();
+  const userId = userObj.userId?.toString() || data.userId?.toString() || null;
+
+  // Extract userIdentity from WebcastChatMessage (TikTok protobuf field 18)
+  const userIdentity = data.userIdentity || userObj.userIdentity || {};
+
+  const isModerator = Boolean(
+    userObj.isModerator ||
+    data.isModerator ||
+    userIdentity.isModeratorOfAnchor
+  );
+
+  const isSubscriber = Boolean(
+    userObj.isSubscriber ||
+    data.isSubscriber ||
+    userIdentity.isSubscriberOfAnchor
+  );
+
+  const teamMemberLevel = userObj.teamMemberLevel || data.teamMemberLevel || 0;
+  const isFan = teamMemberLevel > 0;
+
+  const isMutual = Boolean(
+    userIdentity.isMutualFollowingWithAnchor ||
+    data.isMutualFollowingWithAnchor ||
+    userObj.isMutualFollowingWithAnchor
+  );
+
+  const isFollowerOfAnchor = Boolean(
+    userIdentity.isFollowerOfAnchor ||
+    data.isFollowerOfAnchor ||
+    userObj.isFollowerOfAnchor ||
+    isMutual
+  );
+
+  const rawFollowRole = Number(
+    userObj.followInfo?.followStatus ??
+    userObj.followRole ??
+    data.followRole ??
+    data.followInfo?.followStatus ??
+    0
+  );
+  const hasFollowRole = (rawFollowRole === 1 || rawFollowRole === 2);
+
+  const isCachedFollower = Boolean(
+    (uniqueIdLower && knownFollowers.has(uniqueIdLower)) ||
+    (userId && knownFollowers.has(userId))
+  );
+
+  const isFollower = Boolean(
+    userObj.isFollower ||
+    data.isFollower ||
+    isFollowerOfAnchor ||
+    hasFollowRole ||
+    isCachedFollower ||
+    isSubscriber ||
+    isFan ||
+    isModerator
+  );
+
+  // Cache follower for this session
+  if (isFollower) {
+    if (uniqueIdLower) knownFollowers.add(uniqueIdLower);
+    if (userId) knownFollowers.add(userId);
+  }
+
+  let followRole = rawFollowRole;
+  if (!followRole || followRole === 0) {
+    if (isMutual) {
+      followRole = 2;
+    } else if (isFollower) {
+      followRole = 1;
+    }
+  }
+
   return {
-    userId: userObj.userId?.toString() || null,
+    userId: userId,
     secUid: userObj.secUid || null,
-    uniqueId: userObj.uniqueId || null,
-    nickname: userObj.nickname || userObj.uniqueId || "Anonymous",
+    uniqueId: uniqueId,
+    nickname: userObj.nickname || uniqueId || "Anonymous",
     profilePictureUrl: avatar || null,
-    followRole: userObj.followInfo?.followStatus || userObj.followRole || data.followRole || 0, // 0=none, 1=follower, 2=friends
-    isFollower: userObj.isFollower || data.isFollower || false,
+    followRole: followRole,
+    isFollower: isFollower,
+    isFollowerOfAnchor: isFollowerOfAnchor,
+    userIdentity: userIdentity,
     userBadges: userObj.userBadges || data.userBadges || [],
-    isModerator: userObj.isModerator || data.isModerator || false,
+    isModerator: isModerator,
     isNewGifter: userObj.isNewGifter || data.isNewGifter || false,
-    isSubscriber: userObj.isSubscriber || data.isSubscriber || false,
+    isSubscriber: isSubscriber,
     topGifterRank: userObj.topGifterRank || data.topGifterRank || null,
     gifterLevel: userObj.gifterLevel || data.gifterLevel || 0,
-    teamMemberLevel: userObj.teamMemberLevel || data.teamMemberLevel || 0,
+    teamMemberLevel: teamMemberLevel,
     msgId: data.msgId?.toString() || null,
     createTime: data.createTime?.toString() || null,
   };

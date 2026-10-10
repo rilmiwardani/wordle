@@ -2013,21 +2013,23 @@ header {
   pointer-events: none;
 }
 
-/* Toasts */
+/* Toasts (Notifikasi Sistem / Game) - Posisi Kanan Bawah di Atas Pemutar Musik */
 .toast-container {
   position: fixed;
-  bottom: 80px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 235px;
+  right: 20px;
+  left: auto;
+  transform: none;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  align-items: center;
+  gap: 8px;
+  align-items: flex-end;
   pointer-events: none;
   /* Selalu di atas semua elemen game */
   z-index: 9998;
-  width: 100%;
-  padding: 0 20px;
+  max-width: 320px;
+  width: auto;
+  padding: 0;
 }
 
 .toast {
@@ -2173,6 +2175,16 @@ header {
     padding: 2.5px 8px;
     font-size: 10.5px;
     gap: 4px;
+  }
+  .toast-container {
+    right: 12px;
+    bottom: 215px;
+    max-width: calc(100vw - 24px);
+  }
+  .social-alert-container {
+    right: 12px;
+    bottom: 160px;
+    max-width: calc(100vw - 24px);
   }
 }
 
@@ -3100,9 +3112,10 @@ header {
    ========================================= */
 .social-alert-container {
   position: fixed;
-  bottom: 68px;
-  left: 50%;
-  transform: translateX(-50%) translateY(24px) scale(0.9);
+  bottom: 175px;
+  right: 20px;
+  left: auto;
+  transform: translateY(20px) scale(0.9);
   background: rgba(16, 16, 26, 0.92);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -3115,7 +3128,7 @@ header {
   z-index: 9999;
   opacity: 0;
   pointer-events: none;
-  max-width: 90vw;
+  max-width: 320px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   transition: transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease, border-color 0.3s ease, box-shadow 0.3s ease;
   will-change: transform, opacity;
@@ -3123,16 +3136,16 @@ header {
 
 .social-alert-container.show {
   opacity: 1;
-  transform: translateX(-50%) translateY(0) scale(1);
+  transform: translateY(0) scale(1);
   animation: socialAlertBreathing 2.2s ease-in-out infinite;
 }
 
 @keyframes socialAlertBreathing {
   0%, 100% {
-    transform: translateX(-50%) translateY(0) scale(1);
+    transform: translateY(0) scale(1);
   }
   50% {
-    transform: translateX(-50%) translateY(-3px) scale(1.02);
+    transform: translateY(-3px) scale(1.02);
   }
 }
 

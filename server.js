@@ -37,6 +37,31 @@ let connectionState = {
   error: null,
 };
 
+// OBS & Overlay Configuration State
+let obsConfig = {
+  shareLinkText: "",
+  shareLinkVisible: false,
+  shareLinkPosition: "top", // "top" | "bottom"
+  activeGameMode: "wordle",
+  transparentBg: false,
+  compactMode: false,
+};
+
+// Game Rules & Settings State (Word Length, Language, Rules)
+let gameSettings = {
+  allowedLengths: [5, 6, 7, 8],
+  language: "id", // "id" | "en" | "mixed"
+  hardMode: "off", // "off" | "hard" | "ultra"
+  noRepeat: false, // isogram
+  noYellow: false,
+  showHints: true,
+  displayRows: 6,
+  boardScale: 100,
+  theme: "dark",
+  followerOnlyGuess: false,
+  followerOnlyMusic: false
+};
+
 // Event counters for dashboard
 let eventStats = {
   chat: 0,
@@ -165,7 +190,15 @@ io.on("connection", (socket) => {
 
   // Chat Music Request (for IndoFinity backend fallback)
   socket.on("chat-music-request", async (data) => {
-    const { query, requesterName, requesterImg } = data;
+    const { query, requesterName, requesterImg, isFollower } = data;
+    if (gameSettings.followerOnlyMusic && isFollower === false) {
+      console.log(`[Music] Filtered chat-music-request: ${requesterName} is not a follower.`);
+      io.emit('music-request-rejected', {
+        reason: 'follower_only',
+        requesterName: requesterName || "Viewer"
+      });
+      return;
+    }
     console.log(`[Socket.IO] Chat requested music: ${query} by ${requesterName}`);
     try {
       const ytSearch = require("yt-search");
@@ -199,6 +232,45 @@ io.on("connection", (socket) => {
   // Get status
   socket.on("getStatus", () => {
     socket.emit("statusUpdate", getStatusPayload());
+  });
+
+  // OBS Overlay & Share Link state
+  socket.emit("obs-config-update", obsConfig);
+
+  socket.on("get-obs-config", () => {
+    socket.emit("obs-config-update", obsConfig);
+  });
+
+  socket.on("set-obs-config", (data) => {
+    obsConfig = { ...obsConfig, ...data };
+    console.log("[OBS] Config updated:", obsConfig);
+    io.emit("obs-config-update", obsConfig);
+  });
+
+  // Dashboard remote controls for game & rounds
+  socket.on("dashboard-change-game", (mode) => {
+    console.log("[OBS] Dashboard requested game change to:", mode);
+    obsConfig.activeGameMode = mode;
+    io.emit("change-game-mode", { mode });
+    io.emit("obs-config-update", obsConfig);
+  });
+
+  socket.on("dashboard-new-round", () => {
+    console.log("[OBS] Dashboard requested new round");
+    io.emit("trigger-new-round");
+  });
+
+  // Game Settings Sync (Word Length, Language, Rules)
+  socket.emit("game-settings-update", gameSettings);
+
+  socket.on("get-game-settings", () => {
+    socket.emit("game-settings-update", gameSettings);
+  });
+
+  socket.on("update-game-settings", (newSettings) => {
+    gameSettings = { ...gameSettings, ...newSettings };
+    console.log("[Settings] Game settings updated:", gameSettings);
+    io.emit("game-settings-update", gameSettings);
   });
 
   socket.on("disconnect", () => {
@@ -243,6 +315,26 @@ dashApp.get("/api/events", (req, res) => {
 
 dashApp.get("/api/stats", (req, res) => {
   res.json(eventStats);
+});
+
+dashApp.get("/api/obs-config", (req, res) => {
+  res.json(obsConfig);
+});
+
+dashApp.post("/api/obs-config", (req, res) => {
+  obsConfig = { ...obsConfig, ...req.body };
+  io.emit("obs-config-update", obsConfig);
+  res.json(obsConfig);
+});
+
+dashApp.get("/api/game-settings", (req, res) => {
+  res.json(gameSettings);
+});
+
+dashApp.post("/api/game-settings", (req, res) => {
+  gameSettings = { ...gameSettings, ...req.body };
+  io.emit("game-settings-update", gameSettings);
+  res.json(gameSettings);
 });
 
 const dashHttpServer = http.createServer(dashApp);
@@ -573,6 +665,16 @@ function registerTikTokEvents(connection) {
     
     // Check for Music Request
     if (data.comment.toLowerCase().startsWith('!play ')) {
+      const isHost = payload.uniqueId === connectionState.uniqueId || payload.uniqueId === 'host' || payload.uniqueId === 'host_offline';
+      const isFollower = Boolean(payload.isFollower || payload.followRole === 1 || payload.followRole === 2 || payload.isModerator || isHost);
+      if (gameSettings.followerOnlyMusic && !isFollower) {
+        console.log(`[Music] Filtered !play: @${payload.uniqueId} is not a follower.`);
+        io.emit('music-request-rejected', {
+          reason: 'follower_only',
+          requesterName: payload.nickname || payload.uniqueId
+        });
+        return; // Do not relay as a regular chat message and do not search
+      }
       const query = data.comment.substring(6).trim();
       if (query) {
         try {

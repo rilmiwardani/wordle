@@ -84,6 +84,33 @@ function updateBoardScaleUI() {
 }
 
 const urlParams = new URLSearchParams(window.location.search);
+const isObsMode = urlParams.get('obs') === '1' || urlParams.get('obs') === 'true' || urlParams.get('overlay') === '1';
+const isObsTransparent = urlParams.get('transparent') === '1' || urlParams.get('transparent') === 'true';
+const isObsCompact = urlParams.get('compact') === '1' || urlParams.get('compact') === 'true' || urlParams.get('boardOnly') === '1';
+const urlInitialMode = urlParams.get('mode');
+const urlBackend = urlParams.get('backend');
+const urlIndofinityIp = urlParams.get('ip') || urlParams.get('indofinityIp');
+const urlUsername = urlParams.get('user') || urlParams.get('username');
+const urlLang = urlParams.get('lang');
+
+if (isObsMode) {
+  document.documentElement.classList.add('obs-mode');
+  if (document.body) document.body.classList.add('obs-mode');
+  else window.addEventListener('DOMContentLoaded', () => document.body.classList.add('obs-mode'));
+}
+
+if (isObsTransparent) {
+  document.documentElement.classList.add('obs-transparent');
+  if (document.body) document.body.classList.add('obs-transparent');
+  else window.addEventListener('DOMContentLoaded', () => document.body.classList.add('obs-transparent'));
+}
+
+if (isObsCompact) {
+  document.documentElement.classList.add('obs-compact');
+  if (document.body) document.body.classList.add('obs-compact');
+  else window.addEventListener('DOMContentLoaded', () => document.body.classList.add('obs-compact'));
+}
+
 let WORD_LENGTH = 5;
 document.documentElement.style.setProperty('--word-length', WORD_LENGTH);
 
@@ -109,7 +136,7 @@ let wordLadderContributors = {}; // map by username -> { userData, points, steps
 let wordLadderPoolID = []; // Anti-duplicate pool for ID
 let wordLadderPoolEN = []; // Anti-duplicate pool for EN
 
-let currentGameMode = sessionStorage.getItem('wordle_gameMode') || '';
+let currentGameMode = urlInitialMode || sessionStorage.getItem('wordle_gameMode') || '';
 let isWgTakeoverMode = localStorage.getItem('wordle_wgTakeover') === 'true';
 let wgHintDelay = parseInt(localStorage.getItem('wordle_wgHintDelay')) || 45; // in seconds
 let wgDifficulty = localStorage.getItem('wordle_wgDifficulty') || 'easy'; // 'easy', 'medium', 'hard'
@@ -163,11 +190,22 @@ class IndoFinitySocket {
     this.ws.onclose = () => {
       this.connected = false;
       console.log('[IndoFinity] WebSocket closed');
-      // Don't fire 'disconnect' to avoid triggering Socket.IO reconnect logic
+      if (this.listeners['statusUpdate']) {
+        this.listeners['statusUpdate'].forEach(cb => cb({ status: 'disconnected', error: 'IndoFinity WebSocket terputus' }));
+      }
+      if (this.listeners['tiktokDisconnected']) {
+        this.listeners['tiktokDisconnected'].forEach(cb => cb('tiktok.disconnected'));
+      }
     };
     
     this.ws.onerror = (err) => {
       console.error('[IndoFinity] WebSocket error:', err);
+      if (this.listeners['statusUpdate']) {
+        this.listeners['statusUpdate'].forEach(cb => cb({ status: 'disconnected', error: `Gagal terhubung ke IndoFinity (${url})` }));
+      }
+      if (this.listeners['tiktokDisconnected']) {
+        this.listeners['tiktokDisconnected'].forEach(cb => cb('tiktok.disconnected'));
+      }
     };
   }
 
@@ -654,73 +692,92 @@ function buildSupporterMarqueeTrackHTML() {
   const topSharers = getTop3(playerShares);
   const topActiveViewers = getTopActiveViewers();
 
-  const items = [];
+  const categoryGroups = [];
 
-  function createPill(categoryClass, iconHTML, catTitle, u, rank, valText) {
-    const nameClean = escapeHTML(u.username || 'user');
-    const shortName = nameClean.length > 10 ? nameClean.substring(0, 9) + '…' : nameClean;
-    const rankClass = rank === 1 ? 'rank-1 is-top1' : (rank === 2 ? 'rank-2' : 'rank-3');
-    const rankBadgeHTML = rank === 1 ? '<i class="fa-solid fa-crown"></i>' : rank;
-    
+  function createCategoryCluster(catClass, iconClass, catTitle, userList, valFormatter) {
+    if (!userList || userList.length === 0) return null;
+
+    const usersHTML = userList.map((u, i) => {
+      const rank = i + 1;
+      const nameClean = escapeHTML(u.username || 'user');
+      const shortName = nameClean.length > 9 ? nameClean.substring(0, 8) + '…' : nameClean;
+      const rankBadgeHTML = rank === 1 ? '<i class="fa-solid fa-crown"></i>' : rank;
+      const valText = valFormatter(u.count);
+
+      return `
+        <div class="marquee-user-item rank-${rank}" title="@${nameClean} • ${valText}">
+          <div class="marquee-avatar-wrap">
+            <img src="${getUserAvatar(u.username)}" class="marquee-avatar" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="${nameClean}">
+            <span class="marquee-rank-badge rank-${rank}">${rankBadgeHTML}</span>
+          </div>
+          <div class="marquee-user-text">
+            <span class="marquee-user-name">${shortName}</span>
+            <span class="marquee-user-val">${valText}</span>
+          </div>
+        </div>
+      `;
+    }).join('<span class="marquee-user-sep">•</span>');
+
     return `
-      <div class="marquee-supporter-pill ${categoryClass} ${rankClass}" title="@${nameClean} • ${valText}">
-        <div class="marquee-cat-badge">
-          <span class="marquee-cat-icon">${iconHTML}</span>
-          <span class="marquee-cat-label">${catTitle}</span>
+      <div class="marquee-category-group ${catClass}">
+        <div class="marquee-group-label">
+          <i class="${iconClass} group-icon"></i>
+          <span class="group-title">${catTitle}</span>
         </div>
-        <div class="marquee-avatar-wrap">
-          <img src="${getUserAvatar(u.username)}" class="marquee-avatar" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="${nameClean}">
-          <span class="marquee-rank-badge">${rankBadgeHTML}</span>
-        </div>
-        <div class="marquee-pill-info">
-          <span class="marquee-user-name">${shortName}</span>
-          <span class="marquee-user-val">${valText}</span>
+        <div class="marquee-group-users">
+          ${usersHTML}
         </div>
       </div>
     `;
   }
 
   // 1. Top Gifters
-  topGifters.forEach((u, i) => {
-    items.push(createPill('pill-gift', '<i class="fa-solid fa-gift"></i>', 'GIFTER', u, i + 1, `${formatShortNumber(u.count)} Koin`));
-  });
+  const gifterGroup = createCategoryCluster('cat-gift', 'fa-solid fa-gift', 'TOP GIFTER', topGifters, count => `${formatShortNumber(count)} Koin`);
+  if (gifterGroup) categoryGroups.push(gifterGroup);
 
   // 2. Top Likers
-  topLikers.forEach((u, i) => {
-    items.push(createPill('pill-like', '<i class="fa-solid fa-heart"></i>', 'LIKER', u, i + 1, `${formatShortNumber(u.count)} Likes`));
-  });
+  const likerGroup = createCategoryCluster('cat-like', 'fa-solid fa-heart', 'TOP LIKER', topLikers, count => `${formatShortNumber(count)} Likes`);
+  if (likerGroup) categoryGroups.push(likerGroup);
 
   // 3. Top Sharers
-  topSharers.forEach((u, i) => {
-    items.push(createPill('pill-share', '<i class="fa-solid fa-share-nodes"></i>', 'SHARE', u, i + 1, `${formatShortNumber(u.count)} Share`));
-  });
+  const shareGroup = createCategoryCluster('cat-share', 'fa-solid fa-share-nodes', 'TOP SHARE', topSharers, count => `${formatShortNumber(count)} Share`);
+  if (shareGroup) categoryGroups.push(shareGroup);
 
   // 4. Top Active Viewers
-  topActiveViewers.forEach((u, i) => {
-    items.push(createPill('pill-active', '<i class="fa-solid fa-clock"></i>', 'AKTIF', u, i + 1, formatActiveTime(u.count)));
-  });
+  const activeGroup = createCategoryCluster('cat-active', 'fa-solid fa-clock', 'PALING AKTIF', topActiveViewers, count => formatActiveTime(count));
+  if (activeGroup) categoryGroups.push(activeGroup);
 
   // Fallback if no supporters yet
-  if (items.length === 0) {
-    const welcomeHTML = `
-      <div class="marquee-welcome-pill">
-        <span class="marquee-cat-icon" style="color: #f59e0b;"><i class="fa-solid fa-gift"></i></span>
-        <span class="welcome-text">Kirim Gift, Like, atau Share untuk tampil di Top Supporter Live</span>
-      </div>
-      <div class="marquee-welcome-pill alt">
-        <span class="marquee-cat-icon" style="color: #38bdf8;"><i class="fa-solid fa-comment-dots"></i></span>
-        <span class="welcome-text">Ketik tebakan kata di live chat untuk ikut bermain</span>
+  if (categoryGroups.length === 0) {
+    const welcome1 = `
+      <div class="marquee-category-group cat-gift">
+        <div class="marquee-group-label">
+          <i class="fa-solid fa-gift group-icon"></i>
+          <span class="group-title">TOP SUPPORTER</span>
+        </div>
+        <span class="marquee-welcome-text">Kirim Gift, Like, atau Share untuk tampil di sini</span>
       </div>
     `;
-    return welcomeHTML + welcomeHTML + welcomeHTML + welcomeHTML;
+    const welcome2 = `
+      <div class="marquee-category-group cat-share">
+        <div class="marquee-group-label">
+          <i class="fa-solid fa-comment-dots group-icon"></i>
+          <span class="group-title">CARA MAIN</span>
+        </div>
+        <span class="marquee-welcome-text">Ketik tebakan kata di live chat untuk ikut bermain</span>
+      </div>
+    `;
+    const sep = `<span class="marquee-cat-divider"><i class="fa-solid fa-star"></i></span>`;
+    const base = welcome1 + sep + welcome2 + sep;
+    return base + base + base;
   }
 
-  const separator = `<span class="marquee-separator">•</span>`;
-  const singleSequence = items.join(separator) + separator;
+  const catDivider = `<span class="marquee-cat-divider"><i class="fa-solid fa-star"></i></span>`;
+  const singleTrack = categoryGroups.join(catDivider) + catDivider;
 
-  let result = singleSequence + singleSequence;
-  if (items.length < 4) {
-    result += singleSequence + singleSequence;
+  let result = singleTrack + singleTrack;
+  if (categoryGroups.length < 3) {
+    result += singleTrack + singleTrack;
   }
   return result;
 }
@@ -1001,13 +1058,14 @@ let ytPlayer = null;
 let musicQueue = [];
 let activeMusic = null;
 let isMusicPlaying = false;
-let musicSettings = { maxGlobal: 20, maxUser: 2, maxDuration: 6, bannedKeywords: [], volume: 50, requestsEnabled: true };
+let musicSettings = { maxGlobal: 20, maxUser: 2, maxDuration: 6, bannedKeywords: [], volume: 50, requestsEnabled: true, followerOnly: false };
 try {
   const saved = localStorage.getItem('music_settings');
   if (saved) {
     musicSettings = JSON.parse(saved);
     if (musicSettings.volume === undefined) musicSettings.volume = 50;
     if (musicSettings.requestsEnabled === undefined) musicSettings.requestsEnabled = true;
+    if (musicSettings.followerOnly === undefined) musicSettings.followerOnly = false;
   }
 } catch(e) {}
 let lastUsername = "";
@@ -1150,7 +1208,7 @@ function renderLeaderboard() {
     .slice(0, 3); // Top 3
     
   if (sortedPlayers.length === 0) {
-    lbList.innerHTML = '<div style="text-align:center;font-size:12px;color:rgba(255,255,255,0.4);padding:10px;">Belum ada tebakan benar</div>';
+    lbList.innerHTML = '<div style="text-align:center;font-size:10.5px;color:rgba(255,255,255,0.45);padding:4px;">Belum ada tebakan benar</div>';
     return;
   }
 
@@ -1211,11 +1269,7 @@ function renderLeaderboard() {
   });
 }
 
-// Auto-switch Leaderboard Tabs every 10 seconds for Live Stream automation
-setInterval(() => {
-  if (isLowPowerMode) return; // Skip constant DOM re-renders in low-power mode to save CPU/battery
-  switchLbTab(currentLbTab === 'session' ? 'weekly' : 'session');
-}, 10000);
+// Leaderboard overlay is locked to Daily / Current Session for maximum live stream competition
 
 // YouTube Iframe API setup with Universal Auto-Recovery & Tauri Origin Compatibility
 let ytPlayerReady = false;
@@ -1380,6 +1434,41 @@ function showMusicNotif(requesterName, title) {
       container.removeChild(notif);
     }
   }, 3000); // 3 seconds matches CSS animation timing
+}
+
+let lastMusicFollowerWarningTime = 0;
+function showMusicFollowerWarningNotif(requesterName) {
+  const now = Date.now();
+  if (now - lastMusicFollowerWarningTime < 4500) return; // Cooldown 4.5 detik cegah spam
+  lastMusicFollowerWarningTime = now;
+
+  const container = document.getElementById('musicNotifContainer');
+  if (!container) return;
+
+  if (window.sounds && typeof window.sounds.playPop === 'function') {
+    try { window.sounds.playPop(); } catch(e) {}
+  }
+
+  container.innerHTML = '';
+  const notif = document.createElement('div');
+  notif.className = 'music-notif music-notif-warning';
+
+  const cleanName = (requesterName || 'Viewer').replace(/[<>]/g, '');
+  notif.innerHTML = `
+    <span class="music-notif-icon" style="color: #f43f5e; font-size: 15px;"><i class="fa-solid fa-user-lock"></i></span>
+    <div class="music-notif-content">
+      <span class="music-notif-user">@${cleanName}</span>
+      <span class="music-notif-desc">Follow live dulu untuk request lagu!</span>
+    </div>
+  `;
+
+  container.appendChild(notif);
+
+  setTimeout(() => {
+    if (notif.parentNode === container) {
+      container.removeChild(notif);
+    }
+  }, 3500);
 }
 
 function onPlayerStateChange(event) {
@@ -4581,6 +4670,40 @@ window.toggleShowHintsDiscovered = function(checked) {
   showToast(checked ? '💡 Bar Hints Discovered: AKTIF' : '💡 Bar Hints Discovered: NONAKTIF', 2000);
 };
 
+let isFollowerOnlyGuess = localStorage.getItem('wordle_followerOnlyGuess') === 'true';
+
+window.updateFollowerOnlyGuessBadgeUI = function() {
+  const badge = document.getElementById('followerOnlyBadge');
+  if (badge) {
+    badge.style.display = isFollowerOnlyGuess ? 'inline-block' : 'none';
+  }
+};
+
+window.toggleFollowerOnlyGuess = function(checked) {
+  isFollowerOnlyGuess = checked;
+  try { localStorage.setItem('wordle_followerOnlyGuess', checked); } catch(e) {}
+  const tog = document.getElementById('followerOnlyGuessToggle');
+  if (tog) tog.checked = checked;
+  if (typeof updateFollowerOnlyGuessBadgeUI === 'function') updateFollowerOnlyGuessBadgeUI();
+  if (localSocket) {
+    localSocket.emit('update-game-settings', { followerOnlyGuess: checked });
+  }
+  showToast(checked ? '👤 Tebakan Kata: Hanya Follower' : '👥 Tebakan Kata: Semua Penonton', 2000);
+};
+
+window.toggleFollowerOnlyMusic = function(checked) {
+  musicSettings.followerOnly = checked;
+  try { localStorage.setItem('music_settings', JSON.stringify(musicSettings)); } catch(e) {}
+  const togModal = document.getElementById('musicFollowerOnlyToggle');
+  if (togModal) togModal.checked = checked;
+  const togGroup = document.getElementById('musicFollowerOnlyGroupToggle');
+  if (togGroup) togGroup.checked = checked;
+  if (localSocket) {
+    localSocket.emit('update-game-settings', { followerOnlyMusic: checked });
+  }
+  showToast(checked ? '🎵 Request Musik: Hanya Follower' : '🎵 Request Musik: Semua Penonton', 2000);
+};
+
 function updateNoRepeatBadgeUI() {
   const badge = document.getElementById('noRepeatBadge');
   if (!badge) return;
@@ -4674,6 +4797,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const nrToggle = document.getElementById('noRepeatToggle');
   if (nrToggle) nrToggle.checked = isNoRepeatMode;
   updateNoRepeatBadgeUI();
+  const fogToggle = document.getElementById('followerOnlyGuessToggle');
+  if (fogToggle) fogToggle.checked = isFollowerOnlyGuess;
+  if (typeof updateFollowerOnlyGuessBadgeUI === 'function') updateFollowerOnlyGuessBadgeUI();
+  const fomGroupToggle = document.getElementById('musicFollowerOnlyGroupToggle');
+  if (fomGroupToggle) fomGroupToggle.checked = !!musicSettings.followerOnly;
   updateHardModeUI();
   // Sync dynamic bg toggle state
   const toggle = document.getElementById('dynamicBgToggle');
@@ -5075,12 +5203,12 @@ function connectToLive() {
     return;
   }
 
-  // Destroy socket if it doesn't match current backend
+  // Destroy socket if it doesn't match current backend or if IndoFinity is disconnected
   if (socket) {
     const isIndoFinity = socket instanceof IndoFinitySocket;
-    if ((backend === 'indofinity' && !isIndoFinity) || (backend === 'socketio' && isIndoFinity)) {
-      if (socket.ws) socket.ws.close();
-      if (socket.disconnect) socket.disconnect();
+    if ((backend === 'indofinity' && !isIndoFinity) || (backend === 'socketio' && isIndoFinity) || (isIndoFinity && (!socket.connected || (socket.ws && socket.ws.readyState >= 2)))) {
+      try { if (socket.ws) socket.ws.close(); } catch(e) {}
+      try { if (socket.disconnect) socket.disconnect(); } catch(e) {}
       socket = null;
     }
   }
@@ -5167,7 +5295,7 @@ function startOfflineMode() {
   });
 }
 
-// Auto-reconnect on page refresh using saved credentials
+// Auto-reconnect on page refresh using saved credentials or URL params
 function autoReconnect() {
   try {
     const savedUser = localStorage.getItem('wordle_username');
@@ -5177,29 +5305,34 @@ function autoReconnect() {
     const savedIp = localStorage.getItem('wordle_indofinity_ip');
     const savedMode = sessionStorage.getItem('wordle_gameMode');
     
-    if ((savedUser || savedBackend === 'indofinity') && savedMode) {
+    const activeMode = savedMode || currentGameMode || urlInitialMode;
+    const activeBackend = urlBackend || savedBackend || (isObsMode ? 'indofinity' : null);
+    const activeUser = urlUsername || savedUser;
+
+    if ((activeUser || activeBackend === 'indofinity') && activeMode) {
       // Restore game mode
-      currentGameMode = savedMode;
+      currentGameMode = activeMode;
 
       // Hide game select, show login for auto-connect
-      gameSelectOverlay.style.display = 'none';
-      loginOverlay.style.display = 'flex';
+      if (typeof gameSelectOverlay !== 'undefined' && gameSelectOverlay) gameSelectOverlay.style.display = 'none';
+      if (typeof loginOverlay !== 'undefined' && loginOverlay) loginOverlay.style.display = 'flex';
 
       // Pre-fill login fields
-      document.getElementById('usernameInput').value = savedUser || '';
+      const userInput = document.getElementById('usernameInput');
+      if (userInput) userInput.value = activeUser || '';
       const langSelect = document.getElementById('languageSelect');
       if (savedLang && langSelect) langSelect.value = savedLang;
       const ipInput = document.getElementById('indofinityIpInput');
-      if (savedIp && ipInput) ipInput.value = savedIp;
+      const activeIp = urlIndofinityIp || savedIp;
+      if (activeIp && ipInput) ipInput.value = activeIp;
       const sessionInput = document.getElementById('sessionInput');
       if (savedSession && sessionInput) sessionInput.value = savedSession;
       const backendSelect = document.getElementById('backendSelect');
-      if (savedBackend && backendSelect) {
-        backendSelect.value = savedBackend;
-        if (typeof handleBackendChange === 'function') handleBackendChange(savedBackend);
+      if (activeBackend && backendSelect) {
+        backendSelect.value = activeBackend;
+        if (typeof handleBackendChange === 'function') handleBackendChange(activeBackend);
       }
 
-      
       // Auto-connect
       connectToLive();
     }
@@ -5230,6 +5363,12 @@ window.addEventListener('DOMContentLoaded', () => {
   // Always establish local socket for music features
   localSocket = io(SOCKET_URL);
   
+  localSocket.on('music-request-rejected', (data) => {
+    if (data && data.reason === 'follower_only') {
+      showMusicFollowerWarningNotif(data.requesterName);
+    }
+  });
+
   localSocket.on('music-request', (data) => {
     // If music requests are disabled, only allow the Host to request music
     if (musicSettings.requestsEnabled === false && data.requesterName !== "Host") {
@@ -5294,7 +5433,282 @@ window.addEventListener('DOMContentLoaded', () => {
       playNextMusic();
     }
   });
+
+  // ─── OBS Overlay & Remote Control Handlers ───
+  localSocket.on('obs-config-update', (config) => {
+    updateObsShareLinkUI(config);
+  });
+
+  localSocket.on('change-game-mode', (data) => {
+    if (data && data.mode) {
+      console.log('[OBS] Remote game mode change to:', data.mode);
+      remoteChangeGameMode(data.mode);
+    }
+  });
+
+  localSocket.on('trigger-new-round', () => {
+    console.log('[OBS] Remote new round triggered');
+    if (typeof startNewRound === 'function') {
+      startNewRound();
+      if (typeof showToast === 'function') showToast('🔄 Ronde Baru Dimulai!', 2000);
+    }
+  });
+
+  localSocket.emit('get-obs-config');
+
+  // Game Settings Remote Listener
+  localSocket.on('game-settings-update', (settings) => {
+    applyRemoteGameSettings(settings);
+  });
+  localSocket.emit('get-game-settings');
+
+  // If in OBS Browser mode, prepare clean overlay layout
+  if (isObsMode) {
+    initObsMode();
+  }
 });
+
+function applyRemoteGameSettings(settings) {
+  if (!settings) return;
+  console.log('[Settings] Applying remote game settings:', settings);
+
+  let needReloadWords = false;
+  let needNewRound = false;
+
+  // 1. Allowed Word Lengths
+  if (Array.isArray(settings.allowedLengths) && settings.allowedLengths.length > 0) {
+    try {
+      localStorage.setItem('allowed_lengths', JSON.stringify(settings.allowedLengths));
+      [3, 4, 5, 6, 7, 8].forEach(n => {
+        const cb = document.getElementById(`len${n}Toggle`);
+        if (cb) cb.checked = settings.allowedLengths.includes(n);
+      });
+      needNewRound = true;
+    } catch(e) {}
+  }
+
+  // 2. Language
+  if (settings.language && settings.language !== lastLang) {
+    lastLang = settings.language;
+    try { localStorage.setItem('wordle_lang', settings.language); } catch(e) {}
+    if (typeof updateLangBadgeUI === 'function') updateLangBadgeUI(settings.language);
+    needReloadWords = true;
+  }
+
+  // 3. Hard Mode
+  if (settings.hardMode !== undefined && settings.hardMode !== hardModeState) {
+    hardModeState = settings.hardMode;
+    try { localStorage.setItem('wordle_hardModeState', hardModeState); } catch(e) {}
+    if (typeof updateHardModeUI === 'function') updateHardModeUI();
+    needNewRound = true;
+  }
+
+  // 4. No Repeat (Isogram)
+  if (settings.noRepeat !== undefined && settings.noRepeat !== isNoRepeatMode) {
+    isNoRepeatMode = settings.noRepeat;
+    try { localStorage.setItem('wordle_noRepeat', settings.noRepeat); } catch(e) {}
+    if (typeof updateNoRepeatBadgeUI === 'function') updateNoRepeatBadgeUI();
+    const nrToggle = document.getElementById('noRepeatToggle');
+    if (nrToggle) nrToggle.checked = isNoRepeatMode;
+    needNewRound = true;
+  }
+
+  // 5. No Yellow
+  if (settings.noYellow !== undefined && settings.noYellow !== isNoYellowMode) {
+    isNoYellowMode = settings.noYellow;
+    try { localStorage.setItem('wordle_noYellow', settings.noYellow); } catch(e) {}
+    const nyToggle = document.getElementById('noYellowToggle');
+    if (nyToggle) nyToggle.checked = isNoYellowMode;
+    if (currentGameMode === 'wordfit' && typeof renderWordFitBoard === 'function') renderWordFitBoard();
+    else if ((currentGameMode === 'word500' || currentGameMode === 'word600') && typeof renderWord500Board === 'function') renderWord500Board();
+  }
+
+  // 6. Show Hints Discovered
+  if (settings.showHints !== undefined && settings.showHints !== isShowHintsDiscovered) {
+    isShowHintsDiscovered = settings.showHints;
+    try { localStorage.setItem('wordle_showHintsDiscovered', settings.showHints); } catch(e) {}
+    const shToggle = document.getElementById('showHintsDiscoveredToggle');
+    if (shToggle) shToggle.checked = isShowHintsDiscovered;
+    if (typeof applyGameModeUI === 'function') applyGameModeUI();
+  }
+
+  // 7. Display Rows
+  if (typeof settings.displayRows === 'number' && settings.displayRows >= 3 && settings.displayRows <= 12) {
+    displayRowsWordle = settings.displayRows;
+    displayRowsWord500 = settings.displayRows;
+    displayRowsWord600 = settings.displayRows;
+    displayRowsWordfit = settings.displayRows;
+    try {
+      localStorage.setItem('displayRows_wordle', settings.displayRows);
+      localStorage.setItem('displayRows_word500', settings.displayRows);
+      localStorage.setItem('displayRows_word600', settings.displayRows);
+      localStorage.setItem('displayRows_wordfit', settings.displayRows);
+    } catch(e) {}
+    if (typeof updateDisplayRowsUI === 'function') updateDisplayRowsUI();
+    if (currentGameMode === 'word500' || currentGameMode === 'word600') {
+      if (typeof renderWord500Board === 'function') renderWord500Board();
+    } else if (currentGameMode === 'wordfit') {
+      if (typeof renderWordFitBoard === 'function') renderWordFitBoard();
+    } else {
+      if (typeof initBoard === 'function') initBoard();
+    }
+  }
+
+  // 8. Board Scale
+  if (typeof settings.boardScale === 'number' && settings.boardScale >= 50 && settings.boardScale <= 150) {
+    boardScale = settings.boardScale;
+    try { localStorage.setItem('board_scale', boardScale); } catch(e) {}
+    if (typeof updateBoardScaleUI === 'function') updateBoardScaleUI();
+  }
+
+  // 9. Visual Theme
+  if (settings.theme && typeof window.setVisualTheme === 'function') {
+    window.setVisualTheme(settings.theme);
+  }
+
+  // 10. Follower Only Guess
+  if (settings.followerOnlyGuess !== undefined && settings.followerOnlyGuess !== isFollowerOnlyGuess) {
+    isFollowerOnlyGuess = !!settings.followerOnlyGuess;
+    try { localStorage.setItem('wordle_followerOnlyGuess', isFollowerOnlyGuess); } catch(e) {}
+    const fogToggle = document.getElementById('followerOnlyGuessToggle');
+    if (fogToggle) fogToggle.checked = isFollowerOnlyGuess;
+    if (typeof updateFollowerOnlyGuessBadgeUI === 'function') updateFollowerOnlyGuessBadgeUI();
+  }
+
+  // 11. Follower Only Music
+  if (settings.followerOnlyMusic !== undefined && settings.followerOnlyMusic !== musicSettings.followerOnly) {
+    musicSettings.followerOnly = !!settings.followerOnlyMusic;
+    try { localStorage.setItem('music_settings', JSON.stringify(musicSettings)); } catch(e) {}
+    const fomToggle = document.getElementById('musicFollowerOnlyToggle');
+    if (fomToggle) fomToggle.checked = musicSettings.followerOnly;
+    const fomGroupToggle = document.getElementById('musicFollowerOnlyGroupToggle');
+    if (fomGroupToggle) fomGroupToggle.checked = musicSettings.followerOnly;
+  }
+
+  // Apply reloads if requested
+  if (settings.restartRound || needReloadWords || needNewRound) {
+    if (needReloadWords && typeof loadWordLists === 'function') {
+      loadWordLists(lastLang).then(() => {
+        if (typeof startNewRound === 'function') startNewRound();
+        if (typeof showToast === 'function') showToast('⚙️ Pengaturan & Bahasa diperbarui!', 2500);
+      }).catch(e => console.error(e));
+    } else if (typeof startNewRound === 'function') {
+      startNewRound();
+      if (typeof showToast === 'function') showToast('⚙️ Aturan baru diterapkan & Ronde di-reset!', 2500);
+    }
+  } else {
+    if (typeof showToast === 'function') showToast('⚙️ Pengaturan game diperbarui!', 1800);
+  }
+}
+
+function updateObsShareLinkUI(config) {
+  if (!config) return;
+
+  // Real-time OBS Compact Mode toggle (Hanya Bagian Tengah) - Hanya aktif jika di OBS overlay
+  if (typeof config.compactMode === 'boolean') {
+    if (isObsMode && config.compactMode) {
+      document.documentElement.classList.add('obs-compact');
+      if (document.body) document.body.classList.add('obs-compact');
+    } else if (!isObsCompact) {
+      document.documentElement.classList.remove('obs-compact');
+      if (document.body) document.body.classList.remove('obs-compact');
+    }
+  }
+
+  // Real-time OBS Transparent Background toggle - Hanya aktif jika di OBS overlay
+  if (typeof config.transparentBg === 'boolean') {
+    if (isObsMode && config.transparentBg) {
+      document.documentElement.classList.add('obs-transparent');
+      if (document.body) document.body.classList.add('obs-transparent');
+    } else if (!isObsTransparent) {
+      document.documentElement.classList.remove('obs-transparent');
+      if (document.body) document.body.classList.remove('obs-transparent');
+    }
+  }
+
+  const banner = document.getElementById('obsShareLinkBanner');
+  const textEl = document.getElementById('obsShareLinkText');
+  if (!banner || !textEl) return;
+
+  if (config.shareLinkVisible && config.shareLinkText && config.shareLinkText.trim()) {
+    textEl.textContent = config.shareLinkText.trim();
+    banner.style.display = 'flex';
+    banner.classList.remove('position-top', 'position-bottom');
+    banner.classList.add(config.shareLinkPosition === 'bottom' ? 'position-bottom' : 'position-top');
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+function remoteChangeGameMode(mode) {
+  if (!mode) return;
+  currentGameMode = mode;
+  try { sessionStorage.setItem('wordle_gameMode', mode); } catch(e) {}
+  
+  if (typeof initWeeklyLeaderboard === 'function') initWeeklyLeaderboard();
+  
+  const gSelect = document.getElementById('gameSelectOverlay');
+  const lOverlay = document.getElementById('loginOverlay');
+  const gContainer = document.getElementById('gameContainer');
+  
+  if (gSelect) gSelect.style.display = 'none';
+  if (lOverlay) lOverlay.style.display = 'none';
+  if (gContainer) gContainer.style.display = 'flex';
+  
+  const hostMusic = document.getElementById('hostMusicControl');
+  if (hostMusic) hostMusic.style.display = 'flex';
+
+  if (typeof applyGameModeUI === 'function') applyGameModeUI();
+  if (typeof startNewRound === 'function') startNewRound();
+  if (typeof showToast === 'function') showToast(`🎮 Mode: ${mode.toUpperCase()}`, 2500);
+}
+
+function initObsMode() {
+  console.log('[OBS] Initializing OBS Clean Overlay Mode...');
+  if (!currentGameMode) currentGameMode = urlInitialMode || 'wordle';
+  
+  const gSelect = document.getElementById('gameSelectOverlay');
+  const lOverlay = document.getElementById('loginOverlay');
+  const gContainer = document.getElementById('gameContainer');
+  
+  if (gSelect) gSelect.style.display = 'none';
+  if (lOverlay) lOverlay.style.display = 'none';
+  if (gContainer) gContainer.style.display = 'flex';
+  
+  if (typeof applyGameModeUI === 'function') applyGameModeUI();
+
+  // Determine target backend, IP, and credentials for OBS auto-connect
+  const targetBackend = urlBackend || localStorage.getItem('wordle_backend') || 'indofinity';
+  const targetIp = urlIndofinityIp || localStorage.getItem('wordle_indofinity_ip') || (window.location.hostname && window.location.hostname !== '0.0.0.0' ? window.location.hostname : 'localhost');
+  const targetUser = urlUsername || localStorage.getItem('wordle_username') || '';
+  const targetLang = urlLang || localStorage.getItem('wordle_lang') || 'id';
+
+  const backendSelect = document.getElementById('backendSelect');
+  if (backendSelect && targetBackend) {
+    backendSelect.value = targetBackend;
+    if (typeof handleBackendChange === 'function') handleBackendChange(targetBackend);
+  }
+  const ipInput = document.getElementById('indofinityIpInput');
+  if (ipInput && targetIp) ipInput.value = targetIp;
+  const userInput = document.getElementById('usernameInput');
+  if (userInput && targetUser) userInput.value = targetUser;
+  const langSelect = document.getElementById('languageSelect');
+  if (langSelect && targetLang) langSelect.value = targetLang;
+
+  // Auto connect if not yet connected
+  if (!socket) {
+    console.log(`[OBS] Auto-connecting overlay to backend: ${targetBackend} (IP: ${targetIp})...`);
+    connectToLive();
+  } else {
+    // Initialize dictionary & round if not already loaded
+    const hasWord = (currentGameMode === 'betweenle') ? !!betweenleSecretWord : ((currentGameMode === 'cascadle') ? !!(cascadleTargets && cascadleTargets[cascadleCurrentLevel]) : !!currentWord);
+    if (!hasWord && typeof loadWordLists === 'function') {
+      loadWordLists(targetLang).then(() => {
+        if (typeof startNewRound === 'function') startNewRound();
+      }).catch(e => console.error('[OBS] Word load error:', e));
+    }
+  }
+}
 
 function setupSocketListeners() {
   // --- Socket.IO connection lifecycle (Bug 3 fix) ---
@@ -5496,12 +5910,20 @@ function setupSocketListeners() {
     // Check for music request when using IndoFinity (local server handles it otherwise)
     if (socket instanceof IndoFinitySocket && data.comment && data.comment.toLowerCase().startsWith('!play ')) {
       if (musicSettings.requestsEnabled !== false) {
+        const isHost = (data.uniqueId === 'host' || data.uniqueId === 'host_offline' || (typeof data.uniqueId === 'string' && data.uniqueId.toLowerCase().includes('host')));
+        const isFollower = Boolean(data.isFollower || data.followRole === 1 || data.followRole === 2 || data.isModerator || isHost);
+        if (musicSettings.followerOnly && !isFollower) {
+          console.log('[Music] Blocked !play request from non-follower (IndoFinity):', data.uniqueId);
+          showMusicFollowerWarningNotif(data.nickname || data.uniqueId);
+          return;
+        }
         const query = data.comment.substring(6).trim();
         if (query && localSocket) {
           localSocket.emit('chat-music-request', {
             query: query,
             requesterName: data.nickname || data.uniqueId,
-            requesterImg: data.profilePictureUrl
+            requesterImg: data.profilePictureUrl,
+            isFollower: isFollower
           });
         }
       }
@@ -5766,6 +6188,12 @@ function handleChatGuess(data) {
   if (isAllowedLength) {
     const userId = data.uniqueId || data.nickname || 'anon';
     const isHost = (userId === 'host' || userId === 'host_offline' || (typeof userId === 'string' && userId.toLowerCase().includes('host')));
+    const isFollower = Boolean(data.isFollower || data.followRole === 1 || data.followRole === 2 || data.isModerator || isHost);
+
+    // Follower-only filter for word guesses
+    if (isFollowerOnlyGuess && !isFollower) {
+      return;
+    }
 
     // Deduplikasi dan pra-validasi cerdas untuk Betweenle agar antrean tidak tersumbat
     if (currentGameMode === 'betweenle') {
@@ -7687,6 +8115,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const noYellowToggle = document.getElementById('noYellowToggle');
   if (noYellowToggle) noYellowToggle.checked = isNoYellowMode;
 
+  const fogToggle = document.getElementById('followerOnlyGuessToggle');
+  if (fogToggle) fogToggle.checked = isFollowerOnlyGuess;
+
+  const fomGroupToggle = document.getElementById('musicFollowerOnlyGroupToggle');
+  if (fomGroupToggle) fomGroupToggle.checked = !!musicSettings.followerOnly;
+
   const autoStarterToggle = document.getElementById('autoStarterToggle');
   if (autoStarterToggle) autoStarterToggle.checked = isAutoStarterPreviousTarget;
 
@@ -7879,6 +8313,9 @@ window.openMusicSettings = function(e) {
   const reqToggle = document.getElementById('musicRequestsEnabled');
   if (reqToggle) reqToggle.checked = musicSettings.requestsEnabled !== false;
 
+  const followToggle = document.getElementById('musicFollowerOnlyToggle');
+  if (followToggle) followToggle.checked = !!musicSettings.followerOnly;
+
   document.getElementById('musicMaxGlobal').value = musicSettings.maxGlobal;
   document.getElementById('musicMaxUser').value = musicSettings.maxUser;
   document.getElementById('musicMaxDuration').value = musicSettings.maxDuration;
@@ -7914,6 +8351,14 @@ window.updateMusicVolumeUI = function(val) {
 window.saveMusicSettings = function() {
   const reqToggle = document.getElementById('musicRequestsEnabled');
   musicSettings.requestsEnabled = reqToggle ? reqToggle.checked : true;
+
+  const followToggle = document.getElementById('musicFollowerOnlyToggle');
+  musicSettings.followerOnly = followToggle ? followToggle.checked : false;
+  const followGroupToggle = document.getElementById('musicFollowerOnlyGroupToggle');
+  if (followGroupToggle) followGroupToggle.checked = musicSettings.followerOnly;
+  if (localSocket) {
+    localSocket.emit('update-game-settings', { followerOnlyMusic: musicSettings.followerOnly });
+  }
 
   musicSettings.maxGlobal = parseInt(document.getElementById('musicMaxGlobal').value) || 20;
   musicSettings.maxUser = parseInt(document.getElementById('musicMaxUser').value) || 2;

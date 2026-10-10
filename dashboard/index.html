@@ -329,6 +329,558 @@
     }
     .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
     .tab:hover { color: var(--text); }
+
+    /* ═══ OBS OVERLAY SECTION ═══ */
+    .obs-control-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin: 0 32px 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    }
+    .obs-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .obs-section-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .obs-section-title .obs-icon {
+      font-size: 28px;
+    }
+    .obs-section-title h3 {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+    .obs-section-title p {
+      font-size: 12px;
+      color: var(--text2);
+      margin-top: 2px;
+    }
+    .obs-badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(46, 224, 106, 0.15);
+      color: var(--green);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .obs-badge-status .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+    }
+    .obs-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 960px) {
+      .obs-grid { grid-template-columns: 1fr; }
+    }
+    .obs-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .obs-card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .obs-card-header .icon {
+      font-size: 16px;
+    }
+    .obs-card-header h4 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .obs-desc {
+      font-size: 12px;
+      color: var(--text2);
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    .obs-url-box {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .obs-url-box input {
+      flex: 1;
+      background: #0d0d14;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: var(--accent2);
+      font-family: 'Consolas', monospace;
+      font-size: 12px;
+      outline: none;
+    }
+    .btn-copy {
+      background: linear-gradient(135deg, var(--accent2), #00b4d8);
+      color: #000;
+      font-weight: 700;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .btn-copy:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(37, 244, 238, 0.4);
+    }
+    .obs-options-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+    .obs-switch-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      padding: 6px 10px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      transition: all 0.15s;
+    }
+    .obs-switch-item:hover {
+      background: rgba(255, 255, 255, 0.07);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    .obs-switch-item .switch-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .obs-switch-item .switch-label.highlight {
+      color: #ffd54f;
+      font-weight: 700;
+    }
+    .obs-mode-select-wrap {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 8px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+    }
+    .obs-mode-select-wrap select {
+      background: #0d0d14;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+    }
+    .obs-preset-buttons-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    @media (max-width: 768px) {
+      .obs-preset-buttons-row { grid-template-columns: 1fr; }
+    }
+    .obs-preset-btn {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 9px 12px;
+      border-radius: 9px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 3px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      text-align: left;
+    }
+    .obs-preset-btn:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.3);
+      transform: translateY(-1px);
+    }
+    .obs-preset-btn.active {
+      background: linear-gradient(135deg, rgba(37,244,238,0.18), rgba(254,44,85,0.12));
+      border-color: var(--accent2);
+      box-shadow: 0 0 12px rgba(37,244,238,0.25);
+    }
+    .obs-preset-btn .preset-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .obs-preset-btn .preset-res {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent2);
+    }
+    .obs-preset-btn.active .preset-res {
+      color: #25f4ee;
+    }
+    .preset-pill-badge {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .preset-pill-badge:hover {
+      border-color: var(--accent2);
+      color: #fff;
+    }
+    .preset-pill-badge.active {
+      background: rgba(37,244,238,0.15);
+      border-color: var(--accent2);
+      color: var(--accent2);
+      font-weight: 700;
+    }
+    .share-link-input-group input {
+      width: 100%;
+      background: #0d0d14;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+      margin-bottom: 10px;
+    }
+    .share-link-input-group input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(254,44,85,0.2);
+    }
+    .share-presets-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .preset-tag {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      color: var(--accent2);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .preset-tag:hover {
+      background: rgba(37,244,238,0.15);
+      border-color: var(--accent2);
+    }
+    .share-controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .share-pos-select select {
+      background: #0d0d14;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      outline: none;
+    }
+    .btn-save-share {
+      background: linear-gradient(135deg, var(--accent), #ff4477);
+      color: #fff;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-save-share:hover {
+      box-shadow: 0 4px 14px rgba(254,44,85,0.4);
+      transform: translateY(-1px);
+    }
+    .btn-new-round {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-new-round:hover {
+      background: rgba(255,255,255,0.15);
+      border-color: #fff;
+    }
+    .obs-game-buttons-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 8px;
+    }
+    .game-btn {
+      background: #0d0d14;
+      border: 1px solid var(--border);
+      color: var(--text2);
+      padding: 10px 8px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .game-btn:hover {
+      color: var(--text);
+      border-color: rgba(255,255,255,0.2);
+      transform: translateY(-1px);
+    }
+    .game-btn.active {
+      background: linear-gradient(135deg, rgba(254,44,85,0.2), rgba(37,244,238,0.1));
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 0 10px rgba(254,44,85,0.25);
+    }
+
+    /* ═══ SETTINGS CONTROL GRID ═══ */
+    .settings-control-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    @media (max-width: 900px) {
+      .settings-control-grid { grid-template-columns: 1fr; }
+    }
+    .settings-box {
+      background: #0d0d14;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .settings-box-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .settings-box-title .subtext {
+      font-size: 11px;
+      color: var(--text2);
+      font-weight: 400;
+    }
+    .len-checkboxes-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .len-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .len-pill:hover {
+      border-color: var(--accent2);
+    }
+    .len-presets-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .preset-sm-btn {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .preset-sm-btn:hover {
+      color: var(--text);
+      border-color: rgba(255,255,255,0.3);
+    }
+    .lang-choice-row, .theme-choice-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .lang-btn, .theme-pill-btn {
+      flex: 1;
+      min-width: 100px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .lang-btn.active, .theme-pill-btn.active {
+      background: rgba(37,244,238,0.15);
+      border-color: var(--accent2);
+      color: #fff;
+      font-weight: 700;
+    }
+    .toggle-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .dash-toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .dash-toggle-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .dash-toggle-sub {
+      font-size: 10px;
+      color: var(--text2);
+    }
+    .dash-select {
+      background: #14141e;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      outline: none;
+    }
+    .counter-control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: rgba(255,255,255,0.03);
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .counter-control-row .label {
+      font-size: 12px;
+      color: var(--text);
+      font-weight: 500;
+    }
+    .counter-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-counter {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .btn-counter:hover {
+      border-color: var(--accent);
+      background: rgba(254,44,85,0.15);
+    }
+    .counter-val {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent2);
+      min-width: 38px;
+      text-align: center;
+    }
+    .info-note-box {
+      background: rgba(37,244,238,0.06);
+      border: 1px solid rgba(37,244,238,0.2);
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      color: #9feeee;
+      line-height: 1.5;
+    }
+
+    /* Switch UI */
+    .switch-ui {
+      position: relative;
+      display: inline-block;
+      width: 38px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+    .switch-ui input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #2a2a3a; transition: .3s; border-radius: 20px;
+    }
+    .slider:before {
+      position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px;
+      background-color: white; transition: .3s; border-radius: 50%;
+    }
+    .switch-ui input:checked + .slider { background-color: var(--green); }
+    .switch-ui input:checked + .slider:before { transform: translateX(18px); }
   </style>
 </head>
 <body>
@@ -390,6 +942,399 @@
       <div class="stat-icon">🔗</div>
       <div class="stat-value" id="statClients">0</div>
       <div class="stat-label">Clients</div>
+    </div>
+  </div>
+
+  <!-- ═══ OBS OVERLAY & SHARE LINK CONTROL PANEL ═══ -->
+  <div class="obs-control-section">
+    <div class="obs-section-header">
+      <div class="obs-section-title">
+        <span class="obs-icon">📺</span>
+        <div>
+          <h3>OBS Browser Source & Overlay Manager</h3>
+          <p>Tampilkan game di OBS tanpa Window Capture & atur Share Link / Game dari Dashboard</p>
+        </div>
+      </div>
+      <div class="obs-badge-status" id="obsOverlayStatusBadge">
+        <span class="dot green"></span> OBS OVERLAY READY
+      </div>
+    </div>
+
+    <div class="obs-grid">
+      <!-- CARD 1: LINK OBS BROWSER SOURCE -->
+      <div class="obs-card">
+        <div class="obs-card-header">
+          <span class="icon">🔗</span>
+          <h4>Link Browser Source OBS</h4>
+        </div>
+        <div class="obs-card-body">
+          <p class="obs-desc">Salin link ini lalu tempelkan di OBS Studio (<strong>Add Source (+) ➔ Browser</strong>):</p>
+          
+          <div class="obs-url-box">
+            <input type="text" id="obsUrlDisplay" readonly value="http://localhost:3500/?obs=1&transparent=1" />
+            <button class="btn-copy" id="copyObsUrlBtn" onclick="copyObsUrl()">
+              📋 Salin Link
+            </button>
+          </div>
+
+          <!-- SAKELAR OPSI OBS -->
+          <div class="obs-options-row">
+            <label class="obs-switch-item" for="obsTransparentCheck">
+              <div class="switch-ui">
+                <input type="checkbox" id="obsTransparentCheck" onchange="handleObsTransparentChange(this.checked)" />
+                <span class="slider round"></span>
+              </div>
+              <span class="switch-label">Background Transparan</span>
+            </label>
+
+            <label class="obs-switch-item" for="obsCompactCheck" title="Sembunyikan leaderboard dan ticker, hanya tampilkan bagian tengah (papan game)">
+              <div class="switch-ui">
+                <input type="checkbox" id="obsCompactCheck" onchange="handleObsCompactChange(this.checked)" />
+                <span class="slider round"></span>
+              </div>
+              <span class="switch-label highlight">🎯 Hanya Bagian Tengah (Papan Saja)</span>
+            </label>
+
+            <div class="obs-mode-select-wrap">
+              <label for="obsDefaultModeSelect" style="color:var(--text2); margin-right:4px;">Game Awal:</label>
+              <select id="obsDefaultModeSelect" onchange="updateObsUrlGenerated()">
+                <option value="wordle">Wordle</option>
+                <option value="word500">Word500</option>
+                <option value="word600">Word600</option>
+                <option value="wordfit">Word Fit</option>
+                <option value="colorfit">Color Fit</option>
+                <option value="wordloop">Word Loop</option>
+                <option value="fillblanks">Word Fill</option>
+                <option value="wordtango">Word Tango</option>
+                <option value="wordgrid">Word Grid</option>
+                <option value="squareword">Squareword</option>
+                <option value="wordladder">Word Ladder</option>
+                <option value="betweenle">Betweenle</option>
+                <option value="cascadle">Cascadle</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- KONEKSI TIKTOK OBS (INDOFINITY VS INTERNAL) -->
+          <div class="obs-backend-config-row" style="margin-top: 12px; padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 14px;">🔌</span>
+              <label for="obsBackendSelect" style="color: var(--text); font-size: 12px; font-weight: 700;">Koneksi TikTok OBS:</label>
+              <select id="obsBackendSelect" onchange="handleObsBackendChange()" style="background: #14141e; border: 1px solid var(--border); color: #fff; padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">
+                <option value="indofinity" selected>IndoFinity (ws://localhost:62024)</option>
+                <option value="socketio">Server Internal (Socket.IO)</option>
+              </select>
+            </div>
+
+            <div id="obsIpWrap" style="display: flex; align-items: center; gap: 6px;">
+              <label for="obsIndofinityIpInput" style="color: var(--text2); font-size: 12px;">IP IndoFinity:</label>
+              <input type="text" id="obsIndofinityIpInput" placeholder="localhost" value="localhost" oninput="updateObsUrlGenerated()" style="background: #14141e; border: 1px solid var(--border); color: #fff; padding: 5px 8px; border-radius: 8px; font-size: 12px; width: 120px;" />
+            </div>
+
+            <div style="font-size: 11px; color: #2ee06a; display: flex; align-items: center; gap: 4px; margin-left: auto;">
+              <span>⚡ Auto-connect aktif di OBS</span>
+            </div>
+          </div>
+
+          <!-- SAKELAR / TOMBOL PILIHAN UKURAN TAMPILAN OBS -->
+          <div style="margin-top: 14px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px;">
+              📐 Pilih Mode & Ukuran Tampilan OBS:
+            </span>
+            <span id="obsResolutionTip" style="font-size: 11px; color: var(--accent2); font-weight: 600;">Setting di OBS: 1080 × 1920 (TikTok Standar)</span>
+          </div>
+
+          <div class="obs-preset-buttons-row">
+            <button type="button" class="obs-preset-btn" id="presetCompactBtn" onclick="selectObsDisplayPreset('compact')">
+              <span class="preset-title">🎯 Papan Tengah Saja</span>
+              <span class="preset-res">Resolusi: 540 × 750</span>
+            </button>
+            <button type="button" class="obs-preset-btn active" id="presetTiktokFullBtn" onclick="selectObsDisplayPreset('tiktok_full')">
+              <span class="preset-title">📱 TikTok Full (Standar)</span>
+              <span class="preset-res">Resolusi: 1080 × 1920</span>
+            </button>
+            <button type="button" class="obs-preset-btn" id="presetLandscapeBtn" onclick="selectObsDisplayPreset('landscape')">
+              <span class="preset-title">🖥️ Layar Landscape</span>
+              <span class="preset-res">Resolusi: 1920 × 1080</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 2: SHARE LINK & RUNNING TEXT -->
+      <div class="obs-card">
+        <div class="obs-card-header">
+          <span class="icon">📢</span>
+          <h4>Share Link & Running Text</h4>
+        </div>
+        <div class="obs-card-body">
+          <p class="obs-desc">Tampilkan link saweria, sosmed, atau pengumuman langsung di layar OBS:</p>
+          
+          <div class="share-link-input-group">
+            <input type="text" id="shareLinkInput" placeholder="Contoh: Saweria: saweria.co/nama • IG: @nama • Ketik tebakan di chat!" />
+          </div>
+
+          <div class="share-presets-row">
+            <button type="button" class="preset-tag" onclick="insertPreset('Saweria: saweria.co/username')">+ Saweria</button>
+            <button type="button" class="preset-tag" onclick="insertPreset('Trakteer: trakteer.id/username')">+ Trakteer</button>
+            <button type="button" class="preset-tag" onclick="insertPreset('Follow IG: @username')">+ Instagram</button>
+            <button type="button" class="preset-tag" onclick="insertPreset('Discord: discord.gg/invite')">+ Discord</button>
+            <button type="button" class="preset-tag" onclick="insertPreset('TikTok Shop: Cek Keranjang Kuning 🛒')">+ TT Shop</button>
+          </div>
+
+          <div class="share-controls-row">
+            <div class="share-pos-select">
+              <select id="shareLinkPositionSelect">
+                <option value="top">Di Atas Papan (Top)</option>
+                <option value="bottom">Di Bawah Papan (Bottom)</option>
+              </select>
+            </div>
+
+            <label class="obs-switch-item" for="shareLinkVisibleToggle">
+              <div class="switch-ui">
+                <input type="checkbox" id="shareLinkVisibleToggle" onchange="toggleShareLinkVisible(this.checked)" />
+                <span class="slider round"></span>
+              </div>
+              <span class="switch-label" id="shareLinkVisibleLabel">Tampilkan di OBS</span>
+            </label>
+
+            <button class="btn-save-share" onclick="saveShareLinkConfig()">
+              🚀 Terapkan ke OBS
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 3: REMOTE GAME CONTROLLER -->
+    <div class="obs-card" style="margin-top: 16px;">
+      <div class="obs-card-header" style="justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="icon">🎮</span>
+          <h4>Remote Game Control (Ganti Game di OBS Secara Instan)</h4>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 12px; color: var(--text2);">Mode Aktif: <strong id="activeGameModeLabel" style="color: var(--accent2);">WORDLE</strong></span>
+          <button class="btn btn-new-round" onclick="triggerRemoteNewRound()">
+            🔄 Mulai Ronde / Kata Baru
+          </button>
+        </div>
+      </div>
+      <div class="obs-card-body">
+        <div class="obs-game-buttons-grid">
+          <button class="game-btn active" data-game="wordle" onclick="remoteChangeGame('wordle')">Wordle</button>
+          <button class="game-btn" data-game="word500" onclick="remoteChangeGame('word500')">Word500</button>
+          <button class="game-btn" data-game="word600" onclick="remoteChangeGame('word600')">Word600</button>
+          <button class="game-btn" data-game="wordfit" onclick="remoteChangeGame('wordfit')">Word Fit</button>
+          <button class="game-btn" data-game="colorfit" onclick="remoteChangeGame('colorfit')">Color Fit</button>
+          <button class="game-btn" data-game="wordloop" onclick="remoteChangeGame('wordloop')">Word Loop</button>
+          <button class="game-btn" data-game="fillblanks" onclick="remoteChangeGame('fillblanks')">Word Fill</button>
+          <button class="game-btn" data-game="wordtango" onclick="remoteChangeGame('wordtango')">Word Tango</button>
+          <button class="game-btn" data-game="wordgrid" onclick="remoteChangeGame('wordgrid')">Word Grid</button>
+          <button class="game-btn" data-game="squareword" onclick="remoteChangeGame('squareword')">Squareword</button>
+          <button class="game-btn" data-game="wordladder" onclick="remoteChangeGame('wordladder')">Word Ladder</button>
+          <button class="game-btn" data-game="betweenle" onclick="remoteChangeGame('betweenle')">Betweenle</button>
+          <button class="game-btn" data-game="cascadle" onclick="remoteChangeGame('cascadle')">Cascadle</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 4: PENGATURAN GAME & ATURAN (PANJANG HURUF, BAHASA, ATURAN) -->
+    <div class="obs-card" style="margin-top: 16px;">
+      <div class="obs-card-header" style="justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="icon">⚙️</span>
+          <h4>Pengaturan Game & Aturan (Panjang Huruf, Bahasa, & Aturan Main)</h4>
+        </div>
+        <button class="btn btn-save-settings" onclick="applyDashboardGameSettings(true)" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 8px 18px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer;">
+          ⚡ Terapkan & Mulai Ulang Ronde di OBS
+        </button>
+      </div>
+      <div class="obs-card-body">
+        
+        <!-- SECTION 1: PANJANG HURUF & BAHASA -->
+        <div class="settings-control-grid">
+          
+          <!-- Panjang Kata -->
+          <div class="settings-box">
+            <div class="settings-box-title">
+              <span>📏 Panjang Kata (Jumlah Huruf)</span>
+              <span class="subtext">Wordle, Word500, Word Fit, Color Fit, Word Loop, dll.</span>
+            </div>
+            <div class="len-checkboxes-row">
+              <label class="len-pill"><input type="checkbox" id="dashLen3" value="3" onchange="autoSaveSettings()"> 3</label>
+              <label class="len-pill"><input type="checkbox" id="dashLen4" value="4" onchange="autoSaveSettings()"> 4</label>
+              <label class="len-pill"><input type="checkbox" id="dashLen5" value="5" checked onchange="autoSaveSettings()"> 5</label>
+              <label class="len-pill"><input type="checkbox" id="dashLen6" value="6" checked onchange="autoSaveSettings()"> 6</label>
+              <label class="len-pill"><input type="checkbox" id="dashLen7" value="7" checked onchange="autoSaveSettings()"> 7</label>
+              <label class="len-pill"><input type="checkbox" id="dashLen8" value="8" checked onchange="autoSaveSettings()"> 8</label>
+            </div>
+            <div class="len-presets-row">
+              <button type="button" class="preset-sm-btn" onclick="setLengthPreset([5])">Hanya 5</button>
+              <button type="button" class="preset-sm-btn" onclick="setLengthPreset([5,6])">5 & 6 Huruf</button>
+              <button type="button" class="preset-sm-btn" onclick="setLengthPreset([5,6,7,8])">5 - 8 (Default)</button>
+              <button type="button" class="preset-sm-btn" onclick="setLengthPreset([3,4,5,6,7,8])">Semua (3 - 8)</button>
+            </div>
+          </div>
+
+          <!-- Bahasa Kamus -->
+          <div class="settings-box">
+            <div class="settings-box-title">
+              <span>🌐 Bahasa Kamus Kata</span>
+              <span class="subtext">Kamus kata yang ditebak penonton</span>
+            </div>
+            <div class="lang-choice-row">
+              <button type="button" class="lang-btn active" id="dashLangId" onclick="setDashLang('id')">🇮🇩 Indonesia (ID)</button>
+              <button type="button" class="lang-btn" id="dashLangEn" onclick="setDashLang('en')">🇬🇧 English (EN)</button>
+              <button type="button" class="lang-btn" id="dashLangMixed" onclick="setDashLang('mixed')">🌐 Mixed (ID + EN)</button>
+            </div>
+            
+            <div style="margin-top: 14px;">
+              <div class="settings-box-title" style="margin-bottom: 6px;">
+                <span>🎨 Tema Warna Visual</span>
+              </div>
+              <div class="theme-choice-row">
+                <button type="button" class="theme-pill-btn active" id="dashThemeDark" onclick="setDashTheme('dark')">🌙 Gelap Modern</button>
+                <button type="button" class="theme-pill-btn" id="dashThemeSepia" onclick="setDashTheme('sepia')">🌅 Sepia Cream</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- SECTION 2: ATURAN PERMAINAN & TOGGLES -->
+        <div class="settings-control-grid" style="margin-top: 14px;">
+          
+          <!-- Aturan Toggles -->
+          <div class="settings-box">
+            <div class="settings-box-title">
+              <span>🎯 Aturan Tebakan</span>
+              <span class="subtext">Sesuaikan tantangan live stream</span>
+            </div>
+            
+            <div class="toggle-list">
+              <!-- Hard Mode -->
+              <div class="dash-toggle-row">
+                <div>
+                  <div class="dash-toggle-title">🔥 Hard Mode</div>
+                  <div class="dash-toggle-sub">Clue wajib dipakai di tebakan berikutnya</div>
+                </div>
+                <select id="dashHardModeSelect" class="dash-select" onchange="autoSaveSettings()">
+                  <option value="off">OFF (Santai)</option>
+                  <option value="hard">HARD MODE</option>
+                  <option value="ultra">ULTRA HARD</option>
+                </select>
+              </div>
+
+              <!-- Tanpa Huruf Ganda (Isogram) -->
+              <div class="dash-toggle-row">
+                <div>
+                  <div class="dash-toggle-title">🔤 Tanpa Huruf Ganda (Isogram)</div>
+                  <div class="dash-toggle-sub">Kata target tidak memiliki huruf kembar</div>
+                </div>
+                <label class="switch-ui">
+                  <input type="checkbox" id="dashNoRepeatToggle" onchange="autoSaveSettings()">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+              <!-- Tanpa Clue Kuning -->
+              <div class="dash-toggle-row">
+                <div>
+                  <div class="dash-toggle-title">🟨 Tanpa Clue Kuning</div>
+                  <div class="dash-toggle-sub">Hanya ada warna hijau & abu-abu (Wordle)</div>
+                </div>
+                <label class="switch-ui">
+                  <input type="checkbox" id="dashNoYellowToggle" onchange="autoSaveSettings()">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+              <!-- Bar Hints Discovered -->
+              <div class="dash-toggle-row">
+                <div>
+                  <div class="dash-toggle-title">💡 Bar Hints Discovered</div>
+                  <div class="dash-toggle-sub">Tampilkan bar huruf hijau yang terbuka</div>
+                </div>
+                <label class="switch-ui">
+                  <input type="checkbox" id="dashShowHintsToggle" checked onchange="autoSaveSettings()">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+              <!-- Hanya Follower Bisa Tebak -->
+              <div class="dash-toggle-row">
+                <div>
+                  <div class="dash-toggle-title">👤 Hanya Follower Bisa Tebak Kata</div>
+                  <div class="dash-toggle-sub">Hanya viewer yang follow live yang bisa kirim tebakan kata</div>
+                </div>
+                <label class="switch-ui">
+                  <input type="checkbox" id="dashFollowerOnlyGuessToggle" onchange="autoSaveSettings()">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+              <!-- Hanya Follower Bisa Request Musik -->
+              <div class="dash-toggle-row">
+                <div>
+                  <div class="dash-toggle-title">🎵 Hanya Follower Bisa Request Musik</div>
+                  <div class="dash-toggle-sub">Perintah !play hanya direspon jika penonton adalah follower</div>
+                </div>
+                <label class="switch-ui">
+                  <input type="checkbox" id="dashFollowerOnlyMusicToggle" onchange="autoSaveSettings()">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ukuran & Baris Tebakan -->
+          <div class="settings-box">
+            <div class="settings-box-title">
+              <span>📐 Tampilan Papan Game di OBS</span>
+              <span class="subtext">Kerapatan baris & skala ukuran kotak</span>
+            </div>
+
+            <!-- Baris Tebakan -->
+            <div class="counter-control-row">
+              <span class="label">Jumlah Baris Tebakan:</span>
+              <div class="counter-box">
+                <button type="button" class="btn-counter" onclick="changeDashDisplayRows(-1)">−</button>
+                <span class="counter-val" id="dashDisplayRowsVal">6</span>
+                <button type="button" class="btn-counter" onclick="changeDashDisplayRows(1)">+</button>
+              </div>
+            </div>
+            <div style="display: flex; gap: 6px; margin-top: 6px; margin-bottom: 12px; flex-wrap: wrap;">
+              <button type="button" class="preset-pill-badge" id="rowPreset5" onclick="setDashDisplayRows(5)">5 Baris</button>
+              <button type="button" class="preset-pill-badge active" id="rowPreset6" onclick="setDashDisplayRows(6)">6 Baris (Standar)</button>
+              <button type="button" class="preset-pill-badge" id="rowPreset7" onclick="setDashDisplayRows(7)">7 Baris</button>
+              <button type="button" class="preset-pill-badge" id="rowPreset8" onclick="setDashDisplayRows(8)">8 Baris</button>
+            </div>
+
+            <!-- Ukuran Kotak / Board Scale -->
+            <div class="counter-control-row">
+              <span class="label">Ukuran Kotak (Board Scale):</span>
+              <div class="counter-box">
+                <button type="button" class="btn-counter" onclick="changeDashBoardScale(-10)">−</button>
+                <span class="counter-val" id="dashBoardScaleVal">100%</span>
+                <button type="button" class="btn-counter" onclick="changeDashBoardScale(10)">+</button>
+              </div>
+            </div>
+            <div style="display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap;">
+              <button type="button" class="preset-pill-badge" id="scalePreset80" onclick="setDashBoardScale(80)">80% Ramping</button>
+              <button type="button" class="preset-pill-badge active" id="scalePreset100" onclick="setDashBoardScale(100)">100% Normal</button>
+              <button type="button" class="preset-pill-badge" id="scalePreset120" onclick="setDashBoardScale(120)">120% Besar</button>
+              <button type="button" class="preset-pill-badge" id="scalePreset130" onclick="setDashBoardScale(130)">130% Jumbo</button>
+            </div>
+
+            <div class="info-note-box" style="margin-top: 14px;">
+              💡 <strong>Tips Streaming:</strong> Semua sakelar ukuran dan skala di atas langsung tersinkron ke layar <strong>OBS Studio</strong> secara real-time!
+            </div>
+          </div>
+
+        </div>
+
+      </div>
     </div>
   </div>
 
@@ -680,6 +1625,423 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
     setInterval(() => {
       socket.emit("getStatus");
     }, 5000);
+
+    // ═══ OBS OVERLAY & SHARE LINK CONTROL LOGIC ═══
+    let currentObsConfig = {
+      shareLinkText: "",
+      shareLinkVisible: false,
+      shareLinkPosition: "top",
+      activeGameMode: "wordle",
+      transparentBg: false,
+      compactMode: false
+    };
+
+    socket.on("obs-config-update", (config) => {
+      if (!config) return;
+      currentObsConfig = { ...currentObsConfig, ...config };
+      applyObsConfigToDashboardUI(currentObsConfig);
+    });
+
+    function applyObsConfigToDashboardUI(cfg) {
+      const shareInput = document.getElementById("shareLinkInput");
+      const shareToggle = document.getElementById("shareLinkVisibleToggle");
+      const sharePos = document.getElementById("shareLinkPositionSelect");
+      const modeLabel = document.getElementById("activeGameModeLabel");
+      const transCheck = document.getElementById("obsTransparentCheck");
+      const compCheck = document.getElementById("obsCompactCheck");
+
+      if (shareInput && document.activeElement !== shareInput) {
+        shareInput.value = cfg.shareLinkText || "";
+      }
+      if (shareToggle) {
+        shareToggle.checked = !!cfg.shareLinkVisible;
+      }
+      if (sharePos && cfg.shareLinkPosition) {
+        sharePos.value = cfg.shareLinkPosition;
+      }
+      if (modeLabel && cfg.activeGameMode) {
+        modeLabel.textContent = cfg.activeGameMode.toUpperCase();
+      }
+      if (transCheck && typeof cfg.transparentBg === "boolean") {
+        transCheck.checked = cfg.transparentBg;
+      }
+      if (compCheck && typeof cfg.compactMode === "boolean") {
+        compCheck.checked = cfg.compactMode;
+        updatePresetButtonsState(cfg.compactMode ? "compact" : "tiktok_full");
+      }
+
+      // Highlight active game button
+      document.querySelectorAll(".game-btn").forEach((btn) => {
+        if (btn.getAttribute("data-game") === cfg.activeGameMode) {
+          btn.classList.add("active");
+        } else {
+          btn.classList.remove("active");
+        }
+      });
+
+      updateObsUrlGenerated();
+    }
+
+    function handleObsTransparentChange(checked) {
+      currentObsConfig.transparentBg = checked;
+      updateObsUrlGenerated();
+      socket.emit("set-obs-config", currentObsConfig);
+    }
+
+    function handleObsCompactChange(checked) {
+      currentObsConfig.compactMode = checked;
+      updatePresetButtonsState(checked ? "compact" : "tiktok_full");
+      updateObsUrlGenerated();
+      socket.emit("set-obs-config", currentObsConfig);
+    }
+
+    function selectObsDisplayPreset(preset) {
+      const compCheck = document.getElementById("obsCompactCheck");
+      const tipEl = document.getElementById("obsResolutionTip");
+
+      if (preset === "compact") {
+        if (compCheck) compCheck.checked = true;
+        currentObsConfig.compactMode = true;
+        if (tipEl) tipEl.textContent = "Setting di OBS: 540 × 750 (Papan Saja)";
+      } else if (preset === "tiktok_full") {
+        if (compCheck) compCheck.checked = false;
+        currentObsConfig.compactMode = false;
+        if (tipEl) tipEl.textContent = "Setting di OBS: 1080 × 1920 (TikTok Standar)";
+      } else if (preset === "landscape") {
+        if (compCheck) compCheck.checked = false;
+        currentObsConfig.compactMode = false;
+        if (tipEl) tipEl.textContent = "Setting di OBS: 1920 × 1080 (Layar Landscape)";
+      }
+
+      updatePresetButtonsState(preset);
+      updateObsUrlGenerated();
+      socket.emit("set-obs-config", currentObsConfig);
+    }
+
+    function updatePresetButtonsState(preset) {
+      document.querySelectorAll(".obs-preset-btn").forEach((b) => b.classList.remove("active"));
+      if (preset === "compact") document.getElementById("presetCompactBtn")?.classList.add("active");
+      else if (preset === "tiktok_full") document.getElementById("presetTiktokFullBtn")?.classList.add("active");
+      else if (preset === "landscape") document.getElementById("presetLandscapeBtn")?.classList.add("active");
+    }
+
+    function handleObsBackendChange() {
+      const backend = document.getElementById("obsBackendSelect")?.value || "indofinity";
+      const ipWrap = document.getElementById("obsIpWrap");
+      if (ipWrap) {
+        ipWrap.style.display = (backend === "indofinity") ? "flex" : "none";
+      }
+      updateObsUrlGenerated();
+    }
+
+    function updateObsUrlGenerated() {
+      const isTransparent = document.getElementById("obsTransparentCheck")?.checked ?? false;
+      const isCompact = document.getElementById("obsCompactCheck")?.checked ?? false;
+      const defaultMode = document.getElementById("obsDefaultModeSelect")?.value || currentObsConfig.activeGameMode || "wordle";
+      const backend = document.getElementById("obsBackendSelect")?.value || "indofinity";
+      
+      const host = window.location.hostname || "localhost";
+      const port = window.location.port || "3500";
+      const proto = window.location.protocol || "http:";
+      const baseUrl = `${proto}//${host}:${port}/`;
+
+      const params = new URLSearchParams();
+      params.set("obs", "1");
+      if (isTransparent) params.set("transparent", "1");
+      if (isCompact) params.set("compact", "1");
+      if (defaultMode) params.set("mode", defaultMode);
+      if (backend) params.set("backend", backend);
+
+      if (backend === "indofinity") {
+        const ipVal = document.getElementById("obsIndofinityIpInput")?.value?.trim();
+        if (ipVal && ipVal !== "localhost" && ipVal !== "127.0.0.1") {
+          params.set("ip", ipVal);
+        }
+      }
+
+      const finalUrl = `${baseUrl}?${params.toString()}`;
+      const urlDisplay = document.getElementById("obsUrlDisplay");
+      if (urlDisplay) urlDisplay.value = finalUrl;
+    }
+
+    function copyObsUrl() {
+      const input = document.getElementById("obsUrlDisplay");
+      if (!input) return;
+      input.select();
+      navigator.clipboard.writeText(input.value).then(() => {
+        const btn = document.getElementById("copyObsUrlBtn");
+        const originalText = btn.innerHTML;
+        btn.innerHTML = "✅ Tersalin!";
+        btn.style.background = "#2ee06a";
+        btn.style.color = "#000";
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.style.background = "";
+          btn.style.color = "";
+        }, 2000);
+      }).catch(err => {
+        console.error("Copy failed", err);
+      });
+    }
+
+    function insertPreset(text) {
+      const input = document.getElementById("shareLinkInput");
+      if (!input) return;
+      if (input.value.trim()) {
+        input.value += " • " + text;
+      } else {
+        input.value = text;
+      }
+      input.focus();
+    }
+
+    function toggleShareLinkVisible(visible) {
+      currentObsConfig.shareLinkVisible = visible;
+      saveShareLinkConfig();
+    }
+
+    function saveShareLinkConfig() {
+      const text = document.getElementById("shareLinkInput")?.value || "";
+      const pos = document.getElementById("shareLinkPositionSelect")?.value || "top";
+      const isVisible = document.getElementById("shareLinkVisibleToggle")?.checked ?? false;
+
+      currentObsConfig.shareLinkText = text;
+      currentObsConfig.shareLinkPosition = pos;
+      currentObsConfig.shareLinkVisible = isVisible;
+
+      socket.emit("set-obs-config", currentObsConfig);
+
+      // Flash feedback
+      const saveBtn = document.querySelector(".btn-save-share");
+      if (saveBtn) {
+        const oldText = saveBtn.textContent;
+        saveBtn.textContent = "✅ Terpasang!";
+        setTimeout(() => { saveBtn.textContent = oldText; }, 1500);
+      }
+    }
+
+    function remoteChangeGame(mode) {
+      currentObsConfig.activeGameMode = mode;
+      document.getElementById("activeGameModeLabel").textContent = mode.toUpperCase();
+      document.querySelectorAll(".game-btn").forEach((btn) => {
+        btn.classList.toggle("active", btn.getAttribute("data-game") === mode);
+      });
+      socket.emit("dashboard-change-game", mode);
+    }
+
+    function triggerRemoteNewRound() {
+      socket.emit("dashboard-new-round");
+      const btn = document.querySelector(".btn-new-round");
+      if (btn) {
+        const old = btn.innerHTML;
+        btn.innerHTML = "⚡ Ronde Dimulai!";
+        setTimeout(() => { btn.innerHTML = old; }, 1500);
+      }
+    }
+
+    // Initialize initial URL display on page load
+    window.addEventListener("DOMContentLoaded", () => {
+      const host = window.location.hostname;
+      const ipInput = document.getElementById("obsIndofinityIpInput");
+      if (ipInput && host && host !== "localhost" && host !== "127.0.0.1" && host !== "0.0.0.0") {
+        ipInput.value = host;
+      }
+      updateObsUrlGenerated();
+      socket.emit("get-obs-config");
+      socket.emit("get-game-settings");
+    });
+
+    // ═══ GAME SETTINGS LOGIC ═══
+    let currentGameSettings = {
+      allowedLengths: [5, 6, 7, 8],
+      language: "id",
+      hardMode: "off",
+      noRepeat: false,
+      noYellow: false,
+      showHints: true,
+      displayRows: 6,
+      boardScale: 100,
+      theme: "dark",
+      followerOnlyGuess: false,
+      followerOnlyMusic: false
+    };
+
+    socket.on("game-settings-update", (settings) => {
+      if (!settings) return;
+      currentGameSettings = { ...currentGameSettings, ...settings };
+      applySettingsToDashboardUI(currentGameSettings);
+    });
+
+    function applySettingsToDashboardUI(cfg) {
+      // 1. Lengths
+      if (Array.isArray(cfg.allowedLengths)) {
+        [3, 4, 5, 6, 7, 8].forEach(n => {
+          const el = document.getElementById(`dashLen${n}`);
+          if (el) el.checked = cfg.allowedLengths.includes(n);
+        });
+      }
+
+      // 2. Language
+      if (cfg.language) {
+        document.querySelectorAll(".lang-btn").forEach(btn => btn.classList.remove("active"));
+        if (cfg.language === "id") document.getElementById("dashLangId")?.classList.add("active");
+        else if (cfg.language === "en") document.getElementById("dashLangEn")?.classList.add("active");
+        else if (cfg.language === "mixed") document.getElementById("dashLangMixed")?.classList.add("active");
+      }
+
+      // 3. Theme
+      if (cfg.theme) {
+        document.querySelectorAll(".theme-pill-btn").forEach(btn => btn.classList.remove("active"));
+        if (cfg.theme === "dark") document.getElementById("dashThemeDark")?.classList.add("active");
+        else if (cfg.theme === "sepia") document.getElementById("dashThemeSepia")?.classList.add("active");
+      }
+
+      // 4. Hard Mode
+      const hm = document.getElementById("dashHardModeSelect");
+      if (hm && cfg.hardMode) hm.value = cfg.hardMode;
+
+      // 5. No Repeat
+      const nr = document.getElementById("dashNoRepeatToggle");
+      if (nr) nr.checked = !!cfg.noRepeat;
+
+      // 6. No Yellow
+      const ny = document.getElementById("dashNoYellowToggle");
+      if (ny) ny.checked = !!cfg.noYellow;
+
+      // 7. Show Hints
+      const sh = document.getElementById("dashShowHintsToggle");
+      if (sh) sh.checked = !!cfg.showHints;
+
+      // 8. Follower Only Guess
+      const fog = document.getElementById("dashFollowerOnlyGuessToggle");
+      if (fog) fog.checked = !!cfg.followerOnlyGuess;
+
+      // 9. Follower Only Music
+      const fom = document.getElementById("dashFollowerOnlyMusicToggle");
+      if (fom) fom.checked = !!cfg.followerOnlyMusic;
+
+      // 10. Display Rows
+      const dr = document.getElementById("dashDisplayRowsVal");
+      if (dr && cfg.displayRows) {
+        dr.textContent = cfg.displayRows;
+        document.querySelectorAll("[id^='rowPreset']").forEach(b => b.classList.remove("active"));
+        document.getElementById(`rowPreset${cfg.displayRows}`)?.classList.add("active");
+      }
+
+      // 9. Board Scale
+      const bs = document.getElementById("dashBoardScaleVal");
+      if (bs && cfg.boardScale) {
+        bs.textContent = cfg.boardScale + "%";
+        document.querySelectorAll("[id^='scalePreset']").forEach(b => b.classList.remove("active"));
+        document.getElementById(`scalePreset${cfg.boardScale}`)?.classList.add("active");
+      }
+    }
+
+    function setLengthPreset(lengths) {
+      [3, 4, 5, 6, 7, 8].forEach(n => {
+        const el = document.getElementById(`dashLen${n}`);
+        if (el) el.checked = lengths.includes(n);
+      });
+      applyDashboardGameSettings(false);
+    }
+
+    function setDashLang(lang) {
+      currentGameSettings.language = lang;
+      document.querySelectorAll(".lang-btn").forEach(btn => btn.classList.remove("active"));
+      if (lang === "id") document.getElementById("dashLangId")?.classList.add("active");
+      else if (lang === "en") document.getElementById("dashLangEn")?.classList.add("active");
+      else if (lang === "mixed") document.getElementById("dashLangMixed")?.classList.add("active");
+      applyDashboardGameSettings(true);
+    }
+
+    function setDashTheme(theme) {
+      currentGameSettings.theme = theme;
+      document.querySelectorAll(".theme-pill-btn").forEach(btn => btn.classList.remove("active"));
+      if (theme === "dark") document.getElementById("dashThemeDark")?.classList.add("active");
+      else if (theme === "sepia") document.getElementById("dashThemeSepia")?.classList.add("active");
+      applyDashboardGameSettings(false);
+    }
+
+    function setDashDisplayRows(rows) {
+      const el = document.getElementById("dashDisplayRowsVal");
+      if (el) el.textContent = rows;
+      currentGameSettings.displayRows = rows;
+      document.querySelectorAll("[id^='rowPreset']").forEach(b => b.classList.remove("active"));
+      document.getElementById(`rowPreset${rows}`)?.classList.add("active");
+      applyDashboardGameSettings(false);
+    }
+
+    function setDashBoardScale(scale) {
+      const el = document.getElementById("dashBoardScaleVal");
+      if (el) el.textContent = scale + "%";
+      currentGameSettings.boardScale = scale;
+      document.querySelectorAll("[id^='scalePreset']").forEach(b => b.classList.remove("active"));
+      document.getElementById(`scalePreset${scale}`)?.classList.add("active");
+      applyDashboardGameSettings(false);
+    }
+
+    function changeDashDisplayRows(delta) {
+      const cur = parseInt(document.getElementById("dashDisplayRowsVal")?.textContent) || 6;
+      const next = Math.max(3, Math.min(12, cur + delta));
+      document.getElementById("dashDisplayRowsVal").textContent = next;
+      currentGameSettings.displayRows = next;
+      document.querySelectorAll("[id^='rowPreset']").forEach(b => b.classList.remove("active"));
+      document.getElementById(`rowPreset${next}`)?.classList.add("active");
+      applyDashboardGameSettings(false);
+    }
+
+    function changeDashBoardScale(delta) {
+      const cur = parseInt(document.getElementById("dashBoardScaleVal")?.textContent) || 100;
+      const next = Math.max(60, Math.min(140, cur + delta));
+      document.getElementById("dashBoardScaleVal").textContent = next + "%";
+      currentGameSettings.boardScale = next;
+      document.querySelectorAll("[id^='scalePreset']").forEach(b => b.classList.remove("active"));
+      document.getElementById(`scalePreset${next}`)?.classList.add("active");
+      applyDashboardGameSettings(false);
+    }
+
+    function autoSaveSettings() {
+      applyDashboardGameSettings(false);
+    }
+
+    function applyDashboardGameSettings(restartRound = false) {
+      // Gather lengths
+      const lengths = [];
+      [3, 4, 5, 6, 7, 8].forEach(n => {
+        if (document.getElementById(`dashLen${n}`)?.checked) lengths.push(n);
+      });
+      if (lengths.length === 0) {
+        lengths.push(5);
+        const l5 = document.getElementById("dashLen5");
+        if (l5) l5.checked = true;
+      }
+      currentGameSettings.allowedLengths = lengths;
+
+      // Hard mode
+      currentGameSettings.hardMode = document.getElementById("dashHardModeSelect")?.value || "off";
+
+      // Toggles
+      currentGameSettings.noRepeat = document.getElementById("dashNoRepeatToggle")?.checked ?? false;
+      currentGameSettings.noYellow = document.getElementById("dashNoYellowToggle")?.checked ?? false;
+      currentGameSettings.showHints = document.getElementById("dashShowHintsToggle")?.checked ?? true;
+      currentGameSettings.followerOnlyGuess = document.getElementById("dashFollowerOnlyGuessToggle")?.checked ?? false;
+      currentGameSettings.followerOnlyMusic = document.getElementById("dashFollowerOnlyMusicToggle")?.checked ?? false;
+
+      // Rows & scale
+      currentGameSettings.displayRows = parseInt(document.getElementById("dashDisplayRowsVal")?.textContent) || 6;
+      currentGameSettings.boardScale = parseInt(document.getElementById("dashBoardScaleVal")?.textContent) || 100;
+
+      currentGameSettings.restartRound = restartRound;
+
+      socket.emit("update-game-settings", currentGameSettings);
+
+      const btn = document.querySelector(".btn-save-settings");
+      if (btn) {
+        const old = btn.innerHTML;
+        btn.innerHTML = "✅ Tersinkron ke OBS!";
+        setTimeout(() => { btn.innerHTML = old; }, 1800);
+      }
+    }
   </script>
 </body>
 </html>

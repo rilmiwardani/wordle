@@ -57,10 +57,51 @@ let gameSettings = {
   showHints: true,
   displayRows: 6,
   boardScale: 100,
-  theme: "dark",
-  followerOnlyGuess: false,
-  followerOnlyMusic: false
 };
+
+// Persistent storage paths for settings
+const SETTINGS_FILE = path.join(__dirname, "game_settings.json");
+const OBS_CONFIG_FILE = path.join(__dirname, "obs_config.json");
+
+function loadPersistedSettings() {
+  try {
+    if (fs.existsSync(SETTINGS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf8"));
+      gameSettings = { ...gameSettings, ...data };
+      console.log("[Settings] Loaded saved game settings from file");
+    }
+  } catch(e) {
+    console.error("[Settings] Could not load game_settings.json:", e.message);
+  }
+
+  try {
+    if (fs.existsSync(OBS_CONFIG_FILE)) {
+      const data = JSON.parse(fs.readFileSync(OBS_CONFIG_FILE, "utf8"));
+      obsConfig = { ...obsConfig, ...data };
+      console.log("[OBS] Loaded saved obs config from file");
+    }
+  } catch(e) {
+    console.error("[OBS] Could not load obs_config.json:", e.message);
+  }
+}
+
+function saveGameSettings() {
+  try {
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(gameSettings, null, 2), "utf8");
+  } catch(e) {
+    console.error("[Settings] Could not save game_settings.json:", e.message);
+  }
+}
+
+function saveObsConfig() {
+  try {
+    fs.writeFileSync(OBS_CONFIG_FILE, JSON.stringify(obsConfig, null, 2), "utf8");
+  } catch(e) {
+    console.error("[OBS] Could not save obs_config.json:", e.message);
+  }
+}
+
+loadPersistedSettings();
 
 // Event counters for dashboard
 let eventStats = {
@@ -261,16 +302,27 @@ io.on("connection", (socket) => {
   });
 
   // Game Settings Sync (Word Length, Language, Rules)
-  socket.emit("game-settings-update", gameSettings);
-
   socket.on("get-game-settings", () => {
     socket.emit("game-settings-update", gameSettings);
   });
 
+  // When overlay connects, it announces its real local preferences so server adopts them
+  socket.on("sync-game-settings-from-overlay", (overlaySettings) => {
+    if (overlaySettings && typeof overlaySettings === "object") {
+      gameSettings = { ...gameSettings, ...overlaySettings };
+      saveGameSettings();
+      console.log("[Settings] Adopted real settings from overlay:", gameSettings);
+      socket.broadcast.emit("game-settings-update", gameSettings);
+    }
+  });
+
   socket.on("update-game-settings", (newSettings) => {
+    if (!newSettings || typeof newSettings !== "object") return;
     gameSettings = { ...gameSettings, ...newSettings };
+    saveGameSettings();
     console.log("[Settings] Game settings updated:", gameSettings);
-    io.emit("game-settings-update", gameSettings);
+    // Broadcast ONLY to other sockets so sender is never overwritten by echo!
+    socket.broadcast.emit("game-settings-update", newSettings);
   });
 
   socket.on("disconnect", () => {
@@ -323,6 +375,7 @@ dashApp.get("/api/obs-config", (req, res) => {
 
 dashApp.post("/api/obs-config", (req, res) => {
   obsConfig = { ...obsConfig, ...req.body };
+  saveObsConfig();
   io.emit("obs-config-update", obsConfig);
   res.json(obsConfig);
 });
@@ -333,6 +386,7 @@ dashApp.get("/api/game-settings", (req, res) => {
 
 dashApp.post("/api/game-settings", (req, res) => {
   gameSettings = { ...gameSettings, ...req.body };
+  saveGameSettings();
   io.emit("game-settings-update", gameSettings);
   res.json(gameSettings);
 });

@@ -323,24 +323,21 @@
   <!-- Main Game Area -->
   <div class="game-container" id="gameContainer" style="display: none;">
     <header>
-      <div class="header-left">
-        <div class="room-info">
-          <button id="menuBtn" class="switch-btn" title="Pilih Game Lain (Menu Depan)" onclick="backToGameList()"><i class="fa-solid fa-house"></i></button>
-          <div class="live-badge">LIVE</div>
-          <span id="roomHost">@username</span>
-          <button id="switchAccountBtn" class="switch-btn" title="Ganti Akun" onclick="switchAccount()"><i class="fa-solid fa-arrows-rotate"></i></button>
+      <div class="header-main-row">
+        <div class="header-left">
+          <div class="room-info">
+            <button id="menuBtn" class="switch-btn" title="Pilih Game Lain (Menu Depan)" onclick="backToGameList()"><i class="fa-solid fa-house"></i></button>
+            <div class="live-badge">LIVE</div>
+            <span id="roomHost">@username</span>
+            <button id="switchAccountBtn" class="switch-btn" title="Ganti Akun" onclick="switchAccount()"><i class="fa-solid fa-arrows-rotate"></i></button>
+          </div>
         </div>
-      </div>
-      <div class="header-title" id="headerTitle">WORDLE</div>
-      <div class="header-right">
-        <div class="lang-badge" id="followerOnlyBadge" title="Hanya Follower yang Dapat Menebak" style="display: none; background: rgba(56, 189, 248, 0.2); border-color: rgba(56, 189, 248, 0.4);"><i class="fa-solid fa-user-check" style="margin-right: 4px;"></i> Follower Only</div>
-        <div class="lang-badge" id="noRepeatBadge" title="Mode Tanpa Huruf Ganda (Isogram)" style="display: none; background: rgba(52, 152, 219, 0.2); border-color: rgba(52, 152, 219, 0.4);"><i class="fa-solid fa-font" style="margin-right: 4px;"></i> 1x</div>
-        <div class="lang-badge" id="currentLangBadge" title="Bahasa yang digunakan">🇮🇩 ID</div>
-        <div class="round-badge" id="headerRoundBadge">Round <span id="roundNumber">1</span></div>
-        <button id="themeToggleBtn" class="settings-btn" title="Ganti Tema (Gelap / Sepia Cream)" onclick="toggleVisualTheme(event)"><i class="fa-solid fa-sun" id="headerThemeIcon"></i></button>
-        <div class="settings-wrapper">
-          <button id="settingsBtn" class="settings-btn" onclick="toggleSettings(event)"><i class="fa-solid fa-gear"></i></button>
-          <div class="settings-dropdown" id="settingsDropdown">
+        <div class="header-title" id="headerTitle">WORDLE</div>
+        <div class="header-right">
+          <button id="themeToggleBtn" class="settings-btn" title="Ganti Tema (Gelap / Sepia Cream)" onclick="toggleVisualTheme(event)"><i class="fa-solid fa-palette" id="headerThemeIcon"></i></button>
+          <div class="settings-wrapper">
+            <button id="settingsBtn" class="settings-btn" onclick="toggleSettings(event)"><i class="fa-solid fa-gear"></i></button>
+            <div class="settings-dropdown" id="settingsDropdown">
             
             <!-- Group 1: 🌐 Bahasa & Pilihan Game -->
             <div class="settings-group">
@@ -1005,6 +1002,15 @@
 
           </div>
         </div>
+      </div>
+      </div>
+
+      <!-- Baris 2: Sub-Bar Status Game (Chips) -->
+      <div class="header-status-bar" id="headerStatusBar">
+        <div class="round-badge" id="headerRoundBadge"><i class="fa-solid fa-rotate-right" style="margin-right: 4px; font-size: 10px;"></i>Round <span id="roundNumber">1</span></div>
+        <div class="lang-badge" id="currentLangBadge" title="Bahasa yang digunakan"><i class="fa-solid fa-language" style="margin-right: 4px;"></i>ID</div>
+        <div class="lang-badge follower-badge" id="followerOnlyBadge" title="Hanya Follower yang Dapat Menebak" style="display: none;"><i class="fa-solid fa-user-check" style="margin-right: 4px;"></i> Follower Only</div>
+        <div class="lang-badge isogram-badge" id="noRepeatBadge" title="Mode Tanpa Huruf Ganda (Isogram)" style="display: none;"><i class="fa-solid fa-font" style="margin-right: 4px;"></i> 1x Huruf</div>
       </div>
     </header>
 
@@ -1793,13 +1799,21 @@
 
   <!-- Social Alerts (Follow / Share / Gift) -->
     <div id="socialAlertContainer" class="social-alert-container">
-      <img id="socialAlertAvatar" class="social-alert-avatar" src="assets/default-avatar.png" alt="Avatar">
-      <div class="social-alert-text">
-        <span id="socialAlertName" class="social-alert-name">Nama</span>
-        <span id="socialAlertAction" class="social-alert-action">Telah Share Live!</span>
+      <div class="social-alert-avatar-wrap">
+        <img id="socialAlertAvatar" class="social-alert-avatar" src="assets/default-avatar.png" alt="Avatar">
+        <span id="socialAlertBadgeIcon" class="social-alert-badge-icon badge-follow"><i class="fa-solid fa-heart"></i></span>
       </div>
-      <img id="socialAlertGiftImg" class="social-alert-gift-img" src="" style="display: none;" alt="Gift">
-      <span id="socialAlertGiftCount" class="social-alert-gift-count" style="display: none;">x1</span>
+      <div class="social-alert-text">
+        <div class="social-alert-top-row">
+          <span id="socialAlertActionTag" class="social-alert-tag tag-follow">FOLLOW</span>
+          <span id="socialAlertName" class="social-alert-name">@username</span>
+        </div>
+        <span id="socialAlertAction" class="social-alert-action">Mulai mengikuti live!</span>
+      </div>
+      <div id="socialAlertGiftWrap" class="social-alert-gift-wrap" style="display: none;">
+        <img id="socialAlertGiftImg" class="social-alert-gift-img" src="" alt="Gift">
+        <span id="socialAlertGiftCount" class="social-alert-gift-count">x1</span>
+      </div>
     </div>
 
   <!-- Recap Overlay -->

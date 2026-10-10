@@ -1420,7 +1420,7 @@ function showMusicNotif(requesterName, title) {
   notif.className = 'music-notif';
   
   notif.innerHTML = `
-    <span class="music-notif-icon">🎵</span>
+    <span class="music-notif-icon" style="color: #60a5fa;"><i class="fa-solid fa-music"></i></span>
     <div class="music-notif-content">
       <span><span class="music-notif-user">${requesterName}</span> requested:</span>
       <span class="music-notif-title">${title}</span>
@@ -4595,11 +4595,11 @@ function updateLangBadgeUI(lang) {
   const badge = document.getElementById('currentLangBadge');
   if (!badge) return;
   if (lang === 'id') {
-    badge.innerHTML = '🇮🇩 ID';
+    badge.innerHTML = '<i class="fa-solid fa-language" style="margin-right: 4px;"></i>ID';
   } else if (lang === 'en') {
-    badge.innerHTML = '🇬🇧 EN';
+    badge.innerHTML = '<i class="fa-solid fa-language" style="margin-right: 4px;"></i>EN';
   } else {
-    badge.innerHTML = '🌐 MIX';
+    badge.innerHTML = '<i class="fa-solid fa-globe" style="margin-right: 4px;"></i>MIX';
   }
 }
 
@@ -4675,7 +4675,7 @@ let isFollowerOnlyGuess = localStorage.getItem('wordle_followerOnlyGuess') === '
 window.updateFollowerOnlyGuessBadgeUI = function() {
   const badge = document.getElementById('followerOnlyBadge');
   if (badge) {
-    badge.style.display = isFollowerOnlyGuess ? 'inline-block' : 'none';
+    badge.style.display = isFollowerOnlyGuess ? 'inline-flex' : 'none';
   }
 };
 
@@ -4707,7 +4707,7 @@ window.toggleFollowerOnlyMusic = function(checked) {
 function updateNoRepeatBadgeUI() {
   const badge = document.getElementById('noRepeatBadge');
   if (!badge) return;
-  badge.style.display = window.isNoRepeatActiveForMode() ? 'inline-block' : 'none';
+  badge.style.display = window.isNoRepeatActiveForMode() ? 'inline-flex' : 'none';
 }
 
 
@@ -4881,7 +4881,7 @@ function syncVisualThemeUI(theme) {
   // Update Header Theme Icon & Title
   const headerIcon = document.getElementById('headerThemeIcon');
   if (headerIcon) {
-    headerIcon.className = isSepia ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+    headerIcon.className = isSepia ? 'fa-solid fa-moon' : 'fa-solid fa-palette';
   }
   const headerBtn = document.getElementById('themeToggleBtn');
   if (headerBtn) {
@@ -5456,11 +5456,31 @@ window.addEventListener('DOMContentLoaded', () => {
 
   localSocket.emit('get-obs-config');
 
+  // Sync the overlay's real localStorage settings up to server.js so server and dashboard always match the overlay
+  function syncOverlaySettingsToServer() {
+    try {
+      const overlayCfg = {
+        allowedLengths: JSON.parse(localStorage.getItem('allowed_lengths') || '[5,6,7,8]'),
+        language: localStorage.getItem('wordle_lang') || 'id',
+        hardMode: localStorage.getItem('wordle_hardModeState') || 'off',
+        noRepeat: localStorage.getItem('wordle_noRepeat') === 'true',
+        noYellow: localStorage.getItem('wordle_noYellow') === 'true',
+        showHints: localStorage.getItem('wordle_showHintsDiscovered') !== 'false',
+        displayRows: parseInt(localStorage.getItem('displayRows_wordle')) || 6,
+        boardScale: parseInt(localStorage.getItem('board_scale')) || 100,
+        theme: localStorage.getItem('wordle_theme') || 'dark',
+        followerOnlyGuess: localStorage.getItem('wordle_followerOnlyGuess') === 'true',
+        followerOnlyMusic: (typeof musicSettings !== 'undefined' && musicSettings.followerOnly === true)
+      };
+      localSocket.emit('sync-game-settings-from-overlay', overlayCfg);
+    } catch(e) {}
+  }
+  syncOverlaySettingsToServer();
+
   // Game Settings Remote Listener
   localSocket.on('game-settings-update', (settings) => {
     applyRemoteGameSettings(settings);
   });
-  localSocket.emit('get-game-settings');
 
   // If in OBS Browser mode, prepare clean overlay layout
   if (isObsMode) {
@@ -5483,7 +5503,7 @@ function applyRemoteGameSettings(settings) {
         const cb = document.getElementById(`len${n}Toggle`);
         if (cb) cb.checked = settings.allowedLengths.includes(n);
       });
-      needNewRound = true;
+      if (settings.restartRound) needNewRound = true;
     } catch(e) {}
   }
 
@@ -5500,7 +5520,7 @@ function applyRemoteGameSettings(settings) {
     hardModeState = settings.hardMode;
     try { localStorage.setItem('wordle_hardModeState', hardModeState); } catch(e) {}
     if (typeof updateHardModeUI === 'function') updateHardModeUI();
-    needNewRound = true;
+    if (settings.restartRound) needNewRound = true;
   }
 
   // 4. No Repeat (Isogram)
@@ -5510,7 +5530,7 @@ function applyRemoteGameSettings(settings) {
     if (typeof updateNoRepeatBadgeUI === 'function') updateNoRepeatBadgeUI();
     const nrToggle = document.getElementById('noRepeatToggle');
     if (nrToggle) nrToggle.checked = isNoRepeatMode;
-    needNewRound = true;
+    if (settings.restartRound) needNewRound = true;
   }
 
   // 5. No Yellow
@@ -5946,6 +5966,9 @@ function setupSocketListeners() {
     const avatar = document.getElementById('socialAlertAvatar');
     const nameEl = document.getElementById('socialAlertName');
     const actionEl = document.getElementById('socialAlertAction');
+    const tagEl = document.getElementById('socialAlertActionTag');
+    const badgeIconEl = document.getElementById('socialAlertBadgeIcon');
+    const giftWrap = document.getElementById('socialAlertGiftWrap');
     const giftImg = document.getElementById('socialAlertGiftImg');
     const giftCount = document.getElementById('socialAlertGiftCount');
 
@@ -5953,36 +5976,65 @@ function setupSocketListeners() {
 
     avatar.onerror = function() { this.onerror = null; this.src = 'assets/default-avatar.png'; };
     avatar.src = userData.profilePictureUrl || 'assets/default-avatar.png';
-    nameEl.textContent = userData.nickname || userData.uniqueId || 'Seseorang';
-    
+    const cleanNick = userData.nickname || userData.uniqueId || 'Seseorang';
+    if (nameEl) nameEl.textContent = cleanNick.startsWith('@') ? cleanNick : `@${cleanNick}`;
+
+    // Reset alert type modifier classes
+    container.classList.remove('alert-type-follow', 'alert-type-share', 'alert-type-gift');
+    container.classList.add(`alert-type-${actionType}`);
+
+    if (giftWrap) giftWrap.style.display = 'none';
     if (giftImg) giftImg.style.display = 'none';
     if (giftCount) giftCount.style.display = 'none';
-    
+
     if (actionType === 'share') {
-      actionEl.textContent = 'TELAH SHARE LIVE! 🚀';
-      actionEl.style.color = '#2EE06A';
-      container.style.borderColor = '#2EE06A';
+      if (tagEl) {
+        tagEl.className = 'social-alert-tag tag-share';
+        tagEl.innerHTML = '<i class="fa-solid fa-share-nodes"></i> SHARE';
+      }
+      if (badgeIconEl) {
+        badgeIconEl.className = 'social-alert-badge-icon badge-share';
+        badgeIconEl.innerHTML = '<i class="fa-solid fa-share-nodes"></i>';
+      }
+      if (actionEl) actionEl.textContent = 'Membagikan siaran live!';
     } else if (actionType === 'follow') {
-      actionEl.textContent = 'BARU SAJA FOLLOW! 💖';
-      actionEl.style.color = 'var(--primary)';
-      container.style.borderColor = 'var(--primary)';
-      
+      if (tagEl) {
+        tagEl.className = 'social-alert-tag tag-follow';
+        tagEl.innerHTML = '<i class="fa-solid fa-heart"></i> FOLLOW';
+      }
+      if (badgeIconEl) {
+        badgeIconEl.className = 'social-alert-badge-icon badge-follow';
+        badgeIconEl.innerHTML = '<i class="fa-solid fa-heart"></i>';
+      }
+      if (actionEl) actionEl.textContent = 'Mulai mengikuti live!';
       playSocialAlertAudio(socialAudioSettings.followSound);
     } else if (actionType === 'gift') {
       const giftName = userData.giftName ? userData.giftName.toUpperCase() : 'GIFT';
-      actionEl.textContent = `MENGIRIM ${giftName}! 🎁`;
-      actionEl.style.color = '#FFD700';
-      container.style.borderColor = '#FFD700';
-      
+      if (tagEl) {
+        tagEl.className = 'social-alert-tag tag-gift';
+        tagEl.innerHTML = '<i class="fa-solid fa-gift"></i> GIFT';
+      }
+      if (badgeIconEl) {
+        badgeIconEl.className = 'social-alert-badge-icon badge-gift';
+        badgeIconEl.innerHTML = '<i class="fa-solid fa-gift"></i>';
+      }
+      if (actionEl) actionEl.textContent = `Mengirim ${giftName}!`;
+
+      let hasGiftMedia = false;
       if (giftImg && userData.giftPictureUrl) {
         giftImg.src = userData.giftPictureUrl;
         giftImg.style.display = 'block';
+        hasGiftMedia = true;
       }
       if (giftCount && userData.repeatCount) {
         giftCount.textContent = `x${userData.repeatCount}`;
         giftCount.style.display = 'block';
+        hasGiftMedia = true;
       }
-      
+      if (giftWrap && hasGiftMedia) {
+        giftWrap.style.display = 'flex';
+      }
+
       const rawGiftName = userData.giftName ? userData.giftName.trim().toLowerCase() : '';
       const customMatch = (socialAudioSettings.customGifts || []).find(item => item.giftName === rawGiftName);
       const giftSoundUrl = customMatch ? customMatch.soundUrl : socialAudioSettings.defaultGiftSound;
@@ -5994,7 +6046,7 @@ function setupSocketListeners() {
     if (socialAlertTimeout) clearTimeout(socialAlertTimeout);
     socialAlertTimeout = setTimeout(() => {
       container.classList.remove('show');
-    }, 4000);
+    }, 3800);
   }
 
   socket.on('share', (data) => {
@@ -9099,38 +9151,25 @@ setTimeout(() => {
 
 // (Removed originalOpenTTS override as it was merged above)
 
-// --- Header Alternator for Mobile ---
-let headerAlternatorState = 0;
-setInterval(() => {
+// --- Header Status Bar Synchronizer ---
+window.updateHeaderBadgesUI = function() {
   const noRep = document.getElementById('noRepeatBadge');
   const lang = document.getElementById('currentLangBadge');
   const roundBadge = document.getElementById('headerRoundBadge');
-  if (!lang || !roundBadge) return;
-  
-  if (window.innerWidth > 600) {
-    if (window.isNoRepeatActiveForMode() && noRep) noRep.style.display = 'inline-block';
-    lang.style.display = 'inline-block';
-    roundBadge.style.display = 'inline-block';
-    return;
-  }
-  
-  if (noRep) noRep.style.display = 'none';
-  lang.style.display = 'none';
-  roundBadge.style.display = 'none';
+  const fogBadge = document.getElementById('followerOnlyBadge');
 
-  const hasNoRep = (window.isNoRepeatActiveForMode() && noRep);
-  const maxState = hasNoRep ? 3 : 2;
-  
-  if (hasNoRep && headerAlternatorState === 0) {
-    noRep.style.display = 'inline-block';
-  } else if ((hasNoRep && headerAlternatorState === 1) || (!hasNoRep && headerAlternatorState === 0)) {
-    lang.style.display = 'inline-block';
-  } else {
-    roundBadge.style.display = 'inline-block';
+  if (roundBadge) roundBadge.style.display = 'inline-flex';
+  if (lang) lang.style.display = 'inline-flex';
+  if (noRep) {
+    noRep.style.display = (window.isNoRepeatActiveForMode && window.isNoRepeatActiveForMode()) ? 'inline-flex' : 'none';
   }
-  
-  headerAlternatorState = (headerAlternatorState + 1) % maxState;
-}, 3000);
+  if (fogBadge) {
+    fogBadge.style.display = (typeof isFollowerOnlyGuess !== 'undefined' && isFollowerOnlyGuess) ? 'inline-flex' : 'none';
+  }
+};
+if (typeof window.updateHeaderBadgesUI === 'function') {
+  window.updateHeaderBadgesUI();
+}
 
 // --- Game Selection logic for 2-Column Cards Grid ---
 window.selectCustomGame = function(value, e) {

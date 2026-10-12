@@ -12365,6 +12365,9 @@ function startWanderWordsGame() {
   wanderWordsIsGameOver = false;
   wanderWordsIsRevealing = false;
   wanderWordsHintActive = false;
+  if (typeof clearWanderWordsHostPath === 'function') {
+    clearWanderWordsHostPath(false);
+  }
 
   renderWanderWordsUI();
 }
@@ -12429,6 +12432,260 @@ function renderWanderWordsUI() {
         gridEl.appendChild(tile);
       }
     }
+
+    // Pasang interaksi sentuh / klik huruf-ke-huruf untuk Host / Admin
+    setupWanderWordsTouchInteraction(gridEl);
+  }
+}
+
+// ── INTERAKSI SENTUH / KLIK HURUF KE HURUF UNTUK HOST / ADMIN (WANDER WORDS) ──
+let wanderWordsHostPath = [];
+let isWanderWordsHostDragging = false;
+let isWanderWordsDragMoved = false;
+let wanderWordsPointerStartX = 0;
+let wanderWordsPointerStartY = 0;
+let lastWanderWordsActionTime = 0;
+let wanderWordsTouchGlobalBound = false;
+
+function isOrthogonalNeighbor(r1, c1, r2, c2) {
+  return (Math.abs(r1 - r2) + Math.abs(c1 - c2) === 1);
+}
+
+function updateHostPathBadgePreview() {
+  const lengthTextEl = document.getElementById('wanderwordsLengthText');
+  if (!lengthTextEl || !wanderWordsCurrentPuzzle) return;
+  const targetClean = wanderWordsCurrentPuzzle.cleanAnswer || '';
+  if (wanderWordsHostPath.length === 0) {
+    const cleanLetters = targetClean;
+    const words = wanderWordsCurrentPuzzle.answer.trim().split(/\s+/).filter(Boolean);
+    const wordCountStr = words.length > 1 ? ` (${words.length} Kata)` : '';
+    lengthTextEl.textContent = `${cleanLetters.length} Huruf${wordCountStr}`;
+  } else {
+    const currentWord = wanderWordsHostPath.map(p => p.letter).join('');
+    lengthTextEl.innerHTML = `<span style="color:#fbbf24;font-weight:900;">🔤 ${currentWord}</span> <span style="font-size:10px;opacity:0.8;">(${wanderWordsHostPath.length}/${targetClean.length})</span>`;
+  }
+}
+
+function clearWanderWordsHostPath(restoreBadge = true) {
+  wanderWordsHostPath.forEach(p => {
+    if (p.el) {
+      p.el.classList.remove('host-path-tile', 'path-error');
+      p.el.removeAttribute('data-step');
+    }
+  });
+  wanderWordsHostPath = [];
+  if (restoreBadge) {
+    updateHostPathBadgePreview();
+  }
+}
+
+function submitWanderWordsHostPath() {
+  if (currentGameMode !== 'wanderwords' || wanderWordsIsGameOver || wanderWordsIsRevealing) {
+    clearWanderWordsHostPath(false);
+    return;
+  }
+  if (!wanderWordsCurrentPuzzle || wanderWordsHostPath.length < 2) {
+    return;
+  }
+
+  const formedWord = wanderWordsHostPath.map(p => p.letter).join('');
+  const targetClean = wanderWordsCurrentPuzzle.cleanAnswer || '';
+
+  if (formedWord === targetClean) {
+    // KEMENANGAN HOST!
+    clearWanderWordsHostPath(false);
+    processWanderWordsGuess(formedWord, {
+      userId: 'host',
+      uniqueId: 'Host',
+      nickname: 'Host (Admin)'
+    });
+  } else {
+    // TEBAKAN BELUM COCOK
+    if (window.sounds && typeof window.sounds.playInvalid === 'function') {
+      window.sounds.playInvalid();
+    }
+    showToast(`"${formedWord}" belum tepat! Coba lagi.`, 1800);
+    const tilesToShake = [...wanderWordsHostPath];
+    tilesToShake.forEach(p => {
+      if (p.el) p.el.classList.add('path-error');
+    });
+    setTimeout(() => {
+      clearWanderWordsHostPath(true);
+    }, 450);
+  }
+}
+
+function handleWanderWordsTileEnter(tileEl) {
+  if (!tileEl || wanderWordsIsGameOver || wanderWordsIsRevealing) return;
+  if (tileEl.classList.contains('empty')) return;
+
+  const r = parseInt(tileEl.getAttribute('data-r'));
+  const c = parseInt(tileEl.getAttribute('data-c'));
+  const letter = tileEl.textContent ? tileEl.textContent.trim().toUpperCase() : '';
+  if (!letter || isNaN(r) || isNaN(c)) return;
+
+  // Jika jalur masih kosong: inisialisasi huruf pertama
+  if (wanderWordsHostPath.length === 0) {
+    wanderWordsHostPath.push({ r, c, letter, el: tileEl });
+    tileEl.classList.add('host-path-tile');
+    tileEl.setAttribute('data-step', '1');
+    if (window.sounds && typeof window.sounds.playFlip === 'function') {
+      window.sounds.playFlip(0);
+    }
+    updateHostPathBadgePreview();
+    return;
+  }
+
+  const last = wanderWordsHostPath[wanderWordsHostPath.length - 1];
+  if (last.r === r && last.c === c) {
+    // Jika tap (bukan drag move) pada huruf yang sama dengan ujung aktif: Undo huruf ini
+    if (!isWanderWordsDragMoved && wanderWordsHostPath.length > 0) {
+      const popped = wanderWordsHostPath.pop();
+      if (popped && popped.el) {
+        popped.el.classList.remove('host-path-tile', 'path-error');
+        popped.el.removeAttribute('data-step');
+      }
+      if (window.sounds && typeof window.sounds.playFlip === 'function') {
+        window.sounds.playFlip(wanderWordsHostPath.length % 5);
+      }
+      updateHostPathBadgePreview();
+    }
+    return;
+  }
+
+  // Jika kembali ke huruf sebelumnya: Undo 1 langkah
+  if (wanderWordsHostPath.length >= 2) {
+    const secondLast = wanderWordsHostPath[wanderWordsHostPath.length - 2];
+    if (secondLast.r === r && secondLast.c === c) {
+      const popped = wanderWordsHostPath.pop();
+      if (popped && popped.el) {
+        popped.el.classList.remove('host-path-tile', 'path-error');
+        popped.el.removeAttribute('data-step');
+      }
+      if (window.sounds && typeof window.sounds.playFlip === 'function') {
+        window.sounds.playFlip(wanderWordsHostPath.length % 5);
+      }
+      updateHostPathBadgePreview();
+      return;
+    }
+  }
+
+  // Cek apakah ubin ini sudah pernah dilewati (tidak boleh menabrak jejak sendiri)
+  const alreadyVisited = wanderWordsHostPath.some(p => p.r === r && p.c === c);
+  if (alreadyVisited) return;
+
+  // Cek apakah tetangga orthogonal (Atas, Bawah, Kiri, Kanan saja)
+  if (isOrthogonalNeighbor(last.r, last.c, r, c)) {
+    wanderWordsHostPath.push({ r, c, letter, el: tileEl });
+    tileEl.classList.add('host-path-tile');
+    tileEl.setAttribute('data-step', wanderWordsHostPath.length.toString());
+    if (window.sounds && typeof window.sounds.playFlip === 'function') {
+      window.sounds.playFlip((wanderWordsHostPath.length - 1) % 5);
+    }
+    updateHostPathBadgePreview();
+
+    // Jika panjang huruf sudah mencapai target jawaban penuh, otomatis periksa!
+    if (wanderWordsCurrentPuzzle && wanderWordsCurrentPuzzle.cleanAnswer) {
+      if (wanderWordsHostPath.length === wanderWordsCurrentPuzzle.cleanAnswer.length) {
+        submitWanderWordsHostPath();
+      }
+    }
+  } else if (!isWanderWordsDragMoved) {
+    // Jika tap (bukan drag) pada ubin yang bukan tetangga:
+    // Mulai jalur baru dari ubin ini!
+    clearWanderWordsHostPath(false);
+    wanderWordsHostPath.push({ r, c, letter, el: tileEl });
+    tileEl.classList.add('host-path-tile');
+    tileEl.setAttribute('data-step', '1');
+    if (window.sounds && typeof window.sounds.playFlip === 'function') {
+      window.sounds.playFlip(0);
+    }
+    updateHostPathBadgePreview();
+  }
+}
+
+function setupWanderWordsTouchInteraction(gridEl) {
+  if (!gridEl) return;
+  clearWanderWordsHostPath(false);
+
+  // Helper untuk mendapatkan ubin dari koordinat sentuh/kursor
+  const getTileFromPoint = (clientX, clientY) => {
+    const el = document.elementFromPoint(clientX, clientY);
+    if (!el) return null;
+    return el.closest('.wanderwords-tile:not(.empty)');
+  };
+
+  // Pointer Down (Mouse click down atau Touch start)
+  gridEl.onpointerdown = (e) => {
+    if (wanderWordsIsGameOver || wanderWordsIsRevealing) return;
+    const tile = (e.target && e.target.closest) ? e.target.closest('.wanderwords-tile:not(.empty)') : getTileFromPoint(e.clientX, e.clientY);
+    if (!tile) return;
+
+    lastWanderWordsActionTime = Date.now();
+    isWanderWordsHostDragging = true;
+    isWanderWordsDragMoved = false;
+    wanderWordsPointerStartX = e.clientX;
+    wanderWordsPointerStartY = e.clientY;
+
+    handleWanderWordsTileEnter(tile);
+  };
+
+  // Fallback click event untuk tiap tile
+  const tiles = gridEl.querySelectorAll('.wanderwords-tile:not(.empty)');
+  tiles.forEach(tile => {
+    tile.onclick = (e) => {
+      if (wanderWordsIsGameOver || wanderWordsIsRevealing) return;
+      // Hindari double-fire jika pointerdown sudah memproses dalam 250ms
+      if (Date.now() - lastWanderWordsActionTime < 250) return;
+      handleWanderWordsTileEnter(tile);
+    };
+  });
+
+  // Bind global pointermove & pointerup satu kali saja
+  if (!wanderWordsTouchGlobalBound) {
+    wanderWordsTouchGlobalBound = true;
+
+    window.addEventListener('pointermove', (e) => {
+      if (!isWanderWordsHostDragging || wanderWordsIsGameOver || wanderWordsIsRevealing) return;
+      
+      const dist = Math.hypot(e.clientX - wanderWordsPointerStartX, e.clientY - wanderWordsPointerStartY);
+      if (dist > 8) {
+        isWanderWordsDragMoved = true;
+      }
+
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      if (!el) return;
+      const tile = el.closest('.wanderwords-tile:not(.empty)');
+      if (tile) {
+        handleWanderWordsTileEnter(tile);
+      }
+    }, { passive: false });
+
+    window.addEventListener('pointerup', () => {
+      if (!isWanderWordsHostDragging) return;
+      isWanderWordsHostDragging = false;
+      isWanderWordsDragMoved = false;
+
+      // Jika selesai drag dan huruf yang tersambung sudah tepat sesuai panjang target kata
+      if (wanderWordsCurrentPuzzle && wanderWordsCurrentPuzzle.cleanAnswer) {
+        if (wanderWordsHostPath.length === wanderWordsCurrentPuzzle.cleanAnswer.length) {
+          submitWanderWordsHostPath();
+        }
+      }
+    });
+
+    window.addEventListener('pointercancel', () => {
+      isWanderWordsHostDragging = false;
+      isWanderWordsDragMoved = false;
+    });
+
+    // Reset jalur jika host klik/tap di luar area grid
+    document.addEventListener('pointerdown', (e) => {
+      if (wanderWordsHostPath.length === 0) return;
+      if (!e.target.closest('#wanderwordsGrid') && !e.target.closest('.wanderwords-footer')) {
+        clearWanderWordsHostPath(true);
+      }
+    });
   }
 }
 
@@ -12590,6 +12847,9 @@ function wanderWordsGiveHint() {
 // Lewati Puzzle (Skip) untuk Host
 function skipWanderWordsPuzzle() {
   if (currentGameMode !== 'wanderwords' || wanderWordsIsRevealing) return;
+  if (typeof clearWanderWordsHostPath === 'function') {
+    clearWanderWordsHostPath(false);
+  }
   showToast(`⏭️ Puzzle dilewati. Jawaban: ${wanderWordsCurrentPuzzle.answer}`, 3000);
   wanderWordsRound++;
   round = wanderWordsRound;

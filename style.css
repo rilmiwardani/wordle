@@ -6451,6 +6451,9 @@ body.low-power-mode .cascadle-tile {
   gap: 6px;
   width: 100%;
   max-width: 320px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .wanderwords-tile {
@@ -6468,7 +6471,58 @@ body.low-power-mode .cascadle-tile {
   font-family: 'Outfit', sans-serif;
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.4), 0 4px 10px rgba(0, 0, 0, 0.3);
   user-select: none;
-  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  -webkit-user-select: none;
+  touch-action: none;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.wanderwords-tile:hover:not(.empty):not(.solved-path):not(.host-path-tile) {
+  border-color: rgba(56, 189, 248, 0.6);
+  transform: translateY(-2px);
+}
+
+.wanderwords-tile.host-path-tile {
+  background: linear-gradient(145deg, #0284c7, #0369a1) !important;
+  border-color: #38bdf8 !important;
+  box-shadow: 0 4px 0 #075985, 0 0 18px rgba(56, 189, 248, 0.85) !important;
+  transform: scale(1.06) !important;
+  z-index: 2;
+  animation: wanderTileConnect 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.wanderwords-tile.host-path-tile::after {
+  content: attr(data-step);
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #bae6fd;
+  background: rgba(0, 0, 0, 0.65);
+  border-radius: 999px;
+  padding: 1px 5px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+@keyframes wanderTileConnect {
+  0% { transform: scale(0.9); }
+  50% { transform: scale(1.12); }
+  100% { transform: scale(1.06); }
+}
+
+.wanderwords-tile.path-error {
+  background: linear-gradient(145deg, #dc2626, #991b1b) !important;
+  border-color: #f87171 !important;
+  box-shadow: 0 4px 0 #7f1d1d, 0 0 16px rgba(239, 68, 68, 0.85) !important;
+  animation: wanderPathShake 0.4s ease-in-out;
+}
+
+@keyframes wanderPathShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
 }
 
 .wanderwords-tile.empty {

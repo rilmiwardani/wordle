@@ -4936,7 +4936,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // ═══════════════════════════════════════════════════════
 //  VISUAL THEME SYSTEM (Dark Modern / Sepia Cream Pastel)
 // ═══════════════════════════════════════════════════════
-let currentVisualTheme = localStorage.getItem('wordle_theme') || 'dark';
+const urlThemeParam = new URLSearchParams(window.location.search).get('theme');
+let currentVisualTheme = urlThemeParam || localStorage.getItem('wordle_theme') || 'dark';
 
 function syncVisualThemeUI(theme) {
   const isSepia = theme === 'sepia';
@@ -4973,7 +4974,7 @@ function syncVisualThemeUI(theme) {
 
 // Initial theme apply before DOMContentLoaded
 try {
-  const initialTheme = localStorage.getItem('wordle_theme') || 'dark';
+  const initialTheme = urlThemeParam || localStorage.getItem('wordle_theme') || 'dark';
   currentVisualTheme = initialTheme;
   const isSepia = initialTheme === 'sepia';
   if (document.body) {

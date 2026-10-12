@@ -1011,6 +1011,7 @@
                 <option value="wordladder">Word Ladder</option>
                 <option value="betweenle">Betweenle</option>
                 <option value="cascadle">Cascadle</option>
+                <option value="wanderwords">Wander Words</option>
               </select>
             </div>
           </div>
@@ -1135,6 +1136,7 @@
           <button class="game-btn" data-game="wordladder" onclick="remoteChangeGame('wordladder')">Word Ladder</button>
           <button class="game-btn" data-game="betweenle" onclick="remoteChangeGame('betweenle')">Betweenle</button>
           <button class="game-btn" data-game="cascadle" onclick="remoteChangeGame('cascadle')">Cascadle</button>
+          <button class="game-btn" data-game="wanderwords" onclick="remoteChangeGame('wanderwords')">Wander Words</button>
         </div>
       </div>
     </div>
@@ -1335,6 +1337,42 @@
         </div>
 
       </div>
+    </div>
+  </div>
+
+  <!-- CARD 5: KELOLA KATA & PUZZLE WANDER WORDS (DYNAMIC PATHFINDING) -->
+  <div class="obs-card" style="margin-top: 16px;">
+    <div class="obs-card-header" style="justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="icon">🧭</span>
+        <h4>Kelola Kata & Kategori Wander Words (Auto-Generate Snake Grid)</h4>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="badge" id="wwTotalWordsBadge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); padding: 4px 10px; border-radius: 999px; font-weight: 800; font-size: 11px;">56 Kata Aktif</span>
+        <button class="btn btn-save-ww-words" onclick="saveWanderWordsCustomList()" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; padding: 7px 16px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer;">
+          💾 Simpan & Terapkan Kata Baru
+        </button>
+      </div>
+    </div>
+    <div class="obs-card-body">
+      <div style="font-size: 12px; color: var(--text2); margin-bottom: 10px; line-height: 1.5;">
+        💡 <b>Cara Menambah Kata Baru:</b> Tulis atau tempel kata baru dengan format <code>KATEGORI: KATA JAWABAN</code> (1 baris per kata). Sistem akan <b>secara otomatis</b> menyusun kisi (*grid*) dan mencari jalur ular ortogonal (horizontal & vertikal) secara dinamis & acak setiap ronde baru! Tidak perlu menyusun grid secara manual.
+      </div>
+
+      <textarea id="dashWwWordsInput" rows="7" oninput="updateWwTotalBadge()" placeholder="Contoh:&#10;KULINER: SATE AYAM MADURA&#10;FILM: PENGABDI SETAN&#10;HEWAN: HARIMAU SUMATERA&#10;KOTA: YOGYAKARTA" style="width: 100%; box-sizing: border-box; background: #10131d; border: 1px solid var(--border); border-radius: 10px; color: #fff; padding: 10px 12px; font-family: monospace; font-size: 12px; line-height: 1.6; resize: vertical;"></textarea>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center;">
+        <button type="button" class="preset-sm-btn" onclick="loadDefaultWanderWords()" style="background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: #fff; padding: 6px 12px; border-radius: 8px; font-size: 11.5px; cursor: pointer;">
+          🔄 Muat Ulang Kata Bawaan (Default 56+ Kata)
+        </button>
+        <button type="button" class="preset-sm-btn" onclick="appendSampleWanderWords()" style="background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: #fff; padding: 6px 12px; border-radius: 8px; font-size: 11.5px; cursor: pointer;">
+          ➕ Tambah Contoh Kata Keren
+        </button>
+        <button type="button" class="preset-sm-btn" onclick="remoteChangeGame('wanderwords')" style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #34d399; padding: 6px 14px; border-radius: 8px; font-size: 11.5px; font-weight: 700; cursor: pointer; margin-left: auto;">
+          🎮 Beralih ke Wander Words & Mulai Ronde
+        </button>
+      </div>
+      <div id="dashWwStatusMsg" style="margin-top: 8px; font-size: 12px; display: none;"></div>
     </div>
   </div>
 
@@ -1935,6 +1973,9 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
         document.querySelectorAll("[id^='scalePreset']").forEach(b => b.classList.remove("active"));
         document.getElementById(`scalePreset${cfg.boardScale}`)?.classList.add("active");
       }
+
+      // 11. Wander Words Custom Words UI
+      initWanderWordsDashboardUI();
     }
 
     function setLengthPreset(lengths) {
@@ -2040,6 +2081,145 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
         const old = btn.innerHTML;
         btn.innerHTML = "✅ Tersinkron ke OBS!";
         setTimeout(() => { btn.innerHTML = old; }, 1800);
+      }
+    }
+
+    // ════ WANDER WORDS CUSTOM WORDS MANAGER ════
+    const DEFAULT_WW_SAMPLE_TEXT = `FILM DUNIA: THE DEPARTED
+FILM INDONESIA: LASKAR PELANGI
+FILM HOROR INDO: PENGABDI SETAN
+FILM HOROR VIRAL: KKN DESA PENARI
+FILM SUPERHERO: AVENGERS ASSEMBLE
+SUPERHERO MARVEL: SPIDERMAN
+KARTUN POPULER: DORAEMON
+KARTUN LAUT: SPONGEBOB
+SERI ANIME: NARUTO UZUMAKI
+ANIME POPULER: ONE PIECE LUFFY
+KULINER NUSANTARA: RENDANG PADANG
+KULINER JAWA TIMUR: BAKSO MALANG
+MAKANAN JOGJA: GUDEG JOGJA
+MAKANAN PALEMBANG: PEMPEK PALEMBANG
+KULINER MADURA: SATE AYAM MADURA
+MAKANAN POPULER: NASI GORENG
+KULINER BANDUNG: BATAGOR KUAH
+KULINER ACEH: MIE ACEH PEDAS
+KULINER MAKASSAR: COTO MAKASSAR
+KUDAPAN MANIS: MARTABAK MANIS
+MINUMAN SEGAR: ES KELAPA MUDA
+MINUMAN TRADISIONAL: WEDANG RONDE
+MINUMAN MANIS: ES CENDOL DAWET
+HEWAN LANGKA: KOMODO DRAGON
+HEWAN LAUT: LUMBA LUMBA
+BURUNG INDONESIA: CENDERAWASIH
+HEWAN SUMATERA: HARIMAU SUMATERA
+SATWA DILINDUNGI: ORANGUTAN
+KOTA DI JAWA: YOGYAKARTA
+KOTA KHATULISTIWA: PONTIANAK
+KOTA PELAJAR: KOTA MALANG
+IKON JAKARTA: MONAS JAKARTA
+CANDI TERKENAL: BOROBUDUR
+GUNUNG INDONESIA: GUNUNG BROMO
+WISATA PAPUA: RAJA AMPAT
+DANAU VULKANIK: DANAU TOBA
+KOTA HUJAN: KOTA BOGOR
+KOTA KEMBANG: KOTA BANDUNG
+LAGU NASIONAL: INDONESIA RAYA
+DONGENG NUSANTARA: MALIN KUNDANG
+PAHLAWAN WANITA: KARTINI HEBAT
+ALAT MUSIK: ANGKLUNG SUNDA
+ALAT MUSIK PETIK: SASANDO ROTE
+SENI TRADISIONAL: WAYANG KULIT
+PERMAINAN KATA: WANDER WORDS
+BUAH TROPIS: DURIAN MONTONG`;
+
+    function initWanderWordsDashboardUI() {
+      const textarea = document.getElementById("dashWwWordsInput");
+      if (!textarea) return;
+
+      let list = currentGameSettings.wanderWordsCustomList;
+      if (!Array.isArray(list) || list.length === 0) {
+        if (!textarea.value.trim()) {
+          textarea.value = DEFAULT_WW_SAMPLE_TEXT;
+        }
+      } else {
+        textarea.value = list.map(item => `${item.clue}: ${item.answer}`).join("\n");
+      }
+      updateWwTotalBadge();
+    }
+
+    function parseWwTextarea() {
+      const text = document.getElementById("dashWwWordsInput")?.value || "";
+      const lines = text.split("\n");
+      const list = [];
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        const colonIdx = trimmed.indexOf(":");
+        if (colonIdx > 0) {
+          const clue = trimmed.substring(0, colonIdx).trim().toUpperCase();
+          const answer = trimmed.substring(colonIdx + 1).trim().toUpperCase();
+          if (clue && answer && answer.replace(/[^A-Z]/g, '').length >= 3) {
+            list.push({ clue, answer });
+          }
+        } else {
+          const answer = trimmed.toUpperCase();
+          if (answer.replace(/[^A-Z]/g, '').length >= 3) {
+            list.push({ clue: "TEBAK KATA", answer });
+          }
+        }
+      });
+      return list;
+    }
+
+    function updateWwTotalBadge() {
+      const list = parseWwTextarea();
+      const badge = document.getElementById("wwTotalWordsBadge");
+      if (badge) {
+        badge.textContent = `${list.length} Kata Aktif`;
+      }
+    }
+
+    function saveWanderWordsCustomList() {
+      const list = parseWwTextarea();
+      if (list.length === 0) {
+        alert("Mohon masukkan minimal 1 kata dengan format: KATEGORI: JAWABAN");
+        return;
+      }
+      currentGameSettings.wanderWordsCustomList = list;
+      socket.emit("update-game-settings", currentGameSettings);
+
+      updateWwTotalBadge();
+
+      const btn = document.querySelector(".btn-save-ww-words");
+      if (btn) {
+        const old = btn.innerHTML;
+        btn.innerHTML = "✅ Tersimpan!";
+        setTimeout(() => { btn.innerHTML = old; }, 1800);
+      }
+
+      const msg = document.getElementById("dashWwStatusMsg");
+      if (msg) {
+        msg.style.display = "block";
+        msg.style.color = "#10b981";
+        msg.innerHTML = `✅ Berhasil menyimpan <b>${list.length} kata</b>! Permainan Wander Words akan otomatis menyusun papan dari daftar ini.`;
+        setTimeout(() => { msg.style.display = "none"; }, 3500);
+      }
+    }
+
+    function loadDefaultWanderWords() {
+      const textarea = document.getElementById("dashWwWordsInput");
+      if (textarea) {
+        textarea.value = DEFAULT_WW_SAMPLE_TEXT;
+        saveWanderWordsCustomList();
+      }
+    }
+
+    function appendSampleWanderWords() {
+      const textarea = document.getElementById("dashWwWordsInput");
+      if (textarea) {
+        const sampleAppend = `\nFILM BIOSKOP: DILAN SEMBILAN PULUH\nKULINER SOLO: TENGKLENG KAMBING\nWISATA BALI: PANTAI KUTA\nGAME POPULER: MOBILE LEGENDS`;
+        textarea.value += sampleAppend;
+        saveWanderWordsCustomList();
       }
     }
   </script>

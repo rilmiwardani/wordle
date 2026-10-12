@@ -240,6 +240,18 @@
               </div>
             </div>
           </div>
+
+          <!-- 14. Wander Words -->
+          <div class="game-card card-nyt-wanderwords" onclick="selectGame('wanderwords')" id="cardWanderWords">
+            <div class="card-visual" style="display: flex; align-items: center; justify-content: center; gap: 3px;">
+              <i class="fa-solid fa-route" style="font-size: 20px; color: #f59e0b;"></i>
+            </div>
+            <div class="card-body">
+              <div class="card-top-row">
+                <span class="card-title">WANDER WORDS</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -548,6 +560,21 @@
                     <div class="game-card-text">
                       <div class="game-card-title">Cascadle</div>
                       <div class="game-card-desc">Rantai 3-7 Huruf Berjenjang</div>
+                    </div>
+                  </div>
+
+                  <!-- Wander Words -->
+                  <div class="game-card" data-value="wanderwords" onclick="selectCustomGame('wanderwords', event)">
+                    <div class="game-card-icon badge-wanderwords">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 19l4-4 4 4 8-8"></path>
+                        <circle cx="4" cy="19" r="1.5" fill="currentColor"></circle>
+                        <circle cx="20" cy="11" r="1.5" fill="currentColor"></circle>
+                      </svg>
+                    </div>
+                    <div class="game-card-text">
+                      <div class="game-card-title">Wander Words</div>
+                      <div class="game-card-desc">Jejak Huruf Horizontal & Vertikal (Tanpa Diagonal)</div>
                     </div>
                   </div>
                 </div>
@@ -1362,6 +1389,52 @@
 
       </div>
 
+      <!-- Wander Words Container -->
+      <div id="wanderWordsContainer" class="wanderwords-container" style="display: none;">
+        <!-- Top Clue Card & Stats -->
+        <div class="wanderwords-header">
+          <div class="wanderwords-clue-card">
+            <span class="wanderwords-clue-label"><i class="fa-solid fa-lightbulb"></i> KATEGORI</span>
+            <span class="wanderwords-clue-text" id="wanderwordsClueText">PETUNJUK</span>
+          </div>
+          <div class="wanderwords-meta-pills">
+            <div class="wanderwords-pill" id="wanderwordsRoundBadge">
+              <i class="fa-solid fa-trophy" style="color: #ffd700;"></i> <span id="wanderwordsRoundNum">Ronde 1</span>
+            </div>
+            <div class="wanderwords-pill pts" id="wanderwordsPtsBadge">
+              +15 Poin
+            </div>
+          </div>
+        </div>
+
+        <!-- Word Slots / Answer Progress Indicator -->
+        <div class="wanderwords-word-display" id="wanderwordsWordDisplay">
+          <!-- Dynamically populated letter slot chips -->
+        </div>
+
+        <!-- The Wandering Grid Area -->
+        <div class="wanderwords-board-area" id="wanderwordsBoardArea">
+          <div class="wanderwords-grid" id="wanderwordsGrid">
+            <!-- Dynamically populated tiles -->
+          </div>
+        </div>
+
+        <!-- Bottom Helper & Host Controls -->
+        <div class="wanderwords-footer">
+          <div class="wanderwords-chat-hint">
+            <i class="fa-solid fa-arrows-up-down-left-right" style="color: #38bdf8;"></i> Jalur huruf: Atas, Bawah, Kiri, Kanan (Tanpa Diagonal)
+          </div>
+          <div class="wanderwords-btn-group">
+            <button class="wanderwords-ctrl-btn hint-btn" onclick="wanderWordsGiveHint()" id="wanderwordsHintBtn" title="Beri petunjuk huruf pertama">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Hint
+            </button>
+            <button class="wanderwords-ctrl-btn skip-btn" onclick="skipWanderWordsPuzzle()" title="Lewati teka-teki ini">
+              <i class="fa-solid fa-forward-step"></i> Skip
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Supporter Spotlight Rotator (Fade In/Out) -->
       <div id="marqueeContainer" class="supporter-spotlight-container" style="display: none;">
         <div class="supporter-spotlight-inner" id="marqueeContent"></div>
@@ -1390,11 +1463,11 @@
         <img id="winAvatar" src="" alt="Winner">
         <div class="crown-icon"><i class="fa-solid fa-crown" style="color: #ffd700; filter: drop-shadow(0 0 6px rgba(255,215,0,0.6));"></i></div>
       </div>
-      <div class="win-title">WE HAVE A WINNER!</div>
+      <div class="win-title" id="winTitleText">WE HAVE A WINNER!</div>
       <div class="win-name" id="winName">@username</div>
       <div class="win-pts" id="winPts">+10 Pts</div>
       <div class="win-divider"></div>
-      <div class="win-subtitle">Guessed the word:</div>
+      <div class="win-subtitle" id="winSubtitleText">Guessed the word:</div>
       <div class="win-word" id="winWord">APPLE</div>
       
       <!-- Like Progress Bar (di dalam Win Overlay) -->
@@ -1797,6 +1870,9 @@
     </div>
   </div>
 
+  <!-- Floating Gift Particles Overlay -->
+  <div id="floatingGiftContainer" class="floating-gift-container" aria-hidden="true"></div>
+
   <!-- Social Alerts (Follow / Share / Gift) -->
     <div id="socialAlertContainer" class="social-alert-container">
       <div class="social-alert-avatar-wrap">
@@ -1842,6 +1918,7 @@
   <script src="squareword_puzzles_en.js"></script>
   <script src="wordladder_puzzles.js"></script>
   <script src="wordladder_puzzles_en.js"></script>
+  <script src="wanderwords_puzzles.js"></script>
   <script src="app.js?v=56"></script>
 </body>
 </html>

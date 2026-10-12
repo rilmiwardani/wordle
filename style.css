@@ -3285,9 +3285,183 @@ header {
   box-shadow: 0 8px 25px rgba(46, 224, 106, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 .social-alert-container.alert-type-gift {
-  background: linear-gradient(135deg, rgba(38, 28, 10, 0.95), rgba(24, 18, 30, 0.92));
-  border-color: rgba(255, 215, 0, 0.65);
-  box-shadow: 0 8px 30px rgba(255, 215, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, rgba(48, 32, 10, 0.96), rgba(28, 18, 38, 0.94));
+  border-color: rgba(255, 215, 0, 0.85);
+  box-shadow: 0 10px 35px rgba(255, 215, 0, 0.45), 0 0 20px rgba(255, 107, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  animation: giftAlertGlow 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes giftAlertGlow {
+  0% {
+    box-shadow: 0 8px 25px rgba(255, 215, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 215, 0, 0.65);
+  }
+  100% {
+    box-shadow: 0 12px 40px rgba(255, 215, 0, 0.65), 0 0 25px rgba(254, 44, 85, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    border-color: #ffd700;
+  }
+}
+
+/* =========================================
+   FLOATING GIFT & SPARKLE PARTICLE SYSTEM
+   ========================================= */
+.floating-gift-container {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 10005;
+  overflow: hidden;
+}
+
+.floating-gift-item {
+  position: absolute;
+  bottom: -90px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  animation: floatingGiftFloat 2.6s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 0 16px rgba(255, 215, 0, 0.65));
+}
+
+@keyframes floatingGiftFloat {
+  0% {
+    transform: translateY(0) scale(0.35) rotate(-12deg);
+    opacity: 0;
+  }
+  15% {
+    transform: translateY(-90px) scale(1.18) rotate(4deg);
+    opacity: 1;
+  }
+  30% {
+    transform: translateY(-220px) scale(1) rotate(-6deg);
+    opacity: 1;
+  }
+  75% {
+    transform: translateY(-680px) scale(0.96) rotate(6deg);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translateY(-980px) scale(0.75) rotate(-10deg);
+    opacity: 0;
+  }
+}
+
+.floating-gift-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.floating-gift-halo {
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.45) 0%, rgba(254, 44, 85, 0.25) 50%, transparent 75%);
+  animation: floatingHaloPulse 1.2s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes floatingHaloPulse {
+  from { transform: scale(0.85); opacity: 0.6; }
+  to { transform: scale(1.25); opacity: 1; }
+}
+
+.floating-gift-img {
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.65)) drop-shadow(0 0 12px rgba(255, 215, 0, 0.85));
+  z-index: 2;
+  animation: floatingGiftBob 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes floatingGiftBob {
+  from { transform: translateY(0) rotate(-3deg); }
+  to { transform: translateY(-6px) rotate(3deg); }
+}
+
+.floating-gift-sender-pill {
+  position: absolute;
+  bottom: -16px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(15, 15, 26, 0.88);
+  border: 1.5px solid rgba(255, 215, 0, 0.65);
+  border-radius: 999px;
+  padding: 2px 8px 2px 2px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), 0 0 10px rgba(255, 215, 0, 0.35);
+  z-index: 3;
+  white-space: nowrap;
+}
+
+.floating-gift-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid #ffd700;
+  object-fit: cover;
+}
+
+.floating-gift-name {
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: 'Outfit', sans-serif;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.floating-gift-combo {
+  position: absolute;
+  top: -12px;
+  right: -18px;
+  background: linear-gradient(135deg, #ff0055, #ff9900);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  box-shadow: 0 3px 10px rgba(255, 0, 85, 0.6), 0 0 12px rgba(255, 215, 0, 0.8);
+  z-index: 4;
+  font-family: 'Outfit', sans-serif;
+  animation: floatingComboPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+@keyframes floatingComboPop {
+  0% { transform: scale(0.4) rotate(-15deg); }
+  70% { transform: scale(1.3) rotate(8deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.floating-sparkle {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  animation: sparkleTwinkle var(--duration, 1.2s) ease-out forwards;
+}
+
+@keyframes sparkleTwinkle {
+  0% {
+    transform: translate(0, 0) scale(0) rotate(0deg);
+    opacity: 1;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx, 30px), var(--ty, -40px)) scale(var(--target-scale, 1.2)) rotate(180deg);
+    opacity: 0;
+  }
 }
 
 
@@ -5813,6 +5987,18 @@ body.low-power-mode .cascadle-tile {
   }
 }
 
+/* Bounce Selebrasi Kemenangan Kata di Cascadle (mirip Wordle) */
+.cascadle-tile.cascadle-bounce {
+  animation: cascadleTileBounce 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+@keyframes cascadleTileBounce {
+  0% { transform: translateY(0); }
+  35% { transform: translateY(-16px) scale(1.08); }
+  70% { transform: translateY(4px) scale(0.96); }
+  100% { transform: translateY(0) scale(1); }
+}
+
 /* Avatar slot at right of row */
 .cascadle-row-meta {
   display: flex;
@@ -6147,6 +6333,321 @@ body.low-power-mode .cascadle-tile {
 
 .cascadle-showcase-btn:active {
   transform: translateY(1px);
+}
+
+/* ==========================================================================
+   WANDER WORDS GAME ENGINE (JEJAK KATA BERLIKU & CLUE PUZZLE)
+   ========================================================================== */
+.card-nyt-wanderwords .card-visual {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.game-card-icon.badge-wanderwords {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(217, 119, 6, 0.35));
+  border: 1.5px solid #f59e0b;
+  color: #fbbf24;
+}
+
+.wanderwords-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  gap: 12px;
+  box-sizing: border-box;
+  padding: 4px 10px;
+}
+
+/* Header: Clue Card & Stats */
+.wanderwords-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 10px;
+}
+
+.wanderwords-clue-card {
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.9));
+  border: 1.5px solid rgba(245, 158, 11, 0.5);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 14px rgba(245, 158, 11, 0.15);
+  border-radius: 12px;
+  padding: 6px 14px;
+  flex: 1;
+  text-align: left;
+}
+
+.wanderwords-clue-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #fbbf24;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.wanderwords-clue-text {
+  font-size: 15px;
+  font-weight: 900;
+  color: #ffffff;
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wanderwords-meta-pills {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.wanderwords-pill {
+  font-size: 11px;
+  font-weight: 800;
+  color: #e2e8f0;
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  padding: 3px 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'Outfit', sans-serif;
+}
+
+.wanderwords-pill.pts {
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.15);
+  font-weight: 900;
+  justify-content: center;
+}
+
+/* Word Slots / Answer Progress Indicator */
+.wanderwords-word-display {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 14px;
+  width: 100%;
+  padding: 8px 12px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-sizing: border-box;
+  min-height: 48px;
+}
+
+.wanderwords-word-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.wanderwords-slot {
+  width: 24px;
+  height: 30px;
+  border-bottom: 2.5px solid rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 900;
+  color: #94a3b8;
+  font-family: 'Outfit', sans-serif;
+  transition: all 0.25s ease;
+}
+
+.wanderwords-slot.revealed {
+  border-bottom-color: #10b981;
+  color: #34d399;
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.7);
+  animation: wanderSlotReveal 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes wanderSlotReveal {
+  0% { transform: scale(0.6) translateY(4px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* Board Grid Area */
+.wanderwords-board-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 14px;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-sizing: border-box;
+}
+
+.wanderwords-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--ww-cols, 4), 1fr);
+  gap: 8px;
+  width: 100%;
+  max-width: 380px;
+}
+
+.wanderwords-tile {
+  position: relative;
+  aspect-ratio: 1;
+  background: linear-gradient(145deg, #1e293b, #0f172a);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(20px, 4.5vw, 26px);
+  font-weight: 900;
+  color: #ffffff;
+  font-family: 'Outfit', sans-serif;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.4), 0 6px 14px rgba(0, 0, 0, 0.3);
+  user-select: none;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wanderwords-tile.empty {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.wanderwords-tile.hint-start {
+  border-color: #f59e0b;
+  background: linear-gradient(145deg, rgba(245, 158, 11, 0.35), rgba(15, 23, 42, 0.9));
+  box-shadow: 0 4px 0 rgba(180, 83, 9, 0.7), 0 0 16px rgba(245, 158, 11, 0.7);
+  animation: wanderTilePulse 1.4s ease-in-out infinite alternate;
+}
+
+.wanderwords-tile.hint-start::after {
+  content: 'START';
+  position: absolute;
+  bottom: -6px;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  background: #f59e0b;
+  color: #000;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+@keyframes wanderTilePulse {
+  0% { transform: scale(1); box-shadow: 0 4px 0 rgba(180, 83, 9, 0.7), 0 0 10px rgba(245, 158, 11, 0.4); }
+  100% { transform: scale(1.04); box-shadow: 0 4px 0 rgba(180, 83, 9, 0.7), 0 0 22px rgba(245, 158, 11, 0.85); }
+}
+
+.wanderwords-tile.solved-path {
+  background: linear-gradient(145deg, #10b981, #059669) !important;
+  border-color: #34d399 !important;
+  box-shadow: 0 4px 0 #047857, 0 0 20px rgba(16, 185, 129, 0.75) !important;
+  color: #ffffff;
+  animation: wanderTileSolve 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.wanderwords-tile.solved-path::after {
+  content: attr(data-step);
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #a7f3d0;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 999px;
+  padding: 1px 5px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+@keyframes wanderTileSolve {
+  0% { transform: scale(0.7) rotate(-10deg); filter: brightness(1.5); }
+  50% { transform: scale(1.15) rotate(4deg); }
+  100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+}
+
+/* Footer & Buttons */
+.wanderwords-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+.wanderwords-chat-hint {
+  font-size: 11.5px;
+  color: #cbd5e1;
+  font-family: 'Outfit', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+}
+
+.wanderwords-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wanderwords-ctrl-btn {
+  background: rgba(30, 41, 59, 0.85);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.wanderwords-ctrl-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(51, 65, 85, 0.95);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.wanderwords-ctrl-btn.hint-btn {
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+}
+
+.wanderwords-ctrl-btn.hint-btn:hover {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: #f59e0b;
+}
+
+.wanderwords-ctrl-btn.skip-btn {
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+
+.wanderwords-ctrl-btn.skip-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
 }
 
 /* ==========================================================================

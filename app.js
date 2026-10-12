@@ -973,6 +973,10 @@ window.executeRestartTransition = function() {
     if (winAvatar) {
       winAvatar.src = 'assets/bg_nature.png';
     }
+    const winTitle = document.getElementById('winTitleText');
+    if (winTitle) winTitle.textContent = 'WE HAVE A WINNER!';
+    const winSubtitle = document.getElementById('winSubtitleText');
+    if (winSubtitle) winSubtitle.textContent = 'Guessed the word:';
     round++;
     startNewRound();
     requestAnimationFrame(() => {
@@ -1033,6 +1037,7 @@ function triggerWinTransition(winDuration, isMultiWinner = false) {
     }, winDuration);
   }
 }
+window.triggerWinTransition = triggerWinTransition;
 
 let TARGET_WORDS = [];
 let VALID_WORDS = [];
@@ -1098,6 +1103,7 @@ function getPtsPrefix() {
   if (currentGameMode === 'wordladder') return 'pts_wladder_';
   if (currentGameMode === 'betweenle') return 'pts_betweenle_';
   if (currentGameMode === 'cascadle') return 'pts_cascadle_';
+  if (currentGameMode === 'wanderwords') return 'pts_wanderwords_';
   return 'pts_';
 }
 
@@ -1109,7 +1115,7 @@ function initWeeklyLeaderboard() {
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key && key.startsWith(prefix)) {
-      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wfit_') || key.startsWith('pts_colorfit_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_') || key.startsWith('pts_sqword_') || key.startsWith('pts_wladder_') || key.startsWith('pts_betweenle_') || key.startsWith('pts_cascadle_'))) continue;
+      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wfit_') || key.startsWith('pts_colorfit_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_') || key.startsWith('pts_sqword_') || key.startsWith('pts_wladder_') || key.startsWith('pts_betweenle_') || key.startsWith('pts_cascadle_') || key.startsWith('pts_wanderwords_'))) continue;
       
       if (key.startsWith(prefix + 'like_') || 
           key.startsWith(prefix + 'share_') || 
@@ -1795,7 +1801,8 @@ function selectGame(mode) {
     squareword: 'SQUAREWORD 5×5',
     wordladder: 'WORD LADDER',
     betweenle: 'BETWEENLE',
-    cascadle: 'CASCADLE'
+    cascadle: 'CASCADLE',
+    wanderwords: 'WANDER WORDS'
   };
   const titleName = gameNames[mode] || mode.toUpperCase();
 
@@ -1851,6 +1858,7 @@ function switchGameMode(e) {
   else if (currentGameMode === 'squareword') currentGameMode = 'wordladder';
   else if (currentGameMode === 'wordladder') currentGameMode = 'betweenle';
   else if (currentGameMode === 'betweenle') currentGameMode = 'cascadle';
+  else if (currentGameMode === 'cascadle') currentGameMode = 'wanderwords';
   else currentGameMode = 'wordle';
   try { sessionStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
 
@@ -1912,6 +1920,8 @@ function applyGameModeUI() {
   if (betweenleContainer) betweenleContainer.style.display = 'none';
   const cascadleContainer = document.getElementById('cascadleContainer');
   if (cascadleContainer) cascadleContainer.style.display = 'none';
+  const wanderWordsContainer = document.getElementById('wanderWordsContainer');
+  if (wanderWordsContainer) wanderWordsContainer.style.display = 'none';
 
   const colorFitLegend = document.getElementById('colorFitLegend');
   if (colorFitLegend) colorFitLegend.style.display = (currentGameMode === 'colorfit') ? 'flex' : 'none';
@@ -2054,11 +2064,28 @@ function applyGameModeUI() {
       boardObj.className = '';
     }
     if (cascadleContainer) cascadleContainer.style.display = 'flex';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Wander Words';
     if (!cascadleTargets || !cascadleTargets[3]) {
       startCascadleGame();
     } else {
       renderCascadleUI();
+    }
+  } else if (currentGameMode === 'wanderwords') {
+    if (headerTitle) headerTitle.textContent = 'WANDER WORDS';
+    if (hintContainer) hintContainer.style.display = 'none';
+    if (bestGuessContainer) bestGuessContainer.style.display = 'none';
+    if (boardObj) {
+      boardObj.style.display = 'none';
+      boardObj.innerHTML = '';
+      boardObj.className = '';
+    }
+    const wanderWordsContainer = document.getElementById('wanderWordsContainer');
+    if (wanderWordsContainer) wanderWordsContainer.style.display = 'flex';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
+    if (!wanderWordsCurrentPuzzle) {
+      startWanderWordsGame();
+    } else {
+      renderWanderWordsUI();
     }
   } else {
     if (headerTitle) headerTitle.textContent = 'WORDLE';
@@ -2607,6 +2634,21 @@ function getInstructionText() {
       if (lastLang === 'id') return `Ketik kata yang sesuai dengan kriteria baris & kolom!`;
       if (lastLang === 'mixed') return `Ketik kata sesuai kriteria! / Type words matching clues!`;
       return `Type a word that matches the row & column clues!`;
+    }
+    if (currentGameMode === 'wanderwords') {
+      if (lastLang === 'id') return `Tebak kata mengikuti jalur huruf (horizontal & vertikal saja, tanpa diagonal)!`;
+      if (lastLang === 'mixed') return `Jalur horizontal & vertikal (no diagonal)! / Type answer matching snake path!`;
+      return `Connect letters horizontally & vertically (no diagonals) to find the answer!`;
+    }
+    if (currentGameMode === 'cascadle') {
+      if (lastLang === 'id') return `Tebak kata bertahap dari 3 sampai 7 huruf!`;
+      if (lastLang === 'mixed') return `Tebak kata bertahap 3-7 huruf! / Guess 3 to 7 letter ladder!`;
+      return `Guess words cascading from 3 to 7 letters!`;
+    }
+    if (currentGameMode === 'betweenle') {
+      if (lastLang === 'id') return `Tebak kata alfabetis di antara batas atas & batas bawah!`;
+      if (lastLang === 'mixed') return `Tebak kata di antara 2 batas! / Guess word between bounds!`;
+      return `Guess the secret word alphabetically between the two bounds!`;
     }
     if (lastLang === 'id') return `Ketik kata ${WORD_LENGTH} huruf di komentar untuk menebak!`;
     if (lastLang === 'mixed') return `Ketik kata ${WORD_LENGTH} huruf di komentar! / Type a ${WORD_LENGTH}-letter word!`;
@@ -4194,6 +4236,11 @@ function startNewRound() {
     startCascadleGame();
     return;
   }
+  if (currentGameMode === 'wanderwords') {
+    wanderWordsRound = round;
+    startWanderWordsGame();
+    return;
+  }
   if (currentGameMode === 'squareword') {
     WORD_LENGTH = 5;
     document.documentElement.style.setProperty('--word-length', 5);
@@ -5605,6 +5652,18 @@ function applyRemoteGameSettings(settings) {
     if (fomGroupToggle) fomGroupToggle.checked = musicSettings.followerOnly;
   }
 
+  // 12. Wander Words Custom Words List
+  if (Array.isArray(settings.wanderWordsCustomList)) {
+    window.wanderWordsCustomWords = settings.wanderWordsCustomList;
+    try { localStorage.setItem('wanderwords_custom_words', JSON.stringify(settings.wanderWordsCustomList)); } catch(e) {}
+    wanderWordsShuffledPool = [];
+    wanderWordsPuzzleIndex = 0;
+    console.log('[WanderWords] Adopted custom words from remote settings:', settings.wanderWordsCustomList.length);
+    if (currentGameMode === 'wanderwords' && settings.restartRound) {
+      needNewRound = true;
+    }
+  }
+
   // Apply reloads if requested
   if (settings.restartRound || needReloadWords || needNewRound) {
     if (needReloadWords && typeof loadWordLists === 'function') {
@@ -6070,6 +6129,112 @@ function setupSocketListeners() {
     }, 3800);
   }
 
+  // Animasi Floating Gift & Sparkle Particles di Layar
+  function spawnFloatingGift(userData) {
+    const container = document.getElementById('floatingGiftContainer');
+    if (!container || !userData) return;
+
+    const repeatCount = userData.repeatCount || 1;
+    const spawnCount = repeatCount >= 10 ? 3 : (repeatCount >= 3 ? 2 : 1);
+    const avatarSrc = userData.profilePictureUrl || 'assets/default-avatar.png';
+    const rawName = userData.nickname || userData.uniqueId || 'Seseorang';
+    const cleanNick = rawName.startsWith('@') ? rawName : `@${rawName}`;
+
+    for (let i = 0; i < spawnCount; i++) {
+      setTimeout(() => {
+        const item = document.createElement('div');
+        item.className = 'floating-gift-item';
+
+        const randomLeft = Math.floor(15 + Math.random() * 70);
+        item.style.left = `${randomLeft}%`;
+
+        const randomRot = (Math.random() * 24 - 12).toFixed(1);
+        item.style.setProperty('--rot-start', `${randomRot}deg`);
+
+        const halo = document.createElement('div');
+        halo.className = 'floating-gift-halo';
+
+        const content = document.createElement('div');
+        content.className = 'floating-gift-content';
+
+        if (userData.giftPictureUrl) {
+          const giftImg = document.createElement('img');
+          giftImg.className = 'floating-gift-img';
+          giftImg.src = userData.giftPictureUrl;
+          giftImg.alt = userData.giftName || 'Gift';
+          giftImg.onerror = function() { this.style.display = 'none'; };
+          content.appendChild(giftImg);
+        } else {
+          const giftIcon = document.createElement('div');
+          giftIcon.className = 'floating-gift-img';
+          giftIcon.style.display = 'flex';
+          giftIcon.style.alignItems = 'center';
+          giftIcon.style.justifyContent = 'center';
+          giftIcon.style.fontSize = '38px';
+          giftIcon.style.color = '#ffd700';
+          giftIcon.innerHTML = '<i class="fa-solid fa-gift"></i>';
+          content.appendChild(giftIcon);
+        }
+
+        if (repeatCount > 1) {
+          const combo = document.createElement('span');
+          combo.className = 'floating-gift-combo';
+          combo.textContent = `x${repeatCount}`;
+          content.appendChild(combo);
+        }
+
+        const senderPill = document.createElement('div');
+        senderPill.className = 'floating-gift-sender-pill';
+
+        const senderAvatar = document.createElement('img');
+        senderAvatar.className = 'floating-gift-avatar';
+        senderAvatar.src = avatarSrc;
+        senderAvatar.onerror = function() { this.src = 'assets/default-avatar.png'; };
+
+        const senderName = document.createElement('span');
+        senderName.className = 'floating-gift-name';
+        senderName.textContent = cleanNick;
+
+        senderPill.appendChild(senderAvatar);
+        senderPill.appendChild(senderName);
+        content.appendChild(senderPill);
+
+        content.appendChild(halo);
+        item.appendChild(content);
+
+        const sparkleColors = ['#ffd700', '#ff0055', '#00e5ff', '#ffffff', '#ff9900'];
+        for (let s = 0; s < 8; s++) {
+          const sparkle = document.createElement('div');
+          sparkle.className = 'floating-sparkle';
+          const size = Math.floor(Math.random() * 8 + 6);
+          sparkle.style.width = `${size}px`;
+          sparkle.style.height = `${size}px`;
+          sparkle.style.backgroundColor = sparkleColors[Math.floor(Math.random() * sparkleColors.length)];
+          sparkle.style.boxShadow = `0 0 10px ${sparkle.style.backgroundColor}`;
+
+          const angle = (Math.PI * 2 / 8) * s + (Math.random() * 0.3);
+          const dist = Math.random() * 55 + 35;
+          const tx = Math.cos(angle) * dist;
+          const ty = Math.sin(angle) * dist - 30;
+
+          sparkle.style.setProperty('--tx', `${tx}px`);
+          sparkle.style.setProperty('--ty', `${ty}px`);
+          sparkle.style.setProperty('--duration', `${(1.2 + Math.random() * 0.6).toFixed(2)}s`);
+          sparkle.style.left = '50%';
+          sparkle.style.top = '50%';
+          item.appendChild(sparkle);
+        }
+
+        container.appendChild(item);
+
+        setTimeout(() => {
+          if (item.parentNode) item.remove();
+        }, 2700);
+      }, i * 200);
+    }
+  }
+  window.spawnFloatingGift = spawnFloatingGift;
+
   socket.on('share', (data) => {
     showSocialAlert(data, 'share');
     const username = data.nickname || data.uniqueId;
@@ -6114,6 +6279,7 @@ function setupSocketListeners() {
 
     if (shouldAlert) {
       showSocialAlert(data, 'gift');
+      spawnFloatingGift(data);
     }
 
     const username = data.nickname || data.uniqueId;
@@ -6234,7 +6400,7 @@ function handleAutoGuessOnJoin(memberData) {
 
 // Handle Guesses from Chat
 function handleChatGuess(data) {
-  const isCurrentOver = (currentGameMode === 'betweenle') ? betweenleIsGameOver : ((currentGameMode === 'cascadle') ? cascadleIsGameOver : isGameOver);
+  const isCurrentOver = (currentGameMode === 'betweenle') ? betweenleIsGameOver : ((currentGameMode === 'cascadle') ? cascadleIsGameOver : ((currentGameMode === 'wanderwords') ? wanderWordsIsGameOver : isGameOver));
   if (isCurrentOver) return;
 
   const rawMsg = data.comment.trim().toLowerCase();
@@ -6259,6 +6425,8 @@ function handleChatGuess(data) {
     isAllowedLength = (msg.length === betweenleLetterLength);
   } else if (currentGameMode === 'cascadle') {
     isAllowedLength = (msg.length === cascadleCurrentLevel);
+  } else if (currentGameMode === 'wanderwords') {
+    isAllowedLength = (msg.length >= 2);
   }
 
   if (isAllowedLength) {
@@ -6331,7 +6499,7 @@ function handleChatGuess(data) {
         // Jika kata sudah pernah dievaluasi di ronde ini & antrean sedang ramai, skip agar stream responsif
         if (squarewordGuesses && squarewordGuesses.includes(msg) && guessQueue.length >= 2) return;
       }
-    } else if (currentGameMode !== 'cascadle') {
+    } else if (currentGameMode !== 'cascadle' && currentGameMode !== 'wanderwords') {
       const dedupKey = `${userId}:${msg}`;
       if (userGuessDedup.has(dedupKey)) return; // skip duplikat
       userGuessDedup.add(dedupKey);
@@ -6350,7 +6518,7 @@ function handleChatGuess(data) {
 }
 
 async function processQueue() {
-  const isCurrentOver = (currentGameMode === 'betweenle') ? betweenleIsGameOver : ((currentGameMode === 'cascadle') ? cascadleIsGameOver : isGameOver);
+  const isCurrentOver = (currentGameMode === 'betweenle') ? betweenleIsGameOver : ((currentGameMode === 'cascadle') ? cascadleIsGameOver : ((currentGameMode === 'wanderwords') ? wanderWordsIsGameOver : isGameOver));
   if (isProcessing || guessQueue.length === 0 || isCurrentOver) return;
   isProcessing = true;
   
@@ -6558,10 +6726,14 @@ function addTangoGuessToFeed(word, userData, isCorrect) {
 // Process a valid guess — optimized: adaptive pacing & smooth flip
 function processGuess(guessWord, userData, queueLen = 0) {
   if (isBadWordsFilterOn) {
-    for (const bad of STOPWORDS) {
-      if (guessWord.includes(bad)) {
-        console.log(`[Bad Word Filter] Rejected guess: ${guessWord}`);
-        return; // Reject silently from the board
+    const isTarget = (currentWord && guessWord === currentWord) || 
+                     (typeof betweenleSecretWord !== 'undefined' && guessWord === betweenleSecretWord);
+    if (!isTarget) {
+      for (const bad of STOPWORDS) {
+        if (guessWord === bad || (bad.length >= 5 && guessWord.includes(bad))) {
+          console.log(`[Bad Word Filter] Rejected guess: ${guessWord}`);
+          return; // Reject silently from the board
+        }
       }
     }
   }
@@ -6573,6 +6745,11 @@ function processGuess(guessWord, userData, queueLen = 0) {
 
   if (currentGameMode === 'cascadle') {
     processCascadleGuess(guessWord, userData);
+    return;
+  }
+
+  if (currentGameMode === 'wanderwords') {
+    processWanderWordsGuess(guessWord, userData);
     return;
   }
 
@@ -11516,7 +11693,7 @@ function validateCascadleHardMode(guessWord) {
 
 // Memproses tebakan masuk untuk mode Cascadle
 function processCascadleGuess(guessWord, userData) {
-  if (currentGameMode !== 'cascadle' || cascadleIsGameOver) return;
+  if (currentGameMode !== 'cascadle' || cascadleIsGameOver || cascadleIsAnimating) return;
   if (!guessWord) return;
 
   const word = guessWord.trim().toUpperCase();
@@ -11621,6 +11798,8 @@ function processCascadleGuess(guessWord, userData) {
 
     if (!isJackpot) {
       // ── LEVEL INTERMEDIATE BERHASIL TERPECAHKAN (3H / 4H / 5H / 6H) ──
+      cascadleIsAnimating = true;
+
       if (typeof addPoints === 'function' && userData) {
         addPoints(userData, ptsAwarded);
         recordWin(userData.uniqueId || userData.nickname);
@@ -11634,17 +11813,43 @@ function processCascadleGuess(guessWord, userData) {
       const nextLevel = cascadleCurrentLevel + 1;
       showToast(`🎉 ${userName} MENEBAK TEPAT: ${word}! (+${ptsAwarded} Poin) ➔ Level ${nextLevel} (${nextLevel} Huruf) Terbuka!`, 3500);
 
-      // Naik ke level berikutnya
-      cascadleCurrentLevel++;
+      // Hitung durasi sampai semua ubin selesai flip hijau penuh
+      const stepDelay = 90;
+      const flipFinishedDelay = (word.length - 1) * stepDelay + 400;
 
-      // Cascading Recoloring: Re-evaluasi seluruh tebakan lama terhadap kata target baru!
+      // 1. Beri efek bounce selebrasi pada ubin jawaban yang baru saja tertebak hijau semua
       setTimeout(() => {
+        const boardArea = document.getElementById('cascadleBoardArea');
+        if (boardArea) {
+          const latestRow = boardArea.querySelector('.cascadle-row:not(.active-input)');
+          if (latestRow) {
+            const tiles = latestRow.querySelectorAll('.cascadle-tile');
+            tiles.forEach((t, tIdx) => {
+              setTimeout(() => {
+                t.classList.add('cascadle-bounce');
+              }, tIdx * 90);
+            });
+          }
+        }
+      }, flipFinishedDelay);
+
+      // 2. Berikan jeda selebrasi agar penonton puas melihat kotak hijau sebelum flip menjadi clue kata berikutnya
+      const totalDelayBeforeClue = flipFinishedDelay + 1600; // ~2.3 - 2.5 detik total
+
+      setTimeout(() => {
+        // Naik ke level berikutnya sekarang
+        cascadleCurrentLevel++;
+
+        // Cascading Recoloring: Re-evaluasi seluruh tebakan lama terhadap kata target baru dengan animasi flip!
         triggerCascadleRecolor();
-      }, 500);
+        cascadleIsAnimating = false;
+      }, totalDelayBeforeClue);
 
     } else {
       // ── LEVEL 7 (FINAL / JACKPOT CASCADLE SELESAI!) ──
       cascadleIsGameOver = true;
+      cascadleIsAnimating = true;
+
       if (typeof addPoints === 'function' && userData) {
         addPoints(userData, ptsAwarded);
         recordWin(userData.uniqueId || userData.nickname);
@@ -11656,12 +11861,31 @@ function processCascadleGuess(guessWord, userData) {
       }
 
       showToast(`🏆 ${userName} MENYELESAIKAN CASCADLE: ${word}! (+${ptsAwarded} Poin Jackpot!)`, 4500);
-      renderCascadleUI();
 
-      // Luncurkan animasi tangga kata kemenangan 3-7 huruf langsung di layar papan game!
+      const stepDelay = 90;
+      const flipFinishedDelay = (word.length - 1) * stepDelay + 400;
+
+      // Efek bounce selebrasi ubin jackpot
+      setTimeout(() => {
+        const boardArea = document.getElementById('cascadleBoardArea');
+        if (boardArea) {
+          const latestRow = boardArea.querySelector('.cascadle-row:not(.active-input)');
+          if (latestRow) {
+            const tiles = latestRow.querySelectorAll('.cascadle-tile');
+            tiles.forEach((t, tIdx) => {
+              setTimeout(() => {
+                t.classList.add('cascadle-bounce');
+              }, tIdx * 90);
+            });
+          }
+        }
+      }, flipFinishedDelay);
+
+      // Luncurkan animasi tangga kata kemenangan 3-7 huruf setelah perayaan selesai
       setTimeout(() => {
         launchCascadleVictoryShowcase();
-      }, 800);
+        cascadleIsAnimating = false;
+      }, flipFinishedDelay + 1200);
     }
   }
 }
@@ -11960,3 +12184,434 @@ function launchCascadleVictoryShowcase() {
     }
   }, 1000);
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 14. WANDER WORDS GAME ENGINE (JEJAK KATA BERLIKU & CLUE PUZZLE)
+// ═════════════════════════════════════════════════════════════════════════════
+
+let wanderWordsRound = 1;
+let wanderWordsCurrentPuzzle = null;
+let wanderWordsPuzzleIndex = 0;
+let wanderWordsIsGameOver = false;
+let wanderWordsIsRevealing = false;
+let wanderWordsHintActive = false;
+let wanderWordsUserCooldown = new Map();
+let wanderWordsTransitionTimer = null;
+let wanderWordsCustomWords = null;
+let wanderWordsShuffledPool = [];
+
+// ── DYNAMIC GENERATOR REAL-TIME (< 3ms) ──
+// Otomatis mencari jalur ular ortogonal (Atas, Bawah, Kiri, Kanan - NO DIAGONAL) untuk kata apa saja
+function generateDynamicWanderWordsPuzzle(clue, answer) {
+  if (!answer) return null;
+  const cleanAnswer = answer.toUpperCase().replace(/[^A-Z]/g, '');
+  const N = cleanAnswer.length;
+  if (N < 3) return null;
+
+  // Dimensi grid responsif untuk vertical livestream
+  const candidateDims = [
+    [3, 3], [3, 4], [4, 3], [4, 4], [4, 5], [5, 4], [5, 5]
+  ].filter(([r, c]) => r * c >= N);
+
+  // STRICT ORTHOGONAL DIRS (Up, Down, Left, Right)
+  const dirs = [
+    [-1, 0], [1, 0], [0, -1], [0, 1]
+  ];
+
+  for (const [R, C] of candidateDims) {
+    for (let trial = 0; trial < 1500; trial++) {
+      const startR = Math.floor(Math.random() * R);
+      const startC = Math.floor(Math.random() * C);
+
+      const visited = new Set([startR + ',' + startC]);
+      const path = [[startR, startC]];
+
+      let currR = startR;
+      let currC = startC;
+      let failed = false;
+
+      for (let i = 1; i < N; i++) {
+        const validNeighbors = [];
+        for (const [dr, dc] of dirs) {
+          const nr = currR + dr;
+          const nc = currC + dc;
+          if (nr >= 0 && nr < R && nc >= 0 && nc < C && !visited.has(nr + ',' + nc)) {
+            validNeighbors.push([nr, nc]);
+          }
+        }
+
+        if (validNeighbors.length === 0) {
+          failed = true;
+          break;
+        }
+
+        const next = validNeighbors[Math.floor(Math.random() * validNeighbors.length)];
+        currR = next[0];
+        currC = next[1];
+        visited.add(currR + ',' + currC);
+        path.push([currR, currC]);
+      }
+
+      if (!failed && path.length === N) {
+        const grid = Array.from({ length: R }, () => Array(C).fill(''));
+        for (let i = 0; i < N; i++) {
+          const [r, c] = path[i];
+          grid[r][c] = cleanAnswer[i];
+        }
+        return {
+          clue: (clue || 'TEKA TEKI').trim().toUpperCase(),
+          answer: answer.trim().toUpperCase(),
+          cleanAnswer,
+          rows: R,
+          cols: C,
+          grid,
+          path
+        };
+      }
+    }
+  }
+  return null;
+}
+
+// Mengambil bank kata aktif (kata kustom dari host atau bawaan)
+function getWanderWordsActivePool() {
+  if (Array.isArray(window.wanderWordsCustomWords) && window.wanderWordsCustomWords.length > 0) {
+    return window.wanderWordsCustomWords;
+  }
+  try {
+    const saved = localStorage.getItem('wanderwords_custom_words');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        window.wanderWordsCustomWords = parsed;
+        return parsed;
+      }
+    }
+  } catch(e) {}
+
+  return window.WANDERWORDS_DEFAULT_WORDS || window.WANDERWORDS_PUZZLES || [];
+}
+
+// Mulai atau reset permainan Wander Words secara dinamis
+function startWanderWordsGame() {
+  if (currentGameMode !== 'wanderwords') return;
+
+  if (wanderWordsTransitionTimer) {
+    clearTimeout(wanderWordsTransitionTimer);
+    wanderWordsTransitionTimer = null;
+  }
+
+  const pool = getWanderWordsActivePool();
+  if (!pool || pool.length === 0) {
+    console.error('[WanderWords] Word pool is empty!');
+    showToast('Daftar kata Wander Words kosong!', 2500);
+    return;
+  }
+
+  // Cek apakah ada antrean kocokan kata yang tersimpan di sesi browser
+  try {
+    if (wanderWordsShuffledPool.length === 0) {
+      const savedPool = sessionStorage.getItem('wanderwords_shuffled_pool');
+      const savedIdx = parseInt(sessionStorage.getItem('wanderwords_pool_idx') || '0');
+      if (savedPool) {
+        const parsed = JSON.parse(savedPool);
+        if (Array.isArray(parsed) && parsed.length === pool.length && savedIdx < parsed.length) {
+          wanderWordsShuffledPool = parsed;
+          wanderWordsPuzzleIndex = savedIdx;
+        }
+      }
+    }
+  } catch(e) {}
+
+  // Shuffle pool secara acak jika baru pertama kali atau seluruh kata sudah habis dimainkan
+  if (wanderWordsShuffledPool.length === 0 || wanderWordsPuzzleIndex >= wanderWordsShuffledPool.length) {
+    wanderWordsShuffledPool = [...pool];
+    if (typeof shuffleArray === 'function') shuffleArray(wanderWordsShuffledPool);
+    wanderWordsPuzzleIndex = 0;
+    try {
+      sessionStorage.setItem('wanderwords_shuffled_pool', JSON.stringify(wanderWordsShuffledPool));
+      sessionStorage.setItem('wanderwords_pool_idx', '0');
+    } catch(e) {}
+  }
+
+  const selectedItem = wanderWordsShuffledPool[wanderWordsPuzzleIndex];
+  wanderWordsPuzzleIndex++;
+  try {
+    sessionStorage.setItem('wanderwords_pool_idx', wanderWordsPuzzleIndex.toString());
+  } catch(e) {}
+
+  // Susun grid dan snake path secara dinamis on-the-fly!
+  let generated = generateDynamicWanderWordsPuzzle(selectedItem.clue, selectedItem.answer);
+  if (!generated && selectedItem.grid && selectedItem.path) {
+    generated = selectedItem; // Fallback jika sudah berformat pre-baked
+  }
+
+  if (!generated) {
+    console.warn('[WanderWords] Pathfinding retry for next word:', selectedItem.answer);
+    if (wanderWordsPuzzleIndex < wanderWordsShuffledPool.length) {
+      return startWanderWordsGame();
+    }
+  }
+
+  wanderWordsCurrentPuzzle = generated;
+  wanderWordsIsGameOver = false;
+  wanderWordsIsRevealing = false;
+  wanderWordsHintActive = false;
+
+  renderWanderWordsUI();
+}
+
+// Render antarmuka Wander Words
+function renderWanderWordsUI() {
+  const container = document.getElementById('wanderWordsContainer');
+  if (!container || currentGameMode !== 'wanderwords') return;
+
+  const puzzle = wanderWordsCurrentPuzzle;
+  if (!puzzle) return;
+
+  // 1. Update Clue & Stats
+  const clueEl = document.getElementById('wanderwordsClueText');
+  if (clueEl) clueEl.textContent = puzzle.clue || 'PETUNJUK';
+
+  const roundNumEl = document.getElementById('wanderwordsRoundNum');
+  if (roundNumEl) roundNumEl.textContent = `Ronde ${wanderWordsRound}`;
+
+  const ptsBadge = document.getElementById('wanderwordsPtsBadge');
+  if (ptsBadge) ptsBadge.textContent = '+15 Poin';
+
+  // 2. Render Answer Word Slots (kata demi kata)
+  const answerWrap = document.getElementById('wanderwordsWordDisplay');
+  if (answerWrap) {
+    answerWrap.innerHTML = '';
+    const words = puzzle.answer.trim().split(/\s+/);
+    
+    words.forEach((w, wIdx) => {
+      const groupEl = document.createElement('div');
+      groupEl.className = 'wanderwords-word-group';
+
+      for (let i = 0; i < w.length; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'wanderwords-slot';
+        slot.setAttribute('data-word-idx', wIdx);
+        slot.setAttribute('data-letter-idx', i);
+
+        if (wanderWordsIsGameOver) {
+          slot.classList.add('revealed');
+          slot.textContent = w[i];
+        } else {
+          slot.textContent = '_';
+        }
+        groupEl.appendChild(slot);
+      }
+      answerWrap.appendChild(groupEl);
+    });
+  }
+
+  // 3. Render Board Grid
+  const gridEl = document.getElementById('wanderwordsGrid');
+  if (gridEl) {
+    gridEl.innerHTML = '';
+    gridEl.style.setProperty('--ww-cols', puzzle.cols || 4);
+
+    const startPos = puzzle.path && puzzle.path[0] ? puzzle.path[0] : null;
+
+    for (let r = 0; r < puzzle.rows; r++) {
+      for (let c = 0; c < puzzle.cols; c++) {
+        const letter = (puzzle.grid && puzzle.grid[r] && puzzle.grid[r][c]) ? puzzle.grid[r][c] : '';
+        const tile = document.createElement('div');
+        tile.className = 'wanderwords-tile';
+        tile.setAttribute('data-r', r);
+        tile.setAttribute('data-c', c);
+
+        if (!letter) {
+          tile.classList.add('empty');
+        } else {
+          tile.textContent = letter;
+
+          // Jika hint aktif, tandai huruf awal
+          if (wanderWordsHintActive && startPos && startPos[0] === r && startPos[1] === c && !wanderWordsIsGameOver) {
+            tile.classList.add('hint-start');
+          }
+
+          // Jika game over, warnai ubin
+          if (wanderWordsIsGameOver) {
+            tile.classList.add('solved-path');
+          }
+        }
+        gridEl.appendChild(tile);
+      }
+    }
+  }
+}
+
+// Memproses tebakan masuk dari chat untuk mode Wander Words
+function processWanderWordsGuess(guessWord, userData) {
+  if (currentGameMode !== 'wanderwords' || wanderWordsIsGameOver || wanderWordsIsRevealing) return;
+  if (!guessWord || !wanderWordsCurrentPuzzle) return;
+
+  const rawClean = guessWord.trim().toUpperCase().replace(/[^A-Z]/g, '');
+  const targetClean = wanderWordsCurrentPuzzle.cleanAnswer;
+
+  const userId = userData.userId || userData.uniqueId || 'host';
+  const userName = userData.nickname || userData.uniqueId || 'Pemain';
+  const isHost = (userId === 'host' || userId === 'host_offline' || (typeof userId === 'string' && userId.toLowerCase().includes('host')));
+  const now = Date.now();
+
+  // Cooldown 1 detik per user
+  if (!isHost) {
+    if (wanderWordsUserCooldown.has(userId) && (now - wanderWordsUserCooldown.get(userId) < 1000)) {
+      return;
+    }
+    wanderWordsUserCooldown.set(userId, now);
+  }
+
+  // Cek apakah tebakan cocok dengan jawaban utuh
+  const isCorrect = (rawClean === targetClean);
+
+  if (!isCorrect) {
+    if (isHost) {
+      showToast(`"${guessWord}" belum tepat!`, 1800);
+      const board = document.getElementById('wanderwordsBoardArea');
+      if (board) {
+        board.classList.add('animating-shake');
+        setTimeout(() => board.classList.remove('animating-shake'), 450);
+      }
+    }
+    return;
+  }
+
+  // ── JAWABAN BENAR! ──
+  handleWanderWordsWin(userData);
+}
+
+// Penanganan kemenangan Wander Words
+function handleWanderWordsWin(userData) {
+  if (wanderWordsIsGameOver || wanderWordsIsRevealing) return;
+  wanderWordsIsGameOver = true;
+  wanderWordsIsRevealing = true;
+
+  const puzzle = wanderWordsCurrentPuzzle;
+  const userName = userData.nickname || userData.uniqueId || 'Pemain';
+  const ptsAwarded = 15;
+
+  if (typeof addPoints === 'function' && userData) {
+    addPoints(userData, ptsAwarded);
+    recordWin(userData.uniqueId || userData.nickname);
+  }
+  showFloatingPoints(ptsAwarded, 'wanderWordsContainer');
+
+  showToast(`🎉 ${userName} MENEBAK BENAR: "${puzzle.answer}"! (+${ptsAwarded} Poin)`, 4000);
+
+  // 1. Animasi reveal ubin berurutan mengikuti snake path (tempo 280ms agar terbaca jelas oleh penonton live)
+  const STEP_INTERVAL = 280;
+  const path = puzzle.path || [];
+  const gridEl = document.getElementById('wanderwordsGrid');
+  const answerWrap = document.getElementById('wanderwordsWordDisplay');
+  const slots = answerWrap ? answerWrap.querySelectorAll('.wanderwords-slot') : [];
+  const cleanLetters = puzzle.cleanAnswer;
+
+  path.forEach((pos, idx) => {
+    setTimeout(() => {
+      // Reveal ubin pada grid dengan nomor urut langkah
+      if (gridEl) {
+        const tile = gridEl.querySelector(`.wanderwords-tile[data-r="${pos[0]}"][data-c="${pos[1]}"]`);
+        if (tile) {
+          tile.classList.remove('hint-start');
+          tile.setAttribute('data-step', idx + 1);
+          tile.classList.add('solved-path');
+        }
+      }
+
+      // Isi slot huruf di atas secara sinkron satu per satu seiring terhubungnya jalur
+      if (slots && slots[idx]) {
+        slots[idx].classList.add('revealed');
+        slots[idx].textContent = cleanLetters[idx] || '';
+      }
+
+      // Audio flip per langkah
+      if (window.sounds && typeof window.sounds.playFlip === 'function') {
+        window.sounds.playFlip(idx % 5);
+      }
+    }, idx * STEP_INTERVAL);
+  });
+
+  const totalPathDelay = path.length * STEP_INTERVAL + 300;
+
+  // 2. Setelah seluruh jejak huruf tersambung: bunyikan win audio dan konfeti
+  setTimeout(() => {
+    if (window.sounds && typeof window.sounds.playWin === 'function') {
+      window.sounds.playWin();
+    }
+    if (typeof triggerConfetti === 'function') {
+      triggerConfetti();
+    }
+
+    // 3. Tampilkan Aesthetic Win Overlay setelah pemain puas melihat papan tersambung
+    wanderWordsTransitionTimer = setTimeout(() => {
+      const winAvatar = document.getElementById('winAvatar');
+      if (winAvatar) {
+        winAvatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
+        winAvatar.src = (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : 'assets/bg_nature.png';
+      }
+
+      const winTitle = document.getElementById('winTitleText');
+      if (winTitle) winTitle.textContent = 'WANDER WORDS SOLVED!';
+
+      const winName = document.getElementById('winName');
+      if (winName) winName.textContent = userName;
+
+      const winPts = document.getElementById('winPts');
+      if (winPts) winPts.innerHTML = `🪙 +${ptsAwarded} Poin`;
+
+      const winSubtitle = document.getElementById('winSubtitleText');
+      if (winSubtitle) winSubtitle.textContent = `KATEGORI: ${puzzle.clue || 'Wander Words'}`;
+
+      const winWordEl = document.getElementById('winWord');
+      if (winWordEl) {
+        winWordEl.innerHTML = '';
+        winWordEl.textContent = puzzle.answer;
+        winWordEl.style.display = 'block';
+        if (puzzle.answer.length > 10) {
+          winWordEl.style.fontSize = 'clamp(20px, 5.5vw, 26px)';
+          winWordEl.style.letterSpacing = '2px';
+        } else {
+          winWordEl.style.fontSize = '32px';
+          winWordEl.style.letterSpacing = '3px';
+        }
+      }
+
+      wanderWordsIsRevealing = false;
+      // Trigger overlay (durasi 5 detik atau menunggu tap-to-like jika diaktifkan)
+      if (typeof window.triggerWinTransition === 'function') {
+        window.triggerWinTransition(5000, false);
+      } else if (typeof triggerWinTransition === 'function') {
+        triggerWinTransition(5000, false);
+      }
+    }, 1200);
+
+  }, totalPathDelay);
+}
+
+// Bantuan Hint untuk Host: Sorot huruf pertama jalur
+function wanderWordsGiveHint() {
+  if (currentGameMode !== 'wanderwords' || wanderWordsIsGameOver || wanderWordsIsRevealing) return;
+  wanderWordsHintActive = !wanderWordsHintActive;
+  renderWanderWordsUI();
+  if (wanderWordsHintActive) {
+    showToast('💡 Huruf pertama telah disorot (START)!', 2500);
+  } else {
+    showToast('💡 Petunjuk disembunyikan.', 1500);
+  }
+}
+
+// Lewati Puzzle (Skip) untuk Host
+function skipWanderWordsPuzzle() {
+  if (currentGameMode !== 'wanderwords' || wanderWordsIsRevealing) return;
+  showToast(`⏭️ Puzzle dilewati. Jawaban: ${wanderWordsCurrentPuzzle.answer}`, 3000);
+  wanderWordsRound++;
+  startWanderWordsGame();
+}
+
+window.wanderWordsGiveHint = wanderWordsGiveHint;
+window.skipWanderWordsPuzzle = skipWanderWordsPuzzle;
+

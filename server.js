@@ -57,6 +57,7 @@ let gameSettings = {
   showHints: true,
   displayRows: 6,
   boardScale: 100,
+  wanderWordsCustomList: [],
 };
 
 // Persistent storage paths for settings

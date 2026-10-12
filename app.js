@@ -2537,7 +2537,7 @@ function initBoard() {
     row.className = 'board-row';
     row.id = `row-empty-${i}`;
     
-    // Guesser Column for the row with order badge (#1, #2, dst)
+    // Guesser Column for the row
     const guesserCol = document.createElement('div');
     guesserCol.className = 'guesser-col';
     guesserCol.id = `guesser-col-empty-${i}`;
@@ -2550,16 +2550,11 @@ function initBoard() {
     avatar.id = `avatar-empty-${i}`;
     avatarWrap.appendChild(avatar);
 
-    const orderBadge = document.createElement('span');
-    orderBadge.className = 'guesser-order-badge';
-    orderBadge.textContent = `#${i + 1}`;
-    avatarWrap.appendChild(orderBadge);
-
     guesserCol.appendChild(avatarWrap);
 
     const nameLabel = document.createElement('span');
     nameLabel.className = 'guesser-name-label';
-    nameLabel.textContent = `—`;
+    nameLabel.textContent = '';
     guesserCol.appendChild(nameLabel);
 
     row.appendChild(guesserCol);
@@ -7392,11 +7387,6 @@ function processGuess(guessWord, userData, queueLen = 0) {
   avatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
   avatar.src = (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : 'assets/bg_nature.png';
   avatarWrap.appendChild(avatar);
-
-  const orderBadge = document.createElement('span');
-  orderBadge.className = 'guesser-order-badge active';
-  orderBadge.textContent = `#${currentRow + 1}`;
-  avatarWrap.appendChild(orderBadge);
 
   guesserCol.appendChild(avatarWrap);
 

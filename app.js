@@ -6452,7 +6452,9 @@ function handleChatGuess(data) {
   } else if (currentGameMode === 'cascadle') {
     isAllowedLength = (msg.length === cascadleCurrentLevel);
   } else if (currentGameMode === 'wanderwords') {
-    isAllowedLength = (msg.length >= 2);
+    const targetClean = (wanderWordsCurrentPuzzle && wanderWordsCurrentPuzzle.cleanAnswer) ? wanderWordsCurrentPuzzle.cleanAnswer : '';
+    // Hanya proses tebakan jika panjang huruf sama dengan target kata atau jawaban persis (abaikan obrolan santai penonton)
+    isAllowedLength = Boolean(targetClean ? (msg.length === targetClean.length || msg === targetClean) : (msg.length >= 4));
   }
 
   if (isAllowedLength) {
@@ -6494,6 +6496,12 @@ function handleChatGuess(data) {
       return;
     }
 
+    // Untuk Wander Words: proses instan langsung real-time tanpa antrean buatan
+    if (currentGameMode === 'wanderwords') {
+      processWanderWordsGuess(msg, data);
+      return;
+    }
+
     // Deduplikasi dan pra-validasi cerdas untuk Betweenle agar antrean tidak tersumbat
     if (currentGameMode === 'betweenle') {
       if (!isHost) {
@@ -6525,7 +6533,7 @@ function handleChatGuess(data) {
         // Jika kata sudah pernah dievaluasi di ronde ini & antrean sedang ramai, skip agar stream responsif
         if (squarewordGuesses && squarewordGuesses.includes(msg) && guessQueue.length >= 2) return;
       }
-    } else if (currentGameMode !== 'cascadle' && currentGameMode !== 'wanderwords') {
+    } else if (currentGameMode !== 'cascadle') {
       const dedupKey = `${userId}:${msg}`;
       if (userGuessDedup.has(dedupKey)) return; // skip duplikat
       userGuessDedup.add(dedupKey);
@@ -6564,7 +6572,7 @@ async function processQueue() {
   isProcessing = false;
   if (guessQueue.length > 0 && !isCurrentOver) {
     let nextDelay = 10;
-    if (isGameAnimationsEnabled && currentGameMode !== 'squareword') {
+    if (isGameAnimationsEnabled && currentGameMode !== 'squareword' && currentGameMode !== 'wanderwords') {
       if (guessQueue.length <= 1) {
         nextDelay = 280; // Jeda estetik jika antrean santai agar flip berurutan rapi
       } else if (guessQueue.length <= 3) {
@@ -6572,6 +6580,8 @@ async function processQueue() {
       } else {
         nextDelay = 10;  // Jeda instan jika antrean banjir
       }
+    } else {
+      nextDelay = 5;
     }
     setTimeout(processQueue, nextDelay);
   }

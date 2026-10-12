@@ -2537,11 +2537,32 @@ function initBoard() {
     row.className = 'board-row';
     row.id = `row-empty-${i}`;
     
-    // Avatar for the row
+    // Guesser Column for the row with order badge (#1, #2, dst)
+    const guesserCol = document.createElement('div');
+    guesserCol.className = 'guesser-col';
+    guesserCol.id = `guesser-col-empty-${i}`;
+
+    const avatarWrap = document.createElement('div');
+    avatarWrap.className = 'guesser-avatar-wrap';
+
     const avatar = document.createElement('img');
     avatar.className = 'guesser-avatar';
     avatar.id = `avatar-empty-${i}`;
-    row.appendChild(avatar);
+    avatarWrap.appendChild(avatar);
+
+    const orderBadge = document.createElement('span');
+    orderBadge.className = 'guesser-order-badge';
+    orderBadge.textContent = `#${i + 1}`;
+    avatarWrap.appendChild(orderBadge);
+
+    guesserCol.appendChild(avatarWrap);
+
+    const nameLabel = document.createElement('span');
+    nameLabel.className = 'guesser-name-label';
+    nameLabel.textContent = `—`;
+    guesserCol.appendChild(nameLabel);
+
+    row.appendChild(guesserCol);
 
     for (let j = 0; j < WORD_LENGTH; j++) {
       const tile = document.createElement('div');
@@ -5378,7 +5399,7 @@ function autoReconnect() {
     const savedIp = localStorage.getItem('wordle_indofinity_ip');
     const savedMode = sessionStorage.getItem('wordle_gameMode');
     
-    const activeMode = savedMode || currentGameMode || urlInitialMode;
+    const activeMode = urlInitialMode || savedMode || currentGameMode;
     const activeBackend = urlBackend || savedBackend || (isObsMode ? 'indofinity' : null);
     const activeUser = urlUsername || savedUser;
 
@@ -6425,7 +6446,11 @@ function handleAutoGuessOnJoin(memberData) {
 }
 
 // Handle Guesses from Chat
-function handleChatGuess(data) {
+function handleChatGuess(data, optionalUserData) {
+  if (typeof data === 'string') {
+    data = Object.assign({ comment: data }, optionalUserData || {});
+  }
+  if (!data || !data.comment) return;
   const rawMsg = data.comment.trim().toLowerCase();
   
   // Rank Command (selalu aktif kapan pun)
@@ -6533,6 +6558,29 @@ function handleChatGuess(data) {
         // Jika kata sudah pernah dievaluasi di ronde ini & antrean sedang ramai, skip agar stream responsif
         if (squarewordGuesses && squarewordGuesses.includes(msg) && guessQueue.length >= 2) return;
       }
+    } else if (currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit') {
+      if (!isHost) {
+        if (msg.length !== WORD_LENGTH) return;
+
+        const dedupKey = `${userId}:${msg}`;
+        if (userGuessDedup.has(dedupKey)) return; // skip duplikat user
+        userGuessDedup.add(dedupKey);
+
+        if (currentGameMode === 'colorfit') {
+          if (!/^[RGBYPO]+$/.test(msg)) return;
+        } else {
+          // Pra-validasi kamus: buang obrolan live chat penonton yang bukan kata baku 5 huruf
+          const isValid = (VALID_WORDS_SET && VALID_WORDS_SET.size > 0 && VALID_WORDS_SET.has(msg)) ||
+                          (VALID_WORDS && VALID_WORDS.includes(msg)) ||
+                          (allValidWordsSets && allValidWordsSets[WORD_LENGTH] && allValidWordsSets[WORD_LENGTH].has(msg)) ||
+                          (allValidWords && allValidWords[WORD_LENGTH] && allValidWords[WORD_LENGTH].includes(msg)) ||
+                          (typeof fullValidDictionary !== 'undefined' && fullValidDictionary && fullValidDictionary.has(msg));
+          if (!isValid) return; // Drop chat obrolan penonton agar antrean Wordle 0ms instan & tidak lag!
+
+          // Abaikan jika kata sudah ditebak di ronde ini
+          if (guesses && guesses.includes(msg)) return;
+        }
+      }
     } else if (currentGameMode !== 'cascadle') {
       const dedupKey = `${userId}:${msg}`;
       if (userGuessDedup.has(dedupKey)) return; // skip duplikat
@@ -6574,11 +6622,11 @@ async function processQueue() {
     let nextDelay = 10;
     if (isGameAnimationsEnabled && currentGameMode !== 'squareword' && currentGameMode !== 'wanderwords') {
       if (guessQueue.length <= 1) {
-        nextDelay = 280; // Jeda estetik jika antrean santai agar flip berurutan rapi
+        nextDelay = 50; // Responsif & real-time (turun dari 280ms)
       } else if (guessQueue.length <= 3) {
-        nextDelay = 100; // Jeda cepat jika antrean sedang
+        nextDelay = 20; // Cepat (turun dari 100ms)
       } else {
-        nextDelay = 10;  // Jeda instan jika antrean banjir
+        nextDelay = 5;  // Instan saat ramai
       }
     } else {
       nextDelay = 5;
@@ -7237,7 +7285,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
     }
 
     const now = Date.now();
-    if (now - lastInvalidTime < 6000) {
+    if (now - lastInvalidTime < 1200) {
       return false; // Skip to prevent flooding & flickering
     }
     lastInvalidTime = now;
@@ -7331,13 +7379,35 @@ function processGuess(guessWord, userData, queueLen = 0) {
     })(tooltip);
   }
   
+  const guesserCol = document.createElement('div');
+  guesserCol.className = 'guesser-col';
+  guesserCol.id = `guesser-col-${currentRow}`;
+
+  const avatarWrap = document.createElement('div');
+  avatarWrap.className = 'guesser-avatar-wrap';
+
   const avatar = document.createElement('img');
-  avatar.className = 'guesser-avatar' + (isGameAnimationsEnabled ? ' spring-in' : '');
+  avatar.className = 'guesser-avatar show' + (isGameAnimationsEnabled ? ' spring-in' : '');
   avatar.id = `avatar-${currentRow}`;
   avatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
   avatar.src = (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : 'assets/bg_nature.png';
-  avatar.classList.add('show');
-  row.appendChild(avatar);
+  avatarWrap.appendChild(avatar);
+
+  const orderBadge = document.createElement('span');
+  orderBadge.className = 'guesser-order-badge active';
+  orderBadge.textContent = `#${currentRow + 1}`;
+  avatarWrap.appendChild(orderBadge);
+
+  guesserCol.appendChild(avatarWrap);
+
+  const nameLabel = document.createElement('span');
+  nameLabel.className = 'guesser-name-label active';
+  const rawName = (userData && (userData.nickname || userData.uniqueId)) ? (userData.nickname || userData.uniqueId) : 'Host';
+  nameLabel.textContent = rawName;
+  nameLabel.title = rawName;
+  guesserCol.appendChild(nameLabel);
+
+  row.appendChild(guesserCol);
 
   const tiles = [];
   for (let j = 0; j < WORD_LENGTH; j++) {
@@ -7443,8 +7513,8 @@ function processGuess(guessWord, userData, queueLen = 0) {
           // Antrean banjir: langsung tampilkan warna instan tanpa flip agar papan tidak pusing
           tiles[i].classList.add(statuses[i]);
         } else {
-          // Antrean santai atau sedang: animasi flip adaptif
-          const stepDelay = queueLen > 1 ? 40 : 100; // 40ms jika antrean sedang, 100ms jika santai
+          // Antrean santai atau sedang: animasi flip adaptif super snappy
+          const stepDelay = queueLen > 1 ? 25 : 45; // 45ms jika santai, 25ms jika ramai
           tiles[i].classList.add('flip-3d');
           tiles[i].style.animationDelay = `${i * stepDelay}ms`;
 
@@ -7461,7 +7531,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
             if (statuses[i] === 'correct' && queueLen <= 2 && window.sounds && typeof window.sounds.playGreenChime === 'function') {
               window.sounds.playGreenChime();
             }
-          }, (i * stepDelay) + 180);
+          }, (i * stepDelay) + 120);
         }
       } else {
         tiles[i].classList.add(statuses[i]);
@@ -7560,9 +7630,32 @@ function processGuess(guessWord, userData, queueLen = 0) {
           board.appendChild(row);
        }
     } else {
-       board.insertBefore(row, board.firstChild);
-       const displayRows = getDisplayRows();
-       if (board.children.length > displayRows) board.removeChild(board.lastChild);
+       // WORDLE (dan mode grid berurutan kronologis):
+       if (isValidWord) {
+          const emptyRow = document.getElementById(`row-empty-${currentRow}`);
+          if (emptyRow) {
+             board.replaceChild(row, emptyRow);
+          } else {
+             // Jika baris kosong sudah terisi penuh (> displayRows), geser feed secara kronologis:
+             // hapus tebakan tertua paling atas, tambah tebakan terbaru di paling bawah
+             if (board.children.length >= getDisplayRows() && board.firstElementChild) {
+                board.removeChild(board.firstElementChild);
+             }
+             board.appendChild(row);
+          }
+       } else {
+          // Tebakan tidak valid (kata tidak ada di kamus / hard mode conflict):
+          // Goyangkan baris kosong aktif saat ini tanpa merusak urutan tata letak papan!
+          const targetEmptyRow = document.getElementById(`row-empty-${currentRow}`);
+          if (targetEmptyRow) {
+             targetEmptyRow.classList.remove('elastic-shake', 'shake');
+             void targetEmptyRow.offsetWidth;
+             targetEmptyRow.classList.add('elastic-shake');
+             setTimeout(() => {
+                targetEmptyRow.classList.remove('elastic-shake', 'shake');
+             }, 800);
+          }
+       }
     }
     
     if (isValidWord) {

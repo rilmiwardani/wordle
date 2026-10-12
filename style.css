@@ -1882,9 +1882,40 @@ header {
   border-radius: 6px;
 }
 
-/* Avatar Guesser */
+/* Avatar Guesser Column, Order Badge & Name Label */
+.guesser-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  gap: 2px;
+}
+
+.guesser-avatar-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 42px;
+  aspect-ratio: 1/1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px dashed rgba(255,255,255,0.18);
+  background: rgba(0,0,0,0.15);
+}
+
+.guesser-avatar-wrap:has(.guesser-avatar.show) {
+  border: none;
+  background: transparent;
+}
+
 .guesser-avatar {
   width: 100%;
+  height: 100%;
   aspect-ratio: 1/1;
   border-radius: 50% !important;
   border: 2px solid rgba(255,255,255,0.45);
@@ -1898,6 +1929,54 @@ header {
 .guesser-avatar.show {
   opacity: 1;
   transform: scale(1);
+}
+
+.guesser-order-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  background: rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 8.5px;
+  font-weight: 900;
+  font-family: 'Outfit', sans-serif;
+  padding: 1px 4.5px;
+  border-radius: 999px;
+  line-height: 1;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  z-index: 2;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.guesser-order-badge.active {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #000000;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.6);
+}
+
+.guesser-name-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.1;
+  letter-spacing: 0.2px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  transition: all 0.3s ease;
+}
+
+.guesser-name-label.active {
+  color: #fde047;
+  font-weight: 800;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 8px rgba(253, 224, 71, 0.35);
 }
 
 .tile {
@@ -7860,9 +7939,37 @@ body.theme-sepia .w500-count.empty-clue {
   color: #544132 !important;
 }
 
+body.theme-sepia .guesser-avatar-wrap {
+  border-color: rgba(160, 138, 114, 0.45) !important;
+  background: rgba(160, 138, 114, 0.12) !important;
+}
+
 body.theme-sepia .guesser-avatar {
   border-color: #a08a72 !important;
   box-shadow: 0 2px 6px rgba(70, 50, 30, 0.14) !important;
+}
+
+body.theme-sepia .guesser-order-badge {
+  background: rgba(160, 138, 114, 0.25) !important;
+  color: #544132 !important;
+  border-color: #a08a72 !important;
+}
+
+body.theme-sepia .guesser-order-badge.active {
+  background: #b87b28 !important;
+  color: #ffffff !important;
+  border-color: #8c4a17 !important;
+}
+
+body.theme-sepia .guesser-name-label {
+  color: #786450 !important;
+  text-shadow: none !important;
+}
+
+body.theme-sepia .guesser-name-label.active {
+  color: #8c4a17 !important;
+  font-weight: 800 !important;
+  text-shadow: none !important;
 }
 
 body.theme-sepia .tile.invalid {

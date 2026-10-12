@@ -2693,7 +2693,6 @@ function startInstructionRotation() {
   if (instructionTimer) clearInterval(instructionTimer);
   
   const updateText = () => {
-    if (isShowingRankMsg) return; // Don't override rank msg
     const res = getInstructionText();
     const instEl = document.querySelector('.instruction');
     if (instEl) {
@@ -2724,109 +2723,127 @@ function startInstructionRotation() {
   instructionTimer = setInterval(updateText, 5000); // Switch every 5s
 }
 
-function processRankQueue() {
-  if (isShowingRankMsg || rankMessageQueue.length === 0) return;
-  isShowingRankMsg = true;
-  
-  const rankData = rankMessageQueue.shift();
-  const instEl = document.querySelector('.instruction');
-  if (instEl) {
-    instEl.classList.remove('fade-in');
-    instEl.classList.add('fade-out');
-    setTimeout(() => {
-      instEl.innerHTML = `
-        <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
-          <img src="${rankData.avatar}" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.3);" onerror="this.src='assets/bg_nature.png'">
-          <span>${rankData.msg}</span>
-        </div>
-      `;
-      instEl.style.color = 'var(--warning)';
-      void instEl.offsetWidth;
-      instEl.classList.remove('fade-out');
-      instEl.classList.add('fade-in');
-    }, 300);
+// ── SISTEM NOTIFIKASI TOAST !myrank (TANPA WEEKLY & DI BAWAH DENGAN TOAST) ──
+function showRankToast(data) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+
+  // Anti-flooding: maksimal 3 toast di layar
+  const activeToasts = container.querySelectorAll('.toast');
+  if (activeToasts.length >= 3) {
+    activeToasts[0].remove();
   }
-  
+
+  const toast = document.createElement('div');
+  toast.className = 'toast toast-rank';
+
+  let rankBadgeHtml = '';
+  let borderHighlight = 'rgba(56, 189, 248, 0.45)';
+  if (data.sessionRank === 1) {
+    rankBadgeHtml = `<span class="toast-rank-badge rank-1"><i class="fa-solid fa-crown"></i> Rank #1</span>`;
+    borderHighlight = 'rgba(245, 158, 11, 0.65)';
+  } else if (data.sessionRank === 2) {
+    rankBadgeHtml = `<span class="toast-rank-badge rank-2"><i class="fa-solid fa-medal"></i> Rank #2</span>`;
+    borderHighlight = 'rgba(203, 213, 225, 0.6)';
+  } else if (data.sessionRank === 3) {
+    rankBadgeHtml = `<span class="toast-rank-badge rank-3"><i class="fa-solid fa-medal"></i> Rank #3</span>`;
+    borderHighlight = 'rgba(217, 119, 6, 0.6)';
+  } else if (data.sessionRank !== '-') {
+    rankBadgeHtml = `<span class="toast-rank-badge rank-n">Rank #${data.sessionRank}</span>`;
+    borderHighlight = 'rgba(56, 189, 248, 0.45)';
+  } else {
+    rankBadgeHtml = `<span class="toast-rank-badge rank-none">Belum Masuk Rank</span>`;
+    borderHighlight = 'rgba(148, 163, 184, 0.35)';
+  }
+
+  toast.style.borderColor = borderHighlight;
+  toast.innerHTML = `
+    <div class="toast-rank-left">
+      <img src="${data.avatar}" class="toast-rank-avatar" onerror="this.onerror=null;this.src='assets/bg_nature.png'">
+      <div class="toast-rank-info">
+        <span class="toast-rank-name">${escapeHTML(data.nick)}</span>
+        <div class="toast-rank-details">
+          ${rankBadgeHtml}
+          <span class="toast-rank-pts"><i class="fa-solid fa-coins" style="color: #fbbf24;"></i> ${data.sessionPts} Pts</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  container.appendChild(toast);
+
+  if (window.sounds && typeof window.sounds.playFlip === 'function') {
+    window.sounds.playFlip(1);
+  }
+
+  requestAnimationFrame(() => {
+    toast.classList.add('show');
+  });
+
   setTimeout(() => {
-    isShowingRankMsg = false;
-    if (rankMessageQueue.length > 0) {
-      processRankQueue();
-    } else {
-      // Revert to normal rotation with smooth fade
-      const res = getInstructionText((currentInstructionIndex - 1 + 4) % 4);
-      if (instEl) {
-        instEl.classList.remove('fade-in');
-        instEl.classList.add('fade-out');
-        setTimeout(() => {
-          instEl.innerHTML = res.text || res;
-          instEl.style.color = 'var(--text-muted)';
-          void instEl.offsetWidth;
-          instEl.classList.remove('fade-out');
-          instEl.classList.add('fade-in');
-        }, 300);
-      }
-    }
-  }, 5000); // Show for 5s
+    toast.classList.remove('show');
+    toast.classList.add('hide');
+    setTimeout(() => {
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 360);
+  }, 4500);
 }
 
 function handleMyRank(userData) {
-  const userId = userData.uniqueId; // used for cooldown
-  const username = userData.nickname; // used for points and storage
+  if (!userData) return;
+  const userId = userData.uniqueId || userData.userId || 'unknown';
+  const username = userData.nickname || userData.uniqueId || 'Pemain';
   const now = Date.now();
-  if (rankCooldowns[userId] && now - rankCooldowns[userId] < 15000) {
-    return; // 15s cooldown per user
+  if (rankCooldowns[userId] && now - rankCooldowns[userId] < 8000) {
+    return; // 8s cooldown per user
   }
   rankCooldowns[userId] = now;
 
+  // Hitung poin & rank sesi hari ini (Session Pts saja, tanpa weekly)
   const sessionObj = playerPoints[username];
-  const sessionPts = sessionObj ? sessionObj.sessionPts : 0;
+  const sessionPts = sessionObj ? (sessionObj.sessionPts || 0) : 0;
   let sessionRank = "-";
-  
-  const sorted = Object.entries(playerPoints).sort((a, b) => b[1].sessionPts - a[1].sessionPts);
+
+  const sorted = Object.entries(playerPoints)
+    .filter(([_, data]) => (data.sessionPts || 0) > 0)
+    .sort((a, b) => b[1].sessionPts - a[1].sessionPts);
+
   const index = sorted.findIndex(p => p[0] === username);
   if (index !== -1 && sessionPts > 0) {
-    sessionRank = `#${index + 1}`;
+    sessionRank = index + 1;
   }
 
-  const prefix = getPtsPrefix();
-  const dailyPrefix = prefix + 'daily_';
-  const weeklyPts = parseInt(localStorage.getItem(prefix + username)) || 0;
-  
-  // Hitung rank mingguan
-  const weeklyData = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && key.startsWith(prefix)) {
-      if (key.startsWith(dailyPrefix)) continue;
-      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wfit_') || key.startsWith('pts_colorfit_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_') || key.startsWith('pts_sqword_') || key.startsWith('pts_wladder_'))) continue;
-      if (key.startsWith(prefix + 'like_') || 
-          key.startsWith(prefix + 'share_') || 
-          key.startsWith(prefix + 'gift_') || 
-          key.startsWith(prefix + 'active_') || 
-          key.startsWith(prefix + 'avatar_')) continue;
-      const uName = key.substring(prefix.length);
-      const pts = parseInt(localStorage.getItem(key)) || 0;
-      weeklyData.push({ uName, pts });
-    }
+  let nick = username;
+  if (nick.length > 14) {
+    nick = nick.substring(0, 13) + '..';
   }
-  weeklyData.sort((a, b) => b.pts - a.pts);
-  const wIndex = weeklyData.findIndex(p => p.uName === username);
-  let weeklyRank = "-";
-  if (wIndex !== -1 && weeklyPts > 0) {
-    weeklyRank = `#${wIndex + 1}`;
+
+  const avatar = userData.profilePictureUrl || (sessionObj && sessionObj.avatar) || 'assets/bg_nature.png';
+
+  showRankToast({
+    nick: nick,
+    sessionPts: sessionPts,
+    sessionRank: sessionRank,
+    avatar: avatar
+  });
+}
+
+window.handleMyRank = handleMyRank;
+window.showRankToast = showRankToast;
+
+window.testMyRank = function(name = 'Budi Santoso', pts = 45) {
+  if (!playerPoints[name]) {
+    playerPoints[name] = { avatar: 'assets/bg_nature.png', sessionPts: pts };
+  } else {
+    playerPoints[name].sessionPts = pts;
   }
-  
-  // Truncate panjang nickname agar tidak terlalu panjang
-  let nick = userData.nickname;
-  if (nick.length > 10) {
-    nick = nick.substring(0, 9) + '..';
-  }
-  
-  const msg = `${nick} - Daily: ${sessionPts} Pts (Rank ${sessionRank}) | Weekly: ${weeklyPts} Pts (Rank ${weeklyRank})`;
-  const avatar = userData.profilePictureUrl || 'assets/bg_nature.png';
-  
-  rankMessageQueue.push({ msg, avatar });
-  processRankQueue();
+  handleMyRank({ uniqueId: 'test_' + name.toLowerCase().replace(/\s+/g, '_'), nickname: name, profilePictureUrl: 'assets/bg_nature.png' });
+};
+
+if (window.location && window.location.search && window.location.search.includes('testrank=1')) {
+  setTimeout(() => {
+    window.testMyRank('Budi Santoso', 45);
+  }, 1200);
 }
 
 // --- WORD GRID LOGIC ---
@@ -6408,16 +6425,16 @@ function handleAutoGuessOnJoin(memberData) {
 
 // Handle Guesses from Chat
 function handleChatGuess(data) {
-  const isCurrentOver = (currentGameMode === 'betweenle') ? betweenleIsGameOver : ((currentGameMode === 'cascadle') ? cascadleIsGameOver : ((currentGameMode === 'wanderwords') ? wanderWordsIsGameOver : isGameOver));
-  if (isCurrentOver) return;
-
   const rawMsg = data.comment.trim().toLowerCase();
   
-  // Rank Command
+  // Rank Command (selalu aktif kapan pun)
   if (rawMsg === '!myrank' || rawMsg === '!rank') {
     handleMyRank(data);
     return;
   }
+
+  const isCurrentOver = (currentGameMode === 'betweenle') ? betweenleIsGameOver : ((currentGameMode === 'cascadle') ? cascadleIsGameOver : ((currentGameMode === 'wanderwords') ? wanderWordsIsGameOver : isGameOver));
+  if (isCurrentOver) return;
 
   // Hapus semua karakter selain huruf A-Z untuk bypass filter TikTok
   const msg = data.comment.toUpperCase().replace(/[^A-Z]/g, '');

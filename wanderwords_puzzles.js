@@ -19,8 +19,8 @@ window.WANDERWORDS_DEFAULT_WORDS = [
   { clue: "FILM", answer: "SPIDERMAN" },
   { clue: "FILM", answer: "LASKAR PELANGI" },
   { clue: "FILM", answer: "PENGABDI SETAN" },
-  { clue: "FILM", answer: "KKN DESA PENARI" },
-  { clue: "FILM", answer: "KAPAL VAN DER WIJCK" },
+  { clue: "FILM", answer: "AGAK LAIN" },
+  { clue: "FILM", answer: "ALAS ROBAN" },
   { clue: "FILM", answer: "PETUALANGAN SHERINA" },
 
   // ── Serial TV ──

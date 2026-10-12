@@ -5797,6 +5797,7 @@ function initObsMode() {
   if (gContainer) gContainer.style.display = 'flex';
   
   if (typeof applyGameModeUI === 'function') applyGameModeUI();
+  if (typeof initBoard === 'function') initBoard();
 
   // Determine target backend, IP, and credentials for OBS auto-connect
   const targetBackend = urlBackend || localStorage.getItem('wordle_backend') || 'indofinity';
@@ -5816,18 +5817,25 @@ function initObsMode() {
   const langSelect = document.getElementById('languageSelect');
   if (langSelect && targetLang) langSelect.value = targetLang;
 
+  // Always load dictionary & start active round immediately so the board rows are always rendered
+  const hasWord = (currentGameMode === 'betweenle') ? !!betweenleSecretWord : ((currentGameMode === 'cascadle') ? !!(cascadleTargets && cascadleTargets[cascadleCurrentLevel]) : ((currentGameMode === 'wanderwords') ? !!wanderWordsCurrentPuzzle : !!currentWord));
+  if (!hasWord) {
+    if (typeof loadWordLists === 'function') {
+      loadWordLists(targetLang).then(() => {
+        if (typeof startNewRound === 'function') startNewRound();
+      }).catch(e => {
+        console.error('[OBS] Word load error:', e);
+        if (typeof startNewRound === 'function') startNewRound();
+      });
+    } else if (typeof startNewRound === 'function') {
+      startNewRound();
+    }
+  }
+
   // Auto connect if not yet connected
   if (!socket) {
     console.log(`[OBS] Auto-connecting overlay to backend: ${targetBackend} (IP: ${targetIp})...`);
     connectToLive();
-  } else {
-    // Initialize dictionary & round if not already loaded
-    const hasWord = (currentGameMode === 'betweenle') ? !!betweenleSecretWord : ((currentGameMode === 'cascadle') ? !!(cascadleTargets && cascadleTargets[cascadleCurrentLevel]) : !!currentWord);
-    if (!hasWord && typeof loadWordLists === 'function') {
-      loadWordLists(targetLang).then(() => {
-        if (typeof startNewRound === 'function') startNewRound();
-      }).catch(e => console.error('[OBS] Word load error:', e));
-    }
   }
 }
 

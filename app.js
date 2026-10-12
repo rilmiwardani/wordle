@@ -2639,9 +2639,9 @@ function getInstructionText() {
       return `Type a word that matches the row & column clues!`;
     }
     if (currentGameMode === 'wanderwords') {
-      if (lastLang === 'en') return `Connect letters horizontally & vertically (no diagonals) to find the answer!`;
-      if (lastLang === 'mixed') return `Jalur horizontal & vertikal (no diagonal)! / Guess the snake path!`;
-      return `Tebak kata mengikuti jalur huruf (horizontal & vertikal saja, tanpa diagonal)!`;
+      if (lastLang === 'en') return `Connect letters in path (no diagonals)!`;
+      if (lastLang === 'mixed') return `Ikuti jalur huruf! / Connect path (no diagonal)!`;
+      return `Tebak kata ikuti jalur huruf (tanpa diagonal)!`;
     }
     if (currentGameMode === 'cascadle') {
       if (lastLang === 'id') return `Tebak kata bertahap dari 3 sampai 7 huruf!`;
@@ -2676,9 +2676,9 @@ function getInstructionText() {
   
   // 4. Social / Engagement
   steps.push(() => {
-    if (lastLang === 'id') return `Jangan lupa tap-tap layar, follow & share live ini ya! ❤️`;
-    if (lastLang === 'mixed') return `Jangan lupa tap layar & follow! / Tap the screen & follow! ❤️`;
-    return `Don't forget to tap the screen, follow & share this live! ❤️`;
+    if (lastLang === 'id') return `Tap-tap layar & follow live ini ya! ❤️`;
+    if (lastLang === 'mixed') return `Tap layar & follow! / Tap & follow! ❤️`;
+    return `Tap the screen & follow this live! ❤️`;
   });
   
   const stepIdx = currentInstructionIndex % steps.length;
@@ -12386,32 +12386,13 @@ function renderWanderWordsUI() {
   if (globalRoundEl) globalRoundEl.textContent = wanderWordsRound;
   round = wanderWordsRound;
 
-  // 2. Render Answer Word Slots (kata demi kata)
-  const answerWrap = document.getElementById('wanderwordsWordDisplay');
-  if (answerWrap) {
-    answerWrap.innerHTML = '';
-    const words = puzzle.answer.trim().split(/\s+/);
-    
-    words.forEach((w, wIdx) => {
-      const groupEl = document.createElement('div');
-      groupEl.className = 'wanderwords-word-group';
-
-      for (let i = 0; i < w.length; i++) {
-        const slot = document.createElement('div');
-        slot.className = 'wanderwords-slot';
-        slot.setAttribute('data-word-idx', wIdx);
-        slot.setAttribute('data-letter-idx', i);
-
-        if (wanderWordsIsGameOver) {
-          slot.classList.add('revealed');
-          slot.textContent = w[i];
-        } else {
-          slot.textContent = '_';
-        }
-        groupEl.appendChild(slot);
-      }
-      answerWrap.appendChild(groupEl);
-    });
+  // 2. Update Word Length Badge (Opsi 1: Ringkas & tidak makan tempat)
+  const lengthTextEl = document.getElementById('wanderwordsLengthText');
+  if (lengthTextEl) {
+    const cleanLetters = puzzle.cleanAnswer || (puzzle.answer ? puzzle.answer.replace(/[^A-Za-z]/g, '') : '');
+    const words = puzzle.answer.trim().split(/\s+/).filter(Boolean);
+    const wordCountStr = words.length > 1 ? ` (${words.length} Kata)` : '';
+    lengthTextEl.textContent = `${cleanLetters.length} Huruf${wordCountStr}`;
   }
 
   // 3. Render Board Grid
@@ -12513,9 +12494,10 @@ function handleWanderWordsWin(userData) {
   const STEP_INTERVAL = 280;
   const path = puzzle.path || [];
   const gridEl = document.getElementById('wanderwordsGrid');
-  const answerWrap = document.getElementById('wanderwordsWordDisplay');
-  const slots = answerWrap ? answerWrap.querySelectorAll('.wanderwords-slot') : [];
-  const cleanLetters = puzzle.cleanAnswer;
+  const lengthTextEl = document.getElementById('wanderwordsLengthText');
+  if (lengthTextEl) {
+    lengthTextEl.innerHTML = `<i class="fa-solid fa-check"></i> ${puzzle.answer}`;
+  }
 
   path.forEach((pos, idx) => {
     setTimeout(() => {
@@ -12527,12 +12509,6 @@ function handleWanderWordsWin(userData) {
           tile.setAttribute('data-step', idx + 1);
           tile.classList.add('solved-path');
         }
-      }
-
-      // Isi slot huruf di atas secara sinkron satu per satu seiring terhubungnya jalur
-      if (slots && slots[idx]) {
-        slots[idx].classList.add('revealed');
-        slots[idx].textContent = cleanLetters[idx] || '';
       }
 
       // Audio flip per langkah

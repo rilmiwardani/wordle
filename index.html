@@ -1391,17 +1391,18 @@
 
       <!-- Wander Words Container -->
       <div id="wanderWordsContainer" class="wanderwords-container" style="display: none;">
-        <!-- Top Clue Card -->
+        <!-- Top Clue & Word Length Card -->
         <div class="wanderwords-header">
           <div class="wanderwords-clue-card">
-            <span class="wanderwords-clue-label"><i class="fa-solid fa-lightbulb"></i> KATEGORI</span>
-            <span class="wanderwords-clue-text" id="wanderwordsClueText">PETUNJUK</span>
+            <div class="wanderwords-clue-main">
+              <span class="wanderwords-clue-label"><i class="fa-solid fa-lightbulb"></i> KATEGORI</span>
+              <span class="wanderwords-clue-text" id="wanderwordsClueText">PETUNJUK</span>
+            </div>
+            <div class="wanderwords-length-pill" id="wanderwordsLengthBadge">
+              <i class="fa-solid fa-align-left" style="font-size: 10px; opacity: 0.85;"></i>
+              <span id="wanderwordsLengthText">8 Huruf</span>
+            </div>
           </div>
-        </div>
-
-        <!-- Word Slots / Answer Progress Indicator -->
-        <div class="wanderwords-word-display" id="wanderwordsWordDisplay">
-          <!-- Dynamically populated letter slot chips -->
         </div>
 
         <!-- The Wandering Grid Area -->

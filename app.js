@@ -2096,6 +2096,9 @@ function applyGameModeUI() {
   }
   updateBoardScaleUI();
   updateNoRepeatBadgeUI();
+  if (typeof startInstructionRotation === 'function') {
+    startInstructionRotation();
+  }
 }
 
 function updateBestGuessUI() {
@@ -2636,9 +2639,9 @@ function getInstructionText() {
       return `Type a word that matches the row & column clues!`;
     }
     if (currentGameMode === 'wanderwords') {
-      if (lastLang === 'id') return `Tebak kata mengikuti jalur huruf (horizontal & vertikal saja, tanpa diagonal)!`;
-      if (lastLang === 'mixed') return `Jalur horizontal & vertikal (no diagonal)! / Type answer matching snake path!`;
-      return `Connect letters horizontally & vertically (no diagonals) to find the answer!`;
+      if (lastLang === 'en') return `Connect letters horizontally & vertically (no diagonals) to find the answer!`;
+      if (lastLang === 'mixed') return `Jalur horizontal & vertikal (no diagonal)! / Guess the snake path!`;
+      return `Tebak kata mengikuti jalur huruf (horizontal & vertikal saja, tanpa diagonal)!`;
     }
     if (currentGameMode === 'cascadle') {
       if (lastLang === 'id') return `Tebak kata bertahap dari 3 sampai 7 huruf!`;
@@ -4906,6 +4909,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize visual theme UI
   syncVisualThemeUI(currentVisualTheme);
+
+  // Start instruction rotation immediately so instruction bar rotates in all modes
+  if (typeof startInstructionRotation === 'function') {
+    startInstructionRotation();
+  }
 });
 
 // ═══════════════════════════════════════════════════════
@@ -12369,15 +12377,14 @@ function renderWanderWordsUI() {
   const puzzle = wanderWordsCurrentPuzzle;
   if (!puzzle) return;
 
-  // 1. Update Clue & Stats
+  // 1. Update Clue & Global Header Round Badge
   const clueEl = document.getElementById('wanderwordsClueText');
-  if (clueEl) clueEl.textContent = puzzle.clue || 'PETUNJUK';
+  if (clueEl) clueEl.textContent = puzzle.clue || 'KATEGORI';
 
-  const roundNumEl = document.getElementById('wanderwordsRoundNum');
-  if (roundNumEl) roundNumEl.textContent = `Ronde ${wanderWordsRound}`;
-
-  const ptsBadge = document.getElementById('wanderwordsPtsBadge');
-  if (ptsBadge) ptsBadge.textContent = '+15 Poin';
+  // Sync to global header round badge under game title
+  const globalRoundEl = document.getElementById('roundNumber');
+  if (globalRoundEl) globalRoundEl.textContent = wanderWordsRound;
+  round = wanderWordsRound;
 
   // 2. Render Answer Word Slots (kata demi kata)
   const answerWrap = document.getElementById('wanderwordsWordDisplay');
@@ -12609,6 +12616,9 @@ function skipWanderWordsPuzzle() {
   if (currentGameMode !== 'wanderwords' || wanderWordsIsRevealing) return;
   showToast(`⏭️ Puzzle dilewati. Jawaban: ${wanderWordsCurrentPuzzle.answer}`, 3000);
   wanderWordsRound++;
+  round = wanderWordsRound;
+  const globalRoundEl = document.getElementById('roundNumber');
+  if (globalRoundEl) globalRoundEl.textContent = wanderWordsRound;
   startWanderWordsGame();
 }
 

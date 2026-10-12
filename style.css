@@ -6354,14 +6354,14 @@ body.low-power-mode .cascadle-tile {
   flex-direction: column;
   align-items: center;
   width: 100%;
-  max-width: 440px;
+  max-width: 380px;
   margin: 0 auto;
-  gap: 12px;
+  gap: 8px;
   box-sizing: border-box;
-  padding: 4px 10px;
+  padding: 2px 10px;
 }
 
-/* Header: Clue Card & Stats */
+/* Header: Clue Card */
 .wanderwords-header {
   display: flex;
   align-items: center;
@@ -6377,7 +6377,7 @@ body.low-power-mode .cascadle-tile {
   border: 1.5px solid rgba(245, 158, 11, 0.5);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 14px rgba(245, 158, 11, 0.15);
   border-radius: 12px;
-  padding: 9px 18px;
+  padding: 8px 16px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -6394,7 +6394,7 @@ body.low-power-mode .cascadle-tile {
 }
 
 .wanderwords-clue-text {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 900;
   color: #ffffff;
   font-family: 'Outfit', sans-serif;
@@ -6405,65 +6405,36 @@ body.low-power-mode .cascadle-tile {
   text-overflow: ellipsis;
 }
 
-.wanderwords-meta-pills {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.wanderwords-pill {
-  font-size: 11px;
-  font-weight: 800;
-  color: #e2e8f0;
-  background: rgba(30, 41, 59, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 999px;
-  padding: 3px 10px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-family: 'Outfit', sans-serif;
-}
-
-.wanderwords-pill.pts {
-  color: #10b981;
-  border-color: rgba(16, 185, 129, 0.4);
-  background: rgba(16, 185, 129, 0.15);
-  font-weight: 900;
-  justify-content: center;
-}
-
 /* Word Slots / Answer Progress Indicator */
 .wanderwords-word-display {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 10px 14px;
+  gap: 8px 12px;
   width: 100%;
-  padding: 8px 12px;
+  padding: 6px 10px;
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   box-sizing: border-box;
-  min-height: 48px;
+  min-height: 40px;
 }
 
 .wanderwords-word-group {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 
 .wanderwords-slot {
-  width: 24px;
-  height: 30px;
+  width: 20px;
+  height: 26px;
   border-bottom: 2.5px solid rgba(255, 255, 255, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 14.5px;
   font-weight: 900;
   color: #94a3b8;
   font-family: 'Outfit', sans-serif;
@@ -6488,37 +6459,37 @@ body.low-power-mode .cascadle-tile {
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 14px;
+  padding: 10px;
   background: rgba(15, 23, 42, 0.75);
   backdrop-filter: blur(12px);
   border: 1.5px solid rgba(255, 255, 255, 0.12);
-  border-radius: 18px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   box-sizing: border-box;
 }
 
 .wanderwords-grid {
   display: grid;
   grid-template-columns: repeat(var(--ww-cols, 4), 1fr);
-  gap: 8px;
+  gap: 6px;
   width: 100%;
-  max-width: 380px;
+  max-width: 320px;
 }
 
 .wanderwords-tile {
   position: relative;
   aspect-ratio: 1;
   background: linear-gradient(145deg, #1e293b, #0f172a);
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(20px, 4.5vw, 26px);
+  font-size: clamp(16px, 3.8vw, 21px);
   font-weight: 900;
   color: #ffffff;
   font-family: 'Outfit', sans-serif;
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.4), 0 6px 14px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.4), 0 4px 10px rgba(0, 0, 0, 0.3);
   user-select: none;
   transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }

@@ -2533,87 +2533,91 @@ function initBoard() {
   const rows = getDisplayRows();
   document.documentElement.style.setProperty('--display-rows', rows);
   for (let i = 0; i < rows; i++) {
-    const row = document.createElement('div');
-    row.className = 'board-row';
-    row.id = `row-empty-${i}`;
-    
-    // Guesser Column for the row
-    const guesserCol = document.createElement('div');
-    guesserCol.className = 'guesser-col';
-    guesserCol.id = `guesser-col-empty-${i}`;
-
-    const avatarWrap = document.createElement('div');
-    avatarWrap.className = 'guesser-avatar-wrap';
-
-    const avatar = document.createElement('img');
-    avatar.className = 'guesser-avatar';
-    avatar.id = `avatar-empty-${i}`;
-    avatarWrap.appendChild(avatar);
-
-    guesserCol.appendChild(avatarWrap);
-
-    const nameLabel = document.createElement('span');
-    nameLabel.className = 'guesser-name-label';
-    nameLabel.textContent = '';
-    guesserCol.appendChild(nameLabel);
-
-    row.appendChild(guesserCol);
-
-    for (let j = 0; j < WORD_LENGTH; j++) {
-      const tile = document.createElement('div');
-      tile.className = 'tile';
-      tile.id = `tile-empty-${i}-${j}`;
-      
-      tile.style.cursor = 'pointer';
-      tile.onclick = function() {
-        if (!currentWord || currentGameMode === 'wordgrid' || currentGameMode === 'wordtango') return;
-        let targetWord = currentWord;
-        if (currentGameMode === 'fillblanks' && fillBlanksTargets[i]) {
-          targetWord = fillBlanksTargets[i].word;
-        }
-        if (targetWord && targetWord[j] && tile.textContent === '') {
-          tile.textContent = targetWord[j];
-          tile.classList.add('correct'); // Hint color (green)
-          tile.style.transform = 'scale(1.1)';
-          setTimeout(() => tile.style.transform = 'scale(1)', 200);
-          if (window.playHostAudio) playHostAudio('click');
-        }
-      };
-
-      if (currentGameMode === 'fillblanks' && fillBlanksTargets[i]) {
-        const clue = fillBlanksTargets[i].clues[j];
-        if (clue) {
-          tile.textContent = clue.char;
-          tile.classList.add(clue.status);
-        }
-      }
-      row.appendChild(tile);
-    }
-
-    // Word500/600: add feedback placeholders
-    if (currentGameMode === 'word500' || currentGameMode === 'word600') {
-      row.classList.add('w500-row');
-      if (window.w500UseMastermind) {
-        const mmContainer = document.createElement('div');
-        mmContainer.className = 'mastermind-container';
-        for (let m = 0; m < WORD_LENGTH; m++) {
-          const b = document.createElement('div');
-          b.className = 'mm-block empty';
-          mmContainer.appendChild(b);
-        }
-        row.appendChild(mmContainer);
-      } else {
-        const classes = ['green', 'yellow', 'red'];
-        for (let k = 0; k < 3; k++) {
-          const clue = document.createElement('div');
-          clue.className = `w500-count ${classes[k]}`;
-          row.appendChild(clue);
-        }
-      }
-    }
-
-    board.appendChild(row);
+    board.appendChild(createEmptyBoardRow(i));
   }
+}
+
+function createEmptyBoardRow(i) {
+  const row = document.createElement('div');
+  row.className = 'board-row';
+  row.id = `row-empty-${i}`;
+  
+  // Guesser Column for the row
+  const guesserCol = document.createElement('div');
+  guesserCol.className = 'guesser-col';
+  guesserCol.id = `guesser-col-empty-${i}`;
+
+  const avatarWrap = document.createElement('div');
+  avatarWrap.className = 'guesser-avatar-wrap';
+
+  const avatar = document.createElement('img');
+  avatar.className = 'guesser-avatar';
+  avatar.id = `avatar-empty-${i}`;
+  avatarWrap.appendChild(avatar);
+
+  guesserCol.appendChild(avatarWrap);
+
+  const nameLabel = document.createElement('span');
+  nameLabel.className = 'guesser-name-label';
+  nameLabel.textContent = '';
+  guesserCol.appendChild(nameLabel);
+
+  row.appendChild(guesserCol);
+
+  for (let j = 0; j < WORD_LENGTH; j++) {
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    tile.id = `tile-empty-${i}-${j}`;
+    
+    tile.style.cursor = 'pointer';
+    tile.onclick = function() {
+      if (!currentWord || currentGameMode === 'wordgrid' || currentGameMode === 'wordtango') return;
+      let targetWord = currentWord;
+      if (currentGameMode === 'fillblanks' && fillBlanksTargets[i]) {
+        targetWord = fillBlanksTargets[i].word;
+      }
+      if (targetWord && targetWord[j] && tile.textContent === '') {
+        tile.textContent = targetWord[j];
+        tile.classList.add('correct'); // Hint color (green)
+        tile.style.transform = 'scale(1.1)';
+        setTimeout(() => tile.style.transform = 'scale(1)', 200);
+        if (window.playHostAudio) playHostAudio('click');
+      }
+    };
+
+    if (currentGameMode === 'fillblanks' && fillBlanksTargets[i]) {
+      const clue = fillBlanksTargets[i].clues[j];
+      if (clue) {
+        tile.textContent = clue.char;
+        tile.classList.add(clue.status);
+      }
+    }
+    row.appendChild(tile);
+  }
+
+  // Word500/600: add feedback placeholders
+  if (currentGameMode === 'word500' || currentGameMode === 'word600') {
+    row.classList.add('w500-row');
+    if (window.w500UseMastermind) {
+      const mmContainer = document.createElement('div');
+      mmContainer.className = 'mastermind-container';
+      for (let m = 0; m < WORD_LENGTH; m++) {
+        const b = document.createElement('div');
+        b.className = 'mm-block empty';
+        mmContainer.appendChild(b);
+      }
+      row.appendChild(mmContainer);
+    } else {
+      const classes = ['green', 'yellow', 'red'];
+      for (let k = 0; k < 3; k++) {
+        const clue = document.createElement('div');
+        clue.className = `w500-count ${classes[k]}`;
+        row.appendChild(clue);
+      }
+    }
+  }
+
+  return row;
 }
 
 function initHintBoard() {
@@ -7308,7 +7312,12 @@ function processGuess(guessWord, userData, queueLen = 0) {
       word500PendingInvalidRow = null;
     }
     const invalidRows = document.querySelectorAll('.is-invalid-row');
-    invalidRows.forEach(el => el.remove());
+    invalidRows.forEach(el => {
+      el.remove();
+      if (board.children.length < getDisplayRows()) {
+        board.appendChild(createEmptyBoardRow(board.children.length));
+      }
+    });
   }
   const invalidTooltips = document.querySelectorAll('.is-invalid-tooltip');
   invalidTooltips.forEach(el => {
@@ -7628,32 +7637,10 @@ function processGuess(guessWord, userData, queueLen = 0) {
           board.appendChild(row);
        }
     } else {
-       // WORDLE (dan mode grid berurutan kronologis):
-       if (isValidWord) {
-          const emptyRow = document.getElementById(`row-empty-${currentRow}`);
-          if (emptyRow) {
-             board.replaceChild(row, emptyRow);
-          } else {
-             // Jika baris kosong sudah terisi penuh (> displayRows), geser feed secara kronologis:
-             // hapus tebakan tertua paling atas, tambah tebakan terbaru di paling bawah
-             if (board.children.length >= getDisplayRows() && board.firstElementChild) {
-                board.removeChild(board.firstElementChild);
-             }
-             board.appendChild(row);
-          }
-       } else {
-          // Tebakan tidak valid (kata tidak ada di kamus / hard mode conflict):
-          // Goyangkan baris kosong aktif saat ini tanpa merusak urutan tata letak papan!
-          const targetEmptyRow = document.getElementById(`row-empty-${currentRow}`);
-          if (targetEmptyRow) {
-             targetEmptyRow.classList.remove('elastic-shake', 'shake');
-             void targetEmptyRow.offsetWidth;
-             targetEmptyRow.classList.add('elastic-shake');
-             setTimeout(() => {
-                targetEmptyRow.classList.remove('elastic-shake', 'shake');
-             }, 800);
-          }
-       }
+       // WORDLE: Tebakan terbaru selalu berada di baris paling atas
+       board.insertBefore(row, board.firstChild);
+       const displayRows = getDisplayRows();
+       if (board.children.length > displayRows) board.removeChild(board.lastChild);
     }
     
     if (isValidWord) {

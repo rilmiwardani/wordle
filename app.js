@@ -2542,27 +2542,11 @@ function createEmptyBoardRow(i) {
   row.className = 'board-row';
   row.id = `row-empty-${i}`;
   
-  // Guesser Column for the row
-  const guesserCol = document.createElement('div');
-  guesserCol.className = 'guesser-col';
-  guesserCol.id = `guesser-col-empty-${i}`;
-
-  const avatarWrap = document.createElement('div');
-  avatarWrap.className = 'guesser-avatar-wrap';
-
+  // Avatar for the row
   const avatar = document.createElement('img');
   avatar.className = 'guesser-avatar';
   avatar.id = `avatar-empty-${i}`;
-  avatarWrap.appendChild(avatar);
-
-  guesserCol.appendChild(avatarWrap);
-
-  const nameLabel = document.createElement('span');
-  nameLabel.className = 'guesser-name-label';
-  nameLabel.textContent = '';
-  guesserCol.appendChild(nameLabel);
-
-  row.appendChild(guesserCol);
+  row.appendChild(avatar);
 
   for (let j = 0; j < WORD_LENGTH; j++) {
     const tile = document.createElement('div');
@@ -7391,30 +7375,12 @@ function processGuess(guessWord, userData, queueLen = 0) {
     })(tooltip);
   }
   
-  const guesserCol = document.createElement('div');
-  guesserCol.className = 'guesser-col';
-  guesserCol.id = `guesser-col-${currentRow}`;
-
-  const avatarWrap = document.createElement('div');
-  avatarWrap.className = 'guesser-avatar-wrap';
-
   const avatar = document.createElement('img');
   avatar.className = 'guesser-avatar show' + (isGameAnimationsEnabled ? ' spring-in' : '');
   avatar.id = `avatar-${currentRow}`;
   avatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
   avatar.src = (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : 'assets/bg_nature.png';
-  avatarWrap.appendChild(avatar);
-
-  guesserCol.appendChild(avatarWrap);
-
-  const nameLabel = document.createElement('span');
-  nameLabel.className = 'guesser-name-label active';
-  const rawName = (userData && (userData.nickname || userData.uniqueId)) ? (userData.nickname || userData.uniqueId) : 'Host';
-  nameLabel.textContent = rawName;
-  nameLabel.title = rawName;
-  guesserCol.appendChild(nameLabel);
-
-  row.appendChild(guesserCol);
+  row.appendChild(avatar);
 
   const tiles = [];
   for (let j = 0; j < WORD_LENGTH; j++) {

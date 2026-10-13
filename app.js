@@ -13289,6 +13289,7 @@ function renderWordClusterUI() {
     const row = document.createElement('div');
     row.className = 'wc-row' + (item.isSolved ? ' solved' : '');
     row.id = `wc-row-${idx}`;
+    row.dataset.len = item.word.length;
 
     // Kotak Ubin Huruf Kata
     const tilesArea = document.createElement('div');

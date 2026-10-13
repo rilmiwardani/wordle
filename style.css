@@ -8736,8 +8736,8 @@ body.obs-compact .game-container {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 4px 8px;
+  gap: 6px;
+  padding: 4px 6px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -8771,6 +8771,7 @@ body.obs-compact .game-container {
   align-items: center;
   gap: 6px;
   flex: 1;
+  min-width: 0;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -8796,6 +8797,51 @@ body.obs-compact .game-container {
   user-select: none;
   flex-shrink: 0;
   position: relative;
+}
+
+/* Skala responsif ubin kata panjang Word Cluster (mencegah terpotong di layar HP/OBS) */
+.wc-row[data-len="7"] .wc-tile {
+  width: calc(29px * var(--board-scale, 1));
+  height: calc(36px * var(--board-scale, 1));
+  font-size: calc(18px * var(--board-scale, 1));
+  border-radius: 7px;
+}
+.wc-row[data-len="7"] .wc-tiles-area {
+  gap: 4px;
+}
+
+.wc-row[data-len="8"] .wc-tile {
+  width: calc(25px * var(--board-scale, 1));
+  height: calc(33px * var(--board-scale, 1));
+  font-size: calc(16px * var(--board-scale, 1));
+  border-radius: 6px;
+}
+.wc-row[data-len="8"] .wc-tiles-area {
+  gap: 3.5px;
+}
+
+.wc-row[data-len="9"] .wc-tile {
+  width: calc(21.5px * var(--board-scale, 1));
+  height: calc(30px * var(--board-scale, 1));
+  font-size: calc(14px * var(--board-scale, 1));
+  border-radius: 5px;
+}
+.wc-row[data-len="9"] .wc-tiles-area {
+  gap: 2.5px;
+}
+
+.wc-row[data-len="10"] .wc-tile,
+.wc-row[data-len="11"] .wc-tile,
+.wc-row[data-len="12"] .wc-tile {
+  width: calc(18.5px * var(--board-scale, 1));
+  height: calc(28px * var(--board-scale, 1));
+  font-size: calc(12.5px * var(--board-scale, 1));
+  border-radius: 4.5px;
+}
+.wc-row[data-len="10"] .wc-tiles-area,
+.wc-row[data-len="11"] .wc-tiles-area,
+.wc-row[data-len="12"] .wc-tiles-area {
+  gap: 2px;
 }
 
 .wc-tile.empty {
@@ -8835,7 +8881,7 @@ body.obs-compact .game-container {
   align-items: center;
   justify-content: flex-end;
   flex-shrink: 0;
-  min-width: 80px;
+  min-width: 62px;
 }
 
 .wc-points-badge {
@@ -8846,14 +8892,14 @@ body.obs-compact .game-container {
   background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(217, 119, 6, 0.14));
   border: 1.5px solid rgba(245, 158, 11, 0.55);
   border-radius: 8px;
-  padding: 4px 10px;
-  min-width: 64px;
+  padding: 3px 8px;
+  min-width: 52px;
   text-align: center;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .wc-pts-num {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 900;
   color: #fbbf24;
   line-height: 1;
@@ -8861,7 +8907,7 @@ body.obs-compact .game-container {
 }
 
 .wc-pts-unit {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 800;
   color: rgba(251, 191, 36, 0.85);
   font-family: 'Outfit', sans-serif;
@@ -8870,9 +8916,9 @@ body.obs-compact .game-container {
 .wc-guesser-wrap {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   flex-shrink: 0;
-  min-width: 85px;
+  min-width: 65px;
   justify-content: flex-end;
 }
 
@@ -8922,12 +8968,12 @@ body.obs-compact .game-container {
 .wc-guesser-info {
   display: flex;
   align-items: center;
-  max-width: 80px;
+  max-width: 56px;
   text-align: left;
 }
 
 .wc-guesser-name {
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 800;
   color: #fde047;
   white-space: nowrap;

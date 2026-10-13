@@ -1137,6 +1137,7 @@
           <button class="game-btn" data-game="betweenle" onclick="remoteChangeGame('betweenle')">Betweenle</button>
           <button class="game-btn" data-game="cascadle" onclick="remoteChangeGame('cascadle')">Cascadle</button>
           <button class="game-btn" data-game="wanderwords" onclick="remoteChangeGame('wanderwords')">Wander Words</button>
+          <button class="game-btn" data-game="wordcluster" onclick="remoteChangeGame('wordcluster')">Word Cluster</button>
         </div>
       </div>
     </div>
@@ -1345,7 +1346,7 @@
     <div class="obs-card-header" style="justify-content: space-between; flex-wrap: wrap; gap: 10px;">
       <div style="display: flex; align-items: center; gap: 8px;">
         <span class="icon">🧭</span>
-        <h4>Kelola Kata & Kategori Wander Words (Auto-Generate Snake Grid)</h4>
+        <h4>Kelola Kata & Clue Wander Words (Auto-Generate Snake Grid)</h4>
       </div>
       <div style="display: flex; align-items: center; gap: 8px;">
         <span class="badge" id="wwTotalWordsBadge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); padding: 4px 10px; border-radius: 999px; font-weight: 800; font-size: 11px;">56 Kata Aktif</span>
@@ -1356,7 +1357,7 @@
     </div>
     <div class="obs-card-body">
       <div style="font-size: 12px; color: var(--text2); margin-bottom: 10px; line-height: 1.5;">
-        💡 <b>Cara Menambah Kata Baru:</b> Tulis atau tempel kata baru dengan format <code>KATEGORI: KATA JAWABAN</code> (1 baris per kata). Sistem akan <b>secara otomatis</b> menyusun kisi (*grid*) dan mencari jalur ular ortogonal (horizontal & vertikal) secara dinamis & acak setiap ronde baru! Tidak perlu menyusun grid secara manual.
+        💡 <b>Cara Menambah Kata Baru:</b> Tulis atau tempel kata baru dengan format <code>CLUE: KATA JAWABAN</code> (1 baris per kata). Sistem akan <b>secara otomatis</b> menyusun kisi (*grid*) dan mencari jalur ular ortogonal (horizontal & vertikal) secara dinamis & acak setiap ronde baru! Tidak perlu menyusun grid secara manual.
       </div>
 
       <textarea id="dashWwWordsInput" rows="7" oninput="updateWwTotalBadge()" placeholder="Contoh:&#10;KULINER: SATE AYAM MADURA&#10;FILM: PENGABDI SETAN&#10;HEWAN: HARIMAU SUMATERA&#10;KOTA: YOGYAKARTA" style="width: 100%; box-sizing: border-box; background: #10131d; border: 1px solid var(--border); border-radius: 10px; color: #fff; padding: 10px 12px; font-family: monospace; font-size: 12px; line-height: 1.6; resize: vertical;"></textarea>
@@ -1373,6 +1374,42 @@
         </button>
       </div>
       <div id="dashWwStatusMsg" style="margin-top: 8px; font-size: 12px; display: none;"></div>
+    </div>
+  </div>
+
+  <!-- CARD 6: KELOLA TOPIK & KATA WORD CLUSTER (KATA TERKAIT) -->
+  <div class="obs-card" style="margin-top: 16px;">
+    <div class="obs-card-header" style="justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="icon">🔗</span>
+        <h4>Kelola Topik & Kata Word Cluster (6 Kata Terkait & Poin 60pt s/d 10pt)</h4>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="badge" id="wcTotalTopicsBadge" style="background: rgba(254, 44, 85, 0.2); color: #fe2c55; border: 1px solid rgba(254, 44, 85, 0.4); padding: 4px 10px; border-radius: 999px; font-weight: 800; font-size: 11px;">25 Topik Aktif</span>
+        <button class="btn btn-save-wc-words" onclick="saveWordClusterCustomList()" style="background: linear-gradient(135deg, #fe2c55, #e11d48); color: white; border: none; padding: 7px 16px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer;">
+          💾 Simpan & Terapkan Topik Baru
+        </button>
+      </div>
+    </div>
+    <div class="obs-card-body">
+      <div style="font-size: 12px; color: var(--text2); margin-bottom: 10px; line-height: 1.5;">
+        💡 <b>Format Input:</b> Tulis 1 baris per topik dengan format <code>TOPIK: KATA1, KATA2, KATA3, KATA4, KATA5, KATA6</code>. Urutan 6 kata dari kiri ke kanan otomatis mendapat poin dari tertinggi (60pt) hingga terendah (10pt). Saat penonton menebak benar di live stream, poin akan digantikan oleh avatar & badge poin mereka!
+      </div>
+
+      <textarea id="dashWcTopicsInput" rows="7" oninput="updateWcTotalBadge()" placeholder="Contoh:&#10;LAUT: BADAI, NELAYAN, OMBAK, TERUMBU, DERMAGA, JANGKAR&#10;KULINER INDONESIA: RENDANG, SATE, RAWON, PEMPEK, GUDEG, SOTO&#10;ANTARIKSA: MATAHARI, GALAKSI, METEOR, ROKET, ASTRONOT, NEBULA" style="width: 100%; box-sizing: border-box; background: #10131d; border: 1px solid var(--border); border-radius: 10px; color: #fff; padding: 10px 12px; font-family: monospace; font-size: 12px; line-height: 1.6; resize: vertical;"></textarea>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center;">
+        <button type="button" class="preset-sm-btn" onclick="loadDefaultWordCluster()" style="background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: #fff; padding: 6px 12px; border-radius: 8px; font-size: 11.5px; cursor: pointer;">
+          🔄 Muat Ulang Topik Bawaan (Default 25 Topik)
+        </button>
+        <button type="button" class="preset-sm-btn" onclick="appendSampleWordCluster()" style="background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: #fff; padding: 6px 12px; border-radius: 8px; font-size: 11.5px; cursor: pointer;">
+          ➕ Tambah Contoh Topik Keren
+        </button>
+        <button type="button" class="preset-sm-btn" onclick="remoteChangeGame('wordcluster')" style="background: rgba(254, 44, 85, 0.15); border: 1px solid #fe2c55; color: #fe2c55; padding: 6px 14px; border-radius: 8px; font-size: 11.5px; font-weight: 700; cursor: pointer; margin-left: auto;">
+          🎮 Beralih ke Word Cluster & Mulai Ronde
+        </button>
+      </div>
+      <div id="dashWcStatusMsg" style="margin-top: 8px; font-size: 12px; display: none;"></div>
     </div>
   </div>
 
@@ -1901,7 +1938,8 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       boardScale: 100,
       theme: "dark",
       followerOnlyGuess: false,
-      followerOnlyMusic: false
+      followerOnlyMusic: false,
+      wordClusterCustomList: []
     };
 
     socket.on("game-settings-update", (settings) => {
@@ -1976,6 +2014,9 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
 
       // 11. Wander Words Custom Words UI
       initWanderWordsDashboardUI();
+
+      // 12. Word Cluster Custom Words UI
+      initWordClusterDashboardUI();
     }
 
     function setLengthPreset(lengths) {
@@ -2239,7 +2280,7 @@ TEKNOLOGI: KECERDASAN BUATAN`;
     function saveWanderWordsCustomList() {
       const list = parseWwTextarea();
       if (list.length === 0) {
-        alert("Mohon masukkan minimal 1 kata dengan format: KATEGORI: JAWABAN");
+        alert("Mohon masukkan minimal 1 kata dengan format: CLUE: JAWABAN");
         return;
       }
       currentGameSettings.wanderWordsCustomList = list;
@@ -2277,6 +2318,136 @@ TEKNOLOGI: KECERDASAN BUATAN`;
         const sampleAppend = `\nFILM BIOSKOP: DILAN SEMBILAN PULUH\nKULINER SOLO: TENGKLENG KAMBING\nWISATA BALI: PANTAI KUTA\nGAME POPULER: MOBILE LEGENDS`;
         textarea.value += sampleAppend;
         saveWanderWordsCustomList();
+      }
+    }
+
+    // ════ WORD CLUSTER CUSTOM TOPICS & WORDS MANAGER ════
+    const DEFAULT_WC_SAMPLE_TEXT = `LAUT: BADAI, NELAYAN, OMBAK, TERUMBU, DERMAGA, JANGKAR
+KULINER INDONESIA: RENDANG, SATE, RAWON, PEMPEK, GUDEG, SOTO
+ANTARIKSA: MATAHARI, GALAKSI, METEOR, ROKET, ASTRONOT, NEBULA
+SEKOLAH: GURU, BUKU, KELAS, SERAGAM, UJIAN, PAPAN
+GUNUNG: PENDAKI, TENDA, PUNCAK, JALUR, RANSEL, KABUT
+SEPAK BOLA: STADION, WASIT, KIPER, BOLA, GAWANG, KARTU
+RUMAH SAKIT: DOKTER, PERAWAT, OBAT, PASIEN, JARUM, AMBULANS
+MUSIK: GITAR, PIANO, NADA, MELODI, KONSER, DRUM
+BANDARA: PESAWAT, PILOT, PASPOR, LANDASAN, BAGASI, TIKET
+DAPUR: KOMPOR, WAJAN, PISAU, SENDOK, GARPU, PANCI
+HUTAN: POHON, RIMBA, FAUNA, LUMUT, SUNGAI, RANTING
+PASAR: PEDAGANG, PEMBELI, TIMBANGAN, TAWAR, KIOS, KANTONG
+KOMPUTER: KEYBOARD, MOUSE, MONITOR, PROCESSOR, MEMORI, LAYAR
+KENDARAAN: MOBIL, MOTOR, SEPEDA, KERETA, BUS, TRUK
+PANTAI: PASIR, KELAPA, KERANG, OMBAK, KARANG, SURFING
+BINATANG TERNAK: SAPI, KAMBING, AYAM, BEBEK, KUDA, KELINCI
+CUACA: HUJAN, PANAS, PETIR, ANGIN, MENDUNG, SALJU
+TAMAN: BUNGA, RUMPUT, BANGKU, KOLAM, KUPU, AYUNAN
+KANTOR: MEJA, LAPTOP, RAPAT, BOS, GAJI, LEMBUR
+KOPI: ESPRESSO, LATTE, CAFE, GULA, BARISTA, CANGKIR
+SEJARAH: KERAJAAN, PAHLAWAN, PRASASTI, MAJAPAHIT, MERDEKA, MUSEUM
+OLAHRAGA: ATLET, MEDALI, JUARA, LARI, RENANG, SENAM
+MALAM HARI: BULAN, BINTANG, LAMPU, MIMPI, GELAP, SUNYI
+TRANSPORTASI LAUT: KAPAL, FERI, SEKOCI, PELABUHAN, NAHKODA, DAYUNG
+FLORA INDONESIA: RAFLESIA, ANGGREK, MELATI, MAWAR, CEMARA, BERINGIN`;
+
+    function initWordClusterDashboardUI() {
+      const textarea = document.getElementById("dashWcTopicsInput");
+      if (!textarea) return;
+
+      let list = currentGameSettings.wordClusterCustomList;
+      if (!Array.isArray(list) || list.length === 0) {
+        if (!textarea.value.trim()) {
+          textarea.value = DEFAULT_WC_SAMPLE_TEXT;
+        }
+      } else {
+        textarea.value = list.map(item => {
+          const wordsStr = Array.isArray(item.words) 
+            ? item.words.map(w => (typeof w === 'string' ? w : w.word)).join(", ")
+            : '';
+          return `${item.topic}: ${wordsStr}`;
+        }).join("\n");
+      }
+      updateWcTotalBadge();
+    }
+
+    function parseWordClusterTextarea() {
+      const text = document.getElementById("dashWcTopicsInput")?.value || "";
+      const lines = text.split("\n");
+      const list = [];
+      const stdPoints = [60, 50, 40, 30, 20, 10];
+
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        const colonIdx = trimmed.indexOf(":");
+        if (colonIdx > 0) {
+          const topic = trimmed.substring(0, colonIdx).trim().toUpperCase();
+          const wordsRaw = trimmed.substring(colonIdx + 1).split(",");
+          const words = [];
+          wordsRaw.forEach((w) => {
+            const cleanWord = w.toUpperCase().trim().replace(/[^A-Z]/g, '');
+            if (cleanWord.length >= 2) {
+              words.push({
+                word: cleanWord,
+                points: stdPoints[words.length] || 10
+              });
+            }
+          });
+          if (topic && words.length >= 2) {
+            list.push({ topic, words });
+          }
+        }
+      });
+      return list;
+    }
+
+    function updateWcTotalBadge() {
+      const list = parseWordClusterTextarea();
+      const badge = document.getElementById("wcTotalTopicsBadge");
+      if (badge) {
+        badge.textContent = `${list.length} Topik Aktif`;
+      }
+    }
+
+    function saveWordClusterCustomList() {
+      const list = parseWordClusterTextarea();
+      if (list.length === 0) {
+        alert("Mohon masukkan minimal 1 topik dengan format: TOPIK: KATA1, KATA2, KATA3, KATA4, KATA5, KATA6");
+        return;
+      }
+      currentGameSettings.wordClusterCustomList = list;
+      socket.emit("update-game-settings", currentGameSettings);
+
+      updateWcTotalBadge();
+
+      const btn = document.querySelector(".btn-save-wc-words");
+      if (btn) {
+        const old = btn.innerHTML;
+        btn.innerHTML = "✅ Tersimpan!";
+        setTimeout(() => { btn.innerHTML = old; }, 1800);
+      }
+
+      const msg = document.getElementById("dashWcStatusMsg");
+      if (msg) {
+        msg.style.display = "block";
+        msg.style.color = "#10b981";
+        msg.innerHTML = `✅ Berhasil menyimpan <b>${list.length} topik</b>! Permainan Word Cluster akan otomatis memuat topik & 6 kata dari daftar ini.`;
+        setTimeout(() => { msg.style.display = "none"; }, 3500);
+      }
+    }
+
+    function loadDefaultWordCluster() {
+      const textarea = document.getElementById("dashWcTopicsInput");
+      if (textarea) {
+        textarea.value = DEFAULT_WC_SAMPLE_TEXT;
+        saveWordClusterCustomList();
+      }
+    }
+
+    function appendSampleWordCluster() {
+      const textarea = document.getElementById("dashWcTopicsInput");
+      if (textarea) {
+        const sampleAppend = `\nFASILITAS UMUM: TAMAN, TERMINAL, STASIUN, HALTE, TROTOAR, JEMBATAN\nMINUMAN SEGAR: ES TEH, JUS ALPUKAT, ES JERUK, BOBA, KOPI, AIR MINERAL`;
+        textarea.value += sampleAppend;
+        saveWordClusterCustomList();
       }
     }
   </script>

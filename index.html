@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=overlays-content">
   <title>TikTok Live Games</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=54">
+  <link rel="stylesheet" href="style.css?v=59">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
   <script src="https://www.youtube.com/iframe_api"></script>
@@ -249,6 +249,18 @@
             <div class="card-body">
               <div class="card-top-row">
                 <span class="card-title">WANDER WORDS</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 15. Word Cluster -->
+          <div class="game-card card-wordcluster" onclick="selectGame('wordcluster')" id="cardWordCluster">
+            <div class="card-visual" style="display: flex; align-items: center; justify-content: center; gap: 3px;">
+              <i class="fa-solid fa-diagram-project" style="font-size: 20px; color: #fe2c55;"></i>
+            </div>
+            <div class="card-body">
+              <div class="card-top-row">
+                <span class="card-title">WORD CLUSTER</span>
               </div>
             </div>
           </div>
@@ -577,6 +589,17 @@
                       <div class="game-card-desc">Jejak Huruf Horizontal & Vertikal (Tanpa Diagonal)</div>
                     </div>
                   </div>
+
+                  <!-- Word Cluster -->
+                  <div class="game-card" data-value="wordcluster" onclick="selectCustomGame('wordcluster', event)">
+                    <div class="game-card-icon badge-wordcluster">
+                      <i class="fa-solid fa-diagram-project" style="font-size: 16px; color: #fe2c55;"></i>
+                    </div>
+                    <div class="game-card-text">
+                      <div class="game-card-title">Word Cluster</div>
+                      <div class="game-card-desc">Tebak 6 Kata Terkait (60pt - 10pt)</div>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Language selection row -->
@@ -753,6 +776,19 @@
                     <div class="toggle-track"></div>
                   </div>
                 </label>
+                <div class="settings-toggle-row settings-card-box" id="flipSpeedControlRow" onclick="event.stopPropagation()" style="margin: 4px 0; gap: 4px; padding: 8px 12px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span class="settings-control-title"><i class="fa-solid fa-gauge-high" style="color: #a855f7; margin-right: 6px;"></i> Kecepatan Flip Huruf:</span>
+                    <button type="button" onclick="previewFlipSpeed(event)" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;"><i class="fa-solid fa-play" style="margin-right: 4px;"></i> Test</button>
+                  </div>
+                  <select id="flipSpeedSelect" onchange="changeFlipSpeed(this.value)" onclick="event.stopPropagation()" style="width: 100%; padding: 6px 8px; margin-top: 3px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; font-size: 12px; cursor: pointer;">
+                    <option value="adaptive">⚡ Otomatis / Adaptif (Rekomendasi)</option>
+                    <option value="dramatic">⏳ Santai & Dramatis (~100ms)</option>
+                    <option value="balanced">⚖️ Seimbang / Normal (~60ms)</option>
+                    <option value="snappy">🚀 Cepat & Snappy (~30ms)</option>
+                    <option value="instant">⚡ Instan Tanpa Flip (0ms)</option>
+                  </select>
+                </div>
                 <label class="settings-toggle-row" onclick="event.stopPropagation()">
                   <span class="settings-toggle-label"><i class="fa-solid fa-image" style="color: #06b6d4; margin-right: 6px;"></i> Background Dinamis</span>
                   <div class="toggle-switch">
@@ -1395,7 +1431,7 @@
         <div class="wanderwords-header">
           <div class="wanderwords-clue-card">
             <div class="wanderwords-clue-main">
-              <span class="wanderwords-clue-label"><i class="fa-solid fa-lightbulb"></i> KATEGORI</span>
+              <span class="wanderwords-clue-label"><i class="fa-solid fa-lightbulb"></i> CLUE</span>
               <span class="wanderwords-clue-text" id="wanderwordsClueText">PETUNJUK</span>
             </div>
             <div class="wanderwords-length-pill" id="wanderwordsLengthBadge">
@@ -1423,6 +1459,44 @@
             </button>
             <button class="wanderwords-ctrl-btn skip-btn" onclick="skipWanderWordsPuzzle()" title="Lewati teka-teki ini">
               <i class="fa-solid fa-forward-step"></i> Skip
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Word Cluster (Kata Terkait) Container -->
+      <div id="wordClusterContainer" class="wordcluster-container" style="display: none;">
+        <!-- Top Topic Clue Header Card -->
+        <div class="wordcluster-header">
+          <div class="wordcluster-topic-card">
+            <div class="wordcluster-topic-left">
+              <span class="wordcluster-topic-label"><i class="fa-solid fa-layer-group"></i> TEMA KATA</span>
+              <span class="wordcluster-topic-title" id="wcTopicTitle">LAUT</span>
+            </div>
+            <div class="wordcluster-progress-pill" id="wcProgressBadge">
+              <i class="fa-solid fa-check-double" style="font-size: 11px;"></i>
+              <span id="wcProgressText">0 / 6 Tertebak</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6 Word Cluster Rows (Sorted 60pt to 10pt) -->
+        <div class="wordcluster-list" id="wcWordsList">
+          <!-- Dynamically populated via JS -->
+        </div>
+
+        <!-- Bottom Helper & Host Controls -->
+        <div class="wordcluster-footer">
+          <div class="wordcluster-chat-hint">
+            <i class="fa-solid fa-comment-dots" style="color: #fe2c55; margin-right: 5px;"></i>
+            <span id="wcChatHintText">Tebak kata yang berhubungan dengan <strong id="wcChatHintTopic">LAUT</strong>!</span>
+          </div>
+          <div class="wordcluster-btn-group">
+            <button class="wordcluster-ctrl-btn hint-btn" onclick="revealWordClusterHint()" id="wcHintBtn" title="Buka 1 huruf bantuan">
+              <i class="fa-solid fa-lightbulb"></i> Bantuan
+            </button>
+            <button class="wordcluster-ctrl-btn skip-btn" onclick="skipWordClusterRound()" title="Lewati topik ini">
+              <i class="fa-solid fa-forward-step"></i> Ganti Topik
             </button>
           </div>
         </div>
@@ -1489,15 +1563,17 @@
       </div>
       
       <!-- Like Progress Bar for Multi Win -->
-      <div id="multiLikeProgressContainer" class="like-progress-container" style="display: none; margin-top: 15px; background: rgba(0,0,0,0.6);">
-        <div class="like-progress-header">
-          <span class="like-progress-title" style="color: #fff; font-size: 13px;"><i class="fa-solid fa-heart" style="color: #fe2c55; margin-right: 6px;"></i> TAP UNTUK MULAI RONDE BARU!</span>
-          <span class="like-progress-text" id="multiLikeProgressText" style="font-size: 13px; color: #ffd54f;">0 / 1000</span>
+      <div id="multiLikeProgressContainer" class="multi-like-box" style="display: none;">
+        <div class="multi-like-header">
+          <span class="multi-like-title"><i class="fa-solid fa-heart"></i> TAP LAYAR UNTUK RONDE BARU</span>
+          <span class="multi-like-text" id="multiLikeProgressText">0 / 1000</span>
         </div>
-        <div class="like-progress-bar-bg" style="height: 12px; background: rgba(255,255,255,0.2);">
-          <div class="like-progress-bar-fill" id="multiLikeProgressBarFill"></div>
+        <div class="multi-like-bar-bg">
+          <div class="multi-like-bar-fill" id="multiLikeProgressBarFill"></div>
         </div>
-        <button onclick="executeRestartTransition()" style="margin-top: 12px; padding: 6px 12px; font-size: 11px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; color: white; cursor: pointer;"><i class="fa-solid fa-forward" style="margin-right: 4px;"></i> Skip (Host)</button>
+        <button onclick="executeRestartTransition()" class="multi-like-skip-btn">
+          <i class="fa-solid fa-forward"></i> Skip (Host)
+        </button>
       </div>
 
       <div class="win-footer" id="multiWinFooter">Next round starting soon...</div>
@@ -1912,6 +1988,7 @@
   <script src="wordladder_puzzles.js"></script>
   <script src="wordladder_puzzles_en.js"></script>
   <script src="wanderwords_puzzles.js"></script>
-  <script src="app.js?v=56"></script>
+  <script src="wordcluster_puzzles.js?v=5"></script>
+  <script src="app.js?v=66"></script>
 </body>
 </html>

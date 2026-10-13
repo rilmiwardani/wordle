@@ -300,6 +300,72 @@ window.toggleGameAnimations = function(checked) {
   } else {
     document.body.classList.add('no-animations');
   }
+  const flipRow = document.getElementById('flipSpeedControlRow');
+  if (flipRow) flipRow.style.opacity = checked ? '1' : '0.5';
+};
+
+let currentFlipSpeed = localStorage.getItem('wordle_flipSpeed') || 'adaptive';
+window.changeFlipSpeed = function(val) {
+  currentFlipSpeed = val || 'adaptive';
+  localStorage.setItem('wordle_flipSpeed', currentFlipSpeed);
+};
+
+function getFlipSpeedConfig(queueLen = 0) {
+  const speed = currentFlipSpeed || 'adaptive';
+  if (!isGameAnimationsEnabled || speed === 'instant') {
+    return { shouldFlip: false, stepDelay: 0, revealOffset: 0 };
+  }
+  if (speed === 'dramatic') {
+    if (queueLen > 5) return { shouldFlip: false, stepDelay: 0, revealOffset: 0 };
+    return { shouldFlip: true, stepDelay: 100, revealOffset: 180 };
+  }
+  if (speed === 'balanced') {
+    if (queueLen > 4) return { shouldFlip: false, stepDelay: 0, revealOffset: 0 };
+    return { shouldFlip: true, stepDelay: 60, revealOffset: 140 };
+  }
+  if (speed === 'snappy') {
+    if (queueLen > 4) return { shouldFlip: false, stepDelay: 0, revealOffset: 0 };
+    return { shouldFlip: true, stepDelay: 30, revealOffset: 110 };
+  }
+  // Default: adaptive
+  if (queueLen > 3) {
+    return { shouldFlip: false, stepDelay: 0, revealOffset: 0 };
+  }
+  const isCrowded = queueLen > 1;
+  return {
+    shouldFlip: true,
+    stepDelay: isCrowded ? 25 : 50,
+    revealOffset: isCrowded ? 100 : 130
+  };
+}
+
+window.previewFlipSpeed = function(e) {
+  if (e) e.stopPropagation();
+  const cfg = getFlipSpeedConfig(0);
+  const firstRow = document.querySelector('#board .board-row') || document.querySelector('.board-row');
+  if (firstRow) {
+    const tiles = firstRow.querySelectorAll('.tile');
+    tiles.forEach((tile, idx) => {
+      tile.classList.remove('flip-3d');
+      void tile.offsetWidth;
+      if (cfg.shouldFlip && cfg.stepDelay > 0) {
+        tile.classList.add('flip-3d');
+        tile.style.animationDelay = `${idx * cfg.stepDelay}ms`;
+        setTimeout(() => {
+          if (window.sounds && typeof window.sounds.playFlip === 'function') window.sounds.playFlip(idx);
+        }, idx * cfg.stepDelay);
+      } else {
+        if (window.sounds && typeof window.sounds.playFlip === 'function') window.sounds.playFlip(0);
+      }
+    });
+  } else if (window.sounds) {
+    const step = cfg.stepDelay || 40;
+    for (let i = 0; i < 5; i++) {
+      setTimeout(() => {
+        if (window.sounds && typeof window.sounds.playFlip === 'function') window.sounds.playFlip(i);
+      }, i * step);
+    }
+  }
 };
 
 // ─── SISTEM COOLDOWN DINAMIS (Anti-Dominasi) ───────────────────────────────
@@ -977,8 +1043,14 @@ window.executeRestartTransition = function() {
     if (winTitle) winTitle.textContent = 'WE HAVE A WINNER!';
     const winSubtitle = document.getElementById('winSubtitleText');
     if (winSubtitle) winSubtitle.textContent = 'Guessed the word:';
-    round++;
-    startNewRound();
+    if (currentGameMode === 'wordcluster') {
+      isGameOver = false;
+      wordClusterRound++;
+      startWordClusterGame();
+    } else {
+      round++;
+      startNewRound();
+    }
     requestAnimationFrame(() => {
       if (board) board.classList.remove('board-transitioning');
     });
@@ -1003,6 +1075,8 @@ function triggerWinTransition(winDuration, isMultiWinner = false) {
         multiWinTitle.textContent = '🎉 SQUAREWORD 5×5 SELESAI!';
       } else if (currentGameMode === 'wordgrid') {
         multiWinTitle.textContent = 'LEADERBOARD WORD GRID';
+      } else if (currentGameMode === 'wordcluster') {
+        multiWinTitle.textContent = `TOPIK SELESAI: ${wordClusterCurrentTopic || 'WORD CLUSTER'}`;
       } else {
         multiWinTitle.textContent = 'ROUND COMPLETED!';
       }
@@ -1802,7 +1876,8 @@ function selectGame(mode) {
     wordladder: 'WORD LADDER',
     betweenle: 'BETWEENLE',
     cascadle: 'CASCADLE',
-    wanderwords: 'WANDER WORDS'
+    wanderwords: 'WANDER WORDS',
+    wordcluster: 'WORD CLUSTER'
   };
   const titleName = gameNames[mode] || mode.toUpperCase();
 
@@ -1859,6 +1934,7 @@ function switchGameMode(e) {
   else if (currentGameMode === 'wordladder') currentGameMode = 'betweenle';
   else if (currentGameMode === 'betweenle') currentGameMode = 'cascadle';
   else if (currentGameMode === 'cascadle') currentGameMode = 'wanderwords';
+  else if (currentGameMode === 'wanderwords') currentGameMode = 'wordcluster';
   else currentGameMode = 'wordle';
   try { sessionStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
 
@@ -1922,6 +1998,8 @@ function applyGameModeUI() {
   if (cascadleContainer) cascadleContainer.style.display = 'none';
   const wanderWordsContainer = document.getElementById('wanderWordsContainer');
   if (wanderWordsContainer) wanderWordsContainer.style.display = 'none';
+  const wordClusterContainer = document.getElementById('wordClusterContainer');
+  if (wordClusterContainer) wordClusterContainer.style.display = 'none';
 
   const colorFitLegend = document.getElementById('colorFitLegend');
   if (colorFitLegend) colorFitLegend.style.display = (currentGameMode === 'colorfit') ? 'flex' : 'none';
@@ -2081,11 +2159,28 @@ function applyGameModeUI() {
     }
     const wanderWordsContainer = document.getElementById('wanderWordsContainer');
     if (wanderWordsContainer) wanderWordsContainer.style.display = 'flex';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Word Cluster';
     if (!wanderWordsCurrentPuzzle) {
       startWanderWordsGame();
     } else {
       renderWanderWordsUI();
+    }
+  } else if (currentGameMode === 'wordcluster') {
+    if (headerTitle) headerTitle.textContent = 'WORD CLUSTER';
+    if (hintContainer) hintContainer.style.display = 'none';
+    if (bestGuessContainer) bestGuessContainer.style.display = 'none';
+    if (boardObj) {
+      boardObj.style.display = 'none';
+      boardObj.innerHTML = '';
+      boardObj.className = '';
+    }
+    const wordClusterContainer = document.getElementById('wordClusterContainer');
+    if (wordClusterContainer) wordClusterContainer.style.display = 'flex';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
+    if (!wordClusterCurrentTopic) {
+      startWordClusterGame();
+    } else {
+      renderWordClusterUI();
     }
   } else {
     if (headerTitle) headerTitle.textContent = 'WORDLE';
@@ -3740,6 +3835,56 @@ function checkWgClue(word, clue) {
   return false;
 }
 
+// Memastikan papan Word Grid 3x3 100% solvable (memiliki 9 kata unik yang berbeda secara simultan)
+function canSolveWordGrid(dictCache) {
+  const cells = [];
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 3; c++) {
+      const list = dictCache[`${r}-${c}`];
+      if (!list || list.length === 0) return false;
+      cells.push({ key: `${r}-${c}`, words: list });
+    }
+  }
+  // Sort cells dengan kata valid paling sedikit lebih dulu (MRV heuristic)
+  cells.sort((a, b) => a.words.length - b.words.length);
+
+  const used = new Set();
+  function backtrack(idx) {
+    if (idx === cells.length) return true;
+    const cell = cells[idx];
+    for (const w of cell.words) {
+      if (!used.has(w)) {
+        used.add(w);
+        if (backtrack(idx + 1)) return true;
+        used.delete(w);
+      }
+    }
+    return false;
+  }
+  return backtrack(0);
+}
+
+// Memilih target word hint yang belum terpakai di grid maupun di hint kotak lain
+function getWgCellHintTargetWord(r, c) {
+  const validWords = wgDictionaryCache[`${r}-${c}`];
+  if (!validWords || validWords.length === 0) return null;
+
+  const usedWords = new Set();
+  for (let ro = 0; ro < 3; ro++) {
+    for (let co = 0; co < 3; co++) {
+      if (wgGrid[ro][co]) usedWords.add(wgGrid[ro][co].word);
+      const otherKey = `${ro}-${co}`;
+      if (otherKey !== `${r}-${c}` && wgHints[otherKey] && wgHints[otherKey].targetWord) {
+        usedWords.add(wgHints[otherKey].targetWord);
+      }
+    }
+  }
+
+  const availableWords = validWords.filter(w => !usedWords.has(w));
+  const candidates = availableWords.length > 0 ? availableWords : validWords;
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
 function generateWordGridBoard() {
   wgAllWordsCache = null;
   let attempts = 0;
@@ -3783,13 +3928,19 @@ function generateWordGridBoard() {
     for (let r=0; r<3; r++) {
       for (let c=0; c<3; c++) {
         const words = getValidWordsForWgCell(wgCluesRow[r], wgCluesCol[c]);
-        if (words.length === 0) {
+        // Setiap kotak wajib memiliki minimal 2 kata valid agar tidak buntu/terlalu sempit
+        if (!words || words.length < 2) {
           isValid = false;
           break;
         }
         wgDictionaryCache[`${r}-${c}`] = words;
       }
       if (!isValid) break;
+    }
+    
+    // Verifikasi matematis bahwa 9 kotak bisa diselesaikan dengan 9 kata unik berbeda
+    if (isValid && !canSolveWordGrid(wgDictionaryCache)) {
+      isValid = false;
     }
     
     if (isValid) validBoardFound = true;
@@ -3882,9 +4033,8 @@ function renderWordGridBoard() {
         
         let hintData = wgHints[`${r}-${c}`];
         if (!hintData) {
-          const validWords = wgDictionaryCache[`${r}-${c}`];
-          if (!validWords || validWords.length === 0) return;
-          const targetWord = validWords[Math.floor(Math.random() * validWords.length)];
+          const targetWord = getWgCellHintTargetWord(r, c);
+          if (!targetWord) return;
           hintData = { targetWord, currentHint: '' };
           wgHints[`${r}-${c}`] = hintData;
         }
@@ -4001,6 +4151,14 @@ function checkWordGridGuess(word, username, profilePic) {
       localStorage.setItem('wordle_wordUsageStats', JSON.stringify(wordUsageFreq));
     } catch(e) {}
     
+    // Bersihkan hint di kotak ini dan re-roll hint di kotak lain jika memakai kata yang baru tertebak
+    delete wgHints[`${r}-${c}`];
+    for (const k in wgHints) {
+      if (wgHints[k] && wgHints[k].targetWord === word) {
+        delete wgHints[k];
+      }
+    }
+    
     renderWordGridBoard();
     triggerCellParticleEffect(r, c, totalPoints);
     if (window.sounds) window.sounds.playGreenChime();
@@ -4053,9 +4211,8 @@ function triggerWgAutoHint() {
   
   let hintData = wgHints[key];
   if (!hintData) {
-    const validWords = wgDictionaryCache[key];
-    if (!validWords || validWords.length === 0) return;
-    const targetWord = validWords[Math.floor(Math.random() * validWords.length)];
+    const targetWord = getWgCellHintTargetWord(r, c);
+    if (!targetWord) return;
     hintData = { targetWord, currentHint: '' };
     wgHints[key] = hintData;
   }
@@ -4263,6 +4420,11 @@ function startNewRound() {
   if (currentGameMode === 'wanderwords') {
     wanderWordsRound = round;
     startWanderWordsGame();
+    return;
+  }
+  if (currentGameMode === 'wordcluster') {
+    wordClusterRound = round;
+    startWordClusterGame();
     return;
   }
   if (currentGameMode === 'squareword') {
@@ -5694,6 +5856,19 @@ function applyRemoteGameSettings(settings) {
     }
   }
 
+  // 13. Word Cluster Custom Words List
+  if (Array.isArray(settings.wordClusterCustomList)) {
+    window.wordClusterCustomWords = settings.wordClusterCustomList;
+    try { localStorage.setItem('wordcluster_custom_words', JSON.stringify(settings.wordClusterCustomList)); } catch(e) {}
+    wordClusterShuffledPool = [];
+    wordClusterPuzzleIndex = 0;
+    try { sessionStorage.removeItem('wordcluster_shuffled_pool'); sessionStorage.removeItem('wordcluster_pool_idx'); } catch(e) {}
+    console.log('[WordCluster] Adopted custom words from remote settings:', settings.wordClusterCustomList.length);
+    if (currentGameMode === 'wordcluster' && settings.restartRound) {
+      needNewRound = true;
+    }
+  }
+
   // Apply reloads if requested
   if (settings.restartRound || needReloadWords || needNewRound) {
     if (needReloadWords && typeof loadWordLists === 'function') {
@@ -6471,6 +6646,8 @@ function handleChatGuess(data, optionalUserData) {
     const targetClean = (wanderWordsCurrentPuzzle && wanderWordsCurrentPuzzle.cleanAnswer) ? wanderWordsCurrentPuzzle.cleanAnswer : '';
     // Hanya proses tebakan jika panjang huruf sama dengan target kata atau jawaban persis (abaikan obrolan santai penonton)
     isAllowedLength = Boolean(targetClean ? (msg.length === targetClean.length || msg === targetClean) : (msg.length >= 4));
+  } else if (currentGameMode === 'wordcluster') {
+    isAllowedLength = (msg.length >= 2);
   }
 
   if (isAllowedLength) {
@@ -6512,9 +6689,13 @@ function handleChatGuess(data, optionalUserData) {
       return;
     }
 
-    // Untuk Wander Words: proses instan langsung real-time tanpa antrean buatan
+    // Untuk Wander Words & Word Cluster: proses instan langsung real-time tanpa antrean buatan
     if (currentGameMode === 'wanderwords') {
       processWanderWordsGuess(msg, data);
+      return;
+    }
+    if (currentGameMode === 'wordcluster') {
+      processWordClusterGuess(msg, data);
       return;
     }
 
@@ -6825,6 +7006,11 @@ function processGuess(guessWord, userData, queueLen = 0) {
 
   if (currentGameMode === 'wanderwords') {
     processWanderWordsGuess(guessWord, userData);
+    return;
+  }
+
+  if (currentGameMode === 'wordcluster') {
+    processWordClusterGuess(guessWord, userData);
     return;
   }
 
@@ -7481,31 +7667,27 @@ function processGuess(guessWord, userData, queueLen = 0) {
       tiles[i].classList.add('blind');
     } else {
       // Wordle: normal colored feedback
-      if (isGameAnimationsEnabled) {
-        if (queueLen > 3) {
-          // Antrean banjir: langsung tampilkan warna instan tanpa flip agar papan tidak pusing
+      const flipCfg = getFlipSpeedConfig(queueLen);
+      if (flipCfg.shouldFlip) {
+        const stepDelay = flipCfg.stepDelay;
+        const revealOffset = flipCfg.revealOffset;
+        tiles[i].classList.add('flip-3d');
+        tiles[i].style.animationDelay = `${i * stepDelay}ms`;
+
+        // Suara ubin berputar sinkron dengan tiap kotak huruf
+        setTimeout(() => {
+          if (window.sounds && typeof window.sounds.playFlip === 'function') {
+            window.sounds.playFlip(i);
+          }
+        }, i * stepDelay);
+
+        setTimeout(() => {
           tiles[i].classList.add(statuses[i]);
-        } else {
-          // Antrean santai atau sedang: animasi flip adaptif super snappy
-          const stepDelay = queueLen > 1 ? 25 : 45; // 45ms jika santai, 25ms jika ramai
-          tiles[i].classList.add('flip-3d');
-          tiles[i].style.animationDelay = `${i * stepDelay}ms`;
-
-          // Suara ubin berputar sinkron dengan tiap kotak huruf
-          setTimeout(() => {
-            if (window.sounds && typeof window.sounds.playFlip === 'function') {
-              window.sounds.playFlip(i);
-            }
-          }, i * stepDelay);
-
-          setTimeout(() => {
-            tiles[i].classList.add(statuses[i]);
-            // Jika terbuka huruf hijau (correct), bunyikan chime halus
-            if (statuses[i] === 'correct' && queueLen <= 2 && window.sounds && typeof window.sounds.playGreenChime === 'function') {
-              window.sounds.playGreenChime();
-            }
-          }, (i * stepDelay) + 120);
-        }
+          // Jika terbuka huruf hijau (correct), bunyikan chime halus
+          if (statuses[i] === 'correct' && queueLen <= 2 && window.sounds && typeof window.sounds.playGreenChime === 'function') {
+            window.sounds.playGreenChime();
+          }
+        }, (i * stepDelay) + revealOffset);
       } else {
         tiles[i].classList.add(statuses[i]);
       }
@@ -8506,6 +8688,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!isGameAnimationsEnabled) {
     document.body.classList.add('no-animations');
   }
+
+  const flipSpeedSelect = document.getElementById('flipSpeedSelect');
+  if (flipSpeedSelect) flipSpeedSelect.value = currentFlipSpeed;
+  const flipSpeedControlRow = document.getElementById('flipSpeedControlRow');
+  if (flipSpeedControlRow) flipSpeedControlRow.style.opacity = isGameAnimationsEnabled ? '1' : '0.5';
 
   // Initialize length checkboxes
   try {
@@ -12077,8 +12264,10 @@ function renderCascadleUI() {
     const tilesCol = document.createElement('div');
     tilesCol.className = 'cascadle-row-tiles';
 
-    const isNewest = (idx === 0) && g._isNew && isGameAnimationsEnabled;
-    const stepDelay = 90; // ms antar huruf (sedikit lebih cepat dari wordle 100ms)
+    const flipCfg = getFlipSpeedConfig(0);
+    const isNewest = (idx === 0) && g._isNew && flipCfg.shouldFlip;
+    const stepDelay = flipCfg.stepDelay || 60;
+    const revealOffset = flipCfg.revealOffset || 140;
 
     for (let i = 0; i < g.length; i++) {
       const tile = document.createElement('div');
@@ -12095,8 +12284,8 @@ function renderCascadleUI() {
           setTimeout(((idx_) => () => window.sounds.playFlip(idx_))(i), i * stepDelay);
         }
 
-        // Reveal warna di titik tengah flip (setelah 45% animasi = ~180ms + delay)
-        const colorRevealDelay = (i * stepDelay) + 180;
+        // Reveal warna di titik tengah flip
+        const colorRevealDelay = (i * stepDelay) + revealOffset;
         setTimeout(((t, cls) => () => {
           t.classList.add(cls);
         })(tile, stateClass), colorRevealDelay);
@@ -12112,6 +12301,8 @@ function renderCascadleUI() {
     if (isNewest) {
       const totalAnimDuration = (g.length - 1) * stepDelay + 400;
       setTimeout(() => { if (cascadleGuesses[0]) cascadleGuesses[0]._isNew = false; }, totalAnimDuration);
+    } else if (g._isNew) {
+      g._isNew = false;
     }
     rowEl.appendChild(tilesCol);
 
@@ -12454,7 +12645,7 @@ function renderWanderWordsUI() {
 
   // 1. Update Clue & Global Header Round Badge
   const clueEl = document.getElementById('wanderwordsClueText');
-  if (clueEl) clueEl.textContent = puzzle.clue || 'KATEGORI';
+  if (clueEl) clueEl.textContent = puzzle.clue || 'CLUE';
 
   // Sync to global header round badge under game title
   const globalRoundEl = document.getElementById('roundNumber');
@@ -12876,7 +13067,7 @@ function handleWanderWordsWin(userData) {
       if (winPts) winPts.innerHTML = `🪙 +${ptsAwarded} Poin`;
 
       const winSubtitle = document.getElementById('winSubtitleText');
-      if (winSubtitle) winSubtitle.textContent = `KATEGORI: ${puzzle.clue || 'Wander Words'}`;
+      if (winSubtitle) winSubtitle.textContent = `CLUE: ${puzzle.clue || 'Wander Words'}`;
 
       const winWordEl = document.getElementById('winWord');
       if (winWordEl) {
@@ -12932,4 +13123,414 @@ function skipWanderWordsPuzzle() {
 
 window.wanderWordsGiveHint = wanderWordsGiveHint;
 window.skipWanderWordsPuzzle = skipWanderWordsPuzzle;
+
+// ═══════════════════════════════════════════════════════════════════
+// WORD CLUSTER (KATA TERKAIT) GAME LOGIC
+// ═══════════════════════════════════════════════════════════════════
+let wordClusterCurrentTopic = null;
+let wordClusterItems = []; // [{ index, word, points, isSolved, isJustSolved, solver, revealedLetters: [] }]
+let wordClusterRound = 1;
+let wordClusterCustomWords = null;
+let wordClusterTransitionTimer = null;
+let wordClusterShuffledPool = [];
+let wordClusterPuzzleIndex = 0;
+
+function getWordClusterActivePool() {
+  if (Array.isArray(window.wordClusterCustomWords) && window.wordClusterCustomWords.length > 0) {
+    return window.wordClusterCustomWords;
+  }
+  try {
+    const saved = localStorage.getItem('wordcluster_custom_words');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        window.wordClusterCustomWords = parsed;
+        return parsed;
+      }
+    }
+  } catch(e) {}
+  return window.WORDCLUSTER_DEFAULT_PUZZLES || window.WORDCLUSTER_PUZZLES || [];
+}
+
+function startWordClusterGame() {
+  if (currentGameMode !== 'wordcluster') return;
+
+  if (wordClusterTransitionTimer) {
+    clearTimeout(wordClusterTransitionTimer);
+    wordClusterTransitionTimer = null;
+  }
+
+  const pool = getWordClusterActivePool();
+  if (!pool || pool.length === 0) return;
+
+  // Cek apakah ada antrean kocokan topik yang tersimpan di sesi browser
+  try {
+    if (wordClusterShuffledPool.length === 0) {
+      const savedPool = sessionStorage.getItem('wordcluster_shuffled_pool');
+      const savedIdx = parseInt(sessionStorage.getItem('wordcluster_pool_idx') || '0');
+      if (savedPool) {
+        const parsed = JSON.parse(savedPool);
+        if (Array.isArray(parsed) && parsed.length === pool.length && savedIdx < parsed.length) {
+          wordClusterShuffledPool = parsed;
+          wordClusterPuzzleIndex = savedIdx;
+        }
+      }
+    }
+  } catch(e) {}
+
+  // Kocok (shuffle) pool secara acak jika baru pertama kali atau seluruh topik sudah habis dimainkan (no repeat)
+  if (wordClusterShuffledPool.length === 0 || wordClusterPuzzleIndex >= wordClusterShuffledPool.length) {
+    wordClusterShuffledPool = [...pool];
+    for (let i = wordClusterShuffledPool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [wordClusterShuffledPool[i], wordClusterShuffledPool[j]] = [wordClusterShuffledPool[j], wordClusterShuffledPool[i]];
+    }
+    wordClusterPuzzleIndex = 0;
+    try {
+      sessionStorage.setItem('wordcluster_shuffled_pool', JSON.stringify(wordClusterShuffledPool));
+      sessionStorage.setItem('wordcluster_pool_idx', '0');
+    } catch(e) {}
+    console.log(`[WordCluster] Shuffled ${wordClusterShuffledPool.length} topics. Playing without repeats!`);
+  }
+
+  const rawPuzzle = wordClusterShuffledPool[wordClusterPuzzleIndex];
+  wordClusterPuzzleIndex++;
+  try {
+    sessionStorage.setItem('wordcluster_pool_idx', wordClusterPuzzleIndex.toString());
+  } catch(e) {}
+
+  if (!rawPuzzle) return;
+
+  wordClusterCurrentTopic = rawPuzzle.topic ? rawPuzzle.topic.toUpperCase().trim() : "KATA TERKAIT";
+
+  // Sediakan 6 kata dengan poin bertingkat dari terbesar ke terkecil: 60, 50, 40, 30, 20, 10
+  const stdPoints = [60, 50, 40, 30, 20, 10];
+  const wordsList = Array.isArray(rawPuzzle.words) ? rawPuzzle.words.slice(0, 6) : [];
+
+  wordClusterItems = wordsList.map((item, idx) => {
+    let wordStr = typeof item === 'string' ? item : (item.word || '');
+    wordStr = wordStr.toUpperCase().trim().replace(/[^A-Z]/g, '');
+    const pts = (typeof item === 'object' && item.points) ? item.points : (stdPoints[idx] || 10);
+    return {
+      index: idx,
+      word: wordStr,
+      points: pts,
+      isSolved: false,
+      isJustSolved: false,
+      solver: null,
+      revealedLetters: [0] // Huruf pertama otomatis terbuka sebagai petunjuk awal
+    };
+  });
+
+  renderWordClusterUI();
+  console.log(`[WordCluster] Round ${wordClusterRound} started: ${wordClusterCurrentTopic} (${wordClusterItems.length} words)`);
+}
+
+function renderWordClusterUI() {
+  const container = document.getElementById('wordClusterContainer');
+  if (!container || currentGameMode !== 'wordcluster') return;
+
+  // 1. Update Judul Topik, Ronde, & Instruksi Chat Hint
+  const topicTitleEl = document.getElementById('wcTopicTitle');
+  if (topicTitleEl) topicTitleEl.textContent = wordClusterCurrentTopic || 'TEMA KATA';
+
+  const chatHintTopicEl = document.getElementById('wcChatHintTopic');
+  if (chatHintTopicEl) {
+    chatHintTopicEl.textContent = wordClusterCurrentTopic || 'topik ini';
+  } else {
+    const chatHintEl = document.getElementById('wcChatHintText');
+    if (chatHintEl) chatHintEl.innerHTML = `Tebak kata yang berhubungan dengan <strong id="wcChatHintTopic">${wordClusterCurrentTopic || 'topik ini'}</strong>!`;
+  }
+
+  const globalRoundEl = document.getElementById('roundNumber');
+  if (globalRoundEl) globalRoundEl.textContent = wordClusterRound;
+  round = wordClusterRound;
+
+  // 2. Update Badge Progress Tertebak
+  const solvedCount = wordClusterItems.filter(it => it.isSolved).length;
+  const progressTextEl = document.getElementById('wcProgressText');
+  if (progressTextEl) progressTextEl.textContent = `${solvedCount} / ${wordClusterItems.length} Tertebak`;
+
+  // 3. Render 6 Baris Kata
+  const listEl = document.getElementById('wcWordsList');
+  if (!listEl) return;
+  listEl.innerHTML = '';
+
+  wordClusterItems.forEach((item, idx) => {
+    const row = document.createElement('div');
+    row.className = 'wc-row' + (item.isSolved ? ' solved' : '');
+    row.id = `wc-row-${idx}`;
+
+    // Kotak Ubin Huruf Kata
+    const tilesArea = document.createElement('div');
+    tilesArea.className = 'wc-tiles-area';
+
+    const wordLen = item.word.length;
+    for (let c = 0; c < wordLen; c++) {
+      const char = item.word[c] || '';
+      const tile = document.createElement('div');
+      tile.className = 'wc-tile';
+
+      if (item.isSolved) {
+        tile.classList.add('solved');
+        if (item.isJustSolved) {
+          tile.classList.add('just-solved');
+        }
+        tile.textContent = char;
+      } else if (item.revealedLetters.includes(c)) {
+        tile.classList.add('revealed');
+        tile.textContent = char;
+      } else {
+        tile.classList.add('empty');
+        tile.textContent = '';
+      }
+      tilesArea.appendChild(tile);
+    }
+    row.appendChild(tilesArea);
+
+    // Kolom Kanan: Poin (jika belum tertebak) atau Avatar Pemenang (jika sudah tertebak)
+    const metaCol = document.createElement('div');
+    metaCol.className = 'wc-meta-col';
+
+    if (!item.isSolved) {
+      const ptsBadge = document.createElement('div');
+      ptsBadge.className = 'wc-points-badge';
+      ptsBadge.innerHTML = `<span class="wc-pts-num">${item.points}</span><span class="wc-pts-unit">pt</span>`;
+      metaCol.appendChild(ptsBadge);
+    } else {
+      const guesserWrap = document.createElement('div');
+      guesserWrap.className = 'wc-guesser-wrap' + (item.isJustSolved ? ' just-solved' : '');
+
+      const avatarBox = document.createElement('div');
+      avatarBox.className = 'wc-guesser-avatar-box';
+
+      const avatar = document.createElement('img');
+      avatar.className = 'wc-guesser-avatar';
+      avatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
+      avatar.src = item.solver?.profilePic || 'assets/bg_nature.png';
+      avatarBox.appendChild(avatar);
+
+      const ptsBadge = document.createElement('span');
+      ptsBadge.className = 'wc-avatar-pts-badge';
+      ptsBadge.textContent = `+${item.points}`;
+      avatarBox.appendChild(ptsBadge);
+
+      guesserWrap.appendChild(avatarBox);
+
+      const infoBox = document.createElement('div');
+      infoBox.className = 'wc-guesser-info';
+
+      const nameLabel = document.createElement('span');
+      nameLabel.className = 'wc-guesser-name';
+      const uName = item.solver?.username || 'Pemain';
+      nameLabel.textContent = uName;
+      nameLabel.title = uName;
+      infoBox.appendChild(nameLabel);
+
+      guesserWrap.appendChild(infoBox);
+      metaCol.appendChild(guesserWrap);
+    }
+
+    // Reset flag animasi satu kali agar di tebakan kata berikutnya ubin ini tidak ikut mental lagi
+    if (item.isJustSolved) {
+      setTimeout(() => { item.isJustSolved = false; }, 600);
+    }
+
+    row.appendChild(metaCol);
+    listEl.appendChild(row);
+  });
+}
+
+function processWordClusterGuess(guessWord, userData) {
+  if (currentGameMode !== 'wordcluster' || isGameOver) return false;
+  if (!guessWord || !wordClusterItems || wordClusterItems.length === 0) return false;
+
+  const cleanGuess = guessWord.toUpperCase().trim().replace(/[^A-Z]/g, '');
+  if (cleanGuess.length < 2) return false;
+
+  // 1. Cari kecocokan kata tebakan langsung
+  let matchedItem = wordClusterItems.find(item => item.word === cleanGuess);
+
+  // 2. Jika tidak cocok langsung (misal penonton ketik kalimat/frasa seperti "tebak nelayan" atau "itu jangkar"),
+  // cari per kata dari komentar asli yang belum tertebak
+  if (!matchedItem && userData && userData.comment) {
+    const tokens = userData.comment.toUpperCase().split(/\s+/).map(t => t.replace(/[^A-Z]/g, '')).filter(t => t.length >= 2);
+    matchedItem = wordClusterItems.find(item => tokens.includes(item.word) && !item.isSolved);
+  }
+
+  if (!matchedItem) return false;
+
+  const rawName = (userData && (userData.nickname || userData.uniqueId)) ? (userData.nickname || userData.uniqueId) : 'Pemain';
+
+  // Jika kata sudah pernah tertebak
+  if (matchedItem.isSolved) {
+    return false;
+  }
+
+  // Tandai tertebak dan beri flag isJustSolved untuk animasi 1x
+  matchedItem.isSolved = true;
+  matchedItem.isJustSolved = true;
+  matchedItem.solver = {
+    username: rawName,
+    profilePic: (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : 'assets/bg_nature.png',
+    userId: (userData && userData.uniqueId) ? userData.uniqueId : rawName
+  };
+
+  // Suara & Point
+  if (window.sounds) {
+    if (typeof window.sounds.playFlip === 'function') window.sounds.playFlip(0);
+    if (typeof window.sounds.playGreenChime === 'function') {
+      setTimeout(() => window.sounds.playGreenChime(), 150);
+    }
+  }
+  if (window.playHostAudio) playHostAudio('correct');
+
+  // Berikan poin ke leaderboard
+  if (typeof addPoints === 'function' && userData) {
+    addPoints(userData, matchedItem.points);
+  }
+
+  renderWordClusterUI();
+  showToast(`@${rawName} menebak "${matchedItem.word}" (+${matchedItem.points} Poin)!`, 2400);
+
+  // Cek apakah seluruh 6 kata sudah tertebak semua
+  const allSolved = wordClusterItems.every(it => it.isSolved);
+  if (allSolved) {
+    setTimeout(() => {
+      handleWordClusterWin();
+    }, 1800); // Jeda 1.8 detik agar 6 ubin hijau terlihat penuh memuaskan sebelum popup muncul
+  }
+
+  return true;
+}
+
+function handleWordClusterWin() {
+  if (isGameOver) return;
+  isGameOver = true;
+
+  if (window.sounds && typeof window.sounds.playWin === 'function') {
+    window.sounds.playWin();
+  }
+  if (window.playHostAudio) playHostAudio('win');
+
+  // Tampilkan multiWinOverlay
+  const overlay = document.getElementById('multiWinOverlay');
+  const list = document.getElementById('multiWinList');
+  const title = document.getElementById('multiWinTitle');
+
+  if (overlay && list) {
+    if (title) title.textContent = `TOPIK SELESAI: ${wordClusterCurrentTopic}`;
+    list.innerHTML = '';
+
+    // Agregasikan poin pemenang per user
+    const playerTotals = {};
+    wordClusterItems.forEach(item => {
+      if (item.solver) {
+        const u = item.solver.username;
+        if (!playerTotals[u]) {
+          playerTotals[u] = {
+            username: u,
+            profilePic: item.solver.profilePic,
+            points: 0,
+            words: []
+          };
+        }
+        playerTotals[u].points += item.points;
+        playerTotals[u].words.push(item.word);
+      }
+    });
+
+    const sortedPlayers = Object.values(playerTotals).sort((a, b) => b.points - a.points);
+    sortedPlayers.forEach((player, index) => {
+      const item = document.createElement('div');
+      item.className = 'multi-win-item' + (index === 0 ? ' mvp' : '');
+
+      let avHTML = `<div class="multi-win-letter">${player.username.charAt(0).toUpperCase()}</div>`;
+      if (player.profilePic) {
+        avHTML = `<img src="${player.profilePic}" alt="Avatar" class="multi-win-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div class="multi-win-letter" style="display:none;">${player.username.charAt(0).toUpperCase()}</div>`;
+      }
+
+      const crownHTML = index === 0 ? '<span class="multi-win-crown-icon" title="Juara 1 MVP"><i class="fa-solid fa-crown"></i></span>' : `<span class="multi-win-rank-badge">#${index + 1}</span>`;
+      const mvpBadge = index === 0 ? '<span class="multi-win-mvp-badge"><i class="fa-solid fa-star"></i> MVP</span>' : '';
+      const wordsCountText = `${player.words.length} Kata`;
+      const wordsPreviewText = player.words.join(' • ');
+
+      item.innerHTML = `
+        <div class="multi-win-avatar-wrap">
+          ${avHTML}
+          ${crownHTML}
+        </div>
+        <div class="multi-win-info">
+          <div class="multi-win-name-row">
+            <span class="multi-win-name">${player.username}</span>
+            ${mvpBadge}
+          </div>
+          <div class="multi-win-meta-row">
+            <span class="multi-win-count-chip">${wordsCountText}</span>
+            <span class="multi-win-words-txt" title="${player.words.join(', ')}">${wordsPreviewText}</span>
+          </div>
+        </div>
+        <div class="multi-win-points">+${player.points} Pts</div>
+      `;
+      list.appendChild(item);
+    });
+
+    // Panggil transisi kemenangan multi-pemenang standar (terhubung ke Confetti & Like Progress Bar)
+    if (typeof triggerWinTransition === 'function') {
+      triggerWinTransition(10000, true);
+    } else {
+      overlay.classList.add('show');
+      wordClusterTransitionTimer = setTimeout(() => {
+        executeWordClusterRestart();
+      }, 10000);
+    }
+  }
+}
+
+function executeWordClusterRestart() {
+  if (wordClusterTransitionTimer) {
+    clearTimeout(wordClusterTransitionTimer);
+    wordClusterTransitionTimer = null;
+  }
+  const multiWin = document.getElementById('multiWinOverlay');
+  if (multiWin) multiWin.classList.remove('show');
+  const likeProg = document.getElementById('multiLikeProgressContainer');
+  if (likeProg) likeProg.style.display = 'none';
+
+  isGameOver = false;
+  wordClusterRound++;
+  startWordClusterGame();
+}
+
+function revealWordClusterHint() {
+  if (currentGameMode !== 'wordcluster' || isGameOver) return;
+  // Cari baris belum tertebak pertama yang masih memiliki huruf tertutup
+  const unsolvedItem = wordClusterItems.find(it => !it.isSolved && it.revealedLetters.length < it.word.length);
+  if (!unsolvedItem) {
+    showToast("Semua kata sudah terbuka atau tertebak!", 1800);
+    return;
+  }
+
+  // Buka 1 huruf berikutnya
+  const nextIdx = unsolvedItem.revealedLetters.length;
+  if (nextIdx < unsolvedItem.word.length) {
+    unsolvedItem.revealedLetters.push(nextIdx);
+    renderWordClusterUI();
+    if (window.sounds && typeof window.sounds.playFlip === 'function') window.sounds.playFlip(0);
+    showToast(`Bantuan: Huruf ke-${nextIdx + 1} baris #${unsolvedItem.index + 1} terbuka (${unsolvedItem.word[nextIdx]})!`, 2000);
+  }
+}
+
+function skipWordClusterRound() {
+  if (currentGameMode !== 'wordcluster') return;
+  if (window.playHostAudio) playHostAudio('click');
+  showToast(`Melewati topik "${wordClusterCurrentTopic}"...`, 2000);
+  executeWordClusterRestart();
+}
+
+window.revealWordClusterHint = revealWordClusterHint;
+window.skipWordClusterRound = skipWordClusterRound;
+window.startWordClusterGame = startWordClusterGame;
+window.processWordClusterGuess = processWordClusterGuess;
+
 

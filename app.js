@@ -6465,8 +6465,8 @@ function setupSocketListeners() {
 
         setTimeout(() => {
           if (item.parentNode) item.remove();
-        }, 2700);
-      }, i * 200);
+        }, 3600);
+      }, i * 250);
     }
   }
   window.spawnFloatingGift = spawnFloatingGift;

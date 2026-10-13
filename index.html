@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=overlays-content">
   <title>TikTok Live Games</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=61">
+  <link rel="stylesheet" href="style.css?v=62">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
   <script src="https://www.youtube.com/iframe_api"></script>
@@ -1466,9 +1466,10 @@
 
       <!-- Word Cluster (Kata Terkait) Container -->
       <div id="wordClusterContainer" class="wordcluster-container" style="display: none;">
-        <!-- Top Topic Clue Header Card -->
-        <div class="wordcluster-header">
-          <div class="wordcluster-topic-card">
+        <!-- Unified Board Card (Header Topik + 6 Baris Kata) -->
+        <div class="wordcluster-board-card">
+          <!-- Top Header Section of the Board -->
+          <div class="wordcluster-board-header">
             <div class="wordcluster-topic-left">
               <span class="wordcluster-topic-label"><i class="fa-solid fa-layer-group"></i> TEMA KATA</span>
               <span class="wordcluster-topic-title" id="wcTopicTitle">LAUT</span>
@@ -1478,11 +1479,14 @@
               <span id="wcProgressText">0 / 6 Tertebak</span>
             </div>
           </div>
-        </div>
 
-        <!-- 6 Word Cluster Rows (Sorted 60pt to 10pt) -->
-        <div class="wordcluster-list" id="wcWordsList">
-          <!-- Dynamically populated via JS -->
+          <!-- Divider Line Between Header and Word Rows -->
+          <div class="wordcluster-board-divider"></div>
+
+          <!-- 6 Word Cluster Rows (Inside the Unified Card) -->
+          <div class="wordcluster-list" id="wcWordsList">
+            <!-- Dynamically populated via JS -->
+          </div>
         </div>
 
         <!-- Bottom Helper & Host Controls -->

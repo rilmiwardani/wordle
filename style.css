@@ -1202,8 +1202,8 @@ header {
   gap: 5px;
   border-radius: 12px;
   background: rgba(15, 23, 42, 0.94);
-  border: 1px solid rgba(254, 44, 85, 0.3);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55), 0 0 12px rgba(254, 44, 85, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
 
 /* Hide bulky redundant headers in lyrics mode to keep it minimalist */
@@ -1355,7 +1355,7 @@ header {
   font-weight: 800;
   transform: scale(1.05);
   opacity: 1;
-  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.95), 0 0 8px rgba(254, 44, 85, 0.45);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
   background: transparent;
   border: none;
 }

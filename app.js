@@ -1611,6 +1611,76 @@ function showMusicCooldownWarningNotif(requesterName, remainingSec) {
   }, 3500);
 }
 
+let lastMusicLimitWarningTime = 0;
+function showMusicUserLimitWarningNotif(requesterName, maxUser) {
+  const now = Date.now();
+  if (now - lastMusicLimitWarningTime < 3000) return; // Anti-spam jeda notifikasi
+  lastMusicLimitWarningTime = now;
+
+  const container = document.getElementById('musicNotifContainer');
+  if (!container) return;
+
+  if (window.sounds && typeof window.sounds.playPop === 'function') {
+    try { window.sounds.playPop(); } catch(e) {}
+  }
+
+  container.innerHTML = '';
+  const notif = document.createElement('div');
+  notif.className = 'music-notif music-notif-limit';
+
+  const cleanName = (requesterName || 'Viewer').replace(/[<>]/g, '').replace(/^@+/, '').trim();
+  notif.innerHTML = `
+    <span class="music-notif-icon" style="color: #38bdf8; font-size: 15px;"><i class="fa-solid fa-list-check"></i></span>
+    <div class="music-notif-content">
+      <span class="music-notif-user">${cleanName}</span>
+      <span class="music-notif-desc">Limit antrianmu penuh (maks ${maxUser || 2} lagu)!</span>
+    </div>
+  `;
+
+  container.appendChild(notif);
+
+  setTimeout(() => {
+    if (notif.parentNode === container) {
+      container.removeChild(notif);
+    }
+  }, 3500);
+}
+
+let lastMusicGlobalFullWarningTime = 0;
+function showMusicGlobalFullWarningNotif(requesterName, maxGlobal) {
+  const now = Date.now();
+  if (now - lastMusicGlobalFullWarningTime < 3000) return; // Anti-spam jeda notifikasi
+  lastMusicGlobalFullWarningTime = now;
+
+  const container = document.getElementById('musicNotifContainer');
+  if (!container) return;
+
+  if (window.sounds && typeof window.sounds.playPop === 'function') {
+    try { window.sounds.playPop(); } catch(e) {}
+  }
+
+  container.innerHTML = '';
+  const notif = document.createElement('div');
+  notif.className = 'music-notif music-notif-full';
+
+  const cleanName = (requesterName || 'Penonton').replace(/[<>]/g, '').replace(/^@+/, '').trim();
+  notif.innerHTML = `
+    <span class="music-notif-icon" style="color: #f43f5e; font-size: 15px;"><i class="fa-solid fa-compact-disc"></i></span>
+    <div class="music-notif-content">
+      <span class="music-notif-user">${cleanName}</span>
+      <span class="music-notif-desc">Antrian lagu penuh (maks ${maxGlobal || 20} lagu)!</span>
+    </div>
+  `;
+
+  container.appendChild(notif);
+
+  setTimeout(() => {
+    if (notif.parentNode === container) {
+      container.removeChild(notif);
+    }
+  }, 3500);
+}
+
 function onPlayerStateChange(event) {
   const vinyl = document.getElementById('musicVinyl');
   const eq = document.getElementById('musicEqualizer');
@@ -5714,7 +5784,11 @@ window.addEventListener('DOMContentLoaded', () => {
     // Check global limit
     if (musicSettings.maxGlobal > 0 && musicQueue.length >= musicSettings.maxGlobal) {
       console.log("Music rejected: Global queue full");
-      if (data.requesterName === "Host") showToast("🚫 Antrian penuh!");
+      if (data.requesterName === "Host") {
+        showToast("🚫 Antrian penuh!");
+      } else {
+        showMusicGlobalFullWarningNotif(data.requesterName, musicSettings.maxGlobal);
+      }
       return;
     }
     
@@ -5724,6 +5798,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const userReqs = musicQueue.filter(m => m.requesterName === data.requesterName).length;
         if (userReqs >= musicSettings.maxUser) {
           console.log(`Music rejected: User ${data.requesterName} hit queue limit`);
+          showMusicUserLimitWarningNotif(data.requesterName, musicSettings.maxUser);
           return;
         }
       }
@@ -6336,6 +6411,24 @@ function setupSocketListeners() {
             showMusicCooldownWarningNotif(data.nickname || data.uniqueId, remSec);
             return;
           }
+        }
+
+        // Check User Limit
+        if (!isHost && musicSettings.maxUser > 0) {
+          const reqName = data.nickname || data.uniqueId;
+          const userReqs = musicQueue.filter(m => m.requesterName === reqName).length;
+          if (userReqs >= musicSettings.maxUser) {
+            console.log(`[Music] Blocked !play from ${reqName}: queue limit reached`);
+            showMusicUserLimitWarningNotif(reqName, musicSettings.maxUser);
+            return;
+          }
+        }
+
+        // Check Global Limit
+        if (!isHost && musicSettings.maxGlobal > 0 && musicQueue.length >= musicSettings.maxGlobal) {
+          console.log(`[Music] Blocked !play: Global queue full`);
+          showMusicGlobalFullWarningNotif(data.nickname || data.uniqueId, musicSettings.maxGlobal);
+          return;
         }
 
         const query = data.comment.substring(6).trim();

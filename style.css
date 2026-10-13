@@ -3919,6 +3919,48 @@ header {
   margin-top: 1px;
 }
 
+.music-notif.music-notif-limit {
+  max-width: 250px;
+  background: rgba(12, 25, 36, 0.94);
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  box-shadow: 0 4px 20px rgba(56, 189, 248, 0.25);
+}
+
+.music-notif.music-notif-limit .music-notif-user {
+  color: #7dd3fc;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.music-notif.music-notif-limit .music-notif-desc {
+  color: #e0f2fe;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.25;
+  margin-top: 1px;
+}
+
+.music-notif.music-notif-full {
+  max-width: 250px;
+  background: rgba(30, 12, 22, 0.94);
+  border: 1px solid rgba(244, 63, 94, 0.5);
+  box-shadow: 0 4px 20px rgba(244, 63, 94, 0.25);
+}
+
+.music-notif.music-notif-full .music-notif-user {
+  color: #fda4af;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.music-notif.music-notif-full .music-notif-desc {
+  color: #ffe4e6;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.25;
+  margin-top: 1px;
+}
+
 /* ══════════════════════════════════════════ */
 /*          LIKE COUNTER WIDGET              */
 /* ══════════════════════════════════════════ */

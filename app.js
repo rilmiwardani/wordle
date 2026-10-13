@@ -1548,12 +1548,15 @@ function parseLRC(lrcText) {
   const lines = lrcText.split('\n');
   const result = [];
   const timeRegex = /\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/g;
+  const spamRegex = /(www\.[a-z0-9\-]+\.[a-z]+|http[s]?:\/\/|download lagu|lirik by|sync by)/i;
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
+    if (spamRegex.test(trimmed)) continue;
     const matches = [...trimmed.matchAll(timeRegex)];
     if (matches.length > 0) {
       const text = trimmed.replace(timeRegex, '').trim();
+      if (spamRegex.test(text)) continue;
       for (const m of matches) {
         const min = parseInt(m[1], 10);
         const sec = parseInt(m[2], 10);
@@ -1760,7 +1763,7 @@ function updateLyricsSync(currTime) {
 
   if (currentLyricsIndex >= 0 && lines[currentLyricsIndex]) {
     const activeElem = lines[currentLyricsIndex];
-    const containerHeight = scrollContainer.clientHeight || 120;
+    const containerHeight = scrollContainer.clientHeight || 52;
     const targetY = (containerHeight / 2) - (activeElem.offsetTop + (activeElem.offsetHeight / 2));
     track.style.transform = `translateY(${Math.round(targetY)}px)`;
   } else {

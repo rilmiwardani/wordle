@@ -1192,45 +1192,42 @@ header {
   height: 2px;
 }
 
-/* 3. Aesthetic Synced Lyrics Mode */
+/* 3. Aesthetic Synced Lyrics Mode (Minimalist & Compact Floating Capsule) */
 .music-widget.music-style-lyrics {
   flex-direction: column;
   align-items: stretch;
-  width: 310px;
-  max-width: 330px;
-  padding: 10px 12px;
-  gap: 8px;
-  border-radius: 14px;
-  background: rgba(15, 23, 42, 0.92);
-  border: 1px solid rgba(254, 44, 85, 0.35);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 16px rgba(254, 44, 85, 0.12);
+  width: 255px;
+  max-width: 270px;
+  padding: 8px 10px;
+  gap: 5px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.94);
+  border: 1px solid rgba(254, 44, 85, 0.3);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55), 0 0 12px rgba(254, 44, 85, 0.1);
 }
 
+/* Hide bulky redundant headers in lyrics mode to keep it minimalist */
 .music-widget.music-style-lyrics .music-now-playing-header {
-  display: flex !important;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2px;
-  padding-bottom: 4px;
+  display: none !important;
 }
 
 .music-widget.music-style-lyrics .music-card-main {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
 }
 
 .music-widget.music-style-lyrics .music-vinyl-container {
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
   overflow: hidden;
   flex-shrink: 0;
 }
 
 .music-widget.music-style-lyrics .music-vinyl {
-  border-radius: 8px;
+  border-radius: 6px;
   animation: none !important;
   border: none;
   box-shadow: none;
@@ -1242,9 +1239,23 @@ header {
 }
 
 .music-widget.music-style-lyrics #musicThumb {
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+}
+
+.music-widget.music-style-lyrics .music-title {
+  font-size: 11px;
+}
+
+.music-widget.music-style-lyrics .music-requester {
+  font-size: 9px;
+  margin-top: 1px;
+}
+
+.music-widget.music-style-lyrics .music-progress-bar {
+  margin-top: 2px;
+  height: 2px;
 }
 
 .music-widget.music-style-lyrics .music-next {
@@ -1260,18 +1271,18 @@ header {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.18);
   color: #f1f5f9;
-  border-radius: 6px;
-  width: 24px;
-  height: 24px;
+  border-radius: 5px;
+  width: 20px;
+  height: 20px;
   padding: 0;
-  font-size: 11px;
+  font-size: 9.5px;
   cursor: pointer;
   transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  margin-left: 6px;
+  margin-left: 5px;
 }
 
 .music-lyrics-quick-btn:hover {
@@ -1289,49 +1300,21 @@ header {
 
 /* Lyrics Container & Scroll Window */
 .music-lyrics-container {
-  margin-top: 2px;
-  padding-top: 6px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 1px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 6px;
   position: relative;
 }
 
+/* Hide bulky sub-header badge row in lyrics mode */
 .music-lyrics-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-
-.music-lyrics-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: rgba(254, 44, 85, 0.15);
-  border: 1px solid rgba(254, 44, 85, 0.3);
-  color: #ff5b79;
-  padding: 2px 7px;
-  border-radius: 10px;
-  font-size: 9px;
-  font-weight: 800;
-}
-
-.music-lyrics-status {
-  font-size: 9px;
-  color: #94a3b8;
-  font-weight: 600;
-  max-width: 170px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: none !important;
 }
 
 .music-lyrics-scroll {
-  height: 120px;
+  height: 52px;
   overflow: hidden;
   position: relative;
   mask-image: linear-gradient(to bottom, transparent 0%, black 22%, black 78%, transparent 100%);
@@ -1343,42 +1326,42 @@ header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
-  padding: 45px 0;
-  gap: 8px;
+  transition: transform 0.32s cubic-bezier(0.25, 1, 0.5, 1);
+  padding: 15px 0;
+  gap: 5px;
   width: 100%;
 }
 
 .music-lyric-line {
   font-family: 'Outfit', sans-serif;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.42);
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.38);
   text-align: center;
-  line-height: 1.35;
-  padding: 3px 10px;
-  border-radius: 6px;
-  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  line-height: 1.25;
+  padding: 1px 4px;
+  border-radius: 4px;
+  transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
   transform: scale(0.92);
   user-select: none;
-  max-width: 95%;
+  max-width: 98%;
   word-break: break-word;
   box-sizing: border-box;
 }
 
 .music-lyric-line.active {
   color: #ffffff;
-  font-size: 13.5px;
-  font-weight: 900;
-  transform: scale(1.06);
+  font-size: 12.5px;
+  font-weight: 800;
+  transform: scale(1.05);
   opacity: 1;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 10px rgba(254, 44, 85, 0.5);
-  background: rgba(254, 44, 85, 0.15);
-  border: 1px solid rgba(254, 44, 85, 0.35);
+  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.95), 0 0 8px rgba(254, 44, 85, 0.45);
+  background: transparent;
+  border: none;
 }
 
 .music-lyric-line.passed {
-  color: rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.2);
   transform: scale(0.88);
 }
 
@@ -1387,10 +1370,10 @@ header {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100px;
-  gap: 6px;
+  height: 48px;
+  gap: 3px;
   color: #94a3b8;
-  font-size: 11px;
+  font-size: 10px;
   text-align: center;
   font-style: italic;
 }
@@ -8769,8 +8752,9 @@ body.theme-sepia .music-lyric-line {
 
 body.theme-sepia .music-lyric-line.active {
   color: #1a120a !important;
-  background: rgba(168, 72, 38, 0.15) !important;
-  border: 1px solid rgba(168, 72, 38, 0.4) !important;
+  font-weight: 800 !important;
+  background: transparent !important;
+  border: none !important;
   text-shadow: none !important;
 }
 

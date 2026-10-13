@@ -2237,8 +2237,8 @@ header {
   gap: 8px;
   align-items: flex-end;
   pointer-events: none;
-  /* Selalu di atas semua elemen game */
-  z-index: 9998;
+  /* Selalu di atas semua elemen game dan pemutar musik */
+  z-index: 9998 !important;
   max-width: 320px;
   width: auto;
   padding: 0;
@@ -4035,6 +4035,18 @@ header {
 
 
 /* Music Notification Popup */
+#musicNotifContainer {
+  position: fixed;
+  bottom: 145px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+  z-index: 9997 !important;
+  pointer-events: none;
+}
+
 .music-notif {
   background: rgba(20, 20, 30, 0.85);
   backdrop-filter: blur(8px);

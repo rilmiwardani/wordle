@@ -1164,6 +1164,28 @@ window.togglePlayEveryGiftSound = function(val) {
 let playerPoints = {};
 let currentLbTab = 'session';
 
+// Daftar prefix khusus untuk seluruh mode game agar penyimpanan skor terisolasi 100%
+const ALL_SPECIAL_PTS_PREFIXES = [
+  'pts_w500_',
+  'pts_w600_',
+  'pts_wfit_',
+  'pts_colorfit_',
+  'pts_wloop_',
+  'pts_fill_',
+  'pts_tango_',
+  'pts_wgrid_',
+  'pts_sqword_',
+  'pts_wladder_',
+  'pts_betweenle_',
+  'pts_cascadle_',
+  'pts_wanderwords_',
+  'pts_wordcluster_'
+];
+
+function isOtherGameModeKey(key) {
+  return ALL_SPECIAL_PTS_PREFIXES.some(specialPrefix => key.startsWith(specialPrefix));
+}
+
 function getPtsPrefix() {
   if (currentGameMode === 'word500') return 'pts_w500_';
   if (currentGameMode === 'word600') return 'pts_w600_';
@@ -1178,6 +1200,7 @@ function getPtsPrefix() {
   if (currentGameMode === 'betweenle') return 'pts_betweenle_';
   if (currentGameMode === 'cascadle') return 'pts_cascadle_';
   if (currentGameMode === 'wanderwords') return 'pts_wanderwords_';
+  if (currentGameMode === 'wordcluster') return 'pts_wordcluster_';
   return 'pts_';
 }
 
@@ -1189,7 +1212,7 @@ function initWeeklyLeaderboard() {
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key && key.startsWith(prefix)) {
-      if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wfit_') || key.startsWith('pts_colorfit_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_') || key.startsWith('pts_sqword_') || key.startsWith('pts_wladder_') || key.startsWith('pts_betweenle_') || key.startsWith('pts_cascadle_') || key.startsWith('pts_wanderwords_'))) continue;
+      if (prefix === 'pts_' && isOtherGameModeKey(key)) continue;
       
       if (key.startsWith(prefix + 'like_') || 
           key.startsWith(prefix + 'share_') || 
@@ -8245,7 +8268,7 @@ window.resetLeaderboard = function(e) {
       const key = localStorage.key(i);
       if (key && key.startsWith(prefix)) {
         if (key.includes('_like_') || key.includes('_share_') || key.includes('_gift_') || key.includes('_active_') || key.includes('_avatar_')) continue;
-        if (prefix === 'pts_' && (key.startsWith('pts_w500_') || key.startsWith('pts_w600_') || key.startsWith('pts_wfit_') || key.startsWith('pts_colorfit_') || key.startsWith('pts_wloop_') || key.startsWith('pts_fill_') || key.startsWith('pts_tango_') || key.startsWith('pts_wgrid_') || key.startsWith('pts_sqword_') || key.startsWith('pts_wladder_'))) continue;
+        if (prefix === 'pts_' && isOtherGameModeKey(key)) continue;
         keysToRemove.push(key);
       }
     }
@@ -8312,7 +8335,7 @@ window.exportLeaderboardData = function(e) {
       exportPayload.rawEntries[key] = val;
       exportPayload.summary.totalKeys++;
       
-      const cleanName = key.replace(/^pts_(w500_|w600_|wfit_|colorfit_|wloop_|fill_|tango_|wgrid_|sqword_|wladder_|daily_|like_|share_|gift_|active_|avatar_)?/, '');
+      const cleanName = key.replace(/^pts_(w500_|w600_|wfit_|colorfit_|wloop_|fill_|tango_|wgrid_|sqword_|wladder_|betweenle_|cascadle_|wanderwords_|wordcluster_|daily_|like_|share_|gift_|active_|avatar_)?/, '');
       if (cleanName) playersSet.add(cleanName);
     }
   }

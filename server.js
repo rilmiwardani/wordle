@@ -57,9 +57,14 @@ let gameSettings = {
   showHints: true,
   displayRows: 6,
   boardScale: 100,
+  followerOnlyMusic: false,
+  musicCooldown: 60,
   wanderWordsCustomList: [],
   wordClusterCustomList: [],
 };
+
+// Music Request Cooldown Tracker (key: username/uniqueId -> timestamp)
+const musicCooldowns = new Map();
 
 // Persistent storage paths for settings
 const SETTINGS_FILE = path.join(__dirname, "game_settings.json");
@@ -238,7 +243,9 @@ io.on("connection", (socket) => {
   // Chat Music Request (for IndoFinity backend fallback)
   socket.on("chat-music-request", async (data) => {
     const { query, requesterName, requesterImg, isFollower } = data;
-    if (gameSettings.followerOnlyMusic && isFollower === false) {
+    const isHost = (requesterName === "Host" || requesterName === "host");
+
+    if (gameSettings.followerOnlyMusic && isFollower === false && !isHost) {
       console.log(`[Music] Filtered chat-music-request: ${requesterName} is not a follower.`);
       io.emit('music-request-rejected', {
         reason: 'follower_only',
@@ -246,12 +253,34 @@ io.on("connection", (socket) => {
       });
       return;
     }
+
+    // Check Cooldown
+    const userKey = (requesterName || '').toLowerCase().trim();
+    const cdSec = typeof gameSettings.musicCooldown === 'number' ? gameSettings.musicCooldown : 60;
+    if (!isHost && cdSec > 0 && userKey) {
+      const lastTime = musicCooldowns.get(userKey) || 0;
+      const elapsedSec = (Date.now() - lastTime) / 1000;
+      if (lastTime > 0 && elapsedSec < cdSec) {
+        const remainingSec = Math.ceil(cdSec - elapsedSec);
+        console.log(`[Music] Filtered chat-music-request: ${requesterName} is on cooldown (${remainingSec}s left)`);
+        io.emit('music-request-rejected', {
+          reason: 'cooldown',
+          requesterName: requesterName || "Viewer",
+          remainingSeconds: remainingSec
+        });
+        return;
+      }
+    }
+
     console.log(`[Socket.IO] Chat requested music: ${query} by ${requesterName}`);
     try {
       const ytSearch = require("yt-search");
       const r = await ytSearch(query);
       if (r.videos.length > 0) {
         const video = r.videos[0];
+        if (!isHost && userKey) {
+          musicCooldowns.set(userKey, Date.now());
+        }
         const candidates = r.videos.slice(0, 5).map(v => ({
           videoId: v.videoId,
           title: v.title,
@@ -735,12 +764,34 @@ function registerTikTokEvents(connection) {
         });
         return; // Do not relay as a regular chat message and do not search
       }
+
+      // Check Cooldown
+      const userKey = (payload.uniqueId || payload.nickname || '').toLowerCase().trim();
+      const cdSec = typeof gameSettings.musicCooldown === 'number' ? gameSettings.musicCooldown : 60;
+      if (!isHost && cdSec > 0 && userKey) {
+        const lastTime = musicCooldowns.get(userKey) || 0;
+        const elapsedSec = (Date.now() - lastTime) / 1000;
+        if (lastTime > 0 && elapsedSec < cdSec) {
+          const remainingSec = Math.ceil(cdSec - elapsedSec);
+          console.log(`[Music] Filtered !play: @${payload.uniqueId} is on cooldown (${remainingSec}s left)`);
+          io.emit('music-request-rejected', {
+            reason: 'cooldown',
+            requesterName: payload.nickname || payload.uniqueId,
+            remainingSeconds: remainingSec
+          });
+          return;
+        }
+      }
+
       const query = data.comment.substring(6).trim();
       if (query) {
         try {
           const r = await ytSearch(query);
           if (r.videos.length > 0) {
             const video = r.videos[0];
+            if (!isHost && userKey) {
+              musicCooldowns.set(userKey, Date.now());
+            }
             io.emit('music-request', {
               videoId: video.videoId,
               title: video.title,

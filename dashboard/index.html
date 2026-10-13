@@ -1288,6 +1288,18 @@
                   <span class="slider round"></span>
                 </label>
               </div>
+
+              <!-- Cooldown Antrian Musik -->
+              <div class="dash-toggle-row">
+                <div>
+                  <div class="dash-toggle-title">⏳ Cooldown Antrian Musik (Detik)</div>
+                  <div class="dash-toggle-sub">Jeda waktu tunggu penonton sebelum bisa !play lagu lagi</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <input type="number" id="dashMusicCooldownInput" min="0" max="600" value="60" onchange="autoSaveSettings()" style="width: 70px; padding: 5px 8px; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 6px; color: #fff; text-align: center; font-weight: 700; font-size: 13px;">
+                  <span style="font-size: 12px; color: var(--text-muted);">detik</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1996,6 +2008,10 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       const fom = document.getElementById("dashFollowerOnlyMusicToggle");
       if (fom) fom.checked = !!cfg.followerOnlyMusic;
 
+      // 9.5 Music Cooldown
+      const mcd = document.getElementById("dashMusicCooldownInput");
+      if (mcd && cfg.musicCooldown !== undefined) mcd.value = cfg.musicCooldown;
+
       // 10. Display Rows
       const dr = document.getElementById("dashDisplayRowsVal");
       if (dr && cfg.displayRows) {
@@ -2108,6 +2124,7 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       currentGameSettings.showHints = document.getElementById("dashShowHintsToggle")?.checked ?? true;
       currentGameSettings.followerOnlyGuess = document.getElementById("dashFollowerOnlyGuessToggle")?.checked ?? false;
       currentGameSettings.followerOnlyMusic = document.getElementById("dashFollowerOnlyMusicToggle")?.checked ?? false;
+      currentGameSettings.musicCooldown = parseInt(document.getElementById("dashMusicCooldownInput")?.value) || 60;
 
       // Rows & scale
       currentGameSettings.displayRows = parseInt(document.getElementById("dashDisplayRowsVal")?.textContent) || 6;

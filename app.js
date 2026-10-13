@@ -1137,7 +1137,7 @@ let ytPlayer = null;
 let musicQueue = [];
 let activeMusic = null;
 let isMusicPlaying = false;
-let musicSettings = { maxGlobal: 20, maxUser: 2, maxDuration: 6, bannedKeywords: [], volume: 50, requestsEnabled: true, followerOnly: false };
+let musicSettings = { maxGlobal: 20, maxUser: 2, maxDuration: 6, cooldownSeconds: 60, bannedKeywords: [], volume: 50, requestsEnabled: true, followerOnly: false };
 try {
   const saved = localStorage.getItem('music_settings');
   if (saved) {
@@ -1145,8 +1145,10 @@ try {
     if (musicSettings.volume === undefined) musicSettings.volume = 50;
     if (musicSettings.requestsEnabled === undefined) musicSettings.requestsEnabled = true;
     if (musicSettings.followerOnly === undefined) musicSettings.followerOnly = false;
+    if (musicSettings.cooldownSeconds === undefined) musicSettings.cooldownSeconds = 60;
   }
 } catch(e) {}
+let musicUserCooldowns = {};
 let lastUsername = "";
 let lastLang = "";
 let lastSessionId = "";
@@ -1562,6 +1564,41 @@ function showMusicFollowerWarningNotif(requesterName) {
     <div class="music-notif-content">
       <span class="music-notif-user">@${cleanName}</span>
       <span class="music-notif-desc">Follow live dulu untuk request lagu!</span>
+    </div>
+  `;
+
+  container.appendChild(notif);
+
+  setTimeout(() => {
+    if (notif.parentNode === container) {
+      container.removeChild(notif);
+    }
+  }, 3500);
+}
+
+let lastMusicCooldownWarningTime = 0;
+function showMusicCooldownWarningNotif(requesterName, remainingSec) {
+  const now = Date.now();
+  if (now - lastMusicCooldownWarningTime < 3000) return; // Cooldown notifikasi cegah spam
+  lastMusicCooldownWarningTime = now;
+
+  const container = document.getElementById('musicNotifContainer');
+  if (!container) return;
+
+  if (window.sounds && typeof window.sounds.playPop === 'function') {
+    try { window.sounds.playPop(); } catch(e) {}
+  }
+
+  container.innerHTML = '';
+  const notif = document.createElement('div');
+  notif.className = 'music-notif music-notif-cooldown';
+
+  const cleanName = (requesterName || 'Viewer').replace(/[<>]/g, '').replace(/^@+/, '').trim();
+  notif.innerHTML = `
+    <span class="music-notif-icon" style="color: #f59e0b; font-size: 15px;"><i class="fa-solid fa-hourglass-half"></i></span>
+    <div class="music-notif-content">
+      <span class="music-notif-user">${cleanName}</span>
+      <span class="music-notif-desc">Tunggu ${remainingSec}d lagi untuk request lagu!</span>
     </div>
   `;
 
@@ -5636,6 +5673,8 @@ window.addEventListener('DOMContentLoaded', () => {
   localSocket.on('music-request-rejected', (data) => {
     if (data && data.reason === 'follower_only') {
       showMusicFollowerWarningNotif(data.requesterName);
+    } else if (data && data.reason === 'cooldown') {
+      showMusicCooldownWarningNotif(data.requesterName, data.remainingSeconds || 10);
     }
   });
 
@@ -5679,12 +5718,28 @@ window.addEventListener('DOMContentLoaded', () => {
       return;
     }
     
-    // Check user limit
-    if (musicSettings.maxUser > 0 && data.requesterName !== "Host") {
-      const userReqs = musicQueue.filter(m => m.requesterName === data.requesterName).length;
-      if (userReqs >= musicSettings.maxUser) {
-        console.log(`Music rejected: User ${data.requesterName} hit queue limit`);
-        return;
+    // Check user limit & cooldown
+    if (data.requesterName !== "Host") {
+      if (musicSettings.maxUser > 0) {
+        const userReqs = musicQueue.filter(m => m.requesterName === data.requesterName).length;
+        if (userReqs >= musicSettings.maxUser) {
+          console.log(`Music rejected: User ${data.requesterName} hit queue limit`);
+          return;
+        }
+      }
+
+      const userKey = (data.requesterName || '').toLowerCase().trim();
+      const cdSec = typeof musicSettings.cooldownSeconds === 'number' ? musicSettings.cooldownSeconds : 60;
+      if (cdSec > 0 && userKey) {
+        const lastReqTime = musicUserCooldowns[userKey] || 0;
+        const elapsedSec = (Date.now() - lastReqTime) / 1000;
+        if (lastReqTime > 0 && elapsedSec < cdSec) {
+          const remSec = Math.ceil(cdSec - elapsedSec);
+          console.log(`[Music] Rejected: User ${data.requesterName} is on cooldown (${remSec}s left)`);
+          showMusicCooldownWarningNotif(data.requesterName, remSec);
+          return;
+        }
+        musicUserCooldowns[userKey] = Date.now();
       }
     }
     
@@ -5740,7 +5795,8 @@ window.addEventListener('DOMContentLoaded', () => {
         boardScale: parseInt(localStorage.getItem('board_scale')) || 100,
         theme: localStorage.getItem('wordle_theme') || 'dark',
         followerOnlyGuess: localStorage.getItem('wordle_followerOnlyGuess') === 'true',
-        followerOnlyMusic: (typeof musicSettings !== 'undefined' && musicSettings.followerOnly === true)
+        followerOnlyMusic: (typeof musicSettings !== 'undefined' && musicSettings.followerOnly === true),
+        musicCooldown: (typeof musicSettings !== 'undefined' && typeof musicSettings.cooldownSeconds === 'number' ? musicSettings.cooldownSeconds : 60)
       };
       localSocket.emit('sync-game-settings-from-overlay', overlayCfg);
     } catch(e) {}
@@ -5873,6 +5929,14 @@ function applyRemoteGameSettings(settings) {
     if (fomToggle) fomToggle.checked = musicSettings.followerOnly;
     const fomGroupToggle = document.getElementById('musicFollowerOnlyGroupToggle');
     if (fomGroupToggle) fomGroupToggle.checked = musicSettings.followerOnly;
+  }
+
+  // 11.5 Music Cooldown
+  if (settings.musicCooldown !== undefined && settings.musicCooldown !== musicSettings.cooldownSeconds) {
+    musicSettings.cooldownSeconds = parseInt(settings.musicCooldown) || 0;
+    try { localStorage.setItem('music_settings', JSON.stringify(musicSettings)); } catch(e) {}
+    const cdInput = document.getElementById('musicCooldownSeconds');
+    if (cdInput) cdInput.value = musicSettings.cooldownSeconds;
   }
 
   // 12. Wander Words Custom Words List
@@ -6259,6 +6323,21 @@ function setupSocketListeners() {
           showMusicFollowerWarningNotif(data.nickname || data.uniqueId);
           return;
         }
+
+        // Check Cooldown
+        const userKey = (data.uniqueId || data.nickname || '').toLowerCase().trim();
+        const cdSec = typeof musicSettings.cooldownSeconds === 'number' ? musicSettings.cooldownSeconds : 60;
+        if (!isHost && cdSec > 0 && userKey) {
+          const lastTime = musicUserCooldowns[userKey] || 0;
+          const elapsedSec = (Date.now() - lastTime) / 1000;
+          if (lastTime > 0 && elapsedSec < cdSec) {
+            const remSec = Math.ceil(cdSec - elapsedSec);
+            console.log(`[Music] Blocked !play from ${data.uniqueId}: on cooldown (${remSec}s left)`);
+            showMusicCooldownWarningNotif(data.nickname || data.uniqueId, remSec);
+            return;
+          }
+        }
+
         const query = data.comment.substring(6).trim();
         if (query && localSocket) {
           localSocket.emit('chat-music-request', {
@@ -8898,6 +8977,8 @@ window.openMusicSettings = function(e) {
   document.getElementById('musicMaxGlobal').value = musicSettings.maxGlobal;
   document.getElementById('musicMaxUser').value = musicSettings.maxUser;
   document.getElementById('musicMaxDuration').value = musicSettings.maxDuration;
+  const cdInput = document.getElementById('musicCooldownSeconds');
+  if (cdInput) cdInput.value = musicSettings.cooldownSeconds !== undefined ? musicSettings.cooldownSeconds : 60;
   document.getElementById('musicBannedKeywords').value = musicSettings.bannedKeywords.join(', ');
   
   document.getElementById('musicVolumeSlider').value = musicSettings.volume;
@@ -8942,6 +9023,8 @@ window.saveMusicSettings = function() {
   musicSettings.maxGlobal = parseInt(document.getElementById('musicMaxGlobal').value) || 20;
   musicSettings.maxUser = parseInt(document.getElementById('musicMaxUser').value) || 2;
   musicSettings.maxDuration = parseInt(document.getElementById('musicMaxDuration').value) || 6;
+  const cdInputVal = document.getElementById('musicCooldownSeconds');
+  musicSettings.cooldownSeconds = cdInputVal ? (parseInt(cdInputVal.value) ?? 60) : 60;
   musicSettings.volume = parseInt(document.getElementById('musicVolumeSlider').value) || 50;
 
   const ambianceToggle = document.getElementById('musicRadioAmbianceToggle');
@@ -8961,6 +9044,12 @@ window.saveMusicSettings = function() {
   musicSettings.bannedKeywords = keywords.split(',').map(k => k.trim().toLowerCase()).filter(k => k);
   
   localStorage.setItem('music_settings', JSON.stringify(musicSettings));
+  if (localSocket) {
+    localSocket.emit('update-game-settings', { 
+      followerOnlyMusic: musicSettings.followerOnly,
+      musicCooldown: musicSettings.cooldownSeconds
+    });
+  }
   document.getElementById('musicSettingsModal').style.display = 'none';
   
   if (ytPlayer && ytPlayer.setVolume) {

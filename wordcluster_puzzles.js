@@ -5,7 +5,7 @@
 // - 1 Tema Kata yang mudah dipahami & menarik bagi penonton TikTok Live.
 // - 6 Kata Isian yang berhubungan erat, masuk akal, dan proporsional (tidak terlalu mudah).
 // - Poin bertingkat dari terbesar ke terkecil: 60, 50, 40, 30, 20, 10.
-// - Total Database: 300 Tema Lengkap & Valid KBBI (Semua kata >= 4 huruf).
+// - Total Database: 500 Tema Lengkap & Valid KBBI (Semua kata >= 4 huruf).
 // ═════════════════════════════════════════════════════════════════════════════
 
 window.WORDCLUSTER_DEFAULT_PUZZLES = [
@@ -1208,5 +1208,805 @@ window.WORDCLUSTER_DEFAULT_PUZZLES = [
   {
     topic: "PERTANDINGAN",
     words: ["BULUTANGKIS","SEPAKBOLA","OLAHRAGA","SUPORTER","LAPANGAN","PEMAIN"]
+  },
+  {
+    topic: "GADO-GADO",
+    words: ["LONTONG","KERUPUK","KACANG","BETAWI","SAYUR","TELUR"]
+  },
+  {
+    topic: "TUMPENG",
+    words: ["SYUKURAN","KERUCUT","KUNING","KUNYIT","MERIAH","LAUK"]
+  },
+  {
+    topic: "LONTONG",
+    words: ["KENYAL","PADAT","SAYUR","GULAI","DAUN","SATE"]
+  },
+  {
+    topic: "TIMBEL",
+    words: ["SUNDA","LALAP","DAUN","LAUK","NASI","TAHU"]
+  },
+  {
+    topic: "KLEPON",
+    words: ["KELAPA","KENYAL","HIJAU","MANIS","BULAT","AREN"]
+  },
+  {
+    topic: "ONDE-ONDE",
+    words: ["KACANG","GORENG","RENYAH","WIJEN","BULAT","MANIS"]
+  },
+  {
+    topic: "GETUK",
+    words: ["TRADISIONAL","SINGKONG","LEMBUT","KELAPA","TUMBUK","MANIS"]
+  },
+  {
+    topic: "SERABI",
+    words: ["SANTAN","GURIH","MANIS","PANAS","SOLO","KUAH"]
+  },
+  {
+    topic: "BIKA",
+    words: ["BERSERAT","PANGGANG","KENYAL","KUNING","MEDAN","MANIS"]
+  },
+  {
+    topic: "BINGKA",
+    words: ["KALIMANTAN","PANGGANG","KENTANG","LEMBUT","KUNING","MANIS"]
+  },
+  {
+    topic: "CENDOL",
+    words: ["SANTAN","NANGKA","KENYAL","HIJAU","SEGER","MANIS"]
+  },
+  {
+    topic: "DOGER",
+    words: ["BANDUNG","KELAPA","MANIS","KETAN","SEGAR","SUSU"]
+  },
+  {
+    topic: "RUJAK",
+    words: ["KACANG","PETIS","PEDAS","SEGAR","BUAH","ULEK"]
+  },
+  {
+    topic: "ASINAN",
+    words: ["RENYAH","BOGOR","PEDAS","SEGAR","CUKA","BUAH"]
+  },
+  {
+    topic: "LEMPER",
+    words: ["JAJANAN","KETAN","KUKUS","GURIH","AYAM","DAUN"]
+  },
+  {
+    topic: "JAMU",
+    words: ["TRADISIONAL","GENDONG","REMPAH","HERBAL","SEHAT","PAHIT"]
+  },
+  {
+    topic: "BAJIGUR",
+    words: ["HANGAT","SANTAN","SUNDA","MALAM","AREN","JAHE"]
+  },
+  {
+    topic: "BANDREK",
+    words: ["HANGAT","REMPAH","MALAM","SUNDA","MANIS","JAHE"]
+  },
+  {
+    topic: "SEKOTENG",
+    words: ["HANGAT","KACANG","MALAM","MANIS","JAHE","ROTI"]
+  },
+  {
+    topic: "CINCAU",
+    words: ["KENYAL","DINGIN","HITAM","MANIS","SEGAR","DAUN"]
+  },
+  {
+    topic: "LUPIS",
+    words: ["SEGITIGA","KELAPA","KENYAL","KETAN","MANIS","AREN"]
+  },
+  {
+    topic: "CENIL",
+    words: ["TAPIOKA","JAJANAN","KENYAL","KELAPA","MANIS","WARNA"]
+  },
+  {
+    topic: "NAGASARI",
+    words: ["PISANG","SANTAN","LEMBUT","KUKUS","MANIS","DAUN"]
+  },
+  {
+    topic: "GORENGAN",
+    words: ["CAMILAN","RENYAH","HANGAT","MINYAK","TEMPE","TAHU"]
+  },
+  {
+    topic: "MENDOAN",
+    words: ["BANYUMAS","GORENG","RENYAH","HANGAT","TEMPE","TIPIS"]
+  },
+  {
+    topic: "DUKU",
+    words: ["MANIS","KECIL","BULAT","SEGAR","KULIT","BIJI"]
+  },
+  {
+    topic: "BELIMBING",
+    words: ["BINTANG","KUNING","SEGAR","POHON","RUSUK","ASAM"]
+  },
+  {
+    topic: "MARKISA",
+    words: ["WANGI","MASAM","SEGAR","ASAM","BIJI","UNGU"]
+  },
+  {
+    topic: "KEDONDONG",
+    words: ["RENYAH","RUJAK","HIJAU","SEGAR","KERAS","ASAM"]
+  },
+  {
+    topic: "MENTENG",
+    words: ["LANGKA","KECIL","SEGAR","BULAT","KULIT","ASAM"]
+  },
+  {
+    topic: "MATOA",
+    words: ["KENYAL","LANGKA","COKLAT","MANIS","PAPUA","BIJI"]
+  },
+  {
+    topic: "BENGKOANG",
+    words: ["RENYAH","MANIS","PUTIH","RUJAK","SEGAR","BULAT"]
+  },
+  {
+    topic: "SUKUN",
+    words: ["KERIPIK","GORENG","LEMBUT","MANIS","BESAR","BUAH"]
+  },
+  {
+    topic: "TERONG",
+    words: ["BALADO","LEMBUT","GORENG","LALAP","SAYUR","UNGU"]
+  },
+  {
+    topic: "WORTEL",
+    words: ["KELINCI","PANJANG","ORANYE","MANIS","SEHAT","MATA"]
+  },
+  {
+    topic: "BUNCIS",
+    words: ["PANJANG","RUNCING","RENYAH","HIJAU","TUMIS","SAYUR"]
+  },
+  {
+    topic: "SAWI",
+    words: ["LEMBUT","HIJAU","TUMIS","SEGAR","SAYUR","BAKSO"]
+  },
+  {
+    topic: "BAYAM",
+    words: ["LEMBUT","BENING","POPEYE","HIJAU","SEHAT","TUMIS"]
+  },
+  {
+    topic: "KOL",
+    words: ["BERLAPIS","RENYAH","SIOMAY","BULAT","SAYUR","PUTIH"]
+  },
+  {
+    topic: "PARE",
+    words: ["KERIPIK","LONJONG","PAHIT","HIJAU","SEHAT","TUMIS"]
+  },
+  {
+    topic: "LABU",
+    words: ["KUNING","LEMBUT","BESAR","SAYUR","MANIS","KOLAK"]
+  },
+  {
+    topic: "TIMUN",
+    words: ["RENYAH","DINGIN","SEGAR","HIJAU","LALAP","ACAR"]
+  },
+  {
+    topic: "TOMAT",
+    words: ["SAMBAL","MERAH","SEGAR","MASAK","BULAT","ASAM"]
+  },
+  {
+    topic: "PETAI",
+    words: ["SAMBAL","GORENG","GURIH","HIJAU","PAPAN","KHAS"]
+  },
+  {
+    topic: "JENGKOL",
+    words: ["RENDANG","BALADO","SEMUR","KERAS","BULAT","KHAS"]
+  },
+  {
+    topic: "JERAPAH",
+    words: ["TINGGI","AFRIKA","KUNING","LEHER","TOTOL","DAUN"]
+  },
+  {
+    topic: "ZEBRA",
+    words: ["LORENG","AFRIKA","RUMPUT","HITAM","KUDA","LIAR"]
+  },
+  {
+    topic: "PANDA",
+    words: ["BAMBU","GEMUK","HITAM","PUTIH","CINA","LUCU"]
+  },
+  {
+    topic: "KOALA",
+    words: ["EUKALIPTUS","AUSTRALIA","MAMALIA","MALAS","POHON","LUCU"]
+  },
+  {
+    topic: "BERUANG",
+    words: ["BESAR","HUTAN","CAKAR","MADU","BULU","LIAR"]
+  },
+  {
+    topic: "SERIGALA",
+    words: ["KAWANAN","LOLONG","MALAM","TAJAM","LIAR","BULU"]
+  },
+  {
+    topic: "RUBAH",
+    words: ["CERDAS","LICIK","HUTAN","MALAM","EKOR","BULU"]
+  },
+  {
+    topic: "KOMODO",
+    words: ["LANGKA","BESAR","KADAL","PULAU","PURBA","LIAR"]
+  },
+  {
+    topic: "BUAYA",
+    words: ["BERBAHAYA","SUNGAI","KULIT","MUARA","GIGI","RAWA"]
+  },
+  {
+    topic: "KURA-KURA",
+    words: ["CANGKANG","PANJANG","LAMBAT","AMFIBI","HIJAU","KERAS"]
+  },
+  {
+    topic: "KATAK",
+    words: ["KECEBONG","LOMPAT","LEMBAB","SAWAH","HIJAU","SUARA"]
+  },
+  {
+    topic: "CICAK",
+    words: ["DINDING","CEKATAN","NYAMUK","KECIL","MALAM","EKOR"]
+  },
+  {
+    topic: "TOKEK",
+    words: ["DINDING","BESAR","SUARA","MALAM","TOTOL","GALAK"]
+  },
+  {
+    topic: "LABA-LABA",
+    words: ["DELAPAN","JARING","KECIL","SUDUT","SERAM","KAKI"]
+  },
+  {
+    topic: "KUPU-KUPU",
+    words: ["TERBANG","INDAH","SAYAP","BUNGA","WARNA","ULAT"]
+  },
+  {
+    topic: "BELALANG",
+    words: ["BERISIK","LOMPAT","HIJAU","SAWAH","KECIL","KAKI"]
+  },
+  {
+    topic: "CAPUNG",
+    words: ["TERBANG","RAMPING","HINGGAP","SAYAP","CEPAT","MATA"]
+  },
+  {
+    topic: "KEPITING",
+    words: ["CAPIT","MERAH","KERAS","JALAN","LAUT","SAUS"]
+  },
+  {
+    topic: "CUMI",
+    words: ["KENYAL","GORENG","LENTUR","TINTA","PUTIH","LAUT"]
+  },
+  {
+    topic: "GURITA",
+    words: ["TENTAKEL","DELAPAN","CERDAS","LENTUR","TINTA","LAUT"]
+  },
+  {
+    topic: "PAUS",
+    words: ["SEMBURAN","MAMALIA","RAKSASA","BESAR","LAUT","BIRU"]
+  },
+  {
+    topic: "LUMBA-LUMBA",
+    words: ["BERSAHABAT","MAMALIA","CERDAS","LOMPAT","SIRIP","LAUT"]
+  },
+  {
+    topic: "HIU",
+    words: ["BERBAHAYA","PEMANGSA","SIRIP","GANAS","GIGI","LAUT"]
+  },
+  {
+    topic: "DOMBA",
+    words: ["RUMPUT","TERNAK","DAGING","PUTIH","LUCU","BULU"]
+  },
+  {
+    topic: "UNTA",
+    words: ["TINGGI","GURUN","PUNUK","PASIR","ARAB","KUAT"]
+  },
+  {
+    topic: "BOROBUDUR",
+    words: ["MAGELANG","SEJARAH","WISATA","CANDI","STUPA","BUDA"]
+  },
+  {
+    topic: "PRAMBANAN",
+    words: ["SEJARAH","TINGGI","WISATA","CANDI","HINDU","YOGYA"]
+  },
+  {
+    topic: "BROMO",
+    words: ["SUNRISE","GUNUNG","KAWAH","PASIR","TIMUR","JEEP"]
+  },
+  {
+    topic: "RINJANI",
+    words: ["MENDAKI","LOMBOK","TINGGI","GUNUNG","INDAH","DANAU"]
+  },
+  {
+    topic: "WAIGEO",
+    words: ["KARANG","PAPUA","PULAU","INDAH","LAUT","DIVE"]
+  },
+  {
+    topic: "ULUWATU",
+    words: ["SUNSET","TEBING","BALI","PURA","LAUT","SUCI"]
+  },
+  {
+    topic: "MONAS",
+    words: ["LAPANGAN","JAKARTA","TINGGI","TUGU","EMAS","IKON"]
+  },
+  {
+    topic: "MALIOBORO",
+    words: ["BELANJA","YOGYA","JALAN","JOGJA","RAMAI","BATIK"]
+  },
+  {
+    topic: "IJEN",
+    words: ["BANYUWANGI","PENAMBANG","BELERANG","DINGIN","DANAU","BIRU"]
+  },
+  {
+    topic: "DIENG",
+    words: ["WONOSOBO","KENTANG","DATARAN","TELAGA","DINGIN","CANDI"]
+  },
+  {
+    topic: "BUNAKEN",
+    words: ["SNORKELING","MANADO","KARANG","TAMAN","LAUT","IKAN"]
+  },
+  {
+    topic: "GILI",
+    words: ["SNORKELING","LOMBOK","PANTAI","TENANG","SEPEDA","SENJA"]
+  },
+  {
+    topic: "GADANG",
+    words: ["BUKITTINGGI","MENARA","PADANG","SUMBAR","TINGGI","IKON"]
+  },
+  {
+    topic: "FATAHILLAH",
+    words: ["KOLONIAL","JAKARTA","SEJARAH","BATAVIA","MUSEUM","KOTA"]
+  },
+  {
+    topic: "TMII",
+    words: ["ANJUNGAN","MINIATUR","KELUARGA","JAKARTA","BUDAYA","LUAS"]
+  },
+  {
+    topic: "ARSITEK",
+    words: ["BANGUNAN","RANCANG","KREATIF","DESAIN","GEDUNG","GAMBAR"]
+  },
+  {
+    topic: "AKUNTAN",
+    words: ["KALKULATOR","KEUANGAN","LAPORAN","TELITI","ANGKA","PAJAK"]
+  },
+  {
+    topic: "PENGACARA",
+    words: ["PENGADILAN","ARGUMEN","SIDANG","HUKUM","KLIEN","PASAL"]
+  },
+  {
+    topic: "WARTAWAN",
+    words: ["LIPUTAN","CATATAN","BERITA","KAMERA","KORAN","CEPAT"]
+  },
+  {
+    topic: "FOTOGRAFER",
+    words: ["KAMERA","JEPRET","STUDIO","LENSA","MOMEN","FLASH"]
+  },
+  {
+    topic: "PROGRAMMER",
+    words: ["APLIKASI","LAPTOP","LOGIKA","KODING","LEMBUR","KODE"]
+  },
+  {
+    topic: "BARISTA",
+    words: ["AROMA","SEDUH","LATTE","KOPI","KAFE","SUSU"]
+  },
+  {
+    topic: "PRAMUGARI",
+    words: ["PESAWAT","SERAGAM","TERBANG","SENYUM","RAMAH","KABIN"]
+  },
+  {
+    topic: "MASINIS",
+    words: ["LOKOMOTIF","SERAGAM","STASIUN","KONTROL","KERETA","JALUR"]
+  },
+  {
+    topic: "BIDAN",
+    words: ["LAHIRAN","RAMAH","SEHAT","BANTU","BAYI","DESA"]
+  },
+  {
+    topic: "PSIKOLOG",
+    words: ["KONSELING","PIKIRAN","CURHAT","TENANG","DENGAR","JIWA"]
+  },
+  {
+    topic: "DOSEN",
+    words: ["MAHASISWA","KULIAH","KAMPUS","MATERI","GELAR","KELAS"]
+  },
+  {
+    topic: "PENULIS",
+    words: ["IMAJINASI","NASKAH","CERITA","BUKU","KATA","PENA"]
+  },
+  {
+    topic: "SUTRADARA",
+    words: ["ADEGAN","NASKAH","ARAHAN","KAMERA","AKTOR","FILM"]
+  },
+  {
+    topic: "PENYANYI",
+    words: ["PANGGUNG","SUARA","VOKAL","MERDU","LAGU","FANS"]
+  },
+  {
+    topic: "FUTSAL",
+    words: ["LAPANGAN","KERINGAT","TENDANG","CEPAT","KIPER","BOLA"]
+  },
+  {
+    topic: "SILAT",
+    words: ["TRADISIONAL","INDONESIA","SERANG","JURUS","SABUK","KUAT"]
+  },
+  {
+    topic: "KARATE",
+    words: ["TENDANGAN","DISIPLIN","JEPANG","SABUK","PUTIH","KUAT"]
+  },
+  {
+    topic: "BILIAR",
+    words: ["LUBANG","FOKUS","HIJAU","BOLA","STIK","MEJA"]
+  },
+  {
+    topic: "BOWLING",
+    words: ["LEMPAR","SEPATU","STRIKE","JALUR","SKOR","BOLA"]
+  },
+  {
+    topic: "SURFING",
+    words: ["PANTAI","IMBANG","OMBAK","PAPAN","BALI","LAUT"]
+  },
+  {
+    topic: "RAFTING",
+    words: ["PELAMPUNG","SUNGAI","DAYUNG","DERAS","BASAH","SERU"]
+  },
+  {
+    topic: "PARALAYANG",
+    words: ["TERBANG","PARASUT","TINGGI","ANGIN","BUKIT","BEBAS"]
+  },
+  {
+    topic: "TAKRAW",
+    words: ["AKROBATIK","TENDANGAN","JARING","ROTAN","ASIA","BOLA"]
+  },
+  {
+    topic: "TRIATLON",
+    words: ["RENANG","SEPEDA","JARAK","LARI","KUAT","DAYA"]
+  },
+  {
+    topic: "SKATEBOARD",
+    words: ["JALANAN","LOMPAT","PAPAN","RODA","TRIK","GAYA"]
+  },
+  {
+    topic: "PARKOUR",
+    words: ["AKROBATIK","BANGUNAN","LOMPAT","BERANI","CEPAT","KOTA"]
+  },
+  {
+    topic: "GAMELAN",
+    words: ["TRADISIONAL","PERUNGGU","IRAMA","TABUH","JAWA","GONG"]
+  },
+  {
+    topic: "ANGKLUNG",
+    words: ["TRADISIONAL","GOYANG","BAMBU","SUNDA","MERDU","NADA"]
+  },
+  {
+    topic: "SASANDO",
+    words: ["PETIK","MERDU","ROTE","UNIK","DAUN","NUSA"]
+  },
+  {
+    topic: "KOLINTANG",
+    words: ["MINAHASA","SULAWESI","MELODI","PUKUL","KAYU","NADA"]
+  },
+  {
+    topic: "SERULING",
+    words: ["LUBANG","LEMBUT","BAMBU","MERDU","SUNDA","TIUP"]
+  },
+  {
+    topic: "REBAB",
+    words: ["TRADISIONAL","WAYANG","MELODI","GESEK","SENAR","JAWA"]
+  },
+  {
+    topic: "TEROMPET",
+    words: ["KUNINGAN","ORKESTRA","NYARING","KENCANG","PISTON","TIUP"]
+  },
+  {
+    topic: "SAKSOFON",
+    words: ["LENGKUNG","MELODI","TIUP","JAZZ","EMAS","NADA"]
+  },
+  {
+    topic: "HARMONIKA",
+    words: ["KECIL","BLUES","LOGAM","TIUP","SAKU","NADA"]
+  },
+  {
+    topic: "UKULELE",
+    words: ["HAWAII","KECIL","PETIK","CERIA","SENAR","GITAR"]
+  },
+  {
+    topic: "KECAPI",
+    words: ["TEMBANG","LEMBUT","PETIK","SUNDA","SENAR","KAYU"]
+  },
+  {
+    topic: "TALEMPONG",
+    words: ["MINANG","SUMBAR","PUKUL","KECIL","IRAMA","GONG"]
+  },
+  {
+    topic: "DRONE",
+    words: ["TERBANG","KAMERA","REMOTE","BALING","UDARA","VIDEO"]
+  },
+  {
+    topic: "ROBOT",
+    words: ["OTOMATIS","BATERAI","CERDAS","SENSOR","MESIN","LOGAM"]
+  },
+  {
+    topic: "SMARTWATCH",
+    words: ["NOTIFIKASI","DIGITAL","PINTAR","TANGAN","SEHAT","LAYAR"]
+  },
+  {
+    topic: "TABLET",
+    words: ["PORTABEL","BATERAI","GADGET","SENTUH","LAYAR","TIPIS"]
+  },
+  {
+    topic: "PRINTER",
+    words: ["DOKUMEN","KERTAS","KANTOR","CETAK","TINTA","MESIN"]
+  },
+  {
+    topic: "PROYEKTOR",
+    words: ["PRESENTASI","CAHAYA","GAMBAR","KELAS","BESAR","FILM"]
+  },
+  {
+    topic: "HEADSET",
+    words: ["TELINGA","MUSIK","AUDIO","KABEL","SUARA","GAME"]
+  },
+  {
+    topic: "POWERBANK",
+    words: ["SMARTPHONE","PORTABEL","BATERAI","PENGISI","DARURAT","KABEL"]
+  },
+  {
+    topic: "WIFI",
+    words: ["INTERNET","KONEKSI","ROUTER","SINYAL","GRATIS","CEPAT"]
+  },
+  {
+    topic: "APLIKASI",
+    words: ["PRAKTIS","DIGITAL","PONSEL","UNDUH","FITUR","IKON"]
+  },
+  {
+    topic: "VIRUS",
+    words: ["BERBAHAYA","ANTIVIRUS","KOMPUTER","SERANGAN","RUSAK","DATA"]
+  },
+  {
+    topic: "PASSWORD",
+    words: ["RAHASIA","LOGIN","INGAT","AMAN","AKUN","KODE"]
+  },
+  {
+    topic: "JANTUNG",
+    words: ["DARAH","DETAK","HIDUP","POMPA","DADA","KIRI"]
+  },
+  {
+    topic: "OTAK",
+    words: ["PIKIRAN","INGATAN","CERDAS","KEPALA","SARAF","KANAN"]
+  },
+  {
+    topic: "TULANG",
+    words: ["KALSIUM","RANGKA","SUMSUM","PUTIH","SENDI","KUAT"]
+  },
+  {
+    topic: "OTOT",
+    words: ["LATIHAN","LENGAN","GERAK","BESAR","KUAT","KRAM"]
+  },
+  {
+    topic: "BAHU",
+    words: ["LENGAN","KOKOH","PIJAT","LEBAR","SENDI","JAKET"]
+  },
+  {
+    topic: "LUTUT",
+    words: ["TEMPURUNG","TEKUK","SENDI","JATUH","SAKIT","KAKI"]
+  },
+  {
+    topic: "DADA",
+    words: ["JANTUNG","BIDANG","BUSUNG","NAPAS","DEBAR","OTOT"]
+  },
+  {
+    topic: "PUNGGUNG",
+    words: ["BELAKANG","SAKIT","PIJAT","BADAN","TEGAK","LEBAR"]
+  },
+  {
+    topic: "KUKU",
+    words: ["PANJANG","POTONG","CANTIK","KOTOR","KERAS","JARI"]
+  },
+  {
+    topic: "ALIS",
+    words: ["CANTIK","TEBAL","WAJAH","HITAM","MATA","RAPI"]
+  },
+  {
+    topic: "KUMIS",
+    words: ["WAJAH","TEBAL","CUKUR","HITAM","PRIA","LUCU"]
+  },
+  {
+    topic: "DARAH",
+    words: ["PEMBULUH","GOLONGAN","KENTAL","MERAH","DONOR","HIDUP"]
+  },
+  {
+    topic: "PARU-PARU",
+    words: ["OKSIGEN","BERSIH","NAPAS","UDARA","SEHAT","DADA"]
+  },
+  {
+    topic: "LAMBUNG",
+    words: ["MAKAN","PERUT","LAPAR","CERNA","MAAG","ASAM"]
+  },
+  {
+    topic: "DEMAM",
+    words: ["TERMOMETER","ISTIRAHAT","DINGIN","PANAS","OBAT","SUHU"]
+  },
+  {
+    topic: "FLU",
+    words: ["MENULAR","HIDUNG","PILEK","BATUK","VIRUS","TISU"]
+  },
+  {
+    topic: "VAKSIN",
+    words: ["SUNTIK","LENGAN","SEHAT","CEGAH","IMUN","ANAK"]
+  },
+  {
+    topic: "OPERASI",
+    words: ["STERIL","DOKTER","BEDAH","JAHIT","BIUS","MEJA"]
+  },
+  {
+    topic: "INFUS",
+    words: ["GANTUNG","CAIRAN","SELANG","TANGAN","LEMAS","TETES"]
+  },
+  {
+    topic: "MASKER",
+    words: ["HIDUNG","WAJAH","VIRUS","SEHAT","DEBU","KAIN"]
+  },
+  {
+    topic: "VITAMIN",
+    words: ["NUTRISI","ENERGI","SEHAT","TUBUH","CEGAH","BUAH"]
+  },
+  {
+    topic: "STETOSKOP",
+    words: ["JANTUNG","DOKTER","DENGAR","LEHER","DADA","ALAT"]
+  },
+  {
+    topic: "PERBAN",
+    words: ["ELASTIS","PUTIH","DARAH","BALUT","LUKA","KASA"]
+  },
+  {
+    topic: "RONTGEN",
+    words: ["TULANG","SINAR","GELAP","HASIL","FOTO","DADA"]
+  },
+  {
+    topic: "WISUDA",
+    words: ["BAHAGIA","KAMPUS","IJAZAH","TOGA","FOTO","TOPI"]
+  },
+  {
+    topic: "BEASISWA",
+    words: ["PRESTASI","BANTUAN","GRATIS","KULIAH","PINTAR","DAFTAR"]
+  },
+  {
+    topic: "RAPOR",
+    words: ["SEMESTER","NILAI","BAGUS","MERAH","GURU","BAGI"]
+  },
+  {
+    topic: "KANTIN",
+    words: ["ISTIRAHAT","GORENGAN","SEKOLAH","MAKAN","JAJAN","MURAH"]
+  },
+  {
+    topic: "ASRAMA",
+    words: ["TINGGAL","MANDIRI","ATURAN","KAMAR","TEMAN","MALAM"]
+  },
+  {
+    topic: "SKRIPSI",
+    words: ["PENELITIAN","MAHASISWA","SIDANG","REVISI","TEBAL","LULUS"]
+  },
+  {
+    topic: "OSIS",
+    words: ["ORGANISASI","PENGURUS","SEKOLAH","ACARA","SISWA","KETUA"]
+  },
+  {
+    topic: "UPACARA",
+    words: ["LAPANGAN","BENDERA","SERAGAM","PEMBINA","HORMAT","SENIN"]
+  },
+  {
+    topic: "EKSKUL",
+    words: ["SEKOLAH","LATIHAN","MINAT","BAKAT","SORE","KLUB"]
+  },
+  {
+    topic: "KURBAN",
+    words: ["SEMBELIH","DAGING","TAKBIR","SAPI","HAJI","BAGI"]
+  },
+  {
+    topic: "NATAL",
+    words: ["DESEMBER","KELUARGA","POHON","LILIN","DAMAI","KADO"]
+  },
+  {
+    topic: "IMLEK",
+    words: ["BARONGSAI","LAMPION","ANGPAO","MERAH","NAGA","CINA"]
+  },
+  {
+    topic: "NYEPI",
+    words: ["MEDITASI","HENING","HINDU","GELAP","TAHUN","BALI"]
+  },
+  {
+    topic: "KEMERDEKAAN",
+    words: ["AGUSTUS","MERDEKA","BENDERA","UPACARA","LOMBA","MERAH"]
+  },
+  {
+    topic: "WAISAK",
+    words: ["BOROBUDUR","PELITA","LILIN","CANDI","BUDA","SUCI"]
+  },
+  {
+    topic: "MILAD",
+    words: ["SELAMAT","SYUKUR","LILIN","KADO","USIA","TIUP"]
+  },
+  {
+    topic: "PLANET",
+    words: ["JUPITER","ORBIT","VENUS","BULAT","MARS","BUMI"]
+  },
+  {
+    topic: "GALAKSI",
+    words: ["BINTANG","RAKSASA","SPIRAL","CAHAYA","JAGAT","JAUH"]
+  },
+  {
+    topic: "KOMET",
+    words: ["LANGIT","JARANG","CAHAYA","EKOR","DEBU","BATU"]
+  },
+  {
+    topic: "ASTRONOT",
+    words: ["MELAYANG","ROKET","BULAN","TUGAS","BAJU","HELM"]
+  },
+  {
+    topic: "ROKET",
+    words: ["ANTARIKSA","TERBANG","LUNCUR","TINGGI","CEPAT","MESIN"]
+  },
+  {
+    topic: "SATELIT",
+    words: ["KOMUNIKASI","ANTARIKSA","SINYAL","SIARAN","ORBIT","BUMI"]
+  },
+  {
+    topic: "TELESKOP",
+    words: ["BINTANG","MELIHAT","LENSA","MALAM","BESAR","JAUH"]
+  },
+  {
+    topic: "GERHANA",
+    words: ["MATAHARI","BAYANGAN","LANGKA","BULAN","GELAP","SIANG"]
+  },
+  {
+    topic: "METEOR",
+    words: ["LANGIT","JATUH","KAWAH","MALAM","CEPAT","BATU"]
+  },
+  {
+    topic: "SURYA",
+    words: ["MATAHARI","PLANET","ORBIT","BESAR","PUSAT","BUMI"]
+  },
+  {
+    topic: "COBEK",
+    words: ["TRADISIONAL","SAMBAL","BUNDAR","DAPUR","ULEK","BATU"]
+  },
+  {
+    topic: "TALENAN",
+    words: ["PERSEGI","POTONG","DAPUR","PISAU","KAYU","ALAS"]
+  },
+  {
+    topic: "BLENDER",
+    words: ["LISTRIK","TABUNG","PUTAR","CEPAT","BUAH","KACA"]
+  },
+  {
+    topic: "MAGICOM",
+    words: ["OTOMATIS","LISTRIK","HANGAT","TOMBOL","DAPUR","NASI"]
+  },
+  {
+    topic: "SUTIL",
+    words: ["PANJANG","GORENG","WAJAN","DAPUR","KAYU","ADUK"]
+  },
+  {
+    topic: "TERMOS",
+    words: ["HANGAT","DINGIN","PANAS","TAHAN","TUTUP","BAJA"]
+  },
+  {
+    topic: "EMBER",
+    words: ["PLASTIK","TUMPAH","WADAH","SUMUR","TIMBA","CUCI"]
+  },
+  {
+    topic: "SAPU",
+    words: ["BERSIH","LANTAI","GAGANG","RUMAH","LIDI","DEBU"]
+  },
+  {
+    topic: "SENTER",
+    words: ["BATERAI","CAHAYA","TERANG","TANGAN","GELAP","MALAM"]
+  },
+  {
+    topic: "LILIN",
+    words: ["ROMANTIS","HANGAT","TERANG","MALAM","LELEH","SUMBU"]
+  },
+  {
+    topic: "KOREK",
+    words: ["PRAKTIS","KOTAK","KECIL","NYALA","PANAS","RODA"]
+  },
+  {
+    topic: "GAYUNG",
+    words: ["PLASTIK","GAGANG","MANDI","KAMAR","CIDUK","SIRAM"]
+  },
+  {
+    topic: "MARTABAK",
+    words: ["COKELAT","KACANG","GURIH","MANIS","TELUR","KEJU"]
+  },
+  {
+    topic: "ES TELER",
+    words: ["ALPUKAT","KELAPA","NANGKA","SANTAN","SEGAR","SIRUP"]
   }
 ];

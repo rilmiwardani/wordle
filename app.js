@@ -4422,7 +4422,16 @@ function showWordGridWinOverlay() {
     triggerWinTransition(7000, true);
   }, delay + 1000);
 }
-// --- END WORD GRID LOGIC ---
+// Helper universal untuk mengecek apakah ronde/puzzle saat ini sudah aktif (mencegah puzzle berganti sendiri saat koneksi terhubung)
+function hasActiveGameRound() {
+  if (currentGameMode === 'betweenle') return !!betweenleSecretWord;
+  if (currentGameMode === 'cascadle') return !!(cascadleTargets && cascadleTargets[cascadleCurrentLevel]);
+  if (currentGameMode === 'wanderwords') return !!wanderWordsCurrentPuzzle;
+  if (currentGameMode === 'wordcluster') return !!(wordClusterItems && wordClusterItems.length > 0 && wordClusterCurrentTopic);
+  if (currentGameMode === 'wordladder') return !!wordLadderTargetWord;
+  if (currentGameMode === 'squareword') return currentWord === 'SQUAREWORD' || (typeof squarewordSolution !== 'undefined' && !!squarewordSolution);
+  return !!currentWord;
+}
 
 // Start Game
 function startNewRound() {
@@ -5546,8 +5555,7 @@ function startOfflineMode() {
       setupSocketListeners();
     }
     
-    const hasWord = (currentGameMode === 'betweenle') ? !!betweenleSecretWord : ((currentGameMode === 'cascadle') ? !!(cascadleTargets && cascadleTargets[cascadleCurrentLevel]) : !!currentWord);
-    if (!hasWord) {
+    if (!hasActiveGameRound()) {
       startNewRound();
     }
   }).catch(err => {
@@ -6004,8 +6012,7 @@ function initObsMode() {
   if (langSelect && targetLang) langSelect.value = targetLang;
 
   // Always load dictionary & start active round immediately so the board rows are always rendered
-  const hasWord = (currentGameMode === 'betweenle') ? !!betweenleSecretWord : ((currentGameMode === 'cascadle') ? !!(cascadleTargets && cascadleTargets[cascadleCurrentLevel]) : ((currentGameMode === 'wanderwords') ? !!wanderWordsCurrentPuzzle : !!currentWord));
-  if (!hasWord) {
+  if (!hasActiveGameRound()) {
     if (typeof loadWordLists === 'function') {
       loadWordLists(targetLang).then(() => {
         if (typeof startNewRound === 'function') startNewRound();
@@ -6084,9 +6091,8 @@ function setupSocketListeners() {
       document.getElementById('hostMusicControl').style.display = 'flex';
       roomHost.textContent = `@${data.uniqueId}`;
 
-      // Bug 7 fix: use boolean flag instead of empty string check
-      const hasWord = (currentGameMode === 'betweenle') ? !!betweenleSecretWord : ((currentGameMode === 'cascadle') ? !!(cascadleTargets && cascadleTargets[cascadleCurrentLevel]) : !!currentWord);
-      if (!hasWord) {
+      // Cek apakah sudah ada ronde aktif agar puzzle tidak ter-reset/berganti sendiri saat status update
+      if (!hasActiveGameRound()) {
         startNewRound();
       }
     } else if (data.status === 'connecting') {
@@ -6189,8 +6195,8 @@ function setupSocketListeners() {
       document.getElementById('hostMusicControl').style.display = 'flex';
     }
 
-    const hasWord = (currentGameMode === 'betweenle') ? !!betweenleSecretWord : ((currentGameMode === 'cascadle') ? !!(cascadleTargets && cascadleTargets[cascadleCurrentLevel]) : !!currentWord);
-    if (!hasWord) {
+    // Cek apakah sudah ada ronde aktif agar puzzle tidak ter-reset saat event tiktokConnected masuk
+    if (!hasActiveGameRound()) {
       startNewRound();
     }
   });

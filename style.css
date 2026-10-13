@@ -3605,48 +3605,43 @@ header {
 
 .floating-gift-item {
   position: absolute;
-  bottom: -90px;
+  bottom: -70px;
   display: flex;
   flex-direction: column;
   align-items: center;
   pointer-events: none;
-  animation: floatingGiftFloat 3.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  animation: floatingGiftFloat 3.8s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
   will-change: transform, opacity;
-  filter: drop-shadow(0 0 16px rgba(255, 215, 0, 0.65));
 }
 
 @keyframes floatingGiftFloat {
   0% {
-    transform: translateY(0) scale(0.35) rotate(var(--rot-start, -6deg));
+    transform: translate3d(0, 0, 0) scale(0.35) rotate(var(--rot-start, -3deg));
     opacity: 0;
   }
-  12% {
-    /* Pop-up burst masuk ke layar */
-    transform: translateY(-160px) scale(1.18) rotate(4deg);
+  15% {
+    /* Muncul pop anggun masuk ke layar dengan ayunan lembut ke kiri */
+    transform: translate3d(-10px, -180px, 0) scale(1.08) rotate(2deg);
     opacity: 1;
   }
-  24% {
-    /* Stabilize ke posisi melayang */
-    transform: translateY(-230px) scale(1.04) rotate(-2deg);
+  35% {
+    /* Melayang santai mengalir kontinu sambil meliuk ke kanan */
+    transform: translate3d(8px, -300px, 0) scale(1.0) rotate(-1.5deg);
     opacity: 1;
   }
-  /* FASE HANG-TIME (Melayang santai ~1.4 detik dari 0.8s s/d 2.2s agar terbaca jelas) */
-  45% {
-    transform: translateY(-260px) scale(1.0) rotate(2deg);
+  60% {
+    /* Terus melayang ke atas dengan ayunan meliuk anggun ke kiri */
+    transform: translate3d(-8px, -480px, 0) scale(1.02) rotate(1.5deg);
     opacity: 1;
   }
-  65% {
-    transform: translateY(-290px) scale(1.02) rotate(-1deg);
-    opacity: 1;
-  }
-  /* MELUNCUR HALUS KE ATAS */
-  84% {
-    transform: translateY(-560px) scale(0.95) rotate(3deg);
-    opacity: 0.9;
+  80% {
+    /* Meluncur halus menuju puncak layar */
+    transform: translate3d(6px, -700px, 0) scale(0.95) rotate(-1deg);
+    opacity: 0.85;
   }
   100% {
-    /* Menghilang di puncak atas layar */
-    transform: translateY(-940px) scale(0.7) rotate(-6deg);
+    /* Menghilang anggun di atas layar */
+    transform: translate3d(0, -980px, 0) scale(0.75) rotate(2deg);
     opacity: 0;
   }
 }
@@ -3664,13 +3659,13 @@ header {
   height: 120px;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(255, 215, 0, 0.45) 0%, rgba(254, 44, 85, 0.25) 50%, transparent 75%);
-  animation: floatingHaloPulse 1.2s ease-in-out infinite alternate;
+  animation: floatingHaloPulse 1.8s ease-in-out infinite alternate;
   pointer-events: none;
 }
 
 @keyframes floatingHaloPulse {
-  from { transform: scale(0.85); opacity: 0.6; }
-  to { transform: scale(1.25); opacity: 1; }
+  from { transform: scale(0.9); opacity: 0.65; }
+  to { transform: scale(1.2); opacity: 0.95; }
 }
 
 .floating-gift-img {
@@ -3679,12 +3674,12 @@ header {
   object-fit: contain;
   filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.65)) drop-shadow(0 0 14px rgba(255, 215, 0, 0.85));
   z-index: 2;
-  animation: floatingGiftBob 0.8s ease-in-out infinite alternate;
+  animation: floatingGiftBob 1.6s ease-in-out infinite alternate;
 }
 
 @keyframes floatingGiftBob {
-  from { transform: translateY(0) rotate(-3deg); }
-  to { transform: translateY(-7px) rotate(3deg); }
+  from { transform: translateY(0) scale(1); }
+  to { transform: translateY(-6px) scale(1.04); }
 }
 
 .floating-gift-sender-pill {

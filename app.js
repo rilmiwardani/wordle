@@ -6298,8 +6298,9 @@ function setupSocketListeners() {
 
     avatar.onerror = function() { this.onerror = null; this.src = 'assets/default-avatar.png'; };
     avatar.src = userData.profilePictureUrl || 'assets/default-avatar.png';
-    const cleanNick = userData.nickname || userData.uniqueId || 'Seseorang';
-    if (nameEl) nameEl.textContent = cleanNick.startsWith('@') ? cleanNick : `@${cleanNick}`;
+    const rawNick = userData.nickname || userData.uniqueId || 'Seseorang';
+    const cleanNick = rawNick.replace(/^@+/, '').trim() || 'Seseorang';
+    if (nameEl) nameEl.textContent = actionType === 'gift' ? cleanNick : `@${cleanNick}`;
 
     // Reset alert type modifier classes
     container.classList.remove('alert-type-follow', 'alert-type-share', 'alert-type-gift');
@@ -6380,7 +6381,7 @@ function setupSocketListeners() {
     const spawnCount = repeatCount >= 10 ? 3 : (repeatCount >= 3 ? 2 : 1);
     const avatarSrc = userData.profilePictureUrl || 'assets/default-avatar.png';
     const rawName = userData.nickname || userData.uniqueId || 'Seseorang';
-    const cleanNick = rawName.startsWith('@') ? rawName : `@${rawName}`;
+    const cleanNick = rawName.replace(/^@+/, '').trim() || 'Seseorang';
 
     for (let i = 0; i < spawnCount; i++) {
       setTimeout(() => {
@@ -6390,7 +6391,7 @@ function setupSocketListeners() {
         const randomLeft = Math.floor(15 + Math.random() * 70);
         item.style.left = `${randomLeft}%`;
 
-        const randomRot = (Math.random() * 24 - 12).toFixed(1);
+        const randomRot = (Math.random() * 12 - 6).toFixed(1);
         item.style.setProperty('--rot-start', `${randomRot}deg`);
 
         const halo = document.createElement('div');
@@ -6471,7 +6472,7 @@ function setupSocketListeners() {
 
         setTimeout(() => {
           if (item.parentNode) item.remove();
-        }, 3600);
+        }, 3900);
       }, i * 250);
     }
   }

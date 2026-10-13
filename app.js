@@ -1548,10 +1548,18 @@ function parseLRC(lrcText) {
   const lines = lrcText.split('\n');
   const result = [];
   const timeRegex = /\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/g;
+  const offsetRegex = /\[offset:\s*([+-]?\d+)\]/i;
   const spamRegex = /(www\.[a-z0-9\-]+\.[a-z]+|http[s]?:\/\/|download lagu|lirik by|sync by)/i;
+  let fileOffsetSec = 0;
+
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
+    const offsetMatch = trimmed.match(offsetRegex);
+    if (offsetMatch) {
+      fileOffsetSec = (parseInt(offsetMatch[1], 10) || 0) / 1000;
+      continue;
+    }
     if (spamRegex.test(trimmed)) continue;
     const matches = [...trimmed.matchAll(timeRegex)];
     if (matches.length > 0) {
@@ -1562,7 +1570,7 @@ function parseLRC(lrcText) {
         const sec = parseInt(m[2], 10);
         const msStr = m[3] || '0';
         const ms = parseFloat('0.' + msStr) || 0;
-        const totalSec = min * 60 + sec + ms;
+        const totalSec = Math.max(0, min * 60 + sec + ms + fileOffsetSec);
         result.push({ time: totalSec, text: text || '♪' });
       }
     }
@@ -1611,6 +1619,42 @@ window.toggleMusicLyricsView = function(event) {
     window.changeMusicPlayerStyle('lyrics');
   }
 };
+
+window.adjustLyricsOffset = function(delta) {
+  const current = typeof musicSettings.lyricsOffset === 'number' ? musicSettings.lyricsOffset : 0;
+  musicSettings.lyricsOffset = Math.round((current + delta) * 10) / 10;
+  localStorage.setItem('music_settings', JSON.stringify(musicSettings));
+  updateLyricsOffsetUI();
+  if (typeof showToast === 'function') {
+    const sign = musicSettings.lyricsOffset > 0 ? `+${musicSettings.lyricsOffset}` : `${musicSettings.lyricsOffset}`;
+    showToast(`⏱️ Offset Lirik: ${sign}s`, 1200);
+  }
+};
+
+window.resetLyricsOffset = function() {
+  musicSettings.lyricsOffset = 0;
+  localStorage.setItem('music_settings', JSON.stringify(musicSettings));
+  updateLyricsOffsetUI();
+  if (typeof showToast === 'function') {
+    showToast('⏱️ Offset Lirik di-reset (0.0s)', 1200);
+  }
+};
+
+function updateLyricsOffsetUI() {
+  const label = document.getElementById('musicLyricsOffsetLabel');
+  if (!label) return;
+  const off = typeof musicSettings.lyricsOffset === 'number' ? musicSettings.lyricsOffset : 0;
+  if (off === 0) {
+    label.textContent = '0.0s (Normal)';
+    label.style.color = '#38bdf8';
+  } else if (off > 0) {
+    label.textContent = `+${off.toFixed(1)}s (Dipercepat)`;
+    label.style.color = '#4ade80';
+  } else {
+    label.textContent = `${off.toFixed(1)}s (Diperlambat)`;
+    label.style.color = '#f59e0b';
+  }
+}
 
 async function fetchSongLyrics(song) {
   if (!song) return;
@@ -1666,14 +1710,28 @@ async function fetchSongLyrics(song) {
       if (res && res.ok) {
         const items = await res.json();
         if (Array.isArray(items) && items.length > 0) {
-          const syncedItem = items.find(item => item.syncedLyrics && item.syncedLyrics.trim().length > 0);
-          if (syncedItem) {
-            lyricsFound = { type: 'synced', data: syncedItem };
+          const songDur = parseDurationToSeconds(song.duration);
+          
+          // Prioritaskan hasil synced lyrics yang durasinya paling mendekati lagu YouTube
+          const syncedItems = items.filter(item => item.syncedLyrics && item.syncedLyrics.trim().length > 0);
+          if (syncedItems.length > 0) {
+            syncedItems.sort((a, b) => {
+              const diffA = Math.abs((a.duration || songDur) - songDur);
+              const diffB = Math.abs((b.duration || songDur) - songDur);
+              return diffA - diffB;
+            });
+            lyricsFound = { type: 'synced', data: syncedItems[0] };
             break;
           }
-          const plainItem = items.find(item => item.plainLyrics && item.plainLyrics.trim().length > 0);
-          if (plainItem && !lyricsFound) {
-            lyricsFound = { type: 'plain', data: plainItem };
+
+          const plainItems = items.filter(item => item.plainLyrics && item.plainLyrics.trim().length > 0);
+          if (plainItems.length > 0 && !lyricsFound) {
+            plainItems.sort((a, b) => {
+              const diffA = Math.abs((a.duration || songDur) - songDur);
+              const diffB = Math.abs((b.duration || songDur) - songDur);
+              return diffA - diffB;
+            });
+            lyricsFound = { type: 'plain', data: plainItems[0] };
           }
         }
       }
@@ -1740,9 +1798,13 @@ function updateLyricsSync(currTime) {
   const scrollContainer = document.getElementById('musicLyricsScroll');
   if (!track || !scrollContainer) return;
 
+  // Terapkan fine-tuning offset waktu dari setting host
+  const offset = typeof musicSettings.lyricsOffset === 'number' ? musicSettings.lyricsOffset : 0;
+  const adjustedTime = Math.max(0, currTime + offset);
+
   let newIndex = -1;
   for (let i = currentLyricsData.length - 1; i >= 0; i--) {
-    if (currTime >= currentLyricsData[i].time) {
+    if (adjustedTime >= currentLyricsData[i].time) {
       newIndex = i;
       break;
     }
@@ -9526,7 +9588,11 @@ window.openMusicSettings = function(e) {
   if (ambianceSlider) ambianceSlider.value = musicSettings.radioAmbianceVolume || 20;
   if (ambianceLabel) ambianceLabel.textContent = `${musicSettings.radioAmbianceVolume || 20}%`;
   if (ambianceContainer) ambianceContainer.style.display = isAmbianceOn ? 'block' : 'none';
-  
+
+  if (typeof updateLyricsOffsetUI === 'function') {
+    updateLyricsOffsetUI();
+  }
+
   document.getElementById('musicSettingsModal').style.display = 'flex';
 };
 

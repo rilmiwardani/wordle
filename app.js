@@ -1825,7 +1825,7 @@ function updateLyricsSync(currTime) {
 
   if (currentLyricsIndex >= 0 && lines[currentLyricsIndex]) {
     const activeElem = lines[currentLyricsIndex];
-    const containerHeight = scrollContainer.clientHeight || 52;
+    const containerHeight = scrollContainer.clientHeight || 68;
     const targetY = (containerHeight / 2) - (activeElem.offsetTop + (activeElem.offsetHeight / 2));
     track.style.transform = `translateY(${Math.round(targetY)}px)`;
   } else {

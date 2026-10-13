@@ -1319,11 +1319,11 @@ header {
 }
 
 .music-lyrics-scroll {
-  height: 52px;
+  height: 68px;
   overflow: hidden;
   position: relative;
-  mask-image: linear-gradient(to bottom, transparent 0%, black 22%, black 78%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 22%, black 78%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%);
 }
 
 .music-lyrics-track {
@@ -1332,16 +1332,16 @@ header {
   flex-direction: column;
   align-items: center;
   transition: transform 0.32s cubic-bezier(0.25, 1, 0.5, 1);
-  padding: 15px 0;
-  gap: 5px;
+  padding: 10px 0;
+  gap: 4px;
   width: 100%;
 }
 
 .music-lyric-line {
   font-family: 'Outfit', sans-serif;
   font-size: 11px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.38);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.52);
   text-align: center;
   line-height: 1.25;
   padding: 1px 4px;
@@ -1356,9 +1356,9 @@ header {
 
 .music-lyric-line.active {
   color: #ffffff;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 800;
-  transform: scale(1.05);
+  transform: scale(1.04);
   opacity: 1;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
   background: transparent;
@@ -1366,8 +1366,8 @@ header {
 }
 
 .music-lyric-line.passed {
-  color: rgba(255, 255, 255, 0.2);
-  transform: scale(0.88);
+  color: rgba(255, 255, 255, 0.38);
+  transform: scale(0.90);
 }
 
 .music-lyrics-empty {

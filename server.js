@@ -59,6 +59,7 @@ let gameSettings = {
   boardScale: 100,
   followerOnlyMusic: false,
   musicCooldown: 60,
+  musicPlayerStyle: "vinyl",
   wanderWordsCustomList: [],
   wordClusterCustomList: [],
 };
@@ -424,6 +425,19 @@ dashApp.post("/api/game-settings", (req, res) => {
   saveGameSettings();
   io.emit("game-settings-update", gameSettings);
   res.json(gameSettings);
+});
+
+dashApp.get("/api/lyrics", async (req, res) => {
+  const query = req.query.q;
+  if (!query) return res.status(400).json({ error: "Missing query" });
+  try {
+    const resp = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(query)}`);
+    const data = await resp.json();
+    res.json(data);
+  } catch (err) {
+    console.warn("[Lyrics Proxy] Error fetching from lrclib:", err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 const dashHttpServer = http.createServer(dashApp);

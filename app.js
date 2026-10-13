@@ -1137,7 +1137,7 @@ let ytPlayer = null;
 let musicQueue = [];
 let activeMusic = null;
 let isMusicPlaying = false;
-let musicSettings = { maxGlobal: 20, maxUser: 2, maxDuration: 6, cooldownSeconds: 60, bannedKeywords: [], volume: 50, requestsEnabled: true, followerOnly: false };
+let musicSettings = { maxGlobal: 20, maxUser: 2, maxDuration: 6, cooldownSeconds: 60, bannedKeywords: [], volume: 50, requestsEnabled: true, followerOnly: false, playerStyle: 'vinyl' };
 try {
   const saved = localStorage.getItem('music_settings');
   if (saved) {
@@ -1146,8 +1146,13 @@ try {
     if (musicSettings.requestsEnabled === undefined) musicSettings.requestsEnabled = true;
     if (musicSettings.followerOnly === undefined) musicSettings.followerOnly = false;
     if (musicSettings.cooldownSeconds === undefined) musicSettings.cooldownSeconds = 60;
+    if (!musicSettings.playerStyle) musicSettings.playerStyle = 'vinyl';
   }
 } catch(e) {}
+let currentLyricsData = []; // [{ time: number, text: string }]
+let currentLyricsIndex = -1;
+let isLyricsLoading = false;
+let previousMusicPlayerStyle = 'vinyl';
 let musicUserCooldowns = {};
 let lastUsername = "";
 let lastLang = "";
@@ -1509,6 +1514,260 @@ function updateMusicQueueUI() {
   }
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// 🎵 AESTHETIC SYNCED LYRICS (KARAOKE) ENGINE
+// ═════════════════════════════════════════════════════════════════════════════
+
+function cleanSongTitleForLyrics(title, originalQuery) {
+  if (originalQuery && typeof originalQuery === 'string' && originalQuery.trim().length > 2) {
+    const q = originalQuery.replace(/^!play\s+/i, '').trim();
+    if (q.length > 2) return q;
+  }
+  if (!title) return '';
+  let cleaned = title
+    .replace(/\s*[\(\[\{](?:official|music|video|audio|lyric|lyrics|mv|hd|4k|hq|visualizer|remastered|full album|explicit)[^\)\]\}]*[\)\]\}]/gi, '')
+    .replace(/\s*[\(\[\{][^\)\]\}]*(?:official|music|video|audio|lyric|lyrics|mv|hd|4k|hq|visualizer|remastered|full album|explicit)[\)\]\}]/gi, '')
+    .replace(/\s*\|\s*.*$/i, '')
+    .replace(/\s*-\s*(?:official\s*(?:video|audio|music)|mv|hd).*$/i, '')
+    .replace(/["'“”]/g, '')
+    .trim();
+  return cleaned || title;
+}
+
+function parseDurationToSeconds(durStr) {
+  if (!durStr) return 180;
+  if (typeof durStr === 'number') return durStr;
+  const parts = String(durStr).split(':').map(Number);
+  if (parts.length === 2) return (parts[0] * 60) + parts[1];
+  if (parts.length === 3) return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
+  return 180;
+}
+
+function parseLRC(lrcText) {
+  if (!lrcText) return [];
+  const lines = lrcText.split('\n');
+  const result = [];
+  const timeRegex = /\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/g;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const matches = [...trimmed.matchAll(timeRegex)];
+    if (matches.length > 0) {
+      const text = trimmed.replace(timeRegex, '').trim();
+      for (const m of matches) {
+        const min = parseInt(m[1], 10);
+        const sec = parseInt(m[2], 10);
+        const msStr = m[3] || '0';
+        const ms = parseFloat('0.' + msStr) || 0;
+        const totalSec = min * 60 + sec + ms;
+        result.push({ time: totalSec, text: text || '♪' });
+      }
+    }
+  }
+  result.sort((a, b) => a.time - b.time);
+  return result;
+}
+
+function resetLyricsUI() {
+  const track = document.getElementById('musicLyricsTrack');
+  const statusElem = document.getElementById('musicLyricsStatus');
+  const badgeText = document.getElementById('musicLyricsBadgeText');
+  if (track) {
+    track.style.transform = 'translateY(0px)';
+    track.innerHTML = `
+      <div class="music-lyrics-empty">
+        <i class="fa-solid fa-music"></i>
+        <span>Menunggu lagu diputar...</span>
+      </div>
+    `;
+  }
+  if (statusElem) statusElem.textContent = 'Mencari lirik...';
+  if (badgeText) badgeText.textContent = 'KARAOKE';
+}
+
+function updateMusicLyricsVisibility() {
+  const container = document.getElementById('musicLyricsContainer');
+  const quickBtn = document.getElementById('musicLyricsQuickBtn');
+  const isLyrics = (musicSettings.playerStyle === 'lyrics');
+  if (container) {
+    container.style.display = isLyrics ? 'flex' : 'none';
+  }
+  if (quickBtn) {
+    quickBtn.title = isLyrics ? 'Tutup Lirik Karaoke' : 'Mode Lirik Karaoke';
+    if (isLyrics) quickBtn.classList.add('active');
+    else quickBtn.classList.remove('active');
+  }
+}
+
+window.toggleMusicLyricsView = function(event) {
+  if (event) event.stopPropagation();
+  if (musicSettings.playerStyle === 'lyrics') {
+    window.changeMusicPlayerStyle(previousMusicPlayerStyle || 'vinyl');
+  } else {
+    previousMusicPlayerStyle = (musicSettings.playerStyle && musicSettings.playerStyle !== 'lyrics') ? musicSettings.playerStyle : 'vinyl';
+    window.changeMusicPlayerStyle('lyrics');
+  }
+};
+
+async function fetchSongLyrics(song) {
+  if (!song) return;
+  const track = document.getElementById('musicLyricsTrack');
+  const statusElem = document.getElementById('musicLyricsStatus');
+  const badgeText = document.getElementById('musicLyricsBadgeText');
+
+  currentLyricsData = [];
+  currentLyricsIndex = -1;
+  isLyricsLoading = true;
+
+  if (track) {
+    track.style.transform = 'translateY(0px)';
+    track.innerHTML = `
+      <div class="music-lyrics-empty">
+        <i class="fa-solid fa-spinner fa-spin" style="color: #fe2c55;"></i>
+        <span>Mencari lirik lagu...</span>
+      </div>
+    `;
+  }
+  if (statusElem) statusElem.textContent = 'Mencari lirik...';
+  if (badgeText) badgeText.textContent = 'KARAOKE';
+
+  const queryCandidates = [];
+  if (song.originalQuery && song.originalQuery.trim().length > 2) {
+    queryCandidates.push(cleanSongTitleForLyrics(song.title, song.originalQuery));
+  }
+  const cleanTitle = cleanSongTitleForLyrics(song.title);
+  if (cleanTitle && !queryCandidates.includes(cleanTitle)) {
+    queryCandidates.push(cleanTitle);
+  }
+  if (song.author && song.title) {
+    const authorTitle = `${song.author} ${cleanTitle}`;
+    if (!queryCandidates.includes(authorTitle)) {
+      queryCandidates.push(authorTitle);
+    }
+  }
+
+  let lyricsFound = null;
+
+  for (const q of queryCandidates) {
+    try {
+      let res = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`, {
+        signal: AbortSignal.timeout(4000)
+      }).catch(() => null);
+
+      if (!res || !res.ok) {
+        res = await fetch(`/api/lyrics?q=${encodeURIComponent(q)}`, {
+          signal: AbortSignal.timeout(4000)
+        }).catch(() => null);
+      }
+
+      if (res && res.ok) {
+        const items = await res.json();
+        if (Array.isArray(items) && items.length > 0) {
+          const syncedItem = items.find(item => item.syncedLyrics && item.syncedLyrics.trim().length > 0);
+          if (syncedItem) {
+            lyricsFound = { type: 'synced', data: syncedItem };
+            break;
+          }
+          const plainItem = items.find(item => item.plainLyrics && item.plainLyrics.trim().length > 0);
+          if (plainItem && !lyricsFound) {
+            lyricsFound = { type: 'plain', data: plainItem };
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[Lyrics] Search candidate error for', q, e.message);
+    }
+  }
+
+  isLyricsLoading = false;
+
+  // Make sure we are still playing the same song
+  if (activeMusic !== song) return;
+
+  if (!lyricsFound) {
+    if (track) {
+      track.innerHTML = `
+        <div class="music-lyrics-empty">
+          <i class="fa-solid fa-music"></i>
+          <span>Lirik tidak ditemukan / Instrumental</span>
+        </div>
+      `;
+    }
+    if (statusElem) statusElem.textContent = 'Instrumental / Teks -';
+    if (badgeText) badgeText.textContent = 'INSTRUMENTAL';
+    return;
+  }
+
+  if (lyricsFound.type === 'synced') {
+    const item = lyricsFound.data;
+    currentLyricsData = parseLRC(item.syncedLyrics);
+    if (badgeText) badgeText.textContent = 'KARAOKE SYNCED';
+    if (statusElem) {
+      const art = item.artistName ? item.artistName.trim() : '';
+      statusElem.textContent = art ? `${art}` : 'Lirik Tersinkron';
+    }
+  } else if (lyricsFound.type === 'plain') {
+    const item = lyricsFound.data;
+    const lines = item.plainLyrics.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    const dur = parseDurationToSeconds(song.duration);
+    const step = dur / (lines.length + 2);
+    currentLyricsData = lines.map((text, idx) => ({
+      time: (idx + 1) * step,
+      text: text
+    }));
+    if (badgeText) badgeText.textContent = 'LIRIK TEKS';
+    if (statusElem) {
+      const art = item.artistName ? item.artistName.trim() : '';
+      statusElem.textContent = art ? `${art}` : 'Lirik Teks';
+    }
+  }
+
+  if (track && currentLyricsData.length > 0) {
+    track.innerHTML = currentLyricsData.map((line, idx) => `
+      <div class="music-lyric-line" id="lyricLine_${idx}" data-idx="${idx}" data-time="${line.time.toFixed(2)}">
+        ${escapeHTML(line.text)}
+      </div>
+    `).join('');
+  }
+}
+
+function updateLyricsSync(currTime) {
+  if (!currentLyricsData || currentLyricsData.length === 0) return;
+  const track = document.getElementById('musicLyricsTrack');
+  const scrollContainer = document.getElementById('musicLyricsScroll');
+  if (!track || !scrollContainer) return;
+
+  let newIndex = -1;
+  for (let i = currentLyricsData.length - 1; i >= 0; i--) {
+    if (currTime >= currentLyricsData[i].time) {
+      newIndex = i;
+      break;
+    }
+  }
+
+  if (newIndex === currentLyricsIndex) return;
+  currentLyricsIndex = newIndex;
+
+  const lines = track.querySelectorAll('.music-lyric-line');
+  lines.forEach((lineElem, idx) => {
+    lineElem.classList.remove('active', 'passed');
+    if (idx === currentLyricsIndex) {
+      lineElem.classList.add('active');
+    } else if (idx < currentLyricsIndex) {
+      lineElem.classList.add('passed');
+    }
+  });
+
+  if (currentLyricsIndex >= 0 && lines[currentLyricsIndex]) {
+    const activeElem = lines[currentLyricsIndex];
+    const containerHeight = scrollContainer.clientHeight || 120;
+    const targetY = (containerHeight / 2) - (activeElem.offsetTop + (activeElem.offsetHeight / 2));
+    track.style.transform = `translateY(${Math.round(targetY)}px)`;
+  } else {
+    track.style.transform = 'translateY(0px)';
+  }
+}
+
 function showMusicNotif(requesterName, title) {
   const container = document.getElementById('musicNotifContainer');
   if (!container) return;
@@ -1716,8 +1975,11 @@ function onPlayerStateChange(event) {
         if (fill && total > 0) {
           fill.style.width = `${(curr / total) * 100}%`;
         }
+
+        // Real-time Synced Karaoke Lyrics Update
+        updateLyricsSync(curr);
       }
-    }, 1000);
+    }, 250);
   } else {
     if (vinyl) vinyl.classList.remove('playing');
     if (eq) eq.classList.remove('playing');
@@ -1763,6 +2025,7 @@ function onPlayerError(event) {
       if (ytPlayer && ytPlayer.loadVideoById) {
         ytPlayer.loadVideoById(nextCandidate.videoId);
       }
+      fetchSongLyrics(nextCandidate);
       return;
     }
   }
@@ -1783,6 +2046,9 @@ function playNextMusic() {
   if (musicQueue.length === 0) {
     isMusicPlaying = false;
     activeMusic = null;
+    currentLyricsData = [];
+    currentLyricsIndex = -1;
+    resetLyricsUI();
     document.getElementById('musicWidget').classList.remove('show');
     if (hostSkipBtn) hostSkipBtn.style.display = 'none';
     if (window.sounds) window.sounds.stopRadioAmbiance();
@@ -1797,6 +2063,7 @@ function playNextMusic() {
   
   activeMusic = musicQueue.shift();
   updateMusicQueueUI();
+  fetchSongLyrics(activeMusic);
   
   document.getElementById('musicThumb').src = activeMusic.thumbnail || 'assets/bg_nature.png';
   document.getElementById('musicTitle').textContent = activeMusic.title;
@@ -5871,7 +6138,8 @@ window.addEventListener('DOMContentLoaded', () => {
         theme: localStorage.getItem('wordle_theme') || 'dark',
         followerOnlyGuess: localStorage.getItem('wordle_followerOnlyGuess') === 'true',
         followerOnlyMusic: (typeof musicSettings !== 'undefined' && musicSettings.followerOnly === true),
-        musicCooldown: (typeof musicSettings !== 'undefined' && typeof musicSettings.cooldownSeconds === 'number' ? musicSettings.cooldownSeconds : 60)
+        musicCooldown: (typeof musicSettings !== 'undefined' && typeof musicSettings.cooldownSeconds === 'number' ? musicSettings.cooldownSeconds : 60),
+        musicPlayerStyle: (typeof musicSettings !== 'undefined' ? (musicSettings.playerStyle || 'vinyl') : 'vinyl')
       };
       localSocket.emit('sync-game-settings-from-overlay', overlayCfg);
     } catch(e) {}
@@ -6012,6 +6280,13 @@ function applyRemoteGameSettings(settings) {
     try { localStorage.setItem('music_settings', JSON.stringify(musicSettings)); } catch(e) {}
     const cdInput = document.getElementById('musicCooldownSeconds');
     if (cdInput) cdInput.value = musicSettings.cooldownSeconds;
+  }
+
+  // 11.6 Music Player Style
+  if (settings.musicPlayerStyle && settings.musicPlayerStyle !== musicSettings.playerStyle) {
+    if (typeof window.changeMusicPlayerStyle === 'function') {
+      window.changeMusicPlayerStyle(settings.musicPlayerStyle);
+    }
   }
 
   // 12. Wander Words Custom Words List
@@ -8938,6 +9213,10 @@ document.addEventListener('DOMContentLoaded', () => {
   } catch(e) {}
 
   updateMarqueeUI(true);
+
+  if (typeof window.changeMusicPlayerStyle === 'function') {
+    window.changeMusicPlayerStyle(musicSettings.playerStyle || 'vinyl');
+  }
 });
 
 window.updateAllowedLengths = function() {
@@ -9143,6 +9422,11 @@ window.saveMusicSettings = function() {
       musicCooldown: musicSettings.cooldownSeconds
     });
   }
+  const modalStyleSelect = document.getElementById('modalMusicPlayerStyleSelect');
+  if (modalStyleSelect && modalStyleSelect.value) {
+    changeMusicPlayerStyle(modalStyleSelect.value);
+  }
+
   document.getElementById('musicSettingsModal').style.display = 'none';
   
   if (ytPlayer && ytPlayer.setVolume) {
@@ -10977,7 +11261,7 @@ window.changeMusicPlayerStyle = function(style) {
   
   const widget = document.getElementById('musicWidget');
   if (widget) {
-    widget.classList.remove('music-style-vinyl', 'music-style-playlist', 'music-style-compact');
+    widget.classList.remove('music-style-vinyl', 'music-style-playlist', 'music-style-compact', 'music-style-lyrics');
     widget.classList.add('music-style-' + musicSettings.playerStyle);
   }
 
@@ -10988,7 +11272,20 @@ window.changeMusicPlayerStyle = function(style) {
   if (modalSelect) modalSelect.value = musicSettings.playerStyle;
 
   updateMusicQueueUI();
+  updateMusicLyricsVisibility();
+
+  // If switched to lyrics while music is playing and lyrics not fetched yet, fetch immediately
+  if (musicSettings.playerStyle === 'lyrics' && activeMusic && currentLyricsData.length === 0 && !isLyricsLoading) {
+    fetchSongLyrics(activeMusic);
+  }
 };
+
+// Initial apply of saved music player style
+setTimeout(() => {
+  if (typeof window.changeMusicPlayerStyle === 'function') {
+    window.changeMusicPlayerStyle(musicSettings.playerStyle || 'vinyl');
+  }
+}, 100);
 
 // Universal Click/Tap Audio & YouTube Unlocker (Fixes Browser Autoplay Block)
 function unlockMediaAutoplay() {

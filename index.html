@@ -925,6 +925,7 @@
                     <option value="vinyl">💿 Piringan Hitam (Vinyl Disc)</option>
                     <option value="playlist">📋 Daftar Antrian Lagu (Playlist Queue)</option>
                     <option value="compact">📻 Bar Minimalis (Compact)</option>
+                    <option value="lyrics">🎤 Lirik Karaoke (Synced Lyrics)</option>
                   </select>
                 </div>
                 <label class="settings-toggle-row" onclick="event.stopPropagation()">
@@ -1128,6 +1129,9 @@
             <div class="music-title-marquee">
               <div class="music-title" id="musicTitle">Song Title</div>
             </div>
+            <button class="music-lyrics-quick-btn" id="musicLyricsQuickBtn" title="Mode Lirik Karaoke" onclick="toggleMusicLyricsView(event)">
+              <i class="fa-solid fa-microphone-lines"></i>
+            </button>
           </div>
           
           <div class="music-requester">
@@ -1142,6 +1146,25 @@
           
           <div class="music-next" id="musicNextSong" style="display: none;">
             Next: <span id="musicNextSongName">Song Name</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aesthetic Synced Lyrics Container -->
+      <div class="music-lyrics-container" id="musicLyricsContainer" style="display: none;">
+        <div class="music-lyrics-header">
+          <div class="music-lyrics-badge">
+            <i class="fa-solid fa-microphone-lines"></i>
+            <span id="musicLyricsBadgeText">KARAOKE LYRICS</span>
+          </div>
+          <span class="music-lyrics-status" id="musicLyricsStatus">Mencari lirik...</span>
+        </div>
+        <div class="music-lyrics-scroll" id="musicLyricsScroll">
+          <div class="music-lyrics-track" id="musicLyricsTrack">
+            <div class="music-lyrics-empty">
+              <i class="fa-solid fa-music"></i>
+              <span>Menunggu lagu...</span>
+            </div>
           </div>
         </div>
       </div>
@@ -1655,6 +1678,7 @@
           <option value="vinyl">💿 Piringan Hitam (Vinyl Disc)</option>
           <option value="playlist">📋 Daftar Antrian Lagu (Playlist Queue)</option>
           <option value="compact">📻 Bar Minimalis (Compact)</option>
+          <option value="lyrics">🎤 Lirik Karaoke (Synced Lyrics)</option>
         </select>
       </div>
 

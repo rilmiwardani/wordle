@@ -1300,6 +1300,22 @@
                   <span style="font-size: 12px; color: var(--text-muted);">detik</span>
                 </div>
               </div>
+
+              <!-- Gaya Tampilan Widget Musik -->
+              <div class="dash-toggle-row">
+                <div>
+                  <div class="dash-toggle-title">🎙️ Gaya Tampilan Pemutar Musik</div>
+                  <div class="dash-toggle-sub">Pilih mode tampilan piringan hitam, antrian playlist, atau lirik karaoke</div>
+                </div>
+                <div>
+                  <select id="dashMusicPlayerStyleSelect" onchange="autoSaveSettings()" style="padding: 6px 10px; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 6px; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer;">
+                    <option value="vinyl">💿 Piringan Hitam (Vinyl)</option>
+                    <option value="playlist">📋 Daftar Antrian (Playlist)</option>
+                    <option value="compact">📻 Bar Minimalis (Compact)</option>
+                    <option value="lyrics">🎤 Lirik Karaoke (Synced)</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -2012,6 +2028,10 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       const mcd = document.getElementById("dashMusicCooldownInput");
       if (mcd && cfg.musicCooldown !== undefined) mcd.value = cfg.musicCooldown;
 
+      // 9.6 Music Player Style
+      const mps = document.getElementById("dashMusicPlayerStyleSelect");
+      if (mps && cfg.musicPlayerStyle) mps.value = cfg.musicPlayerStyle;
+
       // 10. Display Rows
       const dr = document.getElementById("dashDisplayRowsVal");
       if (dr && cfg.displayRows) {
@@ -2125,6 +2145,7 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       currentGameSettings.followerOnlyGuess = document.getElementById("dashFollowerOnlyGuessToggle")?.checked ?? false;
       currentGameSettings.followerOnlyMusic = document.getElementById("dashFollowerOnlyMusicToggle")?.checked ?? false;
       currentGameSettings.musicCooldown = parseInt(document.getElementById("dashMusicCooldownInput")?.value) || 60;
+      currentGameSettings.musicPlayerStyle = document.getElementById("dashMusicPlayerStyleSelect")?.value || 'vinyl';
 
       // Rows & scale
       currentGameSettings.displayRows = parseInt(document.getElementById("dashDisplayRowsVal")?.textContent) || 6;

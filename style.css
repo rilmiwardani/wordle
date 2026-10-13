@@ -972,11 +972,16 @@ header {
   display: flex;
   align-items: center;
   gap: 12px;
-  transform: translateX(150%);
-  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.2), max-width 0.3s ease, width 0.3s ease;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px) scale(0.96);
+  transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.2), max-width 0.3s ease, width 0.3s ease;
   z-index: 100;
   max-width: 260px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
 }
 
 /* 1. Playlist / Queue List Style */
@@ -1379,7 +1384,23 @@ header {
 }
 
 .music-widget.show {
-  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+.music-widget.is-dragging {
+  cursor: grabbing !important;
+  user-select: none !important;
+  transition: none !important;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.25) !important;
+}
+
+.music-widget button,
+.music-widget input,
+.music-widget select,
+.music-widget a {
+  cursor: pointer;
 }
 
 #ytPlayerContainer {

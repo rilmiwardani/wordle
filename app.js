@@ -1771,6 +1771,150 @@ function updateLyricsSync(currTime) {
   }
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// 🖐️ DRAGGABLE MUSIC WIDGET (OBS / HOST CUSTOM POSITIONING)
+// ═════════════════════════════════════════════════════════════════════════════
+
+let isMusicWidgetDragInitialized = false;
+
+function initDraggableMusicWidget() {
+  const widget = document.getElementById('musicWidget');
+  if (!widget || isMusicWidgetDragInitialized) return;
+  isMusicWidgetDragInitialized = true;
+
+  let isPointerDown = false;
+  let hasDragged = false;
+  let startX = 0;
+  let startY = 0;
+  let elemLeft = 0;
+  let elemTop = 0;
+
+  // Restore saved position on startup
+  applySavedMusicWidgetPos();
+
+  widget.addEventListener('pointerdown', (e) => {
+    // Ignore drag if clicking inside buttons, inputs, selects, links, or textareas
+    if (e.target.closest('button, input, select, a, textarea, .music-lyrics-quick-btn')) return;
+
+    // Only respond to primary button (left click / touch)
+    if (e.button !== undefined && e.button !== 0) return;
+
+    isPointerDown = true;
+    hasDragged = false;
+    startX = e.clientX;
+    startY = e.clientY;
+
+    const rect = widget.getBoundingClientRect();
+    elemLeft = rect.left;
+    elemTop = rect.top;
+
+    try {
+      widget.setPointerCapture(e.pointerId);
+    } catch(err) {}
+  });
+
+  widget.addEventListener('pointermove', (e) => {
+    if (!isPointerDown) return;
+
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    if (!hasDragged) {
+      if (Math.hypot(dx, dy) < 6) return; // Prevent accidental drag on simple tap/click
+      hasDragged = true;
+      widget.classList.add('is-dragging');
+    }
+
+    const margin = 8;
+    const maxLeft = Math.max(margin, window.innerWidth - widget.offsetWidth - margin);
+    const maxTop = Math.max(margin, window.innerHeight - widget.offsetHeight - margin);
+
+    const clampedX = Math.max(margin, Math.min(elemLeft + dx, maxLeft));
+    const clampedY = Math.max(margin, Math.min(elemTop + dy, maxTop));
+
+    widget.style.left = `${Math.round(clampedX)}px`;
+    widget.style.top = `${Math.round(clampedY)}px`;
+    widget.style.right = 'auto';
+    widget.style.bottom = 'auto';
+  });
+
+  const onPointerUp = (e) => {
+    if (!isPointerDown) return;
+    isPointerDown = false;
+
+    try {
+      widget.releasePointerCapture(e.pointerId);
+    } catch(err) {}
+
+    widget.classList.remove('is-dragging');
+
+    if (hasDragged) {
+      const pos = {
+        left: widget.style.left,
+        top: widget.style.top
+      };
+      localStorage.setItem('music_widget_custom_pos', JSON.stringify(pos));
+    }
+    hasDragged = false;
+  };
+
+  widget.addEventListener('pointerup', onPointerUp);
+  widget.addEventListener('pointercancel', onPointerUp);
+
+  // Keep clamped to viewport on window resize
+  window.addEventListener('resize', () => {
+    applySavedMusicWidgetPos();
+  });
+}
+
+function applySavedMusicWidgetPos() {
+  const widget = document.getElementById('musicWidget');
+  if (!widget) return;
+  try {
+    const saved = localStorage.getItem('music_widget_custom_pos');
+    if (saved) {
+      const pos = JSON.parse(saved);
+      if (pos && pos.left && pos.top) {
+        const pLeft = parseFloat(pos.left);
+        const pTop = parseFloat(pos.top);
+        if (!isNaN(pLeft) && !isNaN(pTop)) {
+          const margin = 8;
+          const maxLeft = Math.max(margin, window.innerWidth - (widget.offsetWidth || 260) - margin);
+          const maxTop = Math.max(margin, window.innerHeight - (widget.offsetHeight || 110) - margin);
+          const clampedX = Math.max(margin, Math.min(pLeft, maxLeft));
+          const clampedY = Math.max(margin, Math.min(pTop, maxTop));
+
+          widget.style.left = `${Math.round(clampedX)}px`;
+          widget.style.top = `${Math.round(clampedY)}px`;
+          widget.style.right = 'auto';
+          widget.style.bottom = 'auto';
+          return;
+        }
+      }
+    }
+  } catch(e) {}
+
+  // Fallback to default stylesheet bottom/right position
+  widget.style.left = '';
+  widget.style.top = '';
+  widget.style.right = '';
+  widget.style.bottom = '';
+}
+
+window.resetMusicWidgetPos = function() {
+  localStorage.removeItem('music_widget_custom_pos');
+  const widget = document.getElementById('musicWidget');
+  if (widget) {
+    widget.style.left = '';
+    widget.style.top = '';
+    widget.style.right = '';
+    widget.style.bottom = '';
+  }
+  if (typeof showToast === 'function') {
+    showToast('Posisi pemutar musik direset ke kanan bawah!', 2000);
+  }
+};
+
 function showMusicNotif(requesterName, title) {
   const container = document.getElementById('musicNotifContainer');
   if (!container) return;
@@ -9220,7 +9364,17 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof window.changeMusicPlayerStyle === 'function') {
     window.changeMusicPlayerStyle(musicSettings.playerStyle || 'vinyl');
   }
+
+  if (typeof initDraggableMusicWidget === 'function') {
+    initDraggableMusicWidget();
+  }
 });
+
+setTimeout(() => {
+  if (typeof initDraggableMusicWidget === 'function') {
+    initDraggableMusicWidget();
+  }
+}, 200);
 
 window.updateAllowedLengths = function() {
   const is3 = document.getElementById('len3Toggle') ? document.getElementById('len3Toggle').checked : false;

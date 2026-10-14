@@ -922,11 +922,52 @@
                 <div class="settings-toggle-row settings-card-box" onclick="event.stopPropagation()" style="margin: 4px 0; gap: 4px; padding: 8px 12px;">
                   <span class="settings-control-title"><i class="fa-solid fa-compact-disc" style="color: #f43f5e; margin-right: 6px;"></i> Tampilan Pemutar Musik:</span>
                   <select id="mainMusicPlayerStyleSelect" onchange="changeMusicPlayerStyle(this.value)" onclick="event.stopPropagation()" style="width: 100%; padding: 6px 8px; margin-top: 3px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; font-size: 12px; cursor: pointer;">
-                    <option value="vinyl">💿 Piringan Hitam (Vinyl Disc)</option>
-                    <option value="playlist">📋 Daftar Antrian Lagu (Playlist Queue)</option>
-                    <option value="compact">📻 Bar Minimalis (Compact)</option>
-                    <option value="lyrics">🎤 Lirik Karaoke (Synced Lyrics)</option>
+                    <option value="vinyl">Piringan Hitam (Vinyl Disc)</option>
+                    <option value="playlist">Daftar Antrian Lagu (Playlist Queue)</option>
+                    <option value="compact">Bar Minimalis (Compact)</option>
+                    <option value="lyrics">Lirik Karaoke (Synced Lyrics)</option>
                   </select>
+                </div>
+
+                <!-- Opsi Khusus Mode Playlist Queue -->
+                <div class="settings-toggle-row settings-card-box" id="mainPlaylistSubSettingsBox" onclick="event.stopPropagation()" style="margin: 4px 0; gap: 6px; padding: 8px 12px; display: none;">
+                  <span class="settings-control-title"><i class="fa-solid fa-sliders" style="color: var(--playlist-accent, #fe2c55); margin-right: 6px;"></i> Opsi Antrian Playlist:</span>
+                  <div style="display: flex; gap: 6px; width: 100%;">
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: #94a3b8; display: block;">Kapasitas:</span>
+                      <select id="mainMusicPlaylistRowsSelect" onchange="changeMusicPlaylistVisibleRows(this.value)" onclick="event.stopPropagation()" style="width: 100%; padding: 4px 6px; margin-top: 2px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 5px; font-size: 11px; cursor: pointer;">
+                        <option value="3">3 Lagu</option>
+                        <option value="4" selected>4 Lagu</option>
+                        <option value="5">5 Lagu</option>
+                        <option value="6">6 Lagu</option>
+                      </select>
+                    </div>
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: #94a3b8; display: block;">Skala Mobile:</span>
+                      <select id="mainMusicPlaylistScaleSelect" onchange="changeMusicPlaylistScale(this.value)" onclick="event.stopPropagation()" style="width: 100%; padding: 4px 6px; margin-top: 2px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 5px; font-size: 11px; cursor: pointer;">
+                        <option value="75">75% (Ekstra)</option>
+                        <option value="85">85% (Kecil)</option>
+                        <option value="100" selected>100% (Normal)</option>
+                        <option value="115">115% (Besar)</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 6px; width: 100%; margin-top: 2px;">
+                    <div style="flex: 1;">
+                      <span style="font-size: 10px; color: #94a3b8; display: block;">Warna Aksen:</span>
+                      <select id="mainMusicPlaylistAccentSelect" onchange="changeMusicPlaylistAccent(this.value)" onclick="event.stopPropagation()" style="width: 100%; padding: 4px 6px; margin-top: 2px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 5px; font-size: 11px; cursor: pointer;">
+                        <option value="red" selected>Merah TikTok</option>
+                        <option value="green">Hijau Spotify</option>
+                      </select>
+                    </div>
+                  </div>
+                  <label style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 4px; cursor: pointer;">
+                    <span style="font-size: 11px; color: #cbd5e1;">Auto-Scroll Halus</span>
+                    <div class="toggle-switch">
+                      <input type="checkbox" id="mainMusicPlaylistAutoScrollToggle" checked onchange="toggleMusicPlaylistAutoScroll(this.checked)">
+                      <div class="toggle-track"></div>
+                    </div>
+                  </label>
                 </div>
                 <label class="settings-toggle-row" onclick="event.stopPropagation()">
                   <div style="display: flex; flex-direction: column; text-align: left;">
@@ -1169,12 +1210,29 @@
         </div>
       </div>
 
-      <!-- Playlist Queue Sub-Container -->
+      <!-- Playlist Queue Sub-Container (Spotify Minimalist Style) -->
       <div class="music-queue-container" id="musicQueueContainer" style="display: none;">
         <div class="music-queue-header">
-          <span>⏳ ANTRIAN SELANJUTNYA</span>
-          <span class="music-queue-count" id="musicQueueCount">0</span>
+          <div class="music-queue-header-left">
+            <i class="fa-solid fa-list-ul spotify-queue-icon"></i>
+            <span class="spotify-queue-label">Daftar Antrian</span>
+          </div>
+          <div class="music-queue-header-right">
+            <span class="music-queue-count" id="musicQueueCount">0 Lagu</span>
+            <button class="spotify-quick-btn" onclick="requestRandomMusic()" title="Putar Lagu Acak">
+              <i class="fa-solid fa-shuffle"></i>
+            </button>
+            <button class="spotify-quick-btn" onclick="toggleMusicLyricsView(event)" title="Mode Lirik Karaoke">
+              <i class="fa-solid fa-microphone-lines"></i>
+            </button>
+            <button class="spotify-quick-btn" onclick="playNextMusic()" title="Lewati Lagu">
+              <i class="fa-solid fa-forward-step"></i>
+            </button>
+          </div>
         </div>
+        <!-- Active Playing Track Slot (Sticky / Fixed at top) -->
+        <div class="music-active-slot" id="musicActiveSlot"></div>
+        <!-- Queued Tracks Items (Scrollable / Auto-scrollable) -->
         <div class="music-queue-items" id="musicQueueItems"></div>
       </div>
     </div>
@@ -1605,391 +1663,526 @@
   </div>
 
 
-  <!-- Host Control Area -->
+  <!-- Host Control Area (Minimalist Collapsible Toolbar) -->
   <div class="host-music-control" id="hostMusicControl" style="display: none;">
-    <div class="host-avatar-btn-wrap" id="hostAvatarQuickBtn" onclick="toggleHostAvatarQuickModal(event)" title="Ganti Avatar Host">
-      <img id="bottomHostAvatarImg" class="host-control-avatar" src="" alt="Host Avatar">
-    </div>
-    <div class="host-music-input" id="hostGuessInputContainer" style="margin-right: 10px;">
-      <input type="text" id="hostGuessInput" placeholder="Tebak kata..." autocomplete="off">
-    </div>
-    <button id="hostGuessBtn" class="host-music-btn" title="Kirim Tebakan Host"><i class="fa-solid fa-paper-plane"></i></button>
+    <!-- Toggle Collapse / Expand Button -->
+    <button class="host-toolbar-toggle-btn" id="hostToolbarToggleBtn" onclick="toggleHostToolbar(event)" title="Sembunyikan / Tampilkan Toolbar">
+      <i class="fa-solid fa-chevron-right" id="hostToolbarToggleIcon"></i>
+    </button>
 
-    <div style="width: 2px; background: rgba(255,255,255,0.2); margin: 0 10px; height: 24px;"></div>
+    <div class="host-toolbar-inner" id="hostToolbarInner">
+      <div class="host-avatar-btn-wrap" id="hostAvatarQuickBtn" onclick="toggleHostAvatarQuickModal(event)" title="Ganti Avatar Host">
+        <img id="bottomHostAvatarImg" class="host-control-avatar" src="" alt="Host Avatar">
+      </div>
 
-    <button id="hostSkipBtn" class="host-music-btn" style="display: none;" title="Skip Song"><i class="fa-solid fa-forward-step"></i></button>
-    <div class="host-music-input" id="hostMusicInputContainer">
-      <input type="text" id="hostMusicInput" placeholder="Type song name..." autocomplete="off">
+      <div class="host-music-input" id="hostGuessInputContainer">
+        <input type="text" id="hostGuessInput" placeholder="Tebak kata..." autocomplete="off">
+      </div>
+      <button id="hostGuessBtn" class="host-music-btn" title="Kirim Tebakan Host"><i class="fa-solid fa-paper-plane"></i></button>
+
+      <div class="host-toolbar-divider"></div>
+
+      <button id="hostSkipBtn" class="host-music-btn" style="display: none;" title="Lewati Lagu"><i class="fa-solid fa-forward-step"></i></button>
+      <div class="host-music-input" id="hostMusicInputContainer">
+        <input type="text" id="hostMusicInput" placeholder="Cari lagu..." autocomplete="off">
+      </div>
+      <button id="hostRandomMusicBtn" class="host-music-btn" onclick="playRandomMusic(event)" title="Putar Lagu Acak"><i class="fa-solid fa-shuffle"></i></button>
+      <button id="hostMusicBtn" class="host-music-btn" title="Cari Lagu Host"><i class="fa-solid fa-music"></i></button>
     </div>
-    <button id="hostMusicBtn" class="host-music-btn" title="Request Song"><i class="fa-solid fa-music"></i></button>
   </div>
 
   <!-- Music Settings Modal -->
-  <div class="login-overlay" id="musicSettingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; background: rgba(0,0,0,0.65);">
-    <div class="login-card" style="max-width: 380px; width: 90%; padding: 25px;">
-      <h2 style="margin-bottom: 20px; color: white; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;"><i class="fa-brands fa-youtube" style="color: #ff0000;"></i> Pengaturan Request Musik</h2>
-      
-      <label style="text-align: left; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-        <span style="font-size: 13px; color: #ccc;">Aktifkan Request Musik (Penonton):</span>
-        <div class="toggle-switch">
-          <input type="checkbox" id="musicRequestsEnabled">
-          <div class="toggle-track"></div>
-        </div>
-      </label>
-
-      <label style="text-align: left; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-        <div>
-          <span style="font-size: 13px; color: #ccc; display: block;"><i class="fa-solid fa-user-check" style="color: #38bdf8; margin-right: 6px;"></i> Hanya Follower yang Bisa Request:</span>
-          <span style="font-size: 10px; color: #888; display: block;">Perintah !play hanya direspon untuk follower</span>
-        </div>
-        <div class="toggle-switch">
-          <input type="checkbox" id="musicFollowerOnlyToggle">
-          <div class="toggle-track"></div>
-        </div>
-      </label>
-
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 6px 10px; background: rgba(255,255,255,0.06); border-radius: 6px;">
-        <span style="font-size: 12px; color: #ccc;">📻 SFX Notifikasi Request:</span>
-        <button onclick="if(window.sounds) window.sounds.playRadioRequest()" style="background: rgba(59,130,246,0.25); border: 1px solid rgba(59,130,246,0.5); color: #93c5fd; padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer;">▶️ Test Suara</button>
-      </div>
-
-      <!-- Radio / Vinyl Lo-Fi Ambient Layer -->
-      <div style="text-align: left; margin-bottom: 12px; padding: 10px; background: rgba(0,0,0,0.25); border-radius: 8px;">
-        <label style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 4px;">
-          <span style="font-size: 13px; color: #fff; font-weight: 600;">📻 Efek Suasana Radio / Vinyl:</span>
-          <div class="toggle-switch">
-            <input type="checkbox" id="musicRadioAmbianceToggle" onchange="toggleRadioAmbianceUI(this.checked)">
-            <div class="toggle-track"></div>
-          </div>
-        </label>
-        <span style="font-size: 10px; color: #aaa; display: block; margin-bottom: 8px;">Desis udara FM + retakan piringan hitam di latar lagu</span>
-        <div id="musicRadioAmbianceSliderContainer" style="display: none;">
-          <div style="display: flex; justify-content: space-between;">
-            <label style="font-size: 11px; color: #ccc;">Intensitas Desis Radio:</label>
-            <span id="musicRadioAmbianceLabel" style="font-size: 11px; color: #93c5fd; font-weight: 600;">20%</span>
-          </div>
-          <input type="range" id="musicRadioAmbianceSlider" min="5" max="100" value="20" oninput="updateRadioAmbianceVolumeUI(this.value)" style="width: 100%; margin-top: 4px; cursor: pointer;">
-        </div>
-      </div>
-
-      <div style="text-align: left; margin-bottom: 12px;">
-        <label style="font-size: 13px; color: #ccc;">Gaya Tampilan Widget Musik:</label>
-        <select id="modalMusicPlayerStyleSelect" onchange="changeMusicPlayerStyle(this.value)" style="width: 100%; padding: 8px; margin-top: 5px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-size: 13px; cursor: pointer;">
-          <option value="vinyl">💿 Piringan Hitam (Vinyl Disc)</option>
-          <option value="playlist">📋 Daftar Antrian Lagu (Playlist Queue)</option>
-          <option value="compact">📻 Bar Minimalis (Compact)</option>
-          <option value="lyrics">🎤 Lirik Karaoke (Synced Lyrics)</option>
-        </select>
-      </div>
-
-      <!-- Lyrics Sync Calibration / Offset Control -->
-      <div style="text-align: left; margin-bottom: 12px; padding: 10px; background: rgba(0,0,0,0.25); border-radius: 8px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <span style="font-size: 13px; color: #fff; font-weight: 600;"><i class="fa-solid fa-stopwatch" style="color: #38bdf8; margin-right: 6px;"></i> Kalibrasi Offset Lirik:</span>
-          <span id="musicLyricsOffsetLabel" style="font-size: 11px; color: #38bdf8; font-weight: 700;">0.0s (Normal)</span>
-        </div>
-        <div style="display: flex; gap: 6px; margin-bottom: 6px;">
-          <button type="button" onclick="adjustLyricsOffset(-1)" style="flex: 1; padding: 6px 2px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: white; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600;">-1.0s</button>
-          <button type="button" onclick="adjustLyricsOffset(-0.5)" style="flex: 1; padding: 6px 2px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: white; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600;">-0.5s</button>
-          <button type="button" onclick="resetLyricsOffset()" style="flex: 1.2; padding: 6px 2px; background: rgba(59,130,246,0.2); border: 1px solid rgba(59,130,246,0.45); color: #93c5fd; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600;">Reset (0s)</button>
-          <button type="button" onclick="adjustLyricsOffset(0.5)" style="flex: 1; padding: 6px 2px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: white; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600;">+0.5s</button>
-          <button type="button" onclick="adjustLyricsOffset(1)" style="flex: 1; padding: 6px 2px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: white; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600;">+1.0s</button>
-        </div>
-        <span style="font-size: 10px; color: #888; display: block; line-height: 1.3;">Gunakan (+) jika lirik telat dari vokal, atau (-) jika lirik mendahului vokal.</span>
-      </div>
-
-      <div style="text-align: left; margin-bottom: 12px;">
-        <div style="display: flex; justify-content: space-between;">
-          <label style="font-size: 13px; color: #ccc;">Volume Musik:</label>
-          <span id="musicVolumeLabel" style="font-size: 13px; color: white; font-weight: 600;">50%</span>
-        </div>
-        <input type="range" id="musicVolumeSlider" min="0" max="100" value="50" oninput="updateMusicVolumeUI(this.value)" style="width: 100%; margin-top: 5px; cursor: pointer;">
-      </div>
-      
-      <div style="text-align: left; margin-bottom: 12px;">
-        <label style="font-size: 13px; color: #ccc;">Maksimal Antrian Global:</label>
-        <input type="number" id="musicMaxGlobal" style="width: 100%; padding: 10px; margin-top: 5px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px;">
-      </div>
-      
-      <div style="text-align: left; margin-bottom: 12px;">
-        <label style="font-size: 13px; color: #ccc;">Maksimal Antrian Per User:</label>
-        <input type="number" id="musicMaxUser" style="width: 100%; padding: 10px; margin-top: 5px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px;">
-      </div>
-
-      <div style="text-align: left; margin-bottom: 12px;">
-        <div style="display: flex; justify-content: space-between;">
-          <label style="font-size: 13px; color: #ccc;">⏳ Cooldown Request (Detik):</label>
-          <span style="font-size: 10px; color: #888;">Jeda antar request per penonton</span>
-        </div>
-        <input type="number" id="musicCooldownSeconds" min="0" max="600" value="60" placeholder="Contoh: 60" style="width: 100%; padding: 10px; margin-top: 5px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px;">
-      </div>
-      
-      <div style="text-align: left; margin-bottom: 12px;">
-        <label style="font-size: 13px; color: #ccc;">Maksimal Durasi Lagu (Menit):</label>
-        <input type="number" id="musicMaxDuration" style="width: 100%; padding: 10px; margin-top: 5px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px;">
-      </div>
-      
-      <div style="text-align: left; margin-bottom: 20px;">
-        <label style="font-size: 13px; color: #ccc;">Banned Keywords (pisahkan koma):</label>
-        <textarea id="musicBannedKeywords" rows="3" placeholder="contoh: koplo, dj, remix" style="width: 100%; padding: 10px; margin-top: 5px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; resize: none; line-height: 1.4;"></textarea>
-      </div>
-
-      <div style="text-align: left; margin-bottom: 20px;">
-        <button type="button" onclick="resetMusicWidgetPos()" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
-          <i class="fa-solid fa-arrows-rotate"></i> Reset Posisi Widget Musik (Kanan Bawah)
+  <div class="login-overlay" id="musicSettingsModal" onclick="if(event.target === this) this.style.display='none'" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; background: rgba(0,0,0,0.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+    <div class="login-card modal-card-scrollable">
+      <div class="modal-card-header">
+        <h2><i class="fa-brands fa-youtube" style="color: #ff0000; font-size: 1.25rem;"></i> Pengaturan Request Musik</h2>
+        <button type="button" class="modal-card-close-btn" onclick="document.getElementById('musicSettingsModal').style.display='none'" title="Tutup">
+          <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
 
-      <div style="display: flex; gap: 10px;">
-        <button onclick="saveMusicSettings()" style="flex: 1; padding: 12px; background: #3b82f6; border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Simpan</button>
-        <button onclick="document.getElementById('musicSettingsModal').style.display='none'" style="flex: 1; padding: 12px; background: rgba(255,255,255,0.2); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Batal</button>
+      <div class="modal-scroll-body">
+        <label class="modal-section-card" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin: 0;">
+          <span style="font-size: 12.5px; color: #e2e8f0; font-weight: 600;">Aktifkan Request Musik (Penonton):</span>
+          <div class="toggle-switch">
+            <input type="checkbox" id="musicRequestsEnabled">
+            <div class="toggle-track"></div>
+          </div>
+        </label>
+
+        <label class="modal-section-card" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin: 0;">
+          <div>
+            <span style="font-size: 12.5px; color: #e2e8f0; font-weight: 600; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-user-check" style="color: #38bdf8;"></i> Hanya Follower yang Bisa:</span>
+            <span style="font-size: 10px; color: #94a3b8; display: block; margin-top: 2px;">Perintah !play hanya direspon untuk follower</span>
+          </div>
+          <div class="toggle-switch">
+            <input type="checkbox" id="musicFollowerOnlyToggle">
+            <div class="toggle-track"></div>
+          </div>
+        </label>
+
+        <div class="modal-section-card" style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 12px; color: #cbd5e1; font-weight: 500; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-bell" style="color: #f59e0b;"></i> SFX Notifikasi Request:</span>
+          <button type="button" onclick="if(window.sounds) window.sounds.playRadioRequest()" style="background: rgba(59,130,246,0.25); border: 1px solid rgba(59,130,246,0.5); color: #93c5fd; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+            <i class="fa-solid fa-play" style="font-size: 10px;"></i> Test Suara
+          </button>
+        </div>
+
+        <!-- Radio / Vinyl Lo-Fi Ambient Layer -->
+        <div class="modal-section-card">
+          <label style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 3px;">
+            <span style="font-size: 12.5px; color: #fff; font-weight: 600; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-compact-disc" style="color: #a855f7;"></i> Efek Suasana Radio / Vinyl:</span>
+            <div class="toggle-switch">
+              <input type="checkbox" id="musicRadioAmbianceToggle" onchange="toggleRadioAmbianceUI(this.checked)">
+              <div class="toggle-track"></div>
+            </div>
+          </label>
+          <span style="font-size: 10px; color: #94a3b8; display: block; margin-bottom: 6px;">Desis udara FM + retakan piringan hitam di latar lagu</span>
+          <div id="musicRadioAmbianceSliderContainer" style="display: none; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label style="font-size: 11px; color: #cbd5e1;">Intensitas Desis Radio:</label>
+              <span id="musicRadioAmbianceLabel" style="font-size: 11px; color: #93c5fd; font-weight: 700;">20%</span>
+            </div>
+            <input type="range" id="musicRadioAmbianceSlider" min="5" max="100" value="20" oninput="updateRadioAmbianceVolumeUI(this.value)" style="width: 100%; margin-top: 4px; cursor: pointer;">
+          </div>
+        </div>
+
+        <!-- Random Song Preset / Genre Vibe -->
+        <div class="modal-section-card">
+          <label style="font-size: 12px; color: #cbd5e1; font-weight: 500; display: flex; align-items: center; gap: 6px; margin-bottom: 5px;">
+            <i class="fa-solid fa-shuffle" style="color: #38bdf8;"></i> Vibe Lagu Acak (Random Pool):
+          </label>
+          <select id="modalMusicRandomGenreSelect" onchange="changeMusicRandomGenre(this.value)" class="modal-field-input" style="cursor: pointer; margin-bottom: 6px;">
+            <option value="milenial">Nostalgia Milenial (Pop-Rock 90s - 2000an)</option>
+            <option value="spotify_mix">Mix Top Spotify (Indo + Global Teratas)</option>
+            <option value="spotify_id">Top 50 Spotify Indonesia Daily (Kworb)</option>
+            <option value="spotify_global">Top 50 Spotify Global Daily (Kworb)</option>
+            <option value="hits">Hits Pop Terkini &amp; Viral</option>
+            <option value="akustik">Akustik Santai / Cafe Vibes</option>
+            <option value="mix">Campuran Semua Kategori (Total Mix)</option>
+          </select>
+          <button type="button" onclick="playRandomMusic(event)" style="width: 100%; padding: 6px 4px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <i class="fa-solid fa-shuffle"></i> Putar Lagu Acak Sekarang
+          </button>
+        </div>
+
+        <div>
+          <label style="font-size: 12px; color: #cbd5e1; font-weight: 500; display: flex; align-items: center; gap: 6px; margin-bottom: 3px;"><i class="fa-solid fa-palette" style="color: #38bdf8;"></i> Gaya Tampilan Widget Musik:</label>
+          <select id="modalMusicPlayerStyleSelect" onchange="changeMusicPlayerStyle(this.value)" class="modal-field-input" style="cursor: pointer;">
+            <option value="vinyl">Piringan Hitam (Vinyl Disc)</option>
+            <option value="playlist">Daftar Antrian Lagu (Playlist Queue)</option>
+            <option value="compact">Bar Minimalis (Compact)</option>
+            <option value="lyrics">Lirik Karaoke (Synced Lyrics)</option>
+          </select>
+        </div>
+
+        <!-- Pengaturan Khusus Mode Playlist Queue -->
+        <div class="modal-section-card" id="modalPlaylistSettingsCard" style="display: none;">
+          <div style="font-size: 12px; color: #fff; font-weight: 600; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+            <i class="fa-solid fa-sliders" style="color: var(--playlist-accent, #fe2c55);"></i> Pengaturan Daftar Antrian:
+          </div>
+          <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+            <div style="flex: 1;">
+              <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 3px;">Kapasitas Tampil:</label>
+              <select id="modalMusicPlaylistRowsSelect" onchange="changeMusicPlaylistVisibleRows(this.value)" class="modal-field-input" style="cursor: pointer; padding: 5px 6px; font-size: 11px;">
+                <option value="3">3 Lagu Antrian</option>
+                <option value="4" selected>4 Lagu (Rekomendasi)</option>
+                <option value="5">5 Lagu Antrian</option>
+                <option value="6">6 Lagu Antrian</option>
+              </select>
+            </div>
+            <div style="flex: 1;">
+              <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 3px;">Ukuran / Skala Zoom:</label>
+              <select id="modalMusicPlaylistScaleSelect" onchange="changeMusicPlaylistScale(this.value)" class="modal-field-input" style="cursor: pointer; padding: 5px 6px; font-size: 11px;">
+                <option value="75">75% (Ekstra Ringkas)</option>
+                <option value="85">85% (Kecil)</option>
+                <option value="100" selected>100% (Normal Standar)</option>
+                <option value="115">115% (Besar)</option>
+              </select>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+            <div style="flex: 1;">
+              <label style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 3px;">Warna Aksen Pemutar:</label>
+              <select id="modalMusicPlaylistAccentSelect" onchange="changeMusicPlaylistAccent(this.value)" class="modal-field-input" style="cursor: pointer; padding: 5px 6px; font-size: 11px;">
+                <option value="red" selected>Merah TikTok (Sesuai Game)</option>
+                <option value="green">Hijau Spotify Klasik</option>
+              </select>
+            </div>
+          </div>
+          <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding-top: 5px; border-top: 1px solid rgba(255,255,255,0.06);">
+            <div style="display: flex; flex-direction: column;">
+              <span style="font-size: 11px; color: #cbd5e1; font-weight: 600;">Auto-Scroll Halus</span>
+              <span style="font-size: 9.5px; color: #94a3b8;">Gulir otomatis berkala saat antrian penuh</span>
+            </div>
+            <div class="toggle-switch">
+              <input type="checkbox" id="modalMusicPlaylistAutoScrollToggle" checked onchange="toggleMusicPlaylistAutoScroll(this.checked)">
+              <div class="toggle-track"></div>
+            </div>
+          </label>
+        </div>
+
+        <!-- Lyrics Sync Calibration / Offset Control (Per-Song) -->
+        <div class="modal-section-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+            <span style="font-size: 12px; color: #fff; font-weight: 600; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-stopwatch" style="color: #38bdf8;"></i> Kalibrasi Offset Lirik:</span>
+            <span id="musicLyricsOffsetLabel" style="font-size: 11px; color: #38bdf8; font-weight: 700;">0.0s (Normal)</span>
+          </div>
+          <div id="musicLyricsSongTarget" style="font-size: 10px; color: #94a3b8; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            Lagu: Tidak ada lagu yang sedang diputar
+          </div>
+          <div style="display: flex; gap: 4px; margin-bottom: 6px;">
+            <button type="button" onclick="adjustLyricsOffset(-5)" style="padding: 4px 6px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: white; border-radius: 6px; font-size: 10px; cursor: pointer; font-weight: 600;" title="Perlambat 5 detik">-5s</button>
+            <button type="button" onclick="adjustLyricsOffset(-1)" style="flex: 1; padding: 4px 2px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: white; border-radius: 6px; font-size: 10px; cursor: pointer; font-weight: 600;">-1.0s</button>
+            <button type="button" onclick="adjustLyricsOffset(-0.5)" style="flex: 1; padding: 4px 2px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: white; border-radius: 6px; font-size: 10px; cursor: pointer; font-weight: 600;">-0.5s</button>
+            <button type="button" onclick="resetLyricsOffset()" style="flex: 1.2; padding: 4px 2px; background: rgba(59,130,246,0.25); border: 1px solid rgba(59,130,246,0.45); color: #93c5fd; border-radius: 6px; font-size: 10px; cursor: pointer; font-weight: 600;">Reset (0s)</button>
+            <button type="button" onclick="adjustLyricsOffset(0.5)" style="flex: 1; padding: 4px 2px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: white; border-radius: 6px; font-size: 10px; cursor: pointer; font-weight: 600;">+0.5s</button>
+            <button type="button" onclick="adjustLyricsOffset(1)" style="flex: 1; padding: 4px 2px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: white; border-radius: 6px; font-size: 10px; cursor: pointer; font-weight: 600;">+1.0s</button>
+            <button type="button" onclick="adjustLyricsOffset(5)" style="padding: 4px 6px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: white; border-radius: 6px; font-size: 10px; cursor: pointer; font-weight: 600;" title="Percepat 5 detik">+5s</button>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 5px;">
+            <span style="font-size: 10.5px; color: #cbd5e1; white-space: nowrap;">Atur Langsung:</span>
+            <input type="number" step="0.1" id="musicLyricsOffsetInput" onchange="setLyricsOffsetExact(this.value)" placeholder="0.0" style="flex: 1; padding: 3px 6px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); border-radius: 5px; color: #38bdf8; font-size: 11px; font-weight: 700; text-align: center;">
+            <span style="font-size: 10px; color: #94a3b8;">detik</span>
+          </div>
+          <button type="button" onclick="syncFirstLyricNow()" style="width: 100%; margin-bottom: 6px; padding: 6px 4px; background: rgba(254, 44, 85, 0.18); border: 1px solid rgba(254, 44, 85, 0.45); color: #ff5b79; border-radius: 6px; font-size: 10.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;" title="Klik saat penyanyi mulai menyanyikan bait pertama untuk menarik mundur lirik">
+            <i class="fa-solid fa-bullseye"></i> Tarik ke Baris 1 (Vokal Baru Mulai Sekarang)
+          </button>
+          <div style="font-size: 9px; color: #94a3b8; line-height: 1.35; background: rgba(255,255,255,0.03); padding: 5px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
+            <i class="fa-solid fa-lightbulb" style="color: #facc15; margin-right: 3px;"></i>
+            <b>Khusus Lagu Ini:</b> Offset otomatis disimpan per lagu. Jika lirik sudah terlanjur bergulir saat intro, cukup klik <b>Tarik ke Baris 1</b> atau <b>scroll roda mouse</b> ke atas pada lirik.
+          </div>
+        </div>
+
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+            <label style="font-size: 12px; color: #cbd5e1; font-weight: 500; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-volume-high" style="color: #10b981;"></i> Volume Musik:</label>
+            <span id="musicVolumeLabel" style="font-size: 11.5px; color: #38bdf8; font-weight: 700;">50%</span>
+          </div>
+          <input type="range" id="musicVolumeSlider" min="0" max="100" value="50" oninput="updateMusicVolumeUI(this.value)" style="width: 100%; margin-top: 3px; cursor: pointer;">
+        </div>
+
+        <div class="modal-2col-grid">
+          <div>
+            <label style="font-size: 11px; color: #cbd5e1; font-weight: 500; display: block; margin-bottom: 3px;">Max Antrian Global:</label>
+            <input type="number" id="musicMaxGlobal" class="modal-field-input">
+          </div>
+          <div>
+            <label style="font-size: 11px; color: #cbd5e1; font-weight: 500; display: block; margin-bottom: 3px;">Max Antrian / User:</label>
+            <input type="number" id="musicMaxUser" class="modal-field-input">
+          </div>
+        </div>
+
+        <div class="modal-2col-grid">
+          <div>
+            <label style="font-size: 11px; color: #cbd5e1; font-weight: 500; display: flex; align-items: center; gap: 4px; margin-bottom: 3px;"><i class="fa-solid fa-hourglass-half" style="color: #fbbf24;"></i> Cooldown (Detik):</label>
+            <input type="number" id="musicCooldownSeconds" min="0" max="600" value="60" placeholder="60" class="modal-field-input">
+          </div>
+          <div>
+            <label style="font-size: 11px; color: #cbd5e1; font-weight: 500; display: flex; align-items: center; gap: 4px; margin-bottom: 3px;"><i class="fa-solid fa-clock" style="color: #fbbf24;"></i> Max Durasi (Menit):</label>
+            <input type="number" id="musicMaxDuration" class="modal-field-input">
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 500; display: block; margin-bottom: 3px;"><i class="fa-solid fa-ban" style="color: #ef4444; margin-right: 4px;"></i> Banned Keywords (pisahkan koma):</label>
+          <textarea id="musicBannedKeywords" rows="2" placeholder="contoh: koplo, dj, remix" class="modal-field-input" style="resize: none; font-size: 12px; line-height: 1.4;"></textarea>
+        </div>
+
+        <div>
+          <button type="button" onclick="resetMusicWidgetPos()" style="width: 100%; padding: 8px 10px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.16); color: #cbd5e1; border-radius: 8px; font-size: 11.5px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
+            <i class="fa-solid fa-arrows-rotate"></i> Reset Posisi Widget Musik (Kanan Bawah)
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-card-footer">
+        <button type="button" onclick="saveMusicSettings()" class="modal-btn-save">
+          <i class="fa-solid fa-floppy-disk"></i> Simpan
+        </button>
+        <button type="button" onclick="document.getElementById('musicSettingsModal').style.display='none'" class="modal-btn-cancel">
+          Batal
+        </button>
       </div>
     </div>
   </div>
 
   <!-- TTS Settings Modal -->
-  <div class="login-overlay" id="ttsSettingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; background: rgba(0,0,0,0.65);">
-    <div class="login-card" style="max-width: 380px; width: 90%; padding: 25px;">
-      <h2 style="margin-bottom: 20px; color: white; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-comment-dots" style="color: #38bdf8;"></i> Pengaturan Suara (TTS)</h2>
-      
-      <label style="text-align: left; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-        <span style="font-size: 13px; color: #ccc;">Aktifkan Pembaca Suara:</span>
-        <div class="toggle-switch">
-          <input type="checkbox" id="ttsEnabledToggle">
-          <div class="toggle-track"></div>
-        </div>
-      </label>
-      
-      <div style="text-align: left; margin-bottom: 12px;">
-        <div style="display: flex; justify-content: space-between;">
-          <label style="font-size: 13px; color: #ccc;">Volume Suara:</label>
-          <span id="ttsVolumeLabel" style="font-size: 13px; color: white; font-weight: 600;">100%</span>
-        </div>
-        <input type="range" id="ttsVolumeSlider" min="0" max="100" value="100" oninput="updateTTSVolumeUI(this.value)" style="width: 100%; margin-top: 5px; cursor: pointer;">
-      </div>
-      
-      <label style="text-align: left; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-        <span style="font-size: 13px; color: #ccc;">Hanya Follower:</span>
-        <div class="toggle-switch">
-          <input type="checkbox" id="ttsFollowerOnlyToggle">
-          <div class="toggle-track"></div>
-        </div>
-      </label>
-      
-      <label style="text-align: left; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-        <span style="font-size: 13px; color: #ccc;">Sebut Nickname & Format:</span>
-        <div class="toggle-switch">
-          <input type="checkbox" id="ttsReadNicknameToggle">
-          <div class="toggle-track"></div>
-        </div>
-      </label>
-
-      <div style="text-align: left; margin-bottom: 12px;">
-        <label style="font-size: 13px; color: #ccc;">Mode Pembacaan:</label>
-        <select id="ttsModeSelect" style="width: 100%; padding: 10px; margin-top: 5px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px;">
-          <option value="all">Semua Komentar (Bebas)</option>
-          <option value="guess_only">Hanya Tebakan (Satu Kata Huruf Saja)</option>
-        </select>
-      </div>
-      
-      <div style="text-align: left; margin-bottom: 20px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <label style="font-size: 13px; color: #ccc;">Pilih Suara (Voice):</label>
-          <button onclick="testTTS()" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;"><i class="fa-solid fa-play" style="margin-right: 4px;"></i> TEST TTS</button>
-        </div>
-        <select id="ttsVoiceSelect" style="width: 100%; padding: 10px; margin-top: 5px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px;">
-          <option value="">Default Browser Voice</option>
-        </select>
+  <div class="login-overlay" id="ttsSettingsModal" onclick="if(event.target === this) this.style.display='none'" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; background: rgba(0,0,0,0.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+    <div class="login-card modal-card-scrollable">
+      <div class="modal-card-header">
+        <h2><i class="fa-solid fa-comment-dots" style="color: #38bdf8;"></i> Pengaturan Suara (TTS)</h2>
+        <button type="button" class="modal-card-close-btn" onclick="document.getElementById('ttsSettingsModal').style.display='none'" title="Tutup">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
 
-      <!-- MP3 Host Audio Auto -->
-      <div style="margin-bottom: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
-        <h3 style="font-size: 14px; color: #fff; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-microphone" style="color: #a855f7;"></i> Host Audio Otomatis (MP3)</h3>
-        
-        <label style="text-align: left; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-          <span style="font-size: 13px; color: #ccc;">Aktifkan Efek Suara Host:</span>
+      <div class="modal-scroll-body">
+        <label class="modal-section-card" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin: 0;">
+          <span style="font-size: 12.5px; color: #e2e8f0; font-weight: 600;">Aktifkan Pembaca Suara:</span>
           <div class="toggle-switch">
-            <input type="checkbox" id="hostAudioEnabledToggle">
+            <input type="checkbox" id="ttsEnabledToggle">
             <div class="toggle-track"></div>
           </div>
         </label>
         
-        <div style="text-align: left; margin-bottom: 12px;">
-          <div style="display: flex; justify-content: space-between;">
-            <label style="font-size: 13px; color: #ccc;">Volume Host MP3:</label>
-            <span id="hostAudioVolumeLabel" style="font-size: 13px; color: white; font-weight: 600;">100%</span>
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+            <label style="font-size: 12px; color: #cbd5e1; font-weight: 500; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-volume-high" style="color: #38bdf8;"></i> Volume Suara:</label>
+            <span id="ttsVolumeLabel" style="font-size: 11.5px; color: #38bdf8; font-weight: 700;">100%</span>
           </div>
-          <input type="range" id="hostAudioVolumeSlider" min="0" max="100" value="100" oninput="updateHostAudioVolumeUI(this.value)" style="width: 100%; margin-top: 5px; cursor: pointer;">
+          <input type="range" id="ttsVolumeSlider" min="0" max="100" value="100" oninput="updateTTSVolumeUI(this.value)" style="width: 100%; margin-top: 3px; cursor: pointer;">
         </div>
         
-        <button onclick="testHostAudio()" style="width: 100%; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; margin-top: 5px;"><i class="fa-solid fa-play" style="margin-right: 4px;"></i> TEST SUARA HOST ACAK</button>
+        <label class="modal-section-card" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin: 0;">
+          <span style="font-size: 12.5px; color: #e2e8f0; font-weight: 600; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-user-check" style="color: #38bdf8;"></i> Hanya Follower:</span>
+          <div class="toggle-switch">
+            <input type="checkbox" id="ttsFollowerOnlyToggle">
+            <div class="toggle-track"></div>
+          </div>
+        </label>
+        
+        <label class="modal-section-card" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin: 0;">
+          <span style="font-size: 12.5px; color: #e2e8f0; font-weight: 600; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-id-card" style="color: #38bdf8;"></i> Sebut Nickname & Format:</span>
+          <div class="toggle-switch">
+            <input type="checkbox" id="ttsReadNicknameToggle">
+            <div class="toggle-track"></div>
+          </div>
+        </label>
+
+        <div>
+          <label style="font-size: 12px; color: #cbd5e1; font-weight: 500; display: flex; align-items: center; gap: 6px; margin-bottom: 3px;"><i class="fa-solid fa-layer-group" style="color: #38bdf8;"></i> Mode Pembacaan:</label>
+          <select id="ttsModeSelect" class="modal-field-input" style="cursor: pointer;">
+            <option value="all">Semua Komentar (Bebas)</option>
+            <option value="guess_only">Hanya Tebakan (Satu Kata Huruf Saja)</option>
+          </select>
+        </div>
+        
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+            <label style="font-size: 12px; color: #cbd5e1; font-weight: 500; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-microphone-lines" style="color: #38bdf8;"></i> Pilih Suara (Voice):</label>
+            <button type="button" onclick="testTTS()" style="background: rgba(59,130,246,0.25); border: 1px solid rgba(59,130,246,0.5); color: #93c5fd; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-play" style="font-size: 9px;"></i> TEST TTS</button>
+          </div>
+          <select id="ttsVoiceSelect" class="modal-field-input" style="cursor: pointer;">
+            <option value="">Default Browser Voice</option>
+          </select>
+        </div>
+
+        <!-- MP3 Host Audio Auto -->
+        <div class="modal-section-card">
+          <h3 style="font-size: 13px; color: #fff; margin: 0 0 8px 0; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-microphone" style="color: #a855f7;"></i> Host Audio Otomatis (MP3)</h3>
+          
+          <label style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 8px;">
+            <span style="font-size: 12px; color: #cbd5e1;">Aktifkan Efek Suara Host:</span>
+            <div class="toggle-switch">
+              <input type="checkbox" id="hostAudioEnabledToggle">
+              <div class="toggle-track"></div>
+            </div>
+          </label>
+          
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label style="font-size: 11.5px; color: #cbd5e1;">Volume Host MP3:</label>
+              <span id="hostAudioVolumeLabel" style="font-size: 11.5px; color: #a855f7; font-weight: 700;">100%</span>
+            </div>
+            <input type="range" id="hostAudioVolumeSlider" min="0" max="100" value="100" oninput="updateHostAudioVolumeUI(this.value)" style="width: 100%; margin-top: 3px; cursor: pointer;">
+          </div>
+          
+          <button type="button" onclick="testHostAudio()" style="width: 100%; background: rgba(168,85,247,0.18); border: 1px solid rgba(168,85,247,0.35); color: #d8b4fe; padding: 7px; border-radius: 8px; font-size: 11.5px; font-weight: 600; cursor: pointer; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 5px;"><i class="fa-solid fa-play" style="font-size: 10px;"></i> TEST SUARA HOST ACAK</button>
+        </div>
       </div>
 
-      <div style="display: flex; gap: 10px;">
-        <button onclick="saveTTSSettings()" style="flex: 1; padding: 12px; background: #3b82f6; border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Simpan</button>
-        <button onclick="document.getElementById('ttsSettingsModal').style.display='none'" style="flex: 1; padding: 12px; background: rgba(255,255,255,0.2); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Batal</button>
+      <div class="modal-card-footer">
+        <button type="button" onclick="saveTTSSettings()" class="modal-btn-save">
+          <i class="fa-solid fa-floppy-disk"></i> Simpan
+        </button>
+        <button type="button" onclick="document.getElementById('ttsSettingsModal').style.display='none'" class="modal-btn-cancel">
+          Batal
+        </button>
       </div>
     </div>
   </div>
 
   <!-- Social Audio Settings Modal -->
-  <div class="login-overlay" id="socialAudioSettingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; background: rgba(0,0,0,0.65);">
-    <div class="login-card" style="max-width: 380px; width: 90%; padding: 25px;">
-      <h2 style="margin-bottom: 20px; color: white; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-bell" style="color: #10b981;"></i> Pengaturan Sound Alert</h2>
-      
-      <label style="text-align: left; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-        <span style="font-size: 13px; color: #ccc;">Aktifkan Sound Alert:</span>
-        <div class="toggle-switch">
-          <input type="checkbox" id="socialAudioEnabled">
-          <div class="toggle-track"></div>
-        </div>
-      </label>
-      
-      <div style="text-align: left; margin-bottom: 12px;">
-        <div style="display: flex; justify-content: space-between;">
-          <label style="font-size: 13px; color: #ccc;">Volume Sound Alert:</label>
-          <span id="socialAudioVolumeLabel" style="font-size: 13px; color: white; font-weight: 600;">80%</span>
-        </div>
-        <input type="range" id="socialAudioVolumeSlider" min="0" max="100" value="80" oninput="document.getElementById('socialAudioVolumeLabel').textContent = this.value + '%'" style="width: 100%; margin-top: 5px; cursor: pointer;">
+  <div class="login-overlay" id="socialAudioSettingsModal" onclick="if(event.target === this) this.style.display='none'" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; background: rgba(0,0,0,0.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+    <div class="login-card modal-card-scrollable">
+      <div class="modal-card-header">
+        <h2><i class="fa-solid fa-bell" style="color: #10b981;"></i> Pengaturan Sound Alert</h2>
+        <button type="button" class="modal-card-close-btn" onclick="document.getElementById('socialAudioSettingsModal').style.display='none'" title="Tutup">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
-      
-      <div style="text-align: left; margin-bottom: 12px;">
-        <label style="font-size: 13px; color: #ccc;">Sound URL Follower Baru:</label>
-        <div style="display: flex; gap: 8px; align-items: center; margin-top: 5px;">
-          <input type="text" id="socialAudioFollowUrl" placeholder="https://..." style="flex: 1; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit;">
-          <button onclick="previewAlertSound(document.getElementById('socialAudioFollowUrl').value)" style="padding: 10px 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 600; white-space: nowrap;"><i class="fa-solid fa-play" style="margin-right: 4px;"></i> TEST</button>
+
+      <div class="modal-scroll-body">
+        <label class="modal-section-card" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin: 0;">
+          <span style="font-size: 12.5px; color: #e2e8f0; font-weight: 600;">Aktifkan Sound Alert:</span>
+          <div class="toggle-switch">
+            <input type="checkbox" id="socialAudioEnabled">
+            <div class="toggle-track"></div>
+          </div>
+        </label>
+        
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+            <label style="font-size: 12px; color: #cbd5e1; font-weight: 500; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-volume-high" style="color: #10b981;"></i> Volume Sound Alert:</label>
+            <span id="socialAudioVolumeLabel" style="font-size: 11.5px; color: #10b981; font-weight: 700;">80%</span>
+          </div>
+          <input type="range" id="socialAudioVolumeSlider" min="0" max="100" value="80" oninput="document.getElementById('socialAudioVolumeLabel').textContent = this.value + '%'" style="width: 100%; margin-top: 3px; cursor: pointer;">
         </div>
-      </div>
-      
-      <div style="text-align: left; margin-bottom: 12px;">
-        <label style="font-size: 13px; color: #ccc;">Sound URL Gift Umum (All Gift):</label>
-        <div style="display: flex; gap: 8px; align-items: center; margin-top: 5px;">
-          <input type="text" id="socialAudioDefaultGiftUrl" placeholder="https://..." style="flex: 1; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit;">
-          <button onclick="previewAlertSound(document.getElementById('socialAudioDefaultGiftUrl').value)" style="padding: 10px 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 600; white-space: nowrap;"><i class="fa-solid fa-play" style="margin-right: 4px;"></i> TEST</button>
+        
+        <div>
+          <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 500; display: block; margin-bottom: 3px;">Sound URL Follower Baru:</label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="text" id="socialAudioFollowUrl" placeholder="https://..." class="modal-field-input" style="flex: 1;">
+            <button type="button" onclick="previewAlertSound(document.getElementById('socialAudioFollowUrl').value)" style="padding: 7px 12px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); color: white; border-radius: 8px; font-size: 11.5px; cursor: pointer; font-weight: 600; white-space: nowrap; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-play" style="font-size: 10px;"></i> TEST</button>
+          </div>
         </div>
-      </div>
-      
-      <div style="text-align: left; margin-bottom: 25px;">
-        <label style="font-size: 13px; color: #ccc;">Sound Gift Spesifik (Format: NamaGift = URL):</label>
-        <textarea id="socialAudioCustomGifts" rows="4" placeholder="Mawar = https://www.myinstants.com/media/sounds/uwu.mp3&#10;Universe = https://www.myinstants.com/media/sounds/tuturu.mp3" style="width: 100%; padding: 10px; margin-top: 5px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; resize: none; line-height: 1.4;"></textarea>
-        <div style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
-          <input type="text" id="socialAudioTestGiftName" placeholder="Nama gift untuk di-test..." style="flex: 1; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); color: white; border-radius: 8px; font-size: 12px; font-family: inherit;">
-          <button onclick="testCustomGiftSound()" style="padding: 10px 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 600; white-space: nowrap;"><i class="fa-solid fa-volume-high" style="margin-right: 4px;"></i> TEST GIFT</button>
+        
+        <div>
+          <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 500; display: block; margin-bottom: 3px;">Sound URL Gift Umum (All Gift):</label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="text" id="socialAudioDefaultGiftUrl" placeholder="https://..." class="modal-field-input" style="flex: 1;">
+            <button type="button" onclick="previewAlertSound(document.getElementById('socialAudioDefaultGiftUrl').value)" style="padding: 7px 12px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); color: white; border-radius: 8px; font-size: 11.5px; cursor: pointer; font-weight: 600; white-space: nowrap; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-play" style="font-size: 10px;"></i> TEST</button>
+          </div>
+        </div>
+        
+        <div>
+          <label style="font-size: 11.5px; color: #cbd5e1; font-weight: 500; display: block; margin-bottom: 3px;">Sound Gift Spesifik (Format: NamaGift = URL):</label>
+          <textarea id="socialAudioCustomGifts" rows="3" placeholder="Mawar = https://www.myinstants.com/media/sounds/uwu.mp3&#10;Universe = https://www.myinstants.com/media/sounds/tuturu.mp3" class="modal-field-input" style="resize: none; line-height: 1.4; font-size: 11.5px;"></textarea>
+          <div style="display: flex; gap: 8px; align-items: center; margin-top: 6px;">
+            <input type="text" id="socialAudioTestGiftName" placeholder="Nama gift untuk di-test..." class="modal-field-input" style="flex: 1; font-size: 11.5px;">
+            <button type="button" onclick="testCustomGiftSound()" style="padding: 7px 12px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); color: white; border-radius: 8px; font-size: 11.5px; cursor: pointer; font-weight: 600; white-space: nowrap; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-volume-high" style="font-size: 10px;"></i> TEST GIFT</button>
+          </div>
         </div>
       </div>
 
-      <div style="display: flex; gap: 10px;">
-        <button onclick="saveSocialAudioSettings()" style="flex: 1; padding: 12px; background: #3b82f6; border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Simpan</button>
-        <button onclick="document.getElementById('socialAudioSettingsModal').style.display='none'" style="flex: 1; padding: 12px; background: rgba(255,255,255,0.2); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Batal</button>
+      <div class="modal-card-footer">
+        <button type="button" onclick="saveSocialAudioSettings()" class="modal-btn-save">
+          <i class="fa-solid fa-floppy-disk"></i> Simpan
+        </button>
+        <button type="button" onclick="document.getElementById('socialAudioSettingsModal').style.display='none'" class="modal-btn-cancel">
+          Batal
+        </button>
       </div>
     </div>
   </div>
 
   <!-- Custom SFX Settings Modal -->
-  <div class="login-overlay" id="customSfxSettingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; background: rgba(0,0,0,0.65);">
-    <div class="login-card" style="max-width: 400px; width: 90%; padding: 25px; max-height: 90vh; overflow-y: auto;">
-      <h2 style="margin-bottom: 20px; color: white; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-sliders" style="color: #8b5cf6;"></i> Pengaturan SFX Kustom</h2>
-      
-      <label style="text-align: left; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-        <span style="font-size: 13px; color: #ccc;">Aktifkan SFX Kustom:</span>
-        <div class="toggle-switch">
-          <input type="checkbox" id="customSfxEnabled">
-          <div class="toggle-track"></div>
-        </div>
-      </label>
-      
-      <div style="text-align: left; margin-bottom: 15px;">
-        <div style="display: flex; justify-content: space-between;">
-          <label style="font-size: 13px; color: #ccc;">Volume SFX:</label>
-          <span id="customSfxVolumeLabel" style="font-size: 13px; color: white; font-weight: 600;">80%</span>
-        </div>
-        <input type="range" id="customSfxVolumeSlider" min="0" max="100" value="80" oninput="document.getElementById('customSfxVolumeLabel').textContent = this.value + '%'" style="width: 100%; margin-top: 5px; cursor: pointer;">
+  <div class="login-overlay" id="customSfxSettingsModal" onclick="if(event.target === this) this.style.display='none'" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; background: rgba(0,0,0,0.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+    <div class="login-card modal-card-scrollable">
+      <div class="modal-card-header">
+        <h2><i class="fa-solid fa-sliders" style="color: #8b5cf6;"></i> Pengaturan SFX Kustom</h2>
+        <button type="button" class="modal-card-close-btn" onclick="document.getElementById('customSfxSettingsModal').style.display='none'" title="Tutup">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
-      
-      <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-bottom: 15px;">
-        <div style="font-size: 11px; color: #aaa; margin-bottom: 10px; font-weight: 700; text-transform: uppercase; text-align: left;">Daftar Efek Suara (URL atau File Audio)</div>
+
+      <div class="modal-scroll-body">
+        <label class="modal-section-card" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin: 0;">
+          <span style="font-size: 12.5px; color: #e2e8f0; font-weight: 600;">Aktifkan SFX Kustom:</span>
+          <div class="toggle-switch">
+            <input type="checkbox" id="customSfxEnabled">
+            <div class="toggle-track"></div>
+          </div>
+        </label>
         
-        <!-- start -->
-        <div style="text-align: left; margin-bottom: 12px;">
-          <label style="font-size: 11px; color: #ccc; display: block; margin-bottom: 4px;">Game Start (Mulai Game):</label>
-          <div style="display: flex; gap: 8px;">
-            <input type="text" id="customSfxStartUrl" placeholder="https://... atau upload file 📂" style="flex: 1; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; font-size: 12px;">
-            <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'start')" style="display: none;" id="customSfxStartFile">
-            <button onclick="document.getElementById('customSfxStartFile').click()" style="padding: 8px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal">📂</button>
-            <button onclick="previewCustomSfxSound('start')" style="padding: 8px 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap;">▶️ TEST</button>
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+            <label style="font-size: 12px; color: #cbd5e1; font-weight: 500; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-volume-high" style="color: #8b5cf6;"></i> Volume SFX:</label>
+            <span id="customSfxVolumeLabel" style="font-size: 11.5px; color: #8b5cf6; font-weight: 700;">80%</span>
           </div>
+          <input type="range" id="customSfxVolumeSlider" min="0" max="100" value="80" oninput="document.getElementById('customSfxVolumeLabel').textContent = this.value + '%'" style="width: 100%; margin-top: 3px; cursor: pointer;">
         </div>
-
-        <!-- win -->
-        <div style="text-align: left; margin-bottom: 12px;">
-          <label style="font-size: 11px; color: #ccc; display: block; margin-bottom: 4px;">Game Win (Kemenangan):</label>
-          <div style="display: flex; gap: 8px;">
-            <input type="text" id="customSfxWinUrl" placeholder="https://... atau upload file 📂" style="flex: 1; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; font-size: 12px;">
-            <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'win')" style="display: none;" id="customSfxWinFile">
-            <button onclick="document.getElementById('customSfxWinFile').click()" style="padding: 8px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal">📂</button>
-            <button onclick="previewCustomSfxSound('win')" style="padding: 8px 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap;">▶️ TEST</button>
+        
+        <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+          <div style="font-size: 11px; color: #94a3b8; margin-bottom: 8px; font-weight: 700; text-transform: uppercase;">Daftar Efek Suara (URL atau File Audio)</div>
+          
+          <!-- start -->
+          <div style="margin-bottom: 8px;">
+            <label style="font-size: 11px; color: #cbd5e1; display: block; margin-bottom: 3px;">Game Start (Mulai Game):</label>
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="customSfxStartUrl" placeholder="https://... atau upload file" class="modal-field-input" style="flex: 1;">
+              <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'start')" style="display: none;" id="customSfxStartFile">
+              <button type="button" onclick="document.getElementById('customSfxStartFile').click()" style="padding: 7px 10px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal"><i class="fa-solid fa-folder-open"></i></button>
+              <button type="button" onclick="previewCustomSfxSound('start')" style="padding: 7px 11px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-play" style="font-size: 9px;"></i> TEST</button>
+            </div>
           </div>
-        </div>
 
-        <!-- close -->
-        <div style="text-align: left; margin-bottom: 12px;">
-          <label style="font-size: 11px; color: #ccc; display: block; margin-bottom: 4px;">Hampir Benar (Close):</label>
-          <div style="display: flex; gap: 8px;">
-            <input type="text" id="customSfxCloseUrl" placeholder="https://... atau upload file 📂" style="flex: 1; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; font-size: 12px;">
-            <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'close')" style="display: none;" id="customSfxCloseFile">
-            <button onclick="document.getElementById('customSfxCloseFile').click()" style="padding: 8px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal">📂</button>
-            <button onclick="previewCustomSfxSound('close')" style="padding: 8px 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap;">▶️ TEST</button>
+          <!-- win -->
+          <div style="margin-bottom: 8px;">
+            <label style="font-size: 11px; color: #cbd5e1; display: block; margin-bottom: 3px;">Game Win (Kemenangan):</label>
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="customSfxWinUrl" placeholder="https://... atau upload file" class="modal-field-input" style="flex: 1;">
+              <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'win')" style="display: none;" id="customSfxWinFile">
+              <button type="button" onclick="document.getElementById('customSfxWinFile').click()" style="padding: 7px 10px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal"><i class="fa-solid fa-folder-open"></i></button>
+              <button type="button" onclick="previewCustomSfxSound('win')" style="padding: 7px 11px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-play" style="font-size: 9px;"></i> TEST</button>
+            </div>
           </div>
-        </div>
 
-        <!-- correct -->
-        <div style="text-align: left; margin-bottom: 12px;">
-          <label style="font-size: 11px; color: #ccc; display: block; margin-bottom: 4px;">Kata Terpecahkan (Correct):</label>
-          <div style="display: flex; gap: 8px;">
-            <input type="text" id="customSfxCorrectUrl" placeholder="https://... atau upload file 📂" style="flex: 1; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; font-size: 12px;">
-            <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'correct')" style="display: none;" id="customSfxCorrectFile">
-            <button onclick="document.getElementById('customSfxCorrectFile').click()" style="padding: 8px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal">📂</button>
-            <button onclick="previewCustomSfxSound('correct')" style="padding: 8px 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap;">▶️ TEST</button>
+          <!-- close -->
+          <div style="margin-bottom: 8px;">
+            <label style="font-size: 11px; color: #cbd5e1; display: block; margin-bottom: 3px;">Hampir Benar (Close):</label>
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="customSfxCloseUrl" placeholder="https://... atau upload file" class="modal-field-input" style="flex: 1;">
+              <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'close')" style="display: none;" id="customSfxCloseFile">
+              <button type="button" onclick="document.getElementById('customSfxCloseFile').click()" style="padding: 7px 10px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal"><i class="fa-solid fa-folder-open"></i></button>
+              <button type="button" onclick="previewCustomSfxSound('close')" style="padding: 7px 11px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-play" style="font-size: 9px;"></i> TEST</button>
+            </div>
           </div>
-        </div>
 
-        <!-- interaction -->
-        <div style="text-align: left; margin-bottom: 12px;">
-          <label style="font-size: 11px; color: #ccc; display: block; margin-bottom: 4px;">Tebakan Masuk (Interaction):</label>
-          <div style="display: flex; gap: 8px;">
-            <input type="text" id="customSfxInteractionUrl" placeholder="https://... atau upload file 📂" style="flex: 1; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; font-size: 12px;">
-            <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'interaction')" style="display: none;" id="customSfxInteractionFile">
-            <button onclick="document.getElementById('customSfxInteractionFile').click()" style="padding: 8px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal">📂</button>
-            <button onclick="previewCustomSfxSound('interaction')" style="padding: 8px 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap;">▶️ TEST</button>
+          <!-- correct -->
+          <div style="margin-bottom: 8px;">
+            <label style="font-size: 11px; color: #cbd5e1; display: block; margin-bottom: 3px;">Kata Terpecahkan (Correct):</label>
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="customSfxCorrectUrl" placeholder="https://... atau upload file" class="modal-field-input" style="flex: 1;">
+              <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'correct')" style="display: none;" id="customSfxCorrectFile">
+              <button type="button" onclick="document.getElementById('customSfxCorrectFile').click()" style="padding: 7px 10px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal"><i class="fa-solid fa-folder-open"></i></button>
+              <button type="button" onclick="previewCustomSfxSound('correct')" style="padding: 7px 11px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-play" style="font-size: 9px;"></i> TEST</button>
+            </div>
           </div>
-        </div>
 
-        <!-- click -->
-        <div style="text-align: left; margin-bottom: 12px;">
-          <label style="font-size: 11px; color: #ccc; display: block; margin-bottom: 4px;">Bocoran Huruf (Click Clue):</label>
-          <div style="display: flex; gap: 8px;">
-            <input type="text" id="customSfxClickUrl" placeholder="https://... atau upload file 📂" style="flex: 1; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; font-size: 12px;">
-            <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'click')" style="display: none;" id="customSfxClickFile">
-            <button onclick="document.getElementById('customSfxClickFile').click()" style="padding: 8px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal">📂</button>
-            <button onclick="previewCustomSfxSound('click')" style="padding: 8px 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap;">▶️ TEST</button>
+          <!-- interaction -->
+          <div style="margin-bottom: 8px;">
+            <label style="font-size: 11px; color: #cbd5e1; display: block; margin-bottom: 3px;">Tebakan Masuk (Interaction):</label>
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="customSfxInteractionUrl" placeholder="https://... atau upload file" class="modal-field-input" style="flex: 1;">
+              <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'interaction')" style="display: none;" id="customSfxInteractionFile">
+              <button type="button" onclick="document.getElementById('customSfxInteractionFile').click()" style="padding: 7px 10px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal"><i class="fa-solid fa-folder-open"></i></button>
+              <button type="button" onclick="previewCustomSfxSound('interaction')" style="padding: 7px 11px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-play" style="font-size: 9px;"></i> TEST</button>
+            </div>
           </div>
-        </div>
 
-        <!-- invalid -->
-        <div style="text-align: left; margin-bottom: 12px;">
-          <label style="font-size: 11px; color: #ccc; display: block; margin-bottom: 4px;">Tebakan Tidak Valid (Invalid):</label>
-          <div style="display: flex; gap: 8px;">
-            <input type="text" id="customSfxInvalidUrl" placeholder="https://... atau upload file 📂" style="flex: 1; padding: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-family: inherit; font-size: 12px;">
-            <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'invalid')" style="display: none;" id="customSfxInvalidFile">
-            <button onclick="document.getElementById('customSfxInvalidFile').click()" style="padding: 8px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal">📂</button>
-            <button onclick="previewCustomSfxSound('invalid')" style="padding: 8px 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap;">▶️ TEST</button>
+          <!-- click -->
+          <div style="margin-bottom: 8px;">
+            <label style="font-size: 11px; color: #cbd5e1; display: block; margin-bottom: 3px;">Bocoran Huruf (Click Clue):</label>
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="customSfxClickUrl" placeholder="https://... atau upload file" class="modal-field-input" style="flex: 1;">
+              <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'click')" style="display: none;" id="customSfxClickFile">
+              <button type="button" onclick="document.getElementById('customSfxClickFile').click()" style="padding: 7px 10px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal"><i class="fa-solid fa-folder-open"></i></button>
+              <button type="button" onclick="previewCustomSfxSound('click')" style="padding: 7px 11px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-play" style="font-size: 9px;"></i> TEST</button>
+            </div>
+          </div>
+
+          <!-- invalid -->
+          <div style="margin-bottom: 8px;">
+            <label style="font-size: 11px; color: #cbd5e1; display: block; margin-bottom: 3px;">Tebakan Tidak Valid (Invalid):</label>
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="customSfxInvalidUrl" placeholder="https://... atau upload file" class="modal-field-input" style="flex: 1;">
+              <input type="file" accept="audio/*" onchange="handleSfxFileUpload(this, 'invalid')" style="display: none;" id="customSfxInvalidFile">
+              <button type="button" onclick="document.getElementById('customSfxInvalidFile').click()" style="padding: 7px 10px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); color: white; border-radius: 8px; font-size: 12px; cursor: pointer;" title="Upload file audio lokal"><i class="fa-solid fa-folder-open"></i></button>
+              <button type="button" onclick="previewCustomSfxSound('invalid')" style="padding: 7px 11px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); color: white; border-radius: 8px; font-size: 11px; cursor: pointer; font-weight: 600; white-space: nowrap; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-play" style="font-size: 9px;"></i> TEST</button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div style="display: flex; gap: 10px;">
-        <button onclick="saveCustomSFXSettings()" style="flex: 1; padding: 12px; background: #3b82f6; border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Simpan</button>
-        <button onclick="document.getElementById('customSfxSettingsModal').style.display='none'" style="flex: 1; padding: 12px; background: rgba(255,255,255,0.2); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Batal</button>
+      <div class="modal-card-footer">
+        <button type="button" onclick="saveCustomSFXSettings()" class="modal-btn-save">
+          <i class="fa-solid fa-floppy-disk"></i> Simpan
+        </button>
+        <button type="button" onclick="document.getElementById('customSfxSettingsModal').style.display='none'" class="modal-btn-cancel">
+          Batal
+        </button>
       </div>
     </div>
   </div>

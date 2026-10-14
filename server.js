@@ -9,8 +9,10 @@
  */
 
 require("dotenv").config();
+const fs = require("fs");
 const express = require("express");
 const http = require("http");
+const https = require("https");
 const { Server } = require("socket.io");
 const path = require("path");
 const { WebcastPushConnection } = require("tiktok-live-connector");
@@ -60,6 +62,11 @@ let gameSettings = {
   followerOnlyMusic: false,
   musicCooldown: 60,
   musicPlayerStyle: "vinyl",
+  musicRandomGenre: "milenial",
+  musicPlaylistVisibleRows: 4,
+  musicPlaylistScale: 100,
+  musicPlaylistAccent: "red",
+  musicPlaylistAutoScroll: true,
   wanderWordsCustomList: [],
   wordClusterCustomList: [],
 };
@@ -67,9 +74,82 @@ let gameSettings = {
 // Music Request Cooldown Tracker (key: username/uniqueId -> timestamp)
 const musicCooldowns = new Map();
 
-// Persistent storage paths for settings
+// Persistent storage paths for settings & charts
 const SETTINGS_FILE = path.join(__dirname, "game_settings.json");
 const OBS_CONFIG_FILE = path.join(__dirname, "obs_config.json");
+const SPOTIFY_CHARTS_FILE = path.join(__dirname, "spotify_top_charts.json");
+
+let spotifyChartsData = {
+  updatedAt: null,
+  idDaily: [],
+  globalDaily: []
+};
+
+function loadPersistedSpotifyCharts() {
+  try {
+    if (fs.existsSync(SPOTIFY_CHARTS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(SPOTIFY_CHARTS_FILE, "utf8"));
+      if (Array.isArray(data.idDaily) && Array.isArray(data.globalDaily)) {
+        spotifyChartsData = data;
+        console.log(`[Spotify Charts] Loaded saved charts: ${data.idDaily.length} ID, ${data.globalDaily.length} Global`);
+      }
+    }
+  } catch(e) {
+    console.error("[Spotify Charts] Error reading spotify_top_charts.json:", e.message);
+  }
+}
+
+function fetchKworbHtml(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' } }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => resolve(data));
+    }).on('error', reject);
+  });
+}
+
+function parseKworbTable(html, limit = 50) {
+  const songs = [];
+  const regex = /<td class="text mp"><div>([\s\S]*?)<\/div><\/td>/g;
+  let match;
+  while ((match = regex.exec(html)) !== null && songs.length < limit) {
+    let clean = match[1]
+      .replace(/<[^>]+>/g, '')
+      .replace(/&amp;/g, '&')
+      .replace(/&#39;/g, "'")
+      .replace(/&quot;/g, '"')
+      .trim();
+    if (clean) songs.push(clean);
+  }
+  return songs;
+}
+
+async function updateSpotifyChartsCache() {
+  try {
+    console.log("[Spotify Charts] Updating charts from kworb.net...");
+    const [idHtml, globalHtml] = await Promise.all([
+      fetchKworbHtml('https://kworb.net/spotify/country/id_daily.html'),
+      fetchKworbHtml('https://kworb.net/spotify/country/global_daily.html')
+    ]);
+
+    const idSongs = parseKworbTable(idHtml, 50);
+    const globalSongs = parseKworbTable(globalHtml, 50);
+
+    if (idSongs.length > 0 || globalSongs.length > 0) {
+      spotifyChartsData = {
+        updatedAt: new Date().toISOString(),
+        idDaily: idSongs.length > 0 ? idSongs : spotifyChartsData.idDaily,
+        globalDaily: globalSongs.length > 0 ? globalSongs : spotifyChartsData.globalDaily
+      };
+      fs.writeFileSync(SPOTIFY_CHARTS_FILE, JSON.stringify(spotifyChartsData, null, 2), "utf8");
+      console.log(`[Spotify Charts] Updated successfully: ${spotifyChartsData.idDaily.length} ID, ${spotifyChartsData.globalDaily.length} Global`);
+      io.emit("spotify-charts-update", spotifyChartsData);
+    }
+  } catch(e) {
+    console.error("[Spotify Charts] Failed to update from kworb.net:", e.message);
+  }
+}
 
 function loadPersistedSettings() {
   try {
@@ -91,6 +171,8 @@ function loadPersistedSettings() {
   } catch(e) {
     console.error("[OBS] Could not load obs_config.json:", e.message);
   }
+
+  loadPersistedSpotifyCharts();
 }
 
 function saveGameSettings() {
@@ -110,6 +192,8 @@ function saveObsConfig() {
 }
 
 loadPersistedSettings();
+// Auto update charts every 12 hours
+setInterval(updateSpotifyChartsCache, 12 * 60 * 60 * 1000);
 
 // Event counters for dashboard
 let eventStats = {
@@ -361,6 +445,16 @@ io.on("connection", (socket) => {
     socket.broadcast.emit("game-settings-update", newSettings);
   });
 
+  // Spotify Top Charts Sync
+  socket.on("get-spotify-charts", () => {
+    socket.emit("spotify-charts-update", spotifyChartsData);
+  });
+
+  socket.on("refresh-spotify-charts", async () => {
+    console.log("[Spotify Charts] Manual refresh requested via socket");
+    await updateSpotifyChartsCache();
+  });
+
   socket.on("disconnect", () => {
     console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
   });
@@ -383,6 +477,10 @@ dashApp.use("/dashboard", express.static(path.join(__dirname, "dashboard"))); //
 // API endpoints
 dashApp.get("/api/status", (req, res) => {
   res.json(getStatusPayload());
+});
+
+dashApp.get("/api/spotify-charts", (req, res) => {
+  res.json(spotifyChartsData);
 });
 
 dashApp.post("/api/connect", (req, res) => {

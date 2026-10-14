@@ -1304,15 +1304,72 @@
               <!-- Gaya Tampilan Widget Musik -->
               <div class="dash-toggle-row">
                 <div>
-                  <div class="dash-toggle-title">🎙️ Gaya Tampilan Pemutar Musik</div>
+                  <div class="dash-toggle-title">Gaya Tampilan Pemutar Musik</div>
                   <div class="dash-toggle-sub">Pilih mode tampilan piringan hitam, antrian playlist, atau lirik karaoke</div>
                 </div>
                 <div>
                   <select id="dashMusicPlayerStyleSelect" onchange="autoSaveSettings()" style="padding: 6px 10px; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 6px; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer;">
-                    <option value="vinyl">💿 Piringan Hitam (Vinyl)</option>
-                    <option value="playlist">📋 Daftar Antrian (Playlist)</option>
-                    <option value="compact">📻 Bar Minimalis (Compact)</option>
-                    <option value="lyrics">🎤 Lirik Karaoke (Synced)</option>
+                    <option value="vinyl">Piringan Hitam (Vinyl)</option>
+                    <option value="playlist">Daftar Antrian (Playlist)</option>
+                    <option value="compact">Bar Minimalis (Compact)</option>
+                    <option value="lyrics">Lirik Karaoke (Synced)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Opsi Mode Playlist Queue (Kapasitas & Skala Mobile) -->
+              <div class="dash-toggle-row" id="dashPlaylistSubSettingsRow">
+                <div>
+                  <div class="dash-toggle-title">Kapasitas, Skala &amp; Warna Playlist</div>
+                  <div class="dash-toggle-sub">Atur baris antrian, zoom mobile, dan warna aksen pemutar musik</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <select id="dashMusicPlaylistRowsSelect" onchange="autoSaveSettings()" style="padding: 5px 8px; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 6px; color: #fff; font-size: 11px; font-weight: 600; cursor: pointer;">
+                    <option value="3">3 Lagu</option>
+                    <option value="4" selected>4 Lagu (Ideal)</option>
+                    <option value="5">5 Lagu</option>
+                    <option value="6">6 Lagu</option>
+                  </select>
+                  <select id="dashMusicPlaylistScaleSelect" onchange="autoSaveSettings()" style="padding: 5px 8px; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 6px; color: #fff; font-size: 11px; font-weight: 600; cursor: pointer;">
+                    <option value="75">75% (Ekstra)</option>
+                    <option value="85">85% (Kecil)</option>
+                    <option value="100" selected>100% (Normal)</option>
+                    <option value="115">115% (Besar)</option>
+                  </select>
+                  <select id="dashMusicPlaylistAccentSelect" onchange="autoSaveSettings()" style="padding: 5px 8px; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 6px; color: #fff; font-size: 11px; font-weight: 600; cursor: pointer;">
+                    <option value="red" selected>Merah TikTok</option>
+                    <option value="green">Hijau Spotify</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Auto-Scroll Antrian Playlist -->
+              <div class="dash-toggle-row">
+                <div>
+                  <div class="dash-toggle-title">Auto-Scroll Antrian Halus</div>
+                  <div class="dash-toggle-sub">Gulir otomatis bertahap jika antrian melebihi kapasitas layar</div>
+                </div>
+                <div class="dash-toggle">
+                  <input type="checkbox" id="dashMusicPlaylistAutoScrollToggle" checked onchange="autoSaveSettings()">
+                  <span class="dash-slider"></span>
+                </div>
+              </div>
+
+              <!-- Vibe Lagu Acak (Random Pool) -->
+              <div class="dash-toggle-row">
+                <div>
+                  <div class="dash-toggle-title">Vibe Lagu Acak (Random Pool)</div>
+                  <div class="dash-toggle-sub">Pilihan kategori lagu saat host memutar lagu secara acak</div>
+                </div>
+                <div>
+                  <select id="dashMusicRandomGenreSelect" onchange="autoSaveSettings()" style="padding: 6px 10px; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 6px; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer;">
+                    <option value="milenial">Nostalgia Milenial (90s - 2000an)</option>
+                    <option value="spotify_mix">Mix Top Spotify (Indo + Global Teratas)</option>
+                    <option value="spotify_id">Top 50 Spotify Indonesia Daily (Kworb)</option>
+                    <option value="spotify_global">Top 50 Spotify Global Daily (Kworb)</option>
+                    <option value="hits">Hits Pop Terkini &amp; Viral</option>
+                    <option value="akustik">Akustik Santai / Cafe</option>
+                    <option value="mix">Campuran Semua Kategori (Total Mix)</option>
                   </select>
                 </div>
               </div>
@@ -2032,6 +2089,20 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       const mps = document.getElementById("dashMusicPlayerStyleSelect");
       if (mps && cfg.musicPlayerStyle) mps.value = cfg.musicPlayerStyle;
 
+      // 9.7 Random Music Genre
+      const mrg = document.getElementById("dashMusicRandomGenreSelect");
+      if (mrg && cfg.musicRandomGenre) mrg.value = cfg.musicRandomGenre;
+
+      // 9.8 Playlist Options
+      const mpr = document.getElementById("dashMusicPlaylistRowsSelect");
+      if (mpr && cfg.musicPlaylistVisibleRows !== undefined) mpr.value = cfg.musicPlaylistVisibleRows;
+      const mpscale = document.getElementById("dashMusicPlaylistScaleSelect");
+      if (mpscale && cfg.musicPlaylistScale !== undefined) mpscale.value = cfg.musicPlaylistScale;
+      const mpaccent = document.getElementById("dashMusicPlaylistAccentSelect");
+      if (mpaccent && cfg.musicPlaylistAccent) mpaccent.value = cfg.musicPlaylistAccent;
+      const mpas = document.getElementById("dashMusicPlaylistAutoScrollToggle");
+      if (mpas && cfg.musicPlaylistAutoScroll !== undefined) mpas.checked = !!cfg.musicPlaylistAutoScroll;
+
       // 10. Display Rows
       const dr = document.getElementById("dashDisplayRowsVal");
       if (dr && cfg.displayRows) {
@@ -2146,6 +2217,11 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       currentGameSettings.followerOnlyMusic = document.getElementById("dashFollowerOnlyMusicToggle")?.checked ?? false;
       currentGameSettings.musicCooldown = parseInt(document.getElementById("dashMusicCooldownInput")?.value) || 60;
       currentGameSettings.musicPlayerStyle = document.getElementById("dashMusicPlayerStyleSelect")?.value || 'vinyl';
+      currentGameSettings.musicRandomGenre = document.getElementById("dashMusicRandomGenreSelect")?.value || 'milenial';
+      currentGameSettings.musicPlaylistVisibleRows = parseInt(document.getElementById("dashMusicPlaylistRowsSelect")?.value) || 4;
+      currentGameSettings.musicPlaylistScale = parseInt(document.getElementById("dashMusicPlaylistScaleSelect")?.value) || 100;
+      currentGameSettings.musicPlaylistAccent = document.getElementById("dashMusicPlaylistAccentSelect")?.value || 'red';
+      currentGameSettings.musicPlaylistAutoScroll = document.getElementById("dashMusicPlaylistAutoScrollToggle")?.checked ?? true;
 
       // Rows & scale
       currentGameSettings.displayRows = parseInt(document.getElementById("dashDisplayRowsVal")?.textContent) || 6;

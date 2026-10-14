@@ -1137,7 +1137,7 @@ let ytPlayer = null;
 let musicQueue = [];
 let activeMusic = null;
 let isMusicPlaying = false;
-let musicSettings = { maxGlobal: 20, maxUser: 2, maxDuration: 6, cooldownSeconds: 60, bannedKeywords: [], volume: 50, requestsEnabled: true, followerOnly: false, playerStyle: 'vinyl' };
+let musicSettings = { maxGlobal: 20, maxUser: 2, maxDuration: 6, cooldownSeconds: 60, bannedKeywords: [], volume: 50, requestsEnabled: true, followerOnly: false, playerStyle: 'vinyl', randomGenre: 'milenial', playlistVisibleRows: 4, playlistScale: 100, playlistAutoScroll: true, playlistAccent: 'red' };
 try {
   const saved = localStorage.getItem('music_settings');
   if (saved) {
@@ -1147,6 +1147,18 @@ try {
     if (musicSettings.followerOnly === undefined) musicSettings.followerOnly = false;
     if (musicSettings.cooldownSeconds === undefined) musicSettings.cooldownSeconds = 60;
     if (!musicSettings.playerStyle) musicSettings.playerStyle = 'vinyl';
+    if (!musicSettings.randomGenre) musicSettings.randomGenre = 'milenial';
+    if (musicSettings.playlistVisibleRows === undefined) musicSettings.playlistVisibleRows = 4;
+    if (musicSettings.playlistScale === undefined) musicSettings.playlistScale = 100;
+    if (musicSettings.playlistAutoScroll === undefined) musicSettings.playlistAutoScroll = true;
+    if (!musicSettings.playlistAccent) musicSettings.playlistAccent = 'red';
+  }
+} catch(e) {}
+let musicSongOffsets = {};
+try {
+  const savedSongOffsets = localStorage.getItem('music_song_offsets');
+  if (savedSongOffsets) {
+    musicSongOffsets = JSON.parse(savedSongOffsets);
   }
 } catch(e) {}
 let currentLyricsData = []; // [{ time: number, text: string }]
@@ -1479,40 +1491,332 @@ function updateMusicQueueUI() {
     if (nextContainer) nextContainer.style.display = 'none';
   }
 
-  // Render Playlist Queue List (for Playlist Style)
+  // Render Playlist Tracklist (Spotify Minimalist Style)
   const queueContainer = document.getElementById('musicQueueContainer');
+  const activeSlot = document.getElementById('musicActiveSlot');
   const queueItems = document.getElementById('musicQueueItems');
   const queueCount = document.getElementById('musicQueueCount');
 
   if (queueContainer && queueItems) {
     const style = musicSettings.playerStyle || 'vinyl';
-    if (musicQueue.length > 0 && style === 'playlist') {
+    if (style === 'playlist') {
       queueContainer.style.display = 'flex';
-      if (queueCount) queueCount.textContent = musicQueue.length;
       
-      const maxDisplay = 3;
-      const displayQueue = musicQueue.slice(0, maxDisplay);
-      queueItems.innerHTML = displayQueue.map((item, idx) => `
-        <div class="music-queue-item">
-          <span class="music-queue-idx">#${idx + 1}</span>
-          <img class="music-queue-thumb" src="${item.thumbnail || 'assets/bg_nature.png'}" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="Thumb">
-          <div class="music-queue-detail">
-            <div class="music-queue-title">${escapeHTML(item.title)}</div>
-            <div class="music-queue-user">${escapeHTML(item.requesterName || 'user')}</div>
-          </div>
-        </div>
-      `).join('');
+      // Apply CSS variables for scale & visible rows
+      const widget = document.getElementById('musicWidget');
+      if (widget) {
+        widget.style.setProperty('--playlist-visible-rows', musicSettings.playlistVisibleRows || 4);
+        widget.style.setProperty('--playlist-scale', musicSettings.playlistScale || 100);
+      }
 
-      if (musicQueue.length > maxDisplay) {
-        const remaining = musicQueue.length - maxDisplay;
-        queueItems.innerHTML += `<div class="music-queue-more">+${remaining} lagu lainnya dalam antrian...</div>`;
+      const totalSongs = (activeMusic ? 1 : 0) + musicQueue.length;
+      if (queueCount) queueCount.textContent = `${totalSongs} Lagu`;
+
+      if (totalSongs === 0) {
+        if (activeSlot) activeSlot.innerHTML = '';
+        queueItems.innerHTML = `
+          <div class="spotify-queue-empty">
+            <i class="fa-solid fa-music"></i>
+            <span>Antrian kosong • Ketik !play [lagu] di chat</span>
+          </div>
+        `;
+        stopMusicQueueAutoScroll();
+        return;
+      }
+
+      // Render Row 1: Active Playing Track (Sticky in #musicActiveSlot)
+      if (activeMusic && activeSlot) {
+        const activeCleanTitle = escapeHTML(cleanSongTitleForLyrics(activeMusic.title, activeMusic.originalQuery) || activeMusic.title);
+        const activeAuthor = escapeHTML(activeMusic.author || 'Host');
+        const activeReq = (activeMusic.requesterName && activeMusic.requesterName !== 'Host') ? ` • Req ${escapeHTML(activeMusic.requesterName)}` : ` • Req Host`;
+        const activeDuration = activeMusic.duration || '0:00';
+
+        let currentProgressStr = `0:00 / ${activeDuration}`;
+        let currentProgressPct = 0;
+        if (ytPlayer && ytPlayer.getCurrentTime && ytPlayer.getDuration) {
+          try {
+            const curr = ytPlayer.getCurrentTime();
+            const total = ytPlayer.getDuration();
+            if (total > 0) {
+              currentProgressStr = `${formatMusicTime(curr)} / ${formatMusicTime(total)}`;
+              currentProgressPct = Math.min(100, Math.max(0, (curr / total) * 100));
+            }
+          } catch(e) {}
+        }
+
+        activeSlot.innerHTML = `
+          <div class="spotify-track-row active-playing" title="${activeCleanTitle}">
+            <div class="spotify-track-num">
+              <div class="spotify-eq-bars" title="Sedang Diputar">
+                <span></span><span></span><span></span><span></span>
+              </div>
+            </div>
+            <img class="spotify-track-thumb" src="${activeMusic.thumbnail || 'assets/bg_nature.png'}" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="Thumb">
+            <div class="spotify-track-info">
+              <div class="spotify-track-title">${activeCleanTitle}</div>
+              <div class="spotify-track-sub">${activeAuthor}${activeReq}</div>
+            </div>
+            <div class="spotify-track-meta">
+              <span class="spotify-track-duration" id="spotifyActiveDuration">${currentProgressStr}</span>
+            </div>
+            <div class="spotify-row-progress">
+              <div class="spotify-row-progress-fill" id="spotifyActiveProgressFill" style="width: ${currentProgressPct}%;"></div>
+            </div>
+          </div>
+        `;
+      } else if (activeSlot) {
+        activeSlot.innerHTML = '';
+      }
+
+      // Render Rows 2..N: Queued Tracks in #musicQueueItems
+      if (musicQueue.length === 0) {
+        queueItems.innerHTML = `
+          <div class="spotify-queue-empty-sub">
+            Antrian kosong • Ketik !play [judul lagu] di chat
+          </div>
+        `;
+        stopMusicQueueAutoScroll();
+      } else {
+        queueItems.innerHTML = musicQueue.map((item, idx) => {
+          const trackNum = activeMusic ? (idx + 2) : (idx + 1);
+          const cleanTitle = escapeHTML(cleanSongTitleForLyrics(item.title, item.originalQuery) || item.title);
+          const author = escapeHTML(item.author || 'Host');
+          const req = (item.requesterName && item.requesterName !== 'Host') ? ` • Req ${escapeHTML(item.requesterName)}` : ` • Req Host`;
+          const dur = item.duration || '0:00';
+
+          return `
+            <div class="spotify-track-row is-queued" title="${cleanTitle}">
+              <div class="spotify-track-num">
+                <span>${trackNum}</span>
+              </div>
+              <img class="spotify-track-thumb" src="${item.thumbnail || 'assets/bg_nature.png'}" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="Thumb">
+              <div class="spotify-track-info">
+                <div class="spotify-track-title">${cleanTitle}</div>
+                <div class="spotify-track-sub">${author}${req}</div>
+              </div>
+              <div class="spotify-track-meta">
+                <span class="spotify-track-duration">${dur}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // Trigger Auto-Scroll Engine if overflow
+        triggerMusicQueueAutoScroll();
       }
     } else {
       queueContainer.style.display = 'none';
+      if (activeSlot) activeSlot.innerHTML = '';
       queueItems.innerHTML = '';
+      stopMusicQueueAutoScroll();
     }
   }
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 📜 PLAYLIST QUEUE AUTO-SCROLL ENGINE
+// ═════════════════════════════════════════════════════════════════════════════
+let musicQueueAutoScrollTimer = null;
+let isMusicQueueHovered = false;
+let isMusicQueueScrolling = false;
+
+function stopMusicQueueAutoScroll() {
+  if (musicQueueAutoScrollTimer) {
+    clearTimeout(musicQueueAutoScrollTimer);
+    musicQueueAutoScrollTimer = null;
+  }
+  isMusicQueueScrolling = false;
+}
+
+function triggerMusicQueueAutoScroll() {
+  stopMusicQueueAutoScroll();
+  initMusicQueueHoverListeners();
+
+  if (!musicSettings.playlistAutoScroll || musicSettings.playerStyle !== 'playlist') return;
+  
+  const queueItems = document.getElementById('musicQueueItems');
+  if (!queueItems) return;
+
+  // Give DOM a frame to compute scroll dimensions
+  musicQueueAutoScrollTimer = setTimeout(() => {
+    runMusicQueueAutoScrollLoop();
+  }, 1000);
+}
+
+function runMusicQueueAutoScrollLoop() {
+  stopMusicQueueAutoScroll();
+  if (!musicSettings.playlistAutoScroll || musicSettings.playerStyle !== 'playlist') return;
+  
+  const queueItems = document.getElementById('musicQueueItems');
+  if (!queueItems) return;
+
+  const maxScroll = queueItems.scrollHeight - queueItems.clientHeight;
+  if (maxScroll <= 6) {
+    // Everything fits within visible height, no scroll needed
+    queueItems.scrollTop = 0;
+    return;
+  }
+
+  if (isMusicQueueHovered) {
+    // Pause while host mouse hover, retry in 2.5s
+    musicQueueAutoScrollTimer = setTimeout(runMusicQueueAutoScrollLoop, 2500);
+    return;
+  }
+
+  // Phase 1: Pause at top for 4.5 seconds
+  musicQueueAutoScrollTimer = setTimeout(() => {
+    if (isMusicQueueHovered || !musicSettings.playlistAutoScroll) {
+      runMusicQueueAutoScrollLoop();
+      return;
+    }
+
+    // Phase 2: Smooth scroll down to bottom
+    const duration = Math.max(1800, Math.min(5000, maxScroll * 24));
+    smoothScrollQueueElement(queueItems, maxScroll, duration, () => {
+      // Phase 3: Pause at bottom for 4.5 seconds
+      musicQueueAutoScrollTimer = setTimeout(() => {
+        if (isMusicQueueHovered || !musicSettings.playlistAutoScroll) {
+          runMusicQueueAutoScrollLoop();
+          return;
+        }
+
+        // Phase 4: Smooth scroll back up to top
+        smoothScrollQueueElement(queueItems, 0, Math.max(1200, Math.min(3200, maxScroll * 16)), () => {
+          // Loop again
+          runMusicQueueAutoScrollLoop();
+        });
+      }, 4500);
+    });
+  }, 4500);
+}
+
+function smoothScrollQueueElement(elem, targetY, duration, onDone) {
+  if (!elem) { if (onDone) onDone(); return; }
+  const startY = elem.scrollTop;
+  const diff = targetY - startY;
+  if (Math.abs(diff) < 2) { if (onDone) onDone(); return; }
+
+  const startTime = performance.now();
+  isMusicQueueScrolling = true;
+
+  function anim(now) {
+    if (!isMusicQueueScrolling || isMusicQueueHovered) {
+      isMusicQueueScrolling = false;
+      if (onDone) onDone();
+      return;
+    }
+    const elapsed = now - startTime;
+    const progress = Math.min(1, elapsed / duration);
+    // Smooth easeInOutQuad
+    const ease = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
+    elem.scrollTop = startY + (diff * ease);
+
+    if (progress < 1) {
+      requestAnimationFrame(anim);
+    } else {
+      elem.scrollTop = targetY;
+      isMusicQueueScrolling = false;
+      if (onDone) onDone();
+    }
+  }
+
+  requestAnimationFrame(anim);
+}
+
+// Hover listeners on music widget to gracefully pause auto-scroll
+function initMusicQueueHoverListeners() {
+  const widget = document.getElementById('musicWidget');
+  if (widget && !widget.dataset.hoverBound) {
+    widget.dataset.hoverBound = 'true';
+    widget.addEventListener('mouseenter', () => {
+      isMusicQueueHovered = true;
+      isMusicQueueScrolling = false;
+    });
+    widget.addEventListener('mouseleave', () => {
+      isMusicQueueHovered = false;
+      triggerMusicQueueAutoScroll();
+    });
+  }
+}
+
+// Host controls for playlist options
+window.changeMusicPlaylistVisibleRows = function(rows) {
+  const r = parseInt(rows) || 4;
+  musicSettings.playlistVisibleRows = r;
+  try { localStorage.setItem('music_settings', JSON.stringify(musicSettings)); } catch(e) {}
+  
+  const mSelect = document.getElementById('modalMusicPlaylistRowsSelect');
+  if (mSelect) mSelect.value = r;
+  const mainSelect = document.getElementById('mainMusicPlaylistRowsSelect');
+  if (mainSelect) mainSelect.value = r;
+
+  const widget = document.getElementById('musicWidget');
+  if (widget) {
+    widget.style.setProperty('--playlist-visible-rows', r);
+  }
+  triggerMusicQueueAutoScroll();
+};
+
+window.changeMusicPlaylistScale = function(scale) {
+  const s = parseInt(scale) || 100;
+  musicSettings.playlistScale = s;
+  try { localStorage.setItem('music_settings', JSON.stringify(musicSettings)); } catch(e) {}
+
+  const mSelect = document.getElementById('modalMusicPlaylistScaleSelect');
+  if (mSelect) mSelect.value = s;
+  const mainSelect = document.getElementById('mainMusicPlaylistScaleSelect');
+  if (mainSelect) mainSelect.value = s;
+
+  const widget = document.getElementById('musicWidget');
+  if (widget) {
+    widget.style.setProperty('--playlist-scale', s);
+  }
+
+  // Re-clamp position so if widget was positioned near the edge it stays perfectly clamped
+  setTimeout(() => {
+    applySavedMusicWidgetPos();
+  }, 50);
+};
+
+window.toggleMusicPlaylistAutoScroll = function(enabled) {
+  musicSettings.playlistAutoScroll = !!enabled;
+  try { localStorage.setItem('music_settings', JSON.stringify(musicSettings)); } catch(e) {}
+
+  const mToggle = document.getElementById('modalMusicPlaylistAutoScrollToggle');
+  if (mToggle) mToggle.checked = !!enabled;
+  const mainToggle = document.getElementById('mainMusicPlaylistAutoScrollToggle');
+  if (mainToggle) mainToggle.checked = !!enabled;
+
+  if (musicSettings.playlistAutoScroll) {
+    triggerMusicQueueAutoScroll();
+  } else {
+    stopMusicQueueAutoScroll();
+    const queueItems = document.getElementById('musicQueueItems');
+    if (queueItems) queueItems.scrollTop = 0;
+  }
+};
+
+window.changeMusicPlaylistAccent = function(color) {
+  const accent = (color === 'green') ? 'green' : 'red';
+  musicSettings.playlistAccent = accent;
+  try { localStorage.setItem('music_settings', JSON.stringify(musicSettings)); } catch(e) {}
+
+  const widget = document.getElementById('musicWidget');
+  if (widget) {
+    if (accent === 'green') {
+      widget.classList.add('accent-green');
+    } else {
+      widget.classList.remove('accent-green');
+    }
+  }
+
+  const mSelect = document.getElementById('modalMusicPlaylistAccentSelect');
+  if (mSelect) mSelect.value = accent;
+  const mainSelect = document.getElementById('mainMusicPlaylistAccentSelect');
+  if (mainSelect) mainSelect.value = accent;
+  const dashSelect = document.getElementById('dashMusicPlaylistAccentSelect');
+  if (dashSelect) dashSelect.value = accent;
+};
 
 // ═════════════════════════════════════════════════════════════════════════════
 // 🎵 AESTHETIC SYNCED LYRICS (KARAOKE) ENGINE
@@ -1620,30 +1924,181 @@ window.toggleMusicLyricsView = function(event) {
   }
 };
 
-window.adjustLyricsOffset = function(delta) {
-  const current = typeof musicSettings.lyricsOffset === 'number' ? musicSettings.lyricsOffset : 0;
-  musicSettings.lyricsOffset = Math.round((current + delta) * 10) / 10;
-  localStorage.setItem('music_settings', JSON.stringify(musicSettings));
+function getActiveSongKey(song) {
+  const target = song || activeMusic;
+  if (!target) return null;
+  if (target.videoId) return target.videoId;
+  if (target.title) return target.title.trim().toLowerCase();
+  return null;
+}
+
+function getSongLyricsOffset(song) {
+  const key = getActiveSongKey(song);
+  if (key && typeof musicSongOffsets[key] === 'number') {
+    return musicSongOffsets[key];
+  }
+  return 0;
+}
+
+function setSongLyricsOffset(song, offset) {
+  const key = getActiveSongKey(song);
+  const rounded = Math.round(offset * 10) / 10;
+  if (key) {
+    if (rounded === 0) {
+      delete musicSongOffsets[key];
+    } else {
+      musicSongOffsets[key] = rounded;
+    }
+    try {
+      localStorage.setItem('music_song_offsets', JSON.stringify(musicSongOffsets));
+    } catch(e) {}
+  }
   updateLyricsOffsetUI();
+}
+
+window.adjustLyricsOffset = function(delta) {
+  const current = getSongLyricsOffset(activeMusic);
+  const newOffset = current + delta;
+  setSongLyricsOffset(activeMusic, newOffset);
   if (typeof showToast === 'function') {
-    const sign = musicSettings.lyricsOffset > 0 ? `+${musicSettings.lyricsOffset}` : `${musicSettings.lyricsOffset}`;
-    showToast(`⏱️ Offset Lirik: ${sign}s`, 1200);
+    const sign = newOffset > 0 ? `+${newOffset.toFixed(1)}` : `${newOffset.toFixed(1)}`;
+    const songName = activeMusic && activeMusic.title ? ` (${activeMusic.title.substring(0, 18)}...)` : '';
+    showToast(`⏱️ Offset Lirik: ${sign}s${songName}`, 1200);
+  }
+};
+
+window.setLyricsOffsetExact = function(val) {
+  const num = parseFloat(val);
+  if (isNaN(num)) return;
+  setSongLyricsOffset(activeMusic, num);
+  if (typeof showToast === 'function') {
+    const sign = num > 0 ? `+${num.toFixed(1)}` : `${num.toFixed(1)}`;
+    showToast(`⏱️ Offset Lirik diatur: ${sign}s`, 1200);
   }
 };
 
 window.resetLyricsOffset = function() {
-  musicSettings.lyricsOffset = 0;
-  localStorage.setItem('music_settings', JSON.stringify(musicSettings));
+  const key = getActiveSongKey(activeMusic);
+  if (key && typeof musicSongOffsets[key] === 'number') {
+    delete musicSongOffsets[key];
+    try {
+      localStorage.setItem('music_song_offsets', JSON.stringify(musicSongOffsets));
+    } catch(e) {}
+  }
   updateLyricsOffsetUI();
   if (typeof showToast === 'function') {
-    showToast('⏱️ Offset Lirik di-reset (0.0s)', 1200);
+    showToast('⏱️ Offset Lirik lagu ini di-reset (0.0s)', 1200);
   }
+};
+
+window.syncFirstLyricNow = function() {
+  if (!activeMusic || !ytPlayer || typeof ytPlayer.getCurrentTime !== 'function') {
+    if (typeof showToast === 'function') showToast('Tidak ada musik yang sedang diputar', 1500);
+    return;
+  }
+  if (!currentLyricsData || currentLyricsData.length === 0) {
+    if (typeof showToast === 'function') showToast('Lirik belum dimuat / instrumental', 1500);
+    return;
+  }
+
+  isLyricsManualHoverScroll = false;
+  const firstLine = currentLyricsData[0];
+  const targetTime = firstLine.time;
+  const currTime = ytPlayer.getCurrentTime();
+
+  if (currTime <= 0) return;
+
+  const newOffset = Math.round((targetTime - currTime) * 10) / 10;
+  setSongLyricsOffset(activeMusic, newOffset);
+
+  const firstElem = document.getElementById('lyricLine_0');
+  if (firstElem) {
+    firstElem.style.transition = 'all 0.15s ease';
+    firstElem.style.backgroundColor = 'rgba(254, 44, 85, 0.45)';
+    firstElem.style.transform = 'scale(1.1)';
+    setTimeout(() => {
+      firstElem.style.backgroundColor = '';
+      firstElem.style.transform = '';
+    }, 450);
+  }
+
+  if (window.sounds && typeof window.sounds.playChime === 'function') {
+    try { window.sounds.playChime(); } catch(e) {}
+  }
+
+  const sign = newOffset > 0 ? `+${newOffset.toFixed(1)}` : `${newOffset.toFixed(1)}`;
+  if (typeof showToast === 'function') {
+    showToast(`🎯 Lirik ditarik ke Baris 1 di [${formatMusicTime(currTime)}] (Offset: ${sign}s)`, 2200);
+  }
+
+  updateLyricsSync(currTime);
+};
+
+window.handleLyricLineTap = function(idx, event) {
+  if (event) event.stopPropagation();
+  isLyricsManualHoverScroll = false;
+  if (!activeMusic || !ytPlayer || typeof ytPlayer.getCurrentTime !== 'function') return;
+  if (!currentLyricsData || !currentLyricsData[idx]) return;
+
+  const line = currentLyricsData[idx];
+  const targetTime = line.time;
+  const currTime = ytPlayer.getCurrentTime();
+
+  if (currTime <= 0) return;
+
+  // Rumus: adjustedTime = currTime + offset
+  // Supaya adjustedTime == targetTime saat diklik: offset = targetTime - currTime
+  const newOffset = Math.round((targetTime - currTime) * 10) / 10;
+  setSongLyricsOffset(activeMusic, newOffset);
+
+  // Efek visual feedback pada baris lirik yang diklik
+  const lineElem = document.getElementById(`lyricLine_${idx}`);
+  if (lineElem) {
+    lineElem.style.transition = 'all 0.15s ease';
+    lineElem.style.backgroundColor = 'rgba(254, 44, 85, 0.35)';
+    lineElem.style.transform = 'scale(1.08)';
+    setTimeout(() => {
+      lineElem.style.backgroundColor = '';
+      lineElem.style.transform = '';
+    }, 450);
+  }
+
+  if (window.sounds && typeof window.sounds.playChime === 'function') {
+    try { window.sounds.playChime(); } catch(e) {}
+  }
+
+  const sign = newOffset > 0 ? `+${newOffset.toFixed(1)}` : `${newOffset.toFixed(1)}`;
+  if (typeof showToast === 'function') {
+    showToast(`🎯 Lirik disinkronkan ke [${formatMusicTime(currTime)}] (Offset: ${sign}s)`, 2000);
+  }
+
+  // Segera sinkronkan ulang baris aktif
+  updateLyricsSync(currTime);
 };
 
 function updateLyricsOffsetUI() {
   const label = document.getElementById('musicLyricsOffsetLabel');
+  const songNameLabel = document.getElementById('musicLyricsSongTarget');
+  const inputElem = document.getElementById('musicLyricsOffsetInput');
+  const off = getSongLyricsOffset(activeMusic);
+
+  if (inputElem) {
+    inputElem.value = off.toFixed(1);
+  }
+
+  if (songNameLabel) {
+    if (activeMusic && activeMusic.title) {
+      const key = getActiveSongKey(activeMusic);
+      const isCustom = key && typeof musicSongOffsets[key] === 'number';
+      songNameLabel.textContent = `Lagu: ${activeMusic.title.substring(0, 32)}${activeMusic.title.length > 32 ? '...' : ''} ${isCustom ? '(Khusus Lagu Ini)' : '(Default: 0.0s)'}`;
+      songNameLabel.style.color = isCustom ? '#facc15' : '#94a3b8';
+    } else {
+      songNameLabel.textContent = 'Tidak ada lagu yang sedang diputar';
+      songNameLabel.style.color = '#94a3b8';
+    }
+  }
+
   if (!label) return;
-  const off = typeof musicSettings.lyricsOffset === 'number' ? musicSettings.lyricsOffset : 0;
   if (off === 0) {
     label.textContent = '0.0s (Normal)';
     label.style.color = '#38bdf8';
@@ -1655,6 +2110,506 @@ function updateLyricsOffsetUI() {
     label.style.color = '#f59e0b';
   }
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 🎲 RANDOM MUSIC GENERATOR (NOSTALGIA MILENIAL, HITS, AKUSTIK)
+// ═════════════════════════════════════════════════════════════════════════════
+
+const RANDOM_SONGS_MILENIAL = [
+  // Sheila On 7
+  "Sheila On 7 - Dan official audio",
+  "Sheila On 7 - Sephia official audio",
+  "Sheila On 7 - Kisah Klasik official audio",
+  "Sheila On 7 - Melompat Lebih Tinggi official audio",
+  "Sheila On 7 - Sahabat Sejati official audio",
+  "Sheila On 7 - Anugerah Terindah official audio",
+  "Sheila On 7 - Pria Kesepian official audio",
+  "Sheila On 7 - Pejantan Tangguh official audio",
+  "Sheila On 7 - Kita official audio",
+  "Sheila On 7 - Radio official audio",
+  "Sheila On 7 - Berhenti Berharap official audio",
+  "Sheila On 7 - Tunggu Aku Di Jakarta official audio",
+  "Sheila On 7 - Tunjuk Satu Bintang official audio",
+
+  // Peterpan / Noah
+  "Peterpan - Mungkin Nanti official audio",
+  "Peterpan - Ada Apa Denganmu official audio",
+  "Peterpan - Menghapus Jejakmu official audio",
+  "Peterpan - Yang Terdalam official audio",
+  "Peterpan - Mimpi Yang Sempurna official audio",
+  "Peterpan - Aku Dan Bintang official audio",
+  "Peterpan - Semua Tentang Kita official audio",
+  "Peterpan - Sahabat official audio",
+  "Peterpan - Di Belakangku official audio",
+  "Peterpan - Kukatakan Dengan Indah official audio",
+  "Peterpan - Tak Bisakah official audio",
+  "Peterpan - Bintang Di Surga official audio",
+  "Peterpan - Cobalah Mengerti official audio",
+  "Peterpan - Topeng official audio",
+
+  // Dewa 19 / Ari Lasso / Once
+  "Dewa 19 - Kangen official audio",
+  "Dewa 19 - Pupus official audio",
+  "Dewa 19 - Separuh Nafas official audio",
+  "Dewa 19 - Risalah Hati official audio",
+  "Dewa 19 - Cemburu official audio",
+  "Dewa 19 - Aku Milikmu official audio",
+  "Dewa 19 - Roman Picisan official audio",
+  "Dewa 19 - Kirana official audio",
+  "Dewa 19 - Kamulah Satu Satunya official audio",
+  "Dewa 19 - Dua Sejoli official audio",
+  "Dewa 19 - Sedang Ingin Bercinta official audio",
+  "Dewa 19 - Kasidah Cinta official audio",
+  "Ari Lasso - Hampa official audio",
+  "Ari Lasso - Perbedaan official audio",
+  "Ari Lasso - Mengejar Matahari official audio",
+  "Ari Lasso - Misteri Ilahi official audio",
+  "Ari Lasso - Rahasia Perempuan official audio",
+  "Once Mekel - Dealova official audio",
+
+  // Padi
+  "Padi - Kasih Tak Sampai official audio",
+  "Padi - Begitu Indah official audio",
+  "Padi - Menanti Sebuah Jawaban official audio",
+  "Padi - Sobat official audio",
+  "Padi - Semua Tak Sama official audio",
+  "Padi - Mahadewi official audio",
+  "Padi - Sesuatu Yang Indah official audio",
+  "Padi - Tempat Terakhir official audio",
+
+  // Ungu
+  "Ungu - Demi Waktu official audio",
+  "Ungu - Kekasih Gelapku official audio",
+  "Ungu - Tercipta Untukku official audio",
+  "Ungu - Cinta Dalam Hati official audio",
+  "Ungu - Andai Ku Tahu official audio",
+  "Ungu - Hampa Hatiku official audio",
+  "Ungu - Melayang official audio",
+  "Ungu - Seperti Yang Dulu official audio",
+  "Ungu - Laguku official audio",
+
+  // Samsons
+  "Samsons - Kenangan Terindah official audio",
+  "Samsons - Naluri Lelaki official audio",
+  "Samsons - Akhir Rasa Ini official audio",
+  "Samsons - Bukan Diriku official audio",
+  "Samsons - Luluh official audio",
+
+  // Ada Band
+  "Ada Band - Surga Cinta official audio",
+  "Ada Band - Manusia Bodoh official audio",
+  "Ada Band - Karena Wanita official audio",
+  "Ada Band - Masih (Sahabatku Kekasihku) official audio",
+  "Ada Band - Haruskah Ku Mati official audio",
+  "Ada Band - Setengah Hati official audio",
+  "Ada Band - Nyawa Hidupku official audio",
+  "Ada Band - Kau Auraku official audio",
+  "Ada Band - Beib official audio",
+  "Ada Band - Aksen Asmara official audio",
+  "Ada Band - Baiknya official audio",
+
+  // Kerispatih
+  "Kerispatih - Mengenangmu official audio",
+  "Kerispatih - Demi Cinta official audio",
+  "Kerispatih - Kejujuran Hati official audio",
+  "Kerispatih - Bila Rasaku Ini Rasamu official audio",
+  "Kerispatih - Tertatih official audio",
+  "Kerispatih - Lupakan Aku official audio",
+  "Kerispatih - Tapi Bukan Aku official audio",
+  "Kerispatih - Tak Lekang Oleh Waktu official audio",
+  "Kerispatih - Kesalahan Yang Sama official audio",
+
+  // Naff
+  "Naff - Kenanglah Aku official audio",
+  "Naff - Akhirnya Ku Menemukanmu official audio",
+  "Naff - Kau Masih Kekasihku official audio",
+  "Naff - Terendap Laraku official audio",
+  "Naff - Dosa Apa official audio",
+  "Naff - Tak Seindah Cinta Yang Semestinya official audio",
+
+  // D'Masiv
+  "D'Masiv - Cinta Ini Membunuhku official audio",
+  "D'Masiv - Jangan Menyerah official audio",
+  "D'Masiv - Merindukanmu official audio",
+  "D'Masiv - Di Antara Kalian official audio",
+  "D'Masiv - Diam Tanpa Kata official audio",
+  "D'Masiv - Semakin official audio",
+  "D'Masiv - Sudahi Perih Ini official audio",
+
+  // Kangen Band
+  "Kangen Band - Tentang Aku Kau Dan Dia official audio",
+  "Kangen Band - Yolanda official audio",
+  "Kangen Band - Doy official audio",
+  "Kangen Band - Pujaan Hati official audio",
+  "Kangen Band - Kembali Pulang official audio",
+  "Kangen Band - Bintang 14 Hari official audio",
+  "Kangen Band - Cinta Yang Sempurna official audio",
+
+  // ST12
+  "ST12 - Puspa official audio",
+  "ST12 - Saat Terakhir official audio",
+  "ST12 - Jangan Pernah Berubah official audio",
+  "ST12 - Rasa Yang Tertinggal official audio",
+  "ST12 - Cari Pacar Lagi official audio",
+  "ST12 - Isabella official audio",
+  "ST12 - Biarkan Jatuh Cinta official audio",
+
+  // Wali & Armada
+  "Wali - Baik Baik Sayang official audio",
+  "Wali - Dik official audio",
+  "Wali - Cari Jodoh official audio",
+  "Wali - Emang Dasar official audio",
+  "Armada - Buka Hatimu official audio",
+  "Armada - Mau Dibawa Kemana official audio",
+  "Armada - Asal Kau Bahagia official audio",
+  "Armada - Pergi Pagi Pulang Pagi official audio",
+  "Armada - Harusnya Aku official audio",
+
+  // Repvblik & D'Bagindas
+  "Repvblik - Hanya Ingin Kau Tahu official audio",
+  "Repvblik - Selimut Tetangga official audio",
+  "Repvblik - Sandiwara Cinta official audio",
+  "Repvblik - Aku Takut official audio",
+  "DBagindas - C.I.N.T.A official audio",
+  "DBagindas - Empat Mata official audio",
+  "DBagindas - Apa Yang Terjadi official audio",
+
+  // Geisha & Utopia
+  "Geisha - Jika Cinta Dia official audio",
+  "Geisha - Lumpuhkan Ingatanku official audio",
+  "Geisha - Takkan Pernah Ada official audio",
+  "Geisha - Selalu Salah official audio",
+  "Geisha - Pergi Saja official audio",
+  "Utopia - Antara Ada Dan Tiada official audio",
+  "Utopia - Hujan official audio",
+  "Utopia - Mencintaimu Sampai Mati official audio",
+
+  // Cokelat, Jamrud, Seurieus, Element
+  "Cokelat - Karma official audio",
+  "Cokelat - Luka Lama official audio",
+  "Cokelat - Segitiga official audio",
+  "Cokelat - Jauh official audio",
+  "Jamrud - Pelangi Di Matamu official audio",
+  "Jamrud - Surti Tejo official audio",
+  "Jamrud - Selamat Ulang Tahun official audio",
+  "Jamrud - Berakit Rakit official audio",
+  "Seurieus - Rocker Juga Manusia official audio",
+  "Element - Rahasia Hati official audio",
+  "Element - Cinta Tak Bersyarat official audio",
+  "Element - Pergilah Adinda official audio",
+
+  // Seventeen & Drive
+  "Seventeen - Selalu Mengalah official audio",
+  "Seventeen - Jaga Selalu Hatimu official audio",
+  "Seventeen - Kemarin official audio",
+  "Seventeen - Untuk Mencintaimu official audio",
+  "Drive - Bersama Bintang official audio",
+  "Drive - Melepasmu official audio",
+  "Drive - Akulah Dia official audio",
+
+  // Letto, Wayang, Gigi, Slank
+  "Letto - Ruang Rindu official audio",
+  "Letto - Sandaran Hati official audio",
+  "Letto - Permintaan Hati official audio",
+  "Letto - Sebelum Cahaya official audio",
+  "Wayang - Damai official audio",
+  "Gigi - 11 Januari official audio",
+  "Gigi - Terbang official audio",
+  "Gigi - Nakal official audio",
+  "Gigi - Jomblo official audio",
+  "Gigi - Andai official audio",
+  "Slank - Ku Tak Bisa official audio",
+  "Slank - Terlalu Manis official audio",
+  "Slank - I Miss U But I Hate U official audio",
+  "Slank - Balikin official audio",
+  "Slank - Seperti Para Koruptor official audio",
+
+  // Nidji, Jikustik, Radja, Vierra, Kotak
+  "Nidji - Hapus Aku official audio",
+  "Nidji - Laskar Pelangi official audio",
+  "Nidji - Biarlah official audio",
+  "Nidji - Disco Lazy Time official audio",
+  "Nidji - Sudah official audio",
+  "Jikustik - Puisi official audio",
+  "Jikustik - Setia official audio",
+  "Jikustik - Saat Kau Tak Disini official audio",
+  "Radja - Jujur official audio",
+  "Radja - Cinderella official audio",
+  "Radja - Yakin official audio",
+  "Radja - Bulan official audio",
+  "Radja - Tulus official audio",
+  "Vierra - Dengarkan Curhatku official audio",
+  "Vierra - Bersamamu official audio",
+  "Vierra - Perih official audio",
+  "Vierra - Rasa Ini official audio",
+  "Vierra - Jadi Yang Kuinginkan official audio",
+  "Kotak - Pelan Pelan Saja official audio",
+  "Kotak - Beraksi official audio",
+  "Kotak - Masih Cinta official audio",
+  "Kotak - Terbang official audio",
+
+  // Kahitna, Glenn Fredly, Maliq, Ten 2 Five, The Rain
+  "Kahitna - Cantik official audio",
+  "Kahitna - Soulmate official audio",
+  "Kahitna - Mantan Terindah official audio",
+  "Kahitna - Andai Dia Tahu official audio",
+  "Kahitna - Cerita Cinta official audio",
+  "Glenn Fredly - Januari official audio",
+  "Glenn Fredly - Akhir Cerita Cinta official audio",
+  "Glenn Fredly - Kasih Putih official audio",
+  "Glenn Fredly - Sedih Tak Berujung official audio",
+  "Glenn Fredly - Sekali Ini Saja official audio",
+  "Maliq & D'Essentials - Untitled official audio",
+  "Maliq & D'Essentials - Pilihanku official audio",
+  "Maliq & D'Essentials - Dia official audio",
+  "The Rain - Dengar Bisikku official audio",
+  "The Rain - Terlatih Patah Hati official audio",
+  "Ten 2 Five - I Will Fly official audio",
+  "Astrid - Jadikan Aku Yang Kedua official audio",
+  "Astrid - Tentang Rasa official audio",
+  "Rossa - Tegar official audio",
+  "Rossa - Hati Yang Kau Sakiti official audio",
+  "Rossa - Pudar official audio",
+  "Bunga Citra Lestari - Cinta Pertama (Sunny) official audio",
+  "Bunga Citra Lestari - Pernah Muda official audio",
+  "Bunga Citra Lestari - Karena Kucinta Kau official audio",
+  "Audy - Menangis Semalam official audio",
+  "Audy - Arti Hadirmu official audio",
+  "Lobow - Salah official audio",
+  "Matta - Ketahuan official audio"
+];
+
+const RANDOM_SONGS_HITS = [
+  // Bernadya
+  "Bernadya - Satu Bulan official audio",
+  "Bernadya - Kata Mereka Ini Berlebihan official audio",
+  "Bernadya - Kini Mereka Tahu official audio",
+  "Bernadya - Apa Mungkin official audio",
+  "Bernadya - Untungnya Hidup Harus Tetap Berjalan official audio",
+
+  // Mahalini
+  "Mahalini - Sial official audio",
+  "Mahalini - Mati Matian official audio",
+  "Mahalini - Sisa Rasa official audio",
+  "Mahalini - Melawan Restu official audio",
+  "Mahalini - Ini Laguku official audio",
+
+  // Nadin Amizah
+  "Nadin Amizah - Rayuan Perempuan Gila official audio",
+  "Nadin Amizah - Bertaut official audio",
+  "Nadin Amizah - Sorai official audio",
+  "Nadin Amizah - Semua Aku Dirayakan official audio",
+
+  // Sal Priadi
+  "Sal Priadi - Dari Planet Lain official audio",
+  "Sal Priadi - Gala Bunga Matahari official audio",
+  "Sal Priadi - Mesra Mesraannya Kecil Kecilan Dulu official audio",
+  "Sal Priadi - Amin Paling Serius official audio",
+
+  // Tulus
+  "Tulus - Hati Hati di Jalan official audio",
+  "Tulus - Interaksi official audio",
+  "Tulus - Diri official audio",
+  "Tulus - Monokrom official audio",
+  "Tulus - Ruang Sendiri official audio",
+  "Tulus - Sewindu official audio",
+
+  // Juicy Luicy
+  "Juicy Luicy - Sialan official audio",
+  "Juicy Luicy - Lantas official audio",
+  "Juicy Luicy - Tanpa Tergesa official audio",
+  "Juicy Luicy - Asing official audio",
+  "Juicy Luicy - Tampar official audio",
+
+  // Hindia & Feast
+  "Hindia - Rumah Ke Rumah official audio",
+  "Hindia - Evaluasi official audio",
+  "Hindia - Secukupnya official audio",
+  "Hindia - Cincin official audio",
+
+  // Feby Putri, Raim Laode, Yura Yunita
+  "Raim Laode - Komang official audio",
+  "Feby Putri Fiersa Besari - Runtuh official audio",
+  "Feby Putri - Usik official audio",
+  "Yura Yunita - Dunia Tipu Tipu official audio",
+  "Yura Yunita - Tutur Batin official audio",
+  "Yura Yunita - Tenang official audio",
+  "Ghea Indrawari - Jiwa Yang Bersedih official audio",
+  "Idgitaf - Satu Satu official audio",
+  "Idgitaf - Takut official audio",
+  "Rizky Febian - Hingga Tua Bersama official audio",
+  "Rizky Febian - Cuek official audio",
+  "Rizky Febian - Kesempurnaan Cinta official audio",
+  "Tiara Andini - Usai official audio",
+  "Tiara Andini - Janji Setia official audio",
+  "Lyodra - Pesan Terakhir official audio",
+  "Lyodra - Sang Dewi official audio",
+  "Fabio Asher - Bertahan Terluka official audio",
+  "Fabio Asher - Rumah Singgah official audio",
+  "Keisya Levronka - Tak Ingin Usai official audio",
+  "Fiersa Besari - Waktu Yang Salah official audio",
+  "Fiersa Besari - Celengan Rindu official audio",
+  "Fiersa Besari - Garis Terdepan official audio",
+  "Anggi Marito - Tak Segampang Itu official audio"
+];
+
+const RANDOM_SONGS_AKUSTIK = [
+  "Raim Laode - Komang akustik",
+  "Feby Putri - Runtuh acoustic",
+  "Tulus - Monokrom acoustic",
+  "Tulus - Hati Hati di Jalan acoustic",
+  "Sheila On 7 - Anugerah Terindah acoustic",
+  "Sheila On 7 - Dan acoustic",
+  "Dewa 19 - Risalah Hati acoustic",
+  "Dewa 19 - Kangen acoustic",
+  "Payung Teduh - Akad acoustic",
+  "Payung Teduh - Resah acoustic",
+  "Payung Teduh - Untuk Perempuan Yang Sedang Dalam Pelukan acoustic",
+  "Fourtwnty - Zona Nyaman acoustic",
+  "Fourtwnty - Fana Merah Jambu acoustic",
+  "Fourtwnty - Aku Tenang acoustic",
+  "Danilla - Berdistraksi acoustic",
+  "Danilla - Ada Di Sana acoustic",
+  "Nadin Amizah - Sorai acoustic",
+  "Nadin Amizah - Bertaut acoustic",
+  "Iwan Fals - Kemesraan acoustic",
+  "Iwan Fals - Yang Terlupakan acoustic",
+  "Mocca - I Remember acoustic",
+  "Mocca - Secret Admirer acoustic",
+  "White Shoes & The Couples Company - Senja Menggila acoustic",
+  "Float - Sementara acoustic",
+  "Banda Neira - Sampai Jadi Debu acoustic",
+  "Banda Neira - Yang Patah Tumbuh Yang Hilang Berganti acoustic",
+  "Daun Jatuh - Resah Jadi Luka acoustic",
+  "Soegi Bornean - Asmalibrasi acoustic",
+  "Fiersa Besari - Celengan Rindu acoustic",
+  "Peterpan - Semua Tentang Kita acoustic",
+  "Peterpan - Yang Terdalam acoustic",
+  "Kahitna - Soulmate acoustic"
+];
+
+let recentRandomSongs = [];
+
+// ─── Real-time Spotify Top Daily Charts Pool (Cached & Synced from Server) ───
+let spotifyChartsData = {
+  updatedAt: null,
+  idDaily: [],
+  globalDaily: []
+};
+
+try {
+  const cachedCharts = localStorage.getItem('spotify_charts_cache');
+  if (cachedCharts) {
+    const parsed = JSON.parse(cachedCharts);
+    if (Array.isArray(parsed.idDaily) && Array.isArray(parsed.globalDaily)) {
+      spotifyChartsData = parsed;
+    }
+  }
+} catch(e) {}
+
+// Fetch local JSON file if available
+fetch('spotify_top_charts.json').then(r => r.json()).then(data => {
+  if (data && Array.isArray(data.idDaily) && Array.isArray(data.globalDaily)) {
+    spotifyChartsData = data;
+    try { localStorage.setItem('spotify_charts_cache', JSON.stringify(data)); } catch(e) {}
+  }
+}).catch(() => {});
+
+window.updateClientSpotifyCharts = function(data) {
+  if (data && Array.isArray(data.idDaily) && Array.isArray(data.globalDaily)) {
+    spotifyChartsData = data;
+    try { localStorage.setItem('spotify_charts_cache', JSON.stringify(data)); } catch(e) {}
+    console.log('[Spotify Charts] Adopted new charts:', data.idDaily.length, 'ID,', data.globalDaily.length, 'Global');
+  }
+};
+
+window.changeMusicRandomGenre = function(val) {
+  musicSettings.randomGenre = val || 'milenial';
+  localStorage.setItem('music_settings', JSON.stringify(musicSettings));
+  if (localSocket) {
+    localSocket.emit('update-game-settings', { musicRandomGenre: musicSettings.randomGenre });
+  }
+  const modalSel = document.getElementById('modalMusicRandomGenreSelect');
+  if (modalSel) modalSel.value = musicSettings.randomGenre;
+  const dashSel = document.getElementById('dashMusicRandomGenreSelect');
+  if (dashSel) dashSel.value = musicSettings.randomGenre;
+
+  if (typeof showToast === 'function') {
+    const names = {
+      milenial: 'Nostalgia Milenial',
+      spotify_mix: 'Mix Top Spotify (Indo + Global)',
+      spotify_id: 'Top 50 Spotify Indonesia Daily',
+      spotify_global: 'Top 50 Spotify Global Daily',
+      hits: 'Hits Pop Terkini & Viral',
+      akustik: 'Akustik Santai / Cafe',
+      mix: 'Campuran Semua Kategori (Total Mix)'
+    };
+    showToast('Vibe Lagu Acak: ' + (names[musicSettings.randomGenre] || val), 1800);
+  }
+};
+
+window.playRandomMusic = function(event) {
+  if (event) event.stopPropagation();
+
+  if (ytPlayer && ytPlayer.unMute) {
+    try {
+      if (!isMusicPlaying) {
+        ytPlayer.unMute();
+        ytPlayer.setVolume(musicSettings.volume);
+        ytPlayAttempts = 0;
+      }
+    } catch(e) {}
+  }
+
+  const genre = musicSettings.randomGenre || 'milenial';
+  let pool = [];
+
+  const idDailyPool = (spotifyChartsData.idDaily && spotifyChartsData.idDaily.length > 0)
+    ? spotifyChartsData.idDaily
+    : RANDOM_SONGS_HITS;
+  const globalDailyPool = (spotifyChartsData.globalDaily && spotifyChartsData.globalDaily.length > 0)
+    ? spotifyChartsData.globalDaily
+    : ["Billie Eilish - BIRDS OF A FEATHER", "Lady Gaga - Die With A Smile (w/ Bruno Mars)", "Katy Perry - The One That Got Away", "The Weeknd - One Of The Girls"];
+
+  if (genre === 'milenial') {
+    pool = RANDOM_SONGS_MILENIAL;
+  } else if (genre === 'spotify_mix') {
+    // Mix Top 50 Spotify Indo + Top 50 Spotify Global
+    pool = [...idDailyPool, ...globalDailyPool];
+  } else if (genre === 'spotify_id') {
+    pool = idDailyPool;
+  } else if (genre === 'spotify_global') {
+    pool = globalDailyPool;
+  } else if (genre === 'hits') {
+    pool = RANDOM_SONGS_HITS;
+  } else if (genre === 'akustik') {
+    pool = RANDOM_SONGS_AKUSTIK;
+  } else {
+    // Total Mix: all categories including Spotify Top Charts
+    pool = [...RANDOM_SONGS_MILENIAL, ...idDailyPool, ...globalDailyPool, ...RANDOM_SONGS_AKUSTIK];
+  }
+
+  let candidates = pool.filter(s => !recentRandomSongs.includes(s));
+  if (candidates.length === 0) {
+    recentRandomSongs = [];
+    candidates = pool;
+  }
+
+  const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+  recentRandomSongs.push(chosen);
+  // Keep anti-repeat history buffer large (up to 60 songs) so songs don't repeat during a long stream
+  if (recentRandomSongs.length > Math.min(60, Math.floor(pool.length * 0.75))) {
+    recentRandomSongs.shift();
+  }
+
+  if (localSocket) {
+    localSocket.emit('host-music-request', chosen);
+    if (typeof showToast === 'function') {
+      const cleanName = chosen.replace(/\s*official\s*audio/i, '').replace(/\s*acoustic/i, '').trim();
+      showToast('Memutar acak: ' + cleanName, 2000);
+    }
+  }
+};
 
 async function fetchSongLyrics(song) {
   if (!song) return;
@@ -1785,11 +2740,48 @@ async function fetchSongLyrics(song) {
 
   if (track && currentLyricsData.length > 0) {
     track.innerHTML = currentLyricsData.map((line, idx) => `
-      <div class="music-lyric-line" id="lyricLine_${idx}" data-idx="${idx}" data-time="${line.time.toFixed(2)}">
+      <div class="music-lyric-line" id="lyricLine_${idx}" data-idx="${idx}" data-time="${line.time.toFixed(2)}" onclick="handleLyricLineTap(${idx}, event)" title="Klik saat mendengar lirik ini untuk sinkronisasi otomatis">
         ${escapeHTML(line.text)}
       </div>
     `).join('');
+    initLyricsWheelScroll();
   }
+}
+
+let isLyricsManualHoverScroll = false;
+let lyricsManualScrollY = 0;
+let lyricsManualScrollTimer = null;
+
+function initLyricsWheelScroll() {
+  const scrollContainer = document.getElementById('musicLyricsScroll');
+  const track = document.getElementById('musicLyricsTrack');
+  if (!scrollContainer || !track || scrollContainer._wheelAttached) return;
+  scrollContainer._wheelAttached = true;
+
+  scrollContainer.addEventListener('wheel', (e) => {
+    if (!currentLyricsData || currentLyricsData.length === 0) return;
+    e.preventDefault();
+
+    if (!isLyricsManualHoverScroll) {
+      const currentTransform = track.style.transform;
+      const match = currentTransform.match(/translateY\((-?\d+)px\)/);
+      lyricsManualScrollY = match ? parseInt(match[1], 10) : 0;
+    }
+
+    isLyricsManualHoverScroll = true;
+    lyricsManualScrollY -= e.deltaY * 0.45;
+
+    const maxScroll = (scrollContainer.clientHeight / 2);
+    const minScroll = (scrollContainer.clientHeight / 2) - track.scrollHeight;
+    lyricsManualScrollY = Math.max(minScroll, Math.min(maxScroll, lyricsManualScrollY));
+
+    track.style.transform = `translateY(${Math.round(lyricsManualScrollY)}px)`;
+
+    clearTimeout(lyricsManualScrollTimer);
+    lyricsManualScrollTimer = setTimeout(() => {
+      isLyricsManualHoverScroll = false;
+    }, 4500);
+  }, { passive: false });
 }
 
 function updateLyricsSync(currTime) {
@@ -1798,8 +2790,8 @@ function updateLyricsSync(currTime) {
   const scrollContainer = document.getElementById('musicLyricsScroll');
   if (!track || !scrollContainer) return;
 
-  // Terapkan fine-tuning offset waktu dari setting host
-  const offset = typeof musicSettings.lyricsOffset === 'number' ? musicSettings.lyricsOffset : 0;
+  // Terapkan fine-tuning offset waktu khusus lagu ini atau default 0
+  const offset = getSongLyricsOffset(activeMusic);
   const adjustedTime = Math.max(0, currTime + offset);
 
   let newIndex = -1;
@@ -1823,13 +2815,15 @@ function updateLyricsSync(currTime) {
     }
   });
 
-  if (currentLyricsIndex >= 0 && lines[currentLyricsIndex]) {
-    const activeElem = lines[currentLyricsIndex];
-    const containerHeight = scrollContainer.clientHeight || 68;
-    const targetY = (containerHeight / 2) - (activeElem.offsetTop + (activeElem.offsetHeight / 2));
-    track.style.transform = `translateY(${Math.round(targetY)}px)`;
-  } else {
-    track.style.transform = 'translateY(0px)';
+  if (!isLyricsManualHoverScroll) {
+    if (currentLyricsIndex >= 0 && lines[currentLyricsIndex]) {
+      const activeElem = lines[currentLyricsIndex];
+      const containerHeight = scrollContainer.clientHeight || 68;
+      const targetY = (containerHeight / 2) - (activeElem.offsetTop + (activeElem.offsetHeight / 2));
+      track.style.transform = `translateY(${Math.round(targetY)}px)`;
+    } else {
+      track.style.transform = 'translateY(0px)';
+    }
   }
 }
 
@@ -1888,8 +2882,11 @@ function initDraggableMusicWidget() {
     }
 
     const margin = 8;
-    const maxLeft = Math.max(margin, window.innerWidth - widget.offsetWidth - margin);
-    const maxTop = Math.max(margin, window.innerHeight - widget.offsetHeight - margin);
+    const rect = widget.getBoundingClientRect();
+    const widgetW = Math.round(rect.width) || widget.offsetWidth || 260;
+    const widgetH = Math.round(rect.height) || widget.offsetHeight || 110;
+    const maxLeft = Math.max(margin, window.innerWidth - widgetW - margin);
+    const maxTop = Math.max(margin, window.innerHeight - widgetH - margin);
 
     const clampedX = Math.max(margin, Math.min(elemLeft + dx, maxLeft));
     const clampedY = Math.max(margin, Math.min(elemTop + dy, maxTop));
@@ -1941,8 +2938,11 @@ function applySavedMusicWidgetPos() {
         const pTop = parseFloat(pos.top);
         if (!isNaN(pLeft) && !isNaN(pTop)) {
           const margin = 8;
-          const maxLeft = Math.max(margin, window.innerWidth - (widget.offsetWidth || 260) - margin);
-          const maxTop = Math.max(margin, window.innerHeight - (widget.offsetHeight || 110) - margin);
+          const rect = widget.getBoundingClientRect();
+          const widgetW = Math.round(rect.width) || widget.offsetWidth || 260;
+          const widgetH = Math.round(rect.height) || widget.offsetHeight || 110;
+          const maxLeft = Math.max(margin, window.innerWidth - widgetW - margin);
+          const maxTop = Math.max(margin, window.innerHeight - widgetH - margin);
           const clampedX = Math.max(margin, Math.min(pLeft, maxLeft));
           const clampedY = Math.max(margin, Math.min(pTop, maxTop));
 
@@ -2185,6 +3185,14 @@ function onPlayerStateChange(event) {
           fill.style.width = `${(curr / total) * 100}%`;
         }
 
+        // Real-time Spotify playlist row sync
+        const spotifyDuration = document.getElementById('spotifyActiveDuration');
+        if (spotifyDuration) spotifyDuration.textContent = timeStr;
+        const spotifyFill = document.getElementById('spotifyActiveProgressFill');
+        if (spotifyFill && total > 0) {
+          spotifyFill.style.width = `${(curr / total) * 100}%`;
+        }
+
         // Real-time Synced Karaoke Lyrics Update
         updateLyricsSync(curr);
       }
@@ -2230,6 +3238,10 @@ function onPlayerError(event) {
       if (progElem) progElem.textContent = `0:00 / ${nextCandidate.duration || '0:00'}`;
       const fill = document.getElementById('musicProgressFill');
       if (fill) fill.style.width = '0%';
+      const spotifyDur = document.getElementById('spotifyActiveDuration');
+      if (spotifyDur) spotifyDur.textContent = `0:00 / ${nextCandidate.duration || '0:00'}`;
+      const spotifyProg = document.getElementById('spotifyActiveProgressFill');
+      if (spotifyProg) spotifyProg.style.width = '0%';
       
       if (ytPlayer && ytPlayer.loadVideoById) {
         ytPlayer.loadVideoById(nextCandidate.videoId);
@@ -2258,6 +3270,7 @@ function playNextMusic() {
     currentLyricsData = [];
     currentLyricsIndex = -1;
     resetLyricsUI();
+    updateLyricsOffsetUI();
     document.getElementById('musicWidget').classList.remove('show');
     if (hostSkipBtn) hostSkipBtn.style.display = 'none';
     if (window.sounds) window.sounds.stopRadioAmbiance();
@@ -2272,6 +3285,7 @@ function playNextMusic() {
   
   activeMusic = musicQueue.shift();
   updateMusicQueueUI();
+  updateLyricsOffsetUI();
   fetchSongLyrics(activeMusic);
   
   document.getElementById('musicThumb').src = activeMusic.thumbnail || 'assets/bg_nature.png';
@@ -2283,6 +3297,11 @@ function playNextMusic() {
   
   const fill = document.getElementById('musicProgressFill');
   if (fill) fill.style.width = '0%';
+
+  const spotifyDur = document.getElementById('spotifyActiveDuration');
+  if (spotifyDur) spotifyDur.textContent = `0:00 / ${activeMusic.duration || '0:00'}`;
+  const spotifyProg = document.getElementById('spotifyActiveProgressFill');
+  if (spotifyProg) spotifyProg.style.width = '0%';
   
   document.getElementById('musicWidget').classList.add('show');
   
@@ -6360,6 +7379,14 @@ window.addEventListener('DOMContentLoaded', () => {
     applyRemoteGameSettings(settings);
   });
 
+  // Spotify Top Charts Listener & Fetch
+  localSocket.on('spotify-charts-update', (charts) => {
+    if (typeof window.updateClientSpotifyCharts === 'function') {
+      window.updateClientSpotifyCharts(charts);
+    }
+  });
+  localSocket.emit('get-spotify-charts');
+
   // If in OBS Browser mode, prepare clean overlay layout
   if (isObsMode) {
     initObsMode();
@@ -6495,6 +7522,28 @@ function applyRemoteGameSettings(settings) {
   if (settings.musicPlayerStyle && settings.musicPlayerStyle !== musicSettings.playerStyle) {
     if (typeof window.changeMusicPlayerStyle === 'function') {
       window.changeMusicPlayerStyle(settings.musicPlayerStyle);
+    }
+  }
+
+  // 11.7 Playlist Sub-Settings (Rows, Scale, Auto-Scroll)
+  if (settings.musicPlaylistVisibleRows !== undefined && settings.musicPlaylistVisibleRows !== musicSettings.playlistVisibleRows) {
+    if (typeof window.changeMusicPlaylistVisibleRows === 'function') {
+      window.changeMusicPlaylistVisibleRows(settings.musicPlaylistVisibleRows);
+    }
+  }
+  if (settings.musicPlaylistScale !== undefined && settings.musicPlaylistScale !== musicSettings.playlistScale) {
+    if (typeof window.changeMusicPlaylistScale === 'function') {
+      window.changeMusicPlaylistScale(settings.musicPlaylistScale);
+    }
+  }
+  if (settings.musicPlaylistAutoScroll !== undefined && settings.musicPlaylistAutoScroll !== musicSettings.playlistAutoScroll) {
+    if (typeof window.toggleMusicPlaylistAutoScroll === 'function') {
+      window.toggleMusicPlaylistAutoScroll(settings.musicPlaylistAutoScroll);
+    }
+  }
+  if (settings.musicPlaylistAccent && settings.musicPlaylistAccent !== musicSettings.playlistAccent) {
+    if (typeof window.changeMusicPlaylistAccent === 'function') {
+      window.changeMusicPlaylistAccent(settings.musicPlaylistAccent);
     }
   }
 
@@ -8846,6 +9895,46 @@ if (hostMusicBtn) {
   });
 }
 
+// ─── Collapsible Host Toolbar Toggle Logic ───
+window.toggleHostToolbar = function(e) {
+  if (e) e.stopPropagation();
+  const toolbar = document.getElementById('hostMusicControl');
+  if (!toolbar) return;
+  const isCollapsed = toolbar.classList.toggle('is-collapsed');
+  try {
+    localStorage.setItem('host_toolbar_collapsed', isCollapsed ? '1' : '0');
+  } catch(err) {}
+  updateHostToolbarToggleIcon(isCollapsed);
+};
+
+function updateHostToolbarToggleIcon(isCollapsed) {
+  const icon = document.getElementById('hostToolbarToggleIcon');
+  const btn = document.getElementById('hostToolbarToggleBtn');
+  if (icon) {
+    if (isCollapsed) {
+      icon.className = 'fa-solid fa-chevron-left';
+      if (btn) btn.title = 'Tampilkan Toolbar Host';
+    } else {
+      icon.className = 'fa-solid fa-chevron-right';
+      if (btn) btn.title = 'Sembunyikan Toolbar Host';
+    }
+  }
+}
+
+// Initialize toolbar state from localStorage
+(function initHostToolbarState() {
+  try {
+    const saved = localStorage.getItem('host_toolbar_collapsed');
+    if (saved === '1') {
+      const toolbar = document.getElementById('hostMusicControl');
+      if (toolbar) {
+        toolbar.classList.add('is-collapsed');
+        updateHostToolbarToggleIcon(true);
+      }
+    }
+  } catch(err) {}
+})();
+
 // ─── Custom Confirm Modal ───
 function showCustomConfirm(message, onConfirm) {
   const overlay = document.getElementById('confirmModal');
@@ -9593,6 +10682,9 @@ window.openMusicSettings = function(e) {
     updateLyricsOffsetUI();
   }
 
+  const randomGenreSelect = document.getElementById('modalMusicRandomGenreSelect');
+  if (randomGenreSelect) randomGenreSelect.value = musicSettings.randomGenre || 'milenial';
+
   document.getElementById('musicSettingsModal').style.display = 'flex';
 };
 
@@ -9621,6 +10713,9 @@ window.saveMusicSettings = function() {
   const cdInputVal = document.getElementById('musicCooldownSeconds');
   musicSettings.cooldownSeconds = cdInputVal ? (parseInt(cdInputVal.value) ?? 60) : 60;
   musicSettings.volume = parseInt(document.getElementById('musicVolumeSlider').value) || 50;
+
+  const randomGenreSelect = document.getElementById('modalMusicRandomGenreSelect');
+  if (randomGenreSelect) musicSettings.randomGenre = randomGenreSelect.value;
 
   const ambianceToggle = document.getElementById('musicRadioAmbianceToggle');
   const ambianceSlider = document.getElementById('musicRadioAmbianceSlider');
@@ -11493,6 +12588,45 @@ window.changeMusicPlayerStyle = function(style) {
 
   const modalSelect = document.getElementById('modalMusicPlayerStyleSelect');
   if (modalSelect) modalSelect.value = musicSettings.playerStyle;
+
+  // Toggle visibility of playlist sub-settings
+  const subBox = document.getElementById('mainPlaylistSubSettingsBox');
+  if (subBox) subBox.style.display = (musicSettings.playerStyle === 'playlist') ? 'flex' : 'none';
+  const modalBox = document.getElementById('modalPlaylistSettingsCard');
+  if (modalBox) modalBox.style.display = (musicSettings.playerStyle === 'playlist') ? 'block' : 'none';
+
+  if (document.getElementById('modalMusicPlaylistRowsSelect')) {
+    document.getElementById('modalMusicPlaylistRowsSelect').value = musicSettings.playlistVisibleRows || 4;
+  }
+  if (document.getElementById('mainMusicPlaylistRowsSelect')) {
+    document.getElementById('mainMusicPlaylistRowsSelect').value = musicSettings.playlistVisibleRows || 4;
+  }
+  if (document.getElementById('modalMusicPlaylistScaleSelect')) {
+    document.getElementById('modalMusicPlaylistScaleSelect').value = musicSettings.playlistScale || 100;
+  }
+  if (document.getElementById('mainMusicPlaylistScaleSelect')) {
+    document.getElementById('mainMusicPlaylistScaleSelect').value = musicSettings.playlistScale || 100;
+  }
+  if (document.getElementById('modalMusicPlaylistAutoScrollToggle')) {
+    document.getElementById('modalMusicPlaylistAutoScrollToggle').checked = musicSettings.playlistAutoScroll !== false;
+  }
+  if (document.getElementById('mainMusicPlaylistAutoScrollToggle')) {
+    document.getElementById('mainMusicPlaylistAutoScrollToggle').checked = musicSettings.playlistAutoScroll !== false;
+  }
+  if (document.getElementById('modalMusicPlaylistAccentSelect')) {
+    document.getElementById('modalMusicPlaylistAccentSelect').value = musicSettings.playlistAccent || 'red';
+  }
+  if (document.getElementById('mainMusicPlaylistAccentSelect')) {
+    document.getElementById('mainMusicPlaylistAccentSelect').value = musicSettings.playlistAccent || 'red';
+  }
+
+  if (widget) {
+    if (musicSettings.playlistAccent === 'green') {
+      widget.classList.add('accent-green');
+    } else {
+      widget.classList.remove('accent-green');
+    }
+  }
 
   updateMusicQueueUI();
   updateMusicLyricsVisibility();

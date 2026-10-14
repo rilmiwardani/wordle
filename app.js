@@ -1544,8 +1544,10 @@ function updateMusicQueueUI() {
           } catch(e) {}
         }
 
+        const isActiveJustAdded = activeMusic && activeMusic._justAdded && (Date.now() - activeMusic._justAdded < 3200);
+
         activeSlot.innerHTML = `
-          <div class="spotify-track-row active-playing" title="${activeCleanTitle}">
+          <div class="spotify-track-row active-playing ${isActiveJustAdded ? 'just-added' : ''}" title="${activeCleanTitle}">
             <div class="spotify-track-num">
               <div class="spotify-eq-bars" title="Sedang Diputar">
                 <span></span><span></span><span></span><span></span>
@@ -1553,7 +1555,7 @@ function updateMusicQueueUI() {
             </div>
             <img class="spotify-track-thumb" src="${activeMusic.thumbnail || 'assets/bg_nature.png'}" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="Thumb">
             <div class="spotify-track-info">
-              <div class="spotify-track-title">${activeCleanTitle}</div>
+              <div class="spotify-track-title">${activeCleanTitle}${isActiveJustAdded ? '<span class="spotify-track-new-tag">BARU</span>' : ''}</div>
               <div class="spotify-track-sub">${activeAuthor}${activeReq}</div>
             </div>
             <div class="spotify-track-meta">
@@ -1583,15 +1585,16 @@ function updateMusicQueueUI() {
           const author = escapeHTML(item.author || 'Host');
           const req = (item.requesterName && item.requesterName !== 'Host') ? ` • Req ${escapeHTML(item.requesterName)}` : ` • Req Host`;
           const dur = item.duration || '0:00';
+          const isJustAdded = item._justAdded && (Date.now() - item._justAdded < 3200);
 
           return `
-            <div class="spotify-track-row is-queued" title="${cleanTitle}">
+            <div class="spotify-track-row is-queued ${isJustAdded ? 'just-added' : ''}" title="${cleanTitle}">
               <div class="spotify-track-num">
                 <span>${trackNum}</span>
               </div>
               <img class="spotify-track-thumb" src="${item.thumbnail || 'assets/bg_nature.png'}" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="Thumb">
               <div class="spotify-track-info">
-                <div class="spotify-track-title">${cleanTitle}</div>
+                <div class="spotify-track-title">${cleanTitle}${isJustAdded ? '<span class="spotify-track-new-tag">BARU</span>' : ''}</div>
                 <div class="spotify-track-sub">${author}${req}</div>
               </div>
               <div class="spotify-track-meta">
@@ -1601,8 +1604,17 @@ function updateMusicQueueUI() {
           `;
         }).join('');
 
-        // Trigger Auto-Scroll Engine if overflow
-        triggerMusicQueueAutoScroll();
+        const hasJustAdded = musicQueue.some(item => item._justAdded && (Date.now() - item._justAdded < 3200));
+        if (hasJustAdded) {
+          setTimeout(() => {
+            if (queueItems) {
+              queueItems.scrollTo({ top: queueItems.scrollHeight, behavior: 'smooth' });
+            }
+          }, 60);
+        } else {
+          // Trigger Auto-Scroll Engine if overflow
+          triggerMusicQueueAutoScroll();
+        }
       }
     } else {
       queueContainer.style.display = 'none';
@@ -2979,7 +2991,22 @@ window.resetMusicWidgetPos = function() {
 
 function showMusicNotif(requesterName, title) {
   const container = document.getElementById('musicNotifContainer');
+  const widget = document.getElementById('musicWidget');
   if (!container) return;
+
+  if (widget) {
+    widget.classList.add('has-docked-notif');
+    try {
+      const rect = widget.getBoundingClientRect();
+      if (rect.top < 45) {
+        container.style.top = 'auto';
+        container.style.bottom = '-38px';
+      } else {
+        container.style.top = '-38px';
+        container.style.bottom = 'auto';
+      }
+    } catch(e) {}
+  }
 
   // Bunyikan SFX Radio FM Tuning & DJ Cue saat request masuk (hanya jika diaktifkan)
   if (musicSettings.radioSFX !== false && window.sounds && typeof window.sounds.playRadioRequest === 'function') {
@@ -2992,11 +3019,16 @@ function showMusicNotif(requesterName, title) {
   const notif = document.createElement('div');
   notif.className = 'music-notif';
   
+  const cleanName = escapeHTML((requesterName || 'Viewer').replace(/[<>]/g, '').replace(/^@+/, '').trim());
+  const cleanTitle = escapeHTML(cleanSongTitleForLyrics(title, title) || title);
+
   notif.innerHTML = `
-    <span class="music-notif-icon" style="color: #60a5fa;"><i class="fa-solid fa-music"></i></span>
+    <span class="music-notif-icon"><i class="fa-solid fa-music"></i></span>
     <div class="music-notif-content">
-      <span><span class="music-notif-user">${requesterName}</span> requested:</span>
-      <span class="music-notif-title">${title}</span>
+      <span class="music-notif-user">@${cleanName}</span>
+      <span class="music-notif-action">request:</span>
+      <span class="music-notif-title" title="${cleanTitle}">${cleanTitle}</span>
+      <span class="music-notif-badge">Masuk Antrian</span>
     </div>
   `;
   
@@ -3006,7 +3038,10 @@ function showMusicNotif(requesterName, title) {
     if (notif.parentNode === container) {
       container.removeChild(notif);
     }
-  }, 3000); // 3 seconds matches CSS animation timing
+    if (container.children.length === 0 && widget) {
+      widget.classList.remove('has-docked-notif');
+    }
+  }, 3100);
 }
 
 let lastMusicFollowerWarningTime = 0;
@@ -3016,7 +3051,22 @@ function showMusicFollowerWarningNotif(requesterName) {
   lastMusicFollowerWarningTime = now;
 
   const container = document.getElementById('musicNotifContainer');
+  const widget = document.getElementById('musicWidget');
   if (!container) return;
+
+  if (widget) {
+    widget.classList.add('has-docked-notif');
+    try {
+      const rect = widget.getBoundingClientRect();
+      if (rect.top < 45) {
+        container.style.top = 'auto';
+        container.style.bottom = '-38px';
+      } else {
+        container.style.top = '-38px';
+        container.style.bottom = 'auto';
+      }
+    } catch(e) {}
+  }
 
   if (window.sounds && typeof window.sounds.playPop === 'function') {
     try { window.sounds.playPop(); } catch(e) {}
@@ -3026,12 +3076,12 @@ function showMusicFollowerWarningNotif(requesterName) {
   const notif = document.createElement('div');
   notif.className = 'music-notif music-notif-warning';
 
-  const cleanName = (requesterName || 'Viewer').replace(/[<>]/g, '');
+  const cleanName = escapeHTML((requesterName || 'Viewer').replace(/[<>]/g, '').replace(/^@+/, '').trim());
   notif.innerHTML = `
-    <span class="music-notif-icon" style="color: #f43f5e; font-size: 15px;"><i class="fa-solid fa-user-lock"></i></span>
+    <span class="music-notif-icon" style="color: #f43f5e;"><i class="fa-solid fa-user-lock"></i></span>
     <div class="music-notif-content">
       <span class="music-notif-user">@${cleanName}</span>
-      <span class="music-notif-desc">Follow live dulu untuk request lagu!</span>
+      <span class="music-notif-action">Follow live dulu untuk request lagu!</span>
     </div>
   `;
 
@@ -3041,7 +3091,10 @@ function showMusicFollowerWarningNotif(requesterName) {
     if (notif.parentNode === container) {
       container.removeChild(notif);
     }
-  }, 3500);
+    if (container.children.length === 0 && widget) {
+      widget.classList.remove('has-docked-notif');
+    }
+  }, 3200);
 }
 
 let lastMusicCooldownWarningTime = 0;
@@ -3051,7 +3104,22 @@ function showMusicCooldownWarningNotif(requesterName, remainingSec) {
   lastMusicCooldownWarningTime = now;
 
   const container = document.getElementById('musicNotifContainer');
+  const widget = document.getElementById('musicWidget');
   if (!container) return;
+
+  if (widget) {
+    widget.classList.add('has-docked-notif');
+    try {
+      const rect = widget.getBoundingClientRect();
+      if (rect.top < 45) {
+        container.style.top = 'auto';
+        container.style.bottom = '-38px';
+      } else {
+        container.style.top = '-38px';
+        container.style.bottom = 'auto';
+      }
+    } catch(e) {}
+  }
 
   if (window.sounds && typeof window.sounds.playPop === 'function') {
     try { window.sounds.playPop(); } catch(e) {}
@@ -3061,12 +3129,12 @@ function showMusicCooldownWarningNotif(requesterName, remainingSec) {
   const notif = document.createElement('div');
   notif.className = 'music-notif music-notif-cooldown';
 
-  const cleanName = (requesterName || 'Viewer').replace(/[<>]/g, '').replace(/^@+/, '').trim();
+  const cleanName = escapeHTML((requesterName || 'Viewer').replace(/[<>]/g, '').replace(/^@+/, '').trim());
   notif.innerHTML = `
-    <span class="music-notif-icon" style="color: #f59e0b; font-size: 15px;"><i class="fa-solid fa-hourglass-half"></i></span>
+    <span class="music-notif-icon" style="color: #f59e0b;"><i class="fa-solid fa-hourglass-half"></i></span>
     <div class="music-notif-content">
-      <span class="music-notif-user">${cleanName}</span>
-      <span class="music-notif-desc">Tunggu ${remainingSec}d lagi untuk request lagu!</span>
+      <span class="music-notif-user">@${cleanName}</span>
+      <span class="music-notif-action">Tunggu ${remainingSec}d lagi untuk request!</span>
     </div>
   `;
 
@@ -3076,7 +3144,10 @@ function showMusicCooldownWarningNotif(requesterName, remainingSec) {
     if (notif.parentNode === container) {
       container.removeChild(notif);
     }
-  }, 3500);
+    if (container.children.length === 0 && widget) {
+      widget.classList.remove('has-docked-notif');
+    }
+  }, 3200);
 }
 
 let lastMusicLimitWarningTime = 0;
@@ -3086,7 +3157,22 @@ function showMusicUserLimitWarningNotif(requesterName, maxUser) {
   lastMusicLimitWarningTime = now;
 
   const container = document.getElementById('musicNotifContainer');
+  const widget = document.getElementById('musicWidget');
   if (!container) return;
+
+  if (widget) {
+    widget.classList.add('has-docked-notif');
+    try {
+      const rect = widget.getBoundingClientRect();
+      if (rect.top < 45) {
+        container.style.top = 'auto';
+        container.style.bottom = '-38px';
+      } else {
+        container.style.top = '-38px';
+        container.style.bottom = 'auto';
+      }
+    } catch(e) {}
+  }
 
   if (window.sounds && typeof window.sounds.playPop === 'function') {
     try { window.sounds.playPop(); } catch(e) {}
@@ -3096,12 +3182,12 @@ function showMusicUserLimitWarningNotif(requesterName, maxUser) {
   const notif = document.createElement('div');
   notif.className = 'music-notif music-notif-limit';
 
-  const cleanName = (requesterName || 'Viewer').replace(/[<>]/g, '').replace(/^@+/, '').trim();
+  const cleanName = escapeHTML((requesterName || 'Viewer').replace(/[<>]/g, '').replace(/^@+/, '').trim());
   notif.innerHTML = `
-    <span class="music-notif-icon" style="color: #38bdf8; font-size: 15px;"><i class="fa-solid fa-list-check"></i></span>
+    <span class="music-notif-icon" style="color: #38bdf8;"><i class="fa-solid fa-list-check"></i></span>
     <div class="music-notif-content">
-      <span class="music-notif-user">${cleanName}</span>
-      <span class="music-notif-desc">Limit antrianmu penuh (maks ${maxUser || 2} lagu)!</span>
+      <span class="music-notif-user">@${cleanName}</span>
+      <span class="music-notif-action">Limit request penuh (maks ${maxUser || 2} lagu)!</span>
     </div>
   `;
 
@@ -3111,7 +3197,10 @@ function showMusicUserLimitWarningNotif(requesterName, maxUser) {
     if (notif.parentNode === container) {
       container.removeChild(notif);
     }
-  }, 3500);
+    if (container.children.length === 0 && widget) {
+      widget.classList.remove('has-docked-notif');
+    }
+  }, 3200);
 }
 
 let lastMusicGlobalFullWarningTime = 0;
@@ -3121,7 +3210,22 @@ function showMusicGlobalFullWarningNotif(requesterName, maxGlobal) {
   lastMusicGlobalFullWarningTime = now;
 
   const container = document.getElementById('musicNotifContainer');
+  const widget = document.getElementById('musicWidget');
   if (!container) return;
+
+  if (widget) {
+    widget.classList.add('has-docked-notif');
+    try {
+      const rect = widget.getBoundingClientRect();
+      if (rect.top < 45) {
+        container.style.top = 'auto';
+        container.style.bottom = '-38px';
+      } else {
+        container.style.top = '-38px';
+        container.style.bottom = 'auto';
+      }
+    } catch(e) {}
+  }
 
   if (window.sounds && typeof window.sounds.playPop === 'function') {
     try { window.sounds.playPop(); } catch(e) {}
@@ -3131,12 +3235,12 @@ function showMusicGlobalFullWarningNotif(requesterName, maxGlobal) {
   const notif = document.createElement('div');
   notif.className = 'music-notif music-notif-full';
 
-  const cleanName = (requesterName || 'Penonton').replace(/[<>]/g, '').replace(/^@+/, '').trim();
+  const cleanName = escapeHTML((requesterName || 'Penonton').replace(/[<>]/g, '').replace(/^@+/, '').trim());
   notif.innerHTML = `
-    <span class="music-notif-icon" style="color: #f43f5e; font-size: 15px;"><i class="fa-solid fa-compact-disc"></i></span>
+    <span class="music-notif-icon" style="color: #f43f5e;"><i class="fa-solid fa-compact-disc"></i></span>
     <div class="music-notif-content">
-      <span class="music-notif-user">${cleanName}</span>
-      <span class="music-notif-desc">Antrian lagu penuh (maks ${maxGlobal || 20} lagu)!</span>
+      <span class="music-notif-user">@${cleanName}</span>
+      <span class="music-notif-action">Antrian lagu penuh (maks ${maxGlobal || 20} lagu)!</span>
     </div>
   `;
 
@@ -3146,7 +3250,10 @@ function showMusicGlobalFullWarningNotif(requesterName, maxGlobal) {
     if (notif.parentNode === container) {
       container.removeChild(notif);
     }
-  }, 3500);
+    if (container.children.length === 0 && widget) {
+      widget.classList.remove('has-docked-notif');
+    }
+  }, 3200);
 }
 
 function onPlayerStateChange(event) {
@@ -7313,6 +7420,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     }
     
+    data._justAdded = Date.now();
     musicQueue.push(data);
     updateMusicQueueUI();
     showMusicNotif(data.requesterName, data.title);

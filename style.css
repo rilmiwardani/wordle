@@ -4440,150 +4440,205 @@ header {
 
 
 
-/* Music Notification Popup */
-#musicNotifContainer {
-  position: fixed;
-  bottom: 145px;
-  right: 20px;
+/* Music Notification Docked Pill Banner (Attached on top of Music Widget) */
+#musicNotifContainer,
+.music-notif-docked-container {
+  position: absolute;
+  top: -38px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  align-items: flex-end;
-  z-index: 9997 !important;
+  gap: 4px;
+  align-items: center;
+  z-index: 10050 !important;
   pointer-events: none;
+  width: max-content;
+  max-width: 95vw;
 }
 
 .music-notif {
-  background: rgba(20, 20, 30, 0.85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--playlist-accent-border, rgba(254, 44, 85, 0.4));
   color: white;
-  padding: 8px 12px;
-  border-radius: 8px;
+  padding: 5px 12px;
+  border-radius: 20px;
   font-size: 11px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  animation: slideInNotif 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, slideOutNotif 0.4s ease forwards 2.6s;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-  max-width: 200px;
+  gap: 8px;
+  animation: dockedNotifIn 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) forwards, dockedNotifOut 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 2.7s;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55), 0 0 10px var(--playlist-accent-subtle, rgba(254, 44, 85, 0.2));
+  white-space: nowrap;
 }
 
 .music-notif-icon {
-  font-size: 16px;
+  font-size: 13px;
+  color: var(--playlist-accent, #fe2c55);
+  display: flex;
+  align-items: center;
 }
 
 .music-notif-content {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  line-height: 1.2;
 }
 
 .music-notif-user {
-  color: var(--correct);
-  font-weight: 700;
+  color: var(--playlist-accent, #fe2c55);
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.music-notif-action,
+.music-notif-desc {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 10px;
 }
 
 .music-notif-title {
-  color: rgba(255, 255, 255, 0.8);
-  font-style: italic;
-  white-space: nowrap;
+  color: #ffffff;
+  font-weight: 700;
+  max-width: 170px;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 150px;
+  white-space: nowrap;
 }
 
-@keyframes slideInNotif {
-  from { transform: translateX(120%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+.music-notif-badge {
+  background: var(--playlist-accent-subtle, rgba(254, 44, 85, 0.16));
+  color: var(--playlist-accent, #fe2c55);
+  border: 1px solid var(--playlist-accent-border, rgba(254, 44, 85, 0.35));
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-left: 2px;
 }
 
-@keyframes slideOutNotif {
-  from { transform: translateX(0); opacity: 1; }
-  to { transform: translateY(30px) scale(0.7); opacity: 0; }
+@keyframes dockedNotifIn {
+  from {
+    transform: translateY(12px) scale(0.92);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
 }
 
+@keyframes dockedNotifOut {
+  from {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-8px) scale(0.92);
+    opacity: 0;
+  }
+}
+
+/* Warning & State Variants */
 .music-notif.music-notif-warning {
-  max-width: 250px;
-  background: rgba(30, 12, 22, 0.92);
-  border: 1px solid rgba(244, 63, 94, 0.45);
-  box-shadow: 0 4px 20px rgba(244, 63, 94, 0.25);
+  border-color: rgba(244, 63, 94, 0.5);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55), 0 0 10px rgba(244, 63, 94, 0.25);
 }
 
 .music-notif.music-notif-warning .music-notif-user {
-  color: #fda4af;
-  font-size: 11px;
-}
-
-.music-notif.music-notif-warning .music-notif-desc {
-  color: #ffe4e6;
-  font-size: 10px;
-  font-weight: 500;
-  line-height: 1.25;
-  margin-top: 1px;
+  color: #f43f5e;
 }
 
 .music-notif.music-notif-cooldown {
-  max-width: 250px;
-  background: rgba(32, 24, 10, 0.94);
-  border: 1px solid rgba(245, 158, 11, 0.5);
-  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.25);
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55), 0 0 10px rgba(245, 158, 11, 0.25);
 }
 
 .music-notif.music-notif-cooldown .music-notif-user {
-  color: #fde68a;
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.music-notif.music-notif-cooldown .music-notif-desc {
-  color: #fef3c7;
-  font-size: 10px;
-  font-weight: 500;
-  line-height: 1.25;
-  margin-top: 1px;
+  color: #f59e0b;
 }
 
 .music-notif.music-notif-limit {
-  max-width: 250px;
-  background: rgba(12, 25, 36, 0.94);
-  border: 1px solid rgba(56, 189, 248, 0.5);
-  box-shadow: 0 4px 20px rgba(56, 189, 248, 0.25);
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55), 0 0 10px rgba(56, 189, 248, 0.25);
 }
 
 .music-notif.music-notif-limit .music-notif-user {
-  color: #7dd3fc;
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.music-notif.music-notif-limit .music-notif-desc {
-  color: #e0f2fe;
-  font-size: 10px;
-  font-weight: 500;
-  line-height: 1.25;
-  margin-top: 1px;
+  color: #38bdf8;
 }
 
 .music-notif.music-notif-full {
-  max-width: 250px;
-  background: rgba(30, 12, 22, 0.94);
-  border: 1px solid rgba(244, 63, 94, 0.5);
-  box-shadow: 0 4px 20px rgba(244, 63, 94, 0.25);
+  border-color: rgba(244, 63, 94, 0.5);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55), 0 0 10px rgba(244, 63, 94, 0.25);
 }
 
 .music-notif.music-notif-full .music-notif-user {
-  color: #fda4af;
-  font-size: 11px;
-  font-weight: 800;
+  color: #f43f5e;
 }
 
-.music-notif.music-notif-full .music-notif-desc {
-  color: #ffe4e6;
-  font-size: 10px;
-  font-weight: 500;
-  line-height: 1.25;
-  margin-top: 1px;
+/* Docked Toast Visibility when Music Widget is Idle/Hidden */
+.music-widget.has-docked-notif {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.music-widget:not(.show).has-docked-notif {
+  opacity: 1 !important;
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.music-widget:not(.show).has-docked-notif > *:not(#musicNotifContainer) {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Newly Added Track Highlight Pulse Animation in Playlist */
+.spotify-track-row.just-added {
+  animation: trackJustAddedPulse 2.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes trackJustAddedPulse {
+  0% {
+    background: var(--playlist-accent-subtle, rgba(254, 44, 85, 0.28));
+    border-color: var(--playlist-accent, #fe2c55);
+    transform: scale(1.02);
+  }
+  20% {
+    background: var(--playlist-accent-subtle, rgba(254, 44, 85, 0.38));
+    border-color: var(--playlist-accent, #fe2c55);
+    transform: scale(1.03);
+  }
+  60% {
+    background: var(--playlist-accent-subtle, rgba(254, 44, 85, 0.18));
+    border-color: var(--playlist-accent-border, rgba(254, 44, 85, 0.35));
+    transform: scale(1);
+  }
+  100% {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: transparent;
+    transform: scale(1);
+  }
+}
+
+.spotify-track-new-tag {
+  background: var(--playlist-accent, #fe2c55);
+  color: #ffffff;
+  font-size: 8px;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+  margin-left: 4px;
+  display: inline-block;
+  vertical-align: middle;
+  animation: fadeIn 0.2s ease;
 }
 
 /* ══════════════════════════════════════════ */
@@ -9285,6 +9340,49 @@ body.theme-sepia .music-live-pulse {
 
 body.theme-sepia .music-live-text {
   color: #26592d !important;
+}
+
+body.theme-sepia .music-notif {
+  background: #f4ecdf !important;
+  border-color: var(--playlist-accent-border, rgba(160, 138, 114, 0.6)) !important;
+  color: #2b1f17 !important;
+  box-shadow: 0 6px 18px rgba(66, 52, 40, 0.25) !important;
+}
+
+body.theme-sepia .music-notif-action,
+body.theme-sepia .music-notif-desc {
+  color: #6c5847 !important;
+}
+
+body.theme-sepia .music-notif-title {
+  color: #2b1f17 !important;
+}
+
+body.theme-sepia .spotify-track-row.just-added {
+  animation: trackJustAddedPulseSepia 2.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards !important;
+}
+
+@keyframes trackJustAddedPulseSepia {
+  0% {
+    background: rgba(160, 138, 114, 0.4) !important;
+    border-color: var(--playlist-accent, #2b1f17) !important;
+    transform: scale(1.02);
+  }
+  20% {
+    background: rgba(160, 138, 114, 0.5) !important;
+    border-color: var(--playlist-accent, #2b1f17) !important;
+    transform: scale(1.03);
+  }
+  60% {
+    background: rgba(160, 138, 114, 0.25) !important;
+    border-color: var(--playlist-accent-border, rgba(160, 138, 114, 0.5)) !important;
+    transform: scale(1);
+  }
+  100% {
+    background: transparent !important;
+    border-color: transparent !important;
+    transform: scale(1);
+  }
 }
 
 /* 🎤 Lirik Karaoke (Synced Lyrics) di Tema Sepia */

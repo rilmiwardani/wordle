@@ -1140,8 +1140,9 @@
       </div>
     </div>
     <!-- Music Player Widget -->
-    <div id="musicNotifContainer" style="position: fixed; bottom: 145px; right: 20px; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; z-index: 9997; pointer-events: none;"></div>
     <div class="music-widget music-style-vinyl" id="musicWidget" title="Geser (drag) untuk memindahkan posisi widget">
+      <!-- Docked Toast Banner for incoming song requests -->
+      <div id="musicNotifContainer" class="music-notif-docked-container"></div>
       <div id="ytPlayerContainer"></div>
       
       <div class="music-now-playing-header" id="musicNowPlayingHeader" style="display: none;">

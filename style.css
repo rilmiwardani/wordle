@@ -9565,6 +9565,10 @@ body.obs-mode .host-music-control {
   display: none !important;
 }
 
+body.obs-mode.show-host-controls .host-music-control {
+  display: flex !important;
+}
+
 /* ─── OBS Transparent Mode (body.obs-transparent) ─── */
 html.obs-transparent,
 body.obs-transparent {

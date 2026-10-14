@@ -5,3 +5,4 @@ scratch/
 .env
 src-tauri/
 target/
+game_settings.json

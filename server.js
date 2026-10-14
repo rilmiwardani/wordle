@@ -47,6 +47,7 @@ let obsConfig = {
   activeGameMode: "wordle",
   transparentBg: false,
   compactMode: false,
+  showHostControls: false, // Toggle bottom host controls in OBS
 };
 
 // Game Rules & Settings State (Word Length, Language, Rules)
@@ -60,7 +61,16 @@ let gameSettings = {
   displayRows: 6,
   boardScale: 100,
   followerOnlyMusic: false,
+  musicRequestsEnabled: true,
+  musicVolume: 50,
   musicCooldown: 60,
+  musicMaxDuration: 6,
+  musicMaxGlobal: 20,
+  musicMaxUser: 2,
+  musicBannedKeywords: [],
+  musicRadioSFX: true,
+  musicRadioAmbiance: false,
+  musicRadioAmbianceVolume: 20,
   musicPlayerStyle: "vinyl",
   musicRandomGenre: "milenial",
   musicPlaylistVisibleRows: 4,
@@ -69,6 +79,18 @@ let gameSettings = {
   musicPlaylistAutoScroll: true,
   wanderWordsCustomList: [],
   wordClusterCustomList: [],
+};
+
+// Live Music Playback State Tracker (for live sync with Dashboard)
+let currentMusicState = {
+  isPlaying: false,
+  isPaused: false,
+  activeMusic: null,
+  queue: [],
+  volume: 50,
+  currentTime: 0,
+  totalDuration: 0,
+  formattedTime: "0:00 / 0:00"
 };
 
 // Music Request Cooldown Tracker (key: username/uniqueId -> timestamp)
@@ -404,6 +426,7 @@ io.on("connection", (socket) => {
 
   socket.on("set-obs-config", (data) => {
     obsConfig = { ...obsConfig, ...data };
+    saveObsConfig();
     console.log("[OBS] Config updated:", obsConfig);
     io.emit("obs-config-update", obsConfig);
   });
@@ -412,6 +435,7 @@ io.on("connection", (socket) => {
   socket.on("dashboard-change-game", (mode) => {
     console.log("[OBS] Dashboard requested game change to:", mode);
     obsConfig.activeGameMode = mode;
+    saveObsConfig();
     io.emit("change-game-mode", { mode });
     io.emit("obs-config-update", obsConfig);
   });
@@ -419,6 +443,102 @@ io.on("connection", (socket) => {
   socket.on("dashboard-new-round", () => {
     console.log("[OBS] Dashboard requested new round");
     io.emit("trigger-new-round");
+  });
+
+  // ═══ REMOTE MUSIC PLAYBACK & STATE SYNC (DASHBOARD <-> OVERLAY) ═══
+  socket.emit("music-state-update", currentMusicState);
+
+  socket.on("get-music-state", () => {
+    socket.emit("music-state-update", currentMusicState);
+  });
+
+  socket.on("music-state-update", (state) => {
+    if (state && typeof state === "object") {
+      currentMusicState = { ...currentMusicState, ...state };
+      socket.broadcast.emit("music-state-update", currentMusicState);
+    }
+  });
+
+  socket.on("dashboard-music-play", async (query) => {
+    console.log(`[Music] Dashboard requested play: ${query}`);
+    try {
+      const ytSearch = require("yt-search");
+      const r = await ytSearch(query);
+      if (r.videos.length > 0) {
+        const video = r.videos[0];
+        const candidates = r.videos.slice(0, 5).map(v => ({
+          videoId: v.videoId,
+          title: v.title,
+          author: v.author ? v.author.name : "",
+          thumbnail: v.image,
+          duration: v.timestamp || ""
+        }));
+        io.emit('music-request', {
+          videoId: video.videoId,
+          title: video.title,
+          author: video.author ? video.author.name : "",
+          thumbnail: video.image,
+          duration: video.timestamp || "",
+          candidates: candidates,
+          requesterName: "Host",
+          requesterImg: "assets/bg_nature.png",
+          originalQuery: query
+        });
+      }
+    } catch (err) {
+      console.error("[Music] Error searching:", err);
+    }
+  });
+
+  socket.on("dashboard-music-skip", () => {
+    console.log("[Music] Dashboard requested skip");
+    io.emit("music-skip");
+  });
+
+  socket.on("dashboard-music-pause-resume", () => {
+    console.log("[Music] Dashboard requested toggle pause/play");
+    io.emit("music-toggle-pause");
+  });
+
+  socket.on("dashboard-music-stop", () => {
+    console.log("[Music] Dashboard requested stop");
+    io.emit("music-stop");
+  });
+
+  socket.on("dashboard-music-volume", (vol) => {
+    const v = Math.max(0, Math.min(100, parseInt(vol) || 50));
+    gameSettings.musicVolume = v;
+    saveGameSettings();
+    io.emit("music-volume-set", { volume: v });
+  });
+
+  socket.on("dashboard-music-random", (data) => {
+    console.log("[Music] Dashboard requested random song:", data);
+    io.emit("trigger-random-music", data || {});
+  });
+
+  socket.on("dashboard-music-remove-queue", (data) => {
+    console.log("[Music] Dashboard requested remove queue item:", data);
+    io.emit("music-remove-queue-item", data);
+  });
+
+  socket.on("dashboard-music-clear-queue", () => {
+    console.log("[Music] Dashboard requested clear queue");
+    io.emit("music-clear-queue");
+  });
+
+  // ═══ REMOTE HOST GUESS & GAME HELPERS ═══
+  socket.on("dashboard-host-guess", (data) => {
+    const guess = (typeof data === "string" ? data : data?.guess || "").trim().toUpperCase();
+    if (guess) {
+      console.log("[Host Control] Dashboard submitted guess:", guess);
+      io.emit("host-guess-submit", { guess });
+    }
+  });
+
+  socket.on("dashboard-give-hint", () => {
+    console.log("[Host Control] Dashboard requested hint");
+    io.emit("trigger-give-hint");
   });
 
   // Game Settings Sync (Word Length, Language, Rules)
@@ -473,6 +593,8 @@ const dashApp = express();
 dashApp.use(express.json());
 dashApp.use(express.static(__dirname)); // Serve Wordle Game on root
 dashApp.use("/dashboard", express.static(path.join(__dirname, "dashboard"))); // Serve dashboard on /dashboard
+dashApp.use("/assets", express.static(path.join(__dirname, "assets")));
+dashApp.use("/dashboard/assets", express.static(path.join(__dirname, "assets")));
 
 // API endpoints
 dashApp.get("/api/status", (req, res) => {

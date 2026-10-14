@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TikTok Live Server — Dashboard</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <style>
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
@@ -676,7 +677,264 @@
       border-color: var(--accent);
       color: #fff;
       font-weight: 700;
-      box-shadow: 0 0 10px rgba(254,44,85,0.25);
+    }
+    /* ═══ DASHBOARD REMOTE MUSIC & HOST CONSOLE ═══ */
+    .dash-music-grid {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 950px) {
+      .dash-music-grid { grid-template-columns: 1fr; }
+    }
+    .dash-now-playing-box {
+      background: linear-gradient(145deg, #12131f, #0d0e17);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .dash-np-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .dash-np-thumb-wrap {
+      width: 74px;
+      height: 74px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #181824;
+      flex-shrink: 0;
+      position: relative;
+      border: 1.5px solid rgba(255,255,255,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }
+    .dash-np-thumb-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .dash-np-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .dash-np-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+    .dash-np-author {
+      font-size: 12px;
+      color: var(--text2);
+      margin-bottom: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .dash-np-requester {
+      font-size: 11px;
+      color: var(--accent2);
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(37,244,238,0.1);
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(37,244,238,0.25);
+    }
+    .dash-np-progress-row {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .dash-np-progress-bar-bg {
+      width: 100%;
+      height: 6px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .dash-np-progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width 0.3s ease;
+    }
+    .dash-np-time-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text2);
+      font-weight: 600;
+    }
+    .dash-playback-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .dash-play-btn {
+      background: linear-gradient(135deg, var(--accent), #e01740);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .dash-play-btn:hover {
+      filter: brightness(1.15);
+      transform: translateY(-1px);
+    }
+    .dash-ctrl-btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .dash-ctrl-btn:hover {
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+    }
+    .dash-volume-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.03);
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .dash-volume-row input[type="range"] {
+      flex: 1;
+      cursor: pointer;
+      accent-color: var(--accent);
+    }
+    .dash-queue-box {
+      background: #0d0e17;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .dash-queue-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .dash-queue-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 250px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .dash-queue-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      padding: 6px 10px;
+      border-radius: 8px;
+      transition: all 0.15s;
+    }
+    .dash-queue-item:hover {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.12);
+    }
+    .dash-queue-item img {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      object-fit: cover;
+    }
+    .dash-queue-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .dash-queue-item-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .dash-queue-item-sub {
+      font-size: 10px;
+      color: var(--text2);
+    }
+    .dash-queue-del-btn {
+      background: transparent;
+      border: none;
+      color: #ef4444;
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      opacity: 0.75;
+      transition: all 0.15s;
+    }
+    .dash-queue-del-btn:hover {
+      opacity: 1;
+      background: rgba(239,68,68,0.15);
+    }
+    .dash-search-input-group {
+      display: flex;
+      gap: 8px;
+    }
+    .dash-search-input-group input {
+      flex: 1;
+      background: #14141e;
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+    }
+    .dash-search-input-group input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .dash-host-console-card {
+      background: linear-gradient(135deg, rgba(254,44,85,0.07), rgba(37,244,238,0.04));
+      border: 1px solid rgba(254,44,85,0.22);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-top: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
     }
 
     /* ═══ SETTINGS CONTROL GRID ═══ */
@@ -718,18 +976,31 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.12);
-      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
       border-radius: 8px;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 700;
       cursor: pointer;
       color: var(--text);
       transition: all 0.15s;
+      user-select: none;
     }
     .len-pill:hover {
+      background: rgba(255, 255, 255, 0.1);
       border-color: var(--accent2);
+    }
+    .len-pill:has(input:checked) {
+      background: rgba(37, 244, 238, 0.15);
+      border-color: var(--accent2);
+      color: #fff;
+    }
+    .len-pill input[type="checkbox"] {
+      accent-color: var(--accent2);
+      cursor: pointer;
+      width: 14px;
+      height: 14px;
     }
     .len-presets-row {
       display: flex;
@@ -737,18 +1008,20 @@
       flex-wrap: wrap;
     }
     .preset-sm-btn {
-      background: rgba(255,255,255,0.04);
+      background: rgba(255, 255, 255, 0.05);
       border: 1px solid var(--border);
       color: var(--text2);
-      padding: 4px 8px;
+      padding: 5px 10px;
       border-radius: 6px;
       font-size: 11px;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.15s;
     }
     .preset-sm-btn:hover {
-      color: var(--text);
-      border-color: rgba(255,255,255,0.3);
+      background: rgba(37, 244, 238, 0.12);
+      border-color: var(--accent2);
+      color: #fff;
     }
     .lang-choice-row, .theme-choice-row {
       display: flex;
@@ -757,11 +1030,11 @@
     }
     .lang-btn, .theme-pill-btn {
       flex: 1;
-      min-width: 100px;
-      background: rgba(255,255,255,0.05);
+      min-width: 90px;
+      background: rgba(255, 255, 255, 0.05);
       border: 1px solid var(--border);
       color: var(--text2);
-      padding: 8px 10px;
+      padding: 8px 12px;
       border-radius: 8px;
       font-size: 12px;
       font-weight: 600;
@@ -769,12 +1042,61 @@
       text-align: center;
       transition: all 0.15s;
     }
-    .lang-btn.active, .theme-pill-btn.active {
-      background: rgba(37,244,238,0.15);
+    .lang-btn:hover, .theme-pill-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+    .lang-btn.active {
+      background: rgba(37, 244, 238, 0.15);
       border-color: var(--accent2);
+      color: var(--accent2);
+      font-weight: 700;
+    }
+    .theme-pill-btn.active {
+      background: rgba(254, 44, 85, 0.15);
+      border-color: var(--accent);
       color: #fff;
       font-weight: 700;
     }
+    .preset-pill-badge {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .preset-pill-badge:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+    .preset-pill-badge.active {
+      background: rgba(37, 244, 238, 0.15);
+      border-color: var(--accent2);
+      color: var(--accent2);
+      font-weight: 700;
+    }
+    .dash-toggle {
+      position: relative;
+      display: inline-block;
+      width: 38px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+    .dash-toggle input { opacity: 0; width: 0; height: 0; }
+    .dash-slider {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #2a2a3a; transition: .3s; border-radius: 20px;
+    }
+    .dash-slider:before {
+      position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px;
+      background-color: white; transition: .3s; border-radius: 50%;
+    }
+    .dash-toggle input:checked + .dash-slider { background-color: var(--green); }
+    .dash-toggle input:checked + .dash-slider:before { transform: translateX(18px); }
     .toggle-list {
       display: flex;
       flex-direction: column;
@@ -881,6 +1203,23 @@
     }
     .switch-ui input:checked + .slider { background-color: var(--green); }
     .switch-ui input:checked + .slider:before { transform: translateX(18px); }
+
+    /* ═══ HOST INLINE ACTION BAR (INSIDE CARD 3) ═══ */
+    .host-inline-action-bar {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .host-inline-action-bar input:focus {
+      border-color: var(--accent2) !important;
+      box-shadow: 0 0 0 2px rgba(37, 244, 238, 0.15);
+      outline: none;
+    }
   </style>
 </head>
 <body>
@@ -993,6 +1332,14 @@
                 <span class="slider round"></span>
               </div>
               <span class="switch-label highlight">🎯 Hanya Bagian Tengah (Papan Saja)</span>
+            </label>
+
+            <label class="obs-switch-item" for="obsShowHostControlsCheck" title="Tampilkan tombol toolbar host (tebak kata & kontrol musik) di layar OBS Studio">
+              <div class="switch-ui">
+                <input type="checkbox" id="obsShowHostControlsCheck" onchange="handleObsShowHostControlsChange(this.checked)" />
+                <span class="slider round"></span>
+              </div>
+              <span class="switch-label">🛠️ Toolbar Host di Layar OBS</span>
             </label>
 
             <div class="obs-mode-select-wrap">
@@ -1139,6 +1486,141 @@
           <button class="game-btn" data-game="wanderwords" onclick="remoteChangeGame('wanderwords')">Wander Words</button>
           <button class="game-btn" data-game="wordcluster" onclick="remoteChangeGame('wordcluster')">Word Cluster</button>
         </div>
+
+        <!-- HOST INLINE ACTION BAR (KIRIM TEBAKAN & CLUE LANGSUNG KE OBS) -->
+        <div class="host-inline-action-bar">
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 260px;">
+            <label for="dashHostGuessInput" style="font-size: 12px; font-weight: 700; color: var(--text2); white-space: nowrap;">
+              <i class="fa-solid fa-keyboard" style="color: var(--accent2); margin-right: 4px;"></i> Tebak Kata Host:
+            </label>
+            <input type="text" id="dashHostGuessInput" placeholder="Ketik tebakan kata host..." onkeypress="if(event.key==='Enter') submitDashboardHostGuess()" style="flex: 1; background: #14141e; border: 1px solid var(--border); border-radius: 8px; color: #fff; padding: 8px 12px; font-size: 12px; font-weight: 700; text-transform: uppercase;">
+            <button type="button" class="btn btn-connect" onclick="submitDashboardHostGuess()" style="padding: 8px 16px; font-size: 12px; font-weight: 700; cursor: pointer;">
+              <i class="fa-solid fa-paper-plane"></i> Kirim
+            </button>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button type="button" class="btn" onclick="triggerDashboardHint()" style="padding: 8px 14px; font-size: 12px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; border-radius: 8px; cursor: pointer; font-weight: 600;">
+              <i class="fa-solid fa-lightbulb"></i> Buka Clue/Hint
+            </button>
+            <button type="button" class="btn" onclick="triggerRemoteNewRound()" style="padding: 8px 14px; font-size: 12px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: #fff; border-radius: 8px; cursor: pointer; font-weight: 600;">
+              <i class="fa-solid fa-rotate-right"></i> Ronde Baru
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD: KONSOL REMOTE MUSIK LIVE STREAM (GAME DEPAN / OBS) -->
+    <div class="obs-card" style="margin-top: 16px;">
+      <div class="obs-card-header" style="justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-compact-disc fa-spin" style="color: var(--accent); font-size: 18px; --fa-animation-duration: 6s;"></i>
+          <div>
+            <h4 style="margin: 0;">Konsol Remote Musik Live (Game Depan / OBS)</h4>
+            <div style="font-size: 11px; color: var(--text2); margin-top: 2px;">
+              Kendalikan musik live stream dari dashboard • <strong style="color: var(--accent2);"><i class="fa-solid fa-volume-xmark"></i> Suara HANYA diputar di layar OBS Studio</strong> (Dashboard hening tanpa dobel suara)
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button type="button" class="btn" onclick="remoteMusicPlayRandom()" style="background: rgba(37,244,238,0.12); border: 1px solid rgba(37,244,238,0.3); color: var(--accent2); padding: 8px 14px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer;">
+            <i class="fa-solid fa-shuffle"></i> Putar Acak ke OBS
+          </button>
+        </div>
+      </div>
+      <div class="obs-card-body">
+        
+        <div class="dash-music-grid">
+          
+          <!-- LEFT BOX: NOW PLAYING DI OBS -->
+          <div class="dash-now-playing-box">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text2);">
+                <i class="fa-solid fa-broadcast-tower" style="color: var(--accent); margin-right: 4px;"></i> Sedang Diputar di Layar Game
+              </span>
+              <span id="dashMusicStatusBadge" style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: rgba(37,244,238,0.15); color: var(--accent2);">
+                🟢 Standby di OBS
+              </span>
+            </div>
+
+            <div class="dash-np-header">
+              <div class="dash-np-thumb-wrap">
+                <img id="dashNpThumb" src="assets/bg_nature.png" alt="Cover" />
+              </div>
+              <div class="dash-np-info">
+                <div class="dash-np-title" id="dashNpTitle">Belum ada lagu diputar</div>
+                <div class="dash-np-author" id="dashNpAuthor">Ketik judul lagu untuk memutar ke OBS</div>
+                <div class="dash-np-requester" id="dashNpRequester">
+                  <i class="fa-solid fa-user"></i> <span>Requester: Host</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Progress & Waktu -->
+            <div class="dash-np-progress-row">
+              <div class="dash-np-progress-bar-bg">
+                <div class="dash-np-progress-bar-fill" id="dashNpProgressFill" style="width: 0%;"></div>
+              </div>
+              <div class="dash-np-time-labels">
+                <span id="dashNpTimeCur">00:00</span>
+                <span id="dashNpTimeTotal">00:00</span>
+              </div>
+            </div>
+
+            <!-- Kontrol Playback Remote OBS -->
+            <div class="dash-playback-controls">
+              <button type="button" class="dash-play-btn" id="dashMusicPlayPauseBtn" onclick="remoteMusicTogglePause()">
+                <i class="fa-solid fa-pause" id="dashMusicPlayPauseIcon"></i> <span id="dashMusicPlayPauseText">Jeda di OBS</span>
+              </button>
+              <button type="button" class="dash-ctrl-btn" onclick="remoteMusicSkip()">
+                <i class="fa-solid fa-forward-step"></i> Skip Lagu
+              </button>
+              <button type="button" class="dash-ctrl-btn" onclick="remoteMusicStop()">
+                <i class="fa-solid fa-stop"></i> Stop
+              </button>
+            </div>
+
+            <!-- Volume Slider OBS -->
+            <div class="dash-volume-row">
+              <i class="fa-solid fa-volume-high" style="color: var(--text2); font-size: 14px;"></i>
+              <label for="dashMusicVolumeSlider" style="font-size: 11px; color: var(--text2); font-weight: 600; white-space: nowrap;">Volume OBS:</label>
+              <input type="range" id="dashMusicVolumeSlider" min="0" max="100" value="50" oninput="remoteMusicSetVolume(this.value)">
+              <span id="dashMusicVolumeVal" style="font-size: 12px; font-weight: 700; color: var(--accent2); min-width: 34px; text-align: right;">50%</span>
+            </div>
+          </div>
+
+          <!-- RIGHT BOX: PENCARIAN & DAFTAR ANTRIAN OBS -->
+          <div class="dash-queue-box">
+            <!-- Search & Play direct to OBS -->
+            <div class="dash-search-input-group">
+              <input type="text" id="dashMusicSearchInput" placeholder="Cari judul lagu / artis untuk diputar ke OBS..." onkeypress="if(event.key==='Enter') remoteMusicSearchPlay()">
+              <button type="button" class="dash-play-btn" onclick="remoteMusicSearchPlay()" style="white-space: nowrap; padding: 8px 14px;">
+                <i class="fa-solid fa-play"></i> Putar ke OBS
+              </button>
+            </div>
+
+            <!-- Header Queue -->
+            <div class="dash-queue-header">
+              <span style="font-size: 12px; font-weight: 700; color: var(--text);">
+                <i class="fa-solid fa-list-ol" style="color: var(--accent2); margin-right: 6px;"></i> Antrian Musik Penonton (<span id="dashQueueCount">0</span>)
+              </span>
+              <button type="button" onclick="remoteMusicClearQueue()" style="background: none; border: none; color: #ef4444; font-size: 11px; font-weight: 600; cursor: pointer; padding: 2px 6px;">
+                <i class="fa-solid fa-trash"></i> Hapus Semua
+              </button>
+            </div>
+
+            <!-- List Queue -->
+            <div class="dash-queue-list" id="dashQueueList">
+              <div style="font-size: 11.5px; color: var(--text2); text-align: center; padding: 24px 10px;">
+                <i class="fa-solid fa-music" style="display: block; font-size: 20px; margin-bottom: 6px; opacity: 0.4;"></i>
+                Antrian kosong • Penonton chat bisa request lagu dengan perintah <code>!play [judul]</code>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
       </div>
     </div>
 
@@ -1146,11 +1628,11 @@
     <div class="obs-card" style="margin-top: 16px;">
       <div class="obs-card-header" style="justify-content: space-between; flex-wrap: wrap; gap: 10px;">
         <div style="display: flex; align-items: center; gap: 8px;">
-          <span class="icon">⚙️</span>
-          <h4>Pengaturan Game & Aturan (Panjang Huruf, Bahasa, & Aturan Main)</h4>
+          <i class="fa-solid fa-gear" style="color: var(--accent2); font-size: 16px;"></i>
+          <h4>Pengaturan Game &amp; Aturan (Panjang Huruf, Bahasa, &amp; Aturan Main)</h4>
         </div>
         <button class="btn btn-save-settings" onclick="applyDashboardGameSettings(true)" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 8px 18px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer;">
-          ⚡ Terapkan & Mulai Ulang Ronde di OBS
+          <i class="fa-solid fa-bolt" style="margin-right: 4px;"></i> Terapkan &amp; Mulai Ulang Ronde di OBS
         </button>
       </div>
       <div class="obs-card-body">
@@ -1161,7 +1643,7 @@
           <!-- Panjang Kata -->
           <div class="settings-box">
             <div class="settings-box-title">
-              <span>📏 Panjang Kata (Jumlah Huruf)</span>
+              <span><i class="fa-solid fa-ruler-horizontal" style="color: var(--accent2); margin-right: 6px;"></i> Panjang Kata (Jumlah Huruf)</span>
               <span class="subtext">Wordle, Word500, Word Fit, Color Fit, Word Loop, dll.</span>
             </div>
             <div class="len-checkboxes-row">
@@ -1174,7 +1656,7 @@
             </div>
             <div class="len-presets-row">
               <button type="button" class="preset-sm-btn" onclick="setLengthPreset([5])">Hanya 5</button>
-              <button type="button" class="preset-sm-btn" onclick="setLengthPreset([5,6])">5 & 6 Huruf</button>
+              <button type="button" class="preset-sm-btn" onclick="setLengthPreset([5,6])">5 &amp; 6 Huruf</button>
               <button type="button" class="preset-sm-btn" onclick="setLengthPreset([5,6,7,8])">5 - 8 (Default)</button>
               <button type="button" class="preset-sm-btn" onclick="setLengthPreset([3,4,5,6,7,8])">Semua (3 - 8)</button>
             </div>
@@ -1183,7 +1665,7 @@
           <!-- Bahasa Kamus -->
           <div class="settings-box">
             <div class="settings-box-title">
-              <span>🌐 Bahasa Kamus Kata</span>
+              <span><i class="fa-solid fa-globe" style="color: var(--accent2); margin-right: 6px;"></i> Bahasa Kamus Kata</span>
               <span class="subtext">Kamus kata yang ditebak penonton</span>
             </div>
             <div class="lang-choice-row">
@@ -1194,11 +1676,11 @@
             
             <div style="margin-top: 14px;">
               <div class="settings-box-title" style="margin-bottom: 6px;">
-                <span>🎨 Tema Warna Visual</span>
+                <span><i class="fa-solid fa-palette" style="color: var(--accent); margin-right: 6px;"></i> Tema Warna Visual</span>
               </div>
               <div class="theme-choice-row">
-                <button type="button" class="theme-pill-btn active" id="dashThemeDark" onclick="setDashTheme('dark')">🌙 Gelap Modern</button>
-                <button type="button" class="theme-pill-btn" id="dashThemeSepia" onclick="setDashTheme('sepia')">🌅 Sepia Cream</button>
+                <button type="button" class="theme-pill-btn active" id="dashThemeDark" onclick="setDashTheme('dark')"><i class="fa-solid fa-moon" style="margin-right: 4px;"></i> Gelap Modern</button>
+                <button type="button" class="theme-pill-btn" id="dashThemeSepia" onclick="setDashTheme('sepia')"><i class="fa-solid fa-sun" style="margin-right: 4px;"></i> Sepia Cream</button>
               </div>
             </div>
           </div>
@@ -1211,7 +1693,7 @@
           <!-- Aturan Toggles -->
           <div class="settings-box">
             <div class="settings-box-title">
-              <span>🎯 Aturan Tebakan</span>
+              <span><i class="fa-solid fa-bullseye" style="color: var(--accent); margin-right: 6px;"></i> Aturan Tebakan</span>
               <span class="subtext">Sesuaikan tantangan live stream</span>
             </div>
             
@@ -1219,7 +1701,7 @@
               <!-- Hard Mode -->
               <div class="dash-toggle-row">
                 <div>
-                  <div class="dash-toggle-title">🔥 Hard Mode</div>
+                  <div class="dash-toggle-title"><i class="fa-solid fa-fire" style="color: #f59e0b; margin-right: 6px;"></i> Hard Mode</div>
                   <div class="dash-toggle-sub">Clue wajib dipakai di tebakan berikutnya</div>
                 </div>
                 <select id="dashHardModeSelect" class="dash-select" onchange="autoSaveSettings()">
@@ -1232,7 +1714,7 @@
               <!-- Tanpa Huruf Ganda (Isogram) -->
               <div class="dash-toggle-row">
                 <div>
-                  <div class="dash-toggle-title">🔤 Tanpa Huruf Ganda (Isogram)</div>
+                  <div class="dash-toggle-title"><i class="fa-solid fa-font" style="color: var(--accent2); margin-right: 6px;"></i> Tanpa Huruf Ganda (Isogram)</div>
                   <div class="dash-toggle-sub">Kata target tidak memiliki huruf kembar</div>
                 </div>
                 <label class="switch-ui">
@@ -1244,8 +1726,8 @@
               <!-- Tanpa Clue Kuning -->
               <div class="dash-toggle-row">
                 <div>
-                  <div class="dash-toggle-title">🟨 Tanpa Clue Kuning</div>
-                  <div class="dash-toggle-sub">Hanya ada warna hijau & abu-abu (Wordle)</div>
+                  <div class="dash-toggle-title"><i class="fa-solid fa-square" style="color: #eab308; margin-right: 6px;"></i> Tanpa Clue Kuning</div>
+                  <div class="dash-toggle-sub">Hanya ada warna hijau &amp; abu-abu (Wordle)</div>
                 </div>
                 <label class="switch-ui">
                   <input type="checkbox" id="dashNoYellowToggle" onchange="autoSaveSettings()">
@@ -1256,7 +1738,7 @@
               <!-- Bar Hints Discovered -->
               <div class="dash-toggle-row">
                 <div>
-                  <div class="dash-toggle-title">💡 Bar Hints Discovered</div>
+                  <div class="dash-toggle-title"><i class="fa-solid fa-lightbulb" style="color: #fbbf24; margin-right: 6px;"></i> Bar Hints Discovered</div>
                   <div class="dash-toggle-sub">Tampilkan bar huruf hijau yang terbuka</div>
                 </div>
                 <label class="switch-ui">
@@ -1268,7 +1750,7 @@
               <!-- Hanya Follower Bisa Tebak -->
               <div class="dash-toggle-row">
                 <div>
-                  <div class="dash-toggle-title">👤 Hanya Follower Bisa Tebak Kata</div>
+                  <div class="dash-toggle-title"><i class="fa-solid fa-user-check" style="color: var(--accent2); margin-right: 6px;"></i> Hanya Follower Bisa Tebak Kata</div>
                   <div class="dash-toggle-sub">Hanya viewer yang follow live yang bisa kirim tebakan kata</div>
                 </div>
                 <label class="switch-ui">
@@ -1280,7 +1762,7 @@
               <!-- Hanya Follower Bisa Request Musik -->
               <div class="dash-toggle-row">
                 <div>
-                  <div class="dash-toggle-title">🎵 Hanya Follower Bisa Request Musik</div>
+                  <div class="dash-toggle-title"><i class="fa-solid fa-music" style="color: var(--accent); margin-right: 6px;"></i> Hanya Follower Bisa Request Musik</div>
                   <div class="dash-toggle-sub">Perintah !play hanya direspon jika penonton adalah follower</div>
                 </div>
                 <label class="switch-ui">
@@ -1292,7 +1774,7 @@
               <!-- Cooldown Antrian Musik -->
               <div class="dash-toggle-row">
                 <div>
-                  <div class="dash-toggle-title">⏳ Cooldown Antrian Musik (Detik)</div>
+                  <div class="dash-toggle-title"><i class="fa-solid fa-hourglass-half" style="color: var(--accent2); margin-right: 6px;"></i> Cooldown Antrian Musik (Detik)</div>
                   <div class="dash-toggle-sub">Jeda waktu tunggu penonton sebelum bisa !play lagu lagi</div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 6px;">
@@ -1304,7 +1786,7 @@
               <!-- Gaya Tampilan Widget Musik -->
               <div class="dash-toggle-row">
                 <div>
-                  <div class="dash-toggle-title">Gaya Tampilan Pemutar Musik</div>
+                  <div class="dash-toggle-title"><i class="fa-solid fa-compact-disc" style="color: var(--accent); margin-right: 6px;"></i> Gaya Tampilan Pemutar Musik</div>
                   <div class="dash-toggle-sub">Pilih mode tampilan piringan hitam, antrian playlist, atau lirik karaoke</div>
                 </div>
                 <div>
@@ -1320,7 +1802,7 @@
               <!-- Opsi Mode Playlist Queue (Kapasitas & Skala Mobile) -->
               <div class="dash-toggle-row" id="dashPlaylistSubSettingsRow">
                 <div>
-                  <div class="dash-toggle-title">Kapasitas, Skala &amp; Warna Playlist</div>
+                  <div class="dash-toggle-title"><i class="fa-solid fa-sliders" style="color: var(--accent2); margin-right: 6px;"></i> Kapasitas, Skala &amp; Warna Playlist</div>
                   <div class="dash-toggle-sub">Atur baris antrian, zoom mobile, dan warna aksen pemutar musik</div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -1346,7 +1828,7 @@
               <!-- Auto-Scroll Antrian Playlist -->
               <div class="dash-toggle-row">
                 <div>
-                  <div class="dash-toggle-title">Auto-Scroll Antrian Halus</div>
+                  <div class="dash-toggle-title"><i class="fa-solid fa-arrows-up-down" style="color: var(--accent2); margin-right: 6px;"></i> Auto-Scroll Antrian Halus</div>
                   <div class="dash-toggle-sub">Gulir otomatis bertahap jika antrian melebihi kapasitas layar</div>
                 </div>
                 <div class="dash-toggle">
@@ -1358,7 +1840,7 @@
               <!-- Vibe Lagu Acak (Random Pool) -->
               <div class="dash-toggle-row">
                 <div>
-                  <div class="dash-toggle-title">Vibe Lagu Acak (Random Pool)</div>
+                  <div class="dash-toggle-title"><i class="fa-solid fa-shuffle" style="color: var(--accent2); margin-right: 6px;"></i> Vibe Lagu Acak (Random Pool)</div>
                   <div class="dash-toggle-sub">Pilihan kategori lagu saat host memutar lagu secara acak</div>
                 </div>
                 <div>
@@ -1373,14 +1855,76 @@
                   </select>
                 </div>
               </div>
+
+              <!-- Aktifkan Request Musik Penonton (!play) -->
+              <div class="dash-toggle-row">
+                <div>
+                  <div class="dash-toggle-title"><i class="fa-solid fa-radio" style="color: var(--accent); margin-right: 6px;"></i> Izinkan Penonton Request Musik (!play)</div>
+                  <div class="dash-toggle-sub">Jika dimatikan, bot mengabaikan perintah !play dari penonton chat</div>
+                </div>
+                <label class="switch-ui">
+                  <input type="checkbox" id="dashMusicRequestsEnabledToggle" checked onchange="autoSaveSettings()">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+              <!-- Durasi Maksimal & Batas Antrian -->
+              <div class="dash-toggle-row">
+                <div>
+                  <div class="dash-toggle-title"><i class="fa-solid fa-stopwatch" style="color: var(--accent2); margin-right: 6px;"></i> Batas Durasi &amp; Kuota Antrian</div>
+                  <div class="dash-toggle-sub">Maksimal durasi per lagu, kuota antrian global, &amp; kuota per user</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <div style="display: flex; align-items: center; gap: 4px;">
+                    <span style="font-size: 11px; color: var(--text2);">Max:</span>
+                    <input type="number" id="dashMusicMaxDurationInput" min="1" max="60" value="6" onchange="autoSaveSettings()" style="width: 50px; padding: 4px 6px; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 6px; color: #fff; text-align: center; font-weight: 700; font-size: 12px;">
+                    <span style="font-size: 11px; color: var(--text2);">mnt</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 4px;">
+                    <span style="font-size: 11px; color: var(--text2);">Global:</span>
+                    <input type="number" id="dashMusicMaxGlobalInput" min="1" max="100" value="20" onchange="autoSaveSettings()" style="width: 50px; padding: 4px 6px; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 6px; color: #fff; text-align: center; font-weight: 700; font-size: 12px;">
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 4px;">
+                    <span style="font-size: 11px; color: var(--text2);">/User:</span>
+                    <input type="number" id="dashMusicMaxUserInput" min="1" max="10" value="2" onchange="autoSaveSettings()" style="width: 45px; padding: 4px 6px; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 6px; color: #fff; text-align: center; font-weight: 700; font-size: 12px;">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Kata Terlarang (Banned Keywords) -->
+              <div class="dash-toggle-row" style="flex-direction: column; align-items: stretch; gap: 6px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div class="dash-toggle-title"><i class="fa-solid fa-ban" style="color: #ef4444; margin-right: 6px;"></i> Filter Kata Terlarang Lagu (Banned Keywords)</div>
+                  <span style="font-size: 10px; color: var(--text2);">Pisahkan dengan koma</span>
+                </div>
+                <input type="text" id="dashMusicBannedKeywordsInput" placeholder="contoh: koplo, dj, remix, jedag jedug" onchange="autoSaveSettings()" style="width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 6px; color: #fff; padding: 6px 10px; font-size: 12px;">
+              </div>
+
+              <!-- SFX & Suasana Radio Ambiance -->
+              <div class="dash-toggle-row">
+                <div>
+                  <div class="dash-toggle-title"><i class="fa-solid fa-volume-high" style="color: var(--accent2); margin-right: 6px;"></i> Sound Effect Request &amp; Lo-Fi Ambiance</div>
+                  <div class="dash-toggle-sub">SFX notifikasi request &amp; efek suasana piringan hitam radio</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <label class="switch-ui" title="SFX Request">
+                    <input type="checkbox" id="dashMusicRadioSFXToggle" checked onchange="autoSaveSettings()">
+                    <span class="slider round"></span>
+                  </label>
+                  <label class="switch-ui" title="Efek Lo-Fi Vinyl Ambiance">
+                    <input type="checkbox" id="dashMusicRadioAmbianceToggle" onchange="autoSaveSettings()">
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
 
           <!-- Ukuran & Baris Tebakan -->
           <div class="settings-box">
             <div class="settings-box-title">
-              <span>📐 Tampilan Papan Game di OBS</span>
-              <span class="subtext">Kerapatan baris & skala ukuran kotak</span>
+              <span><i class="fa-solid fa-ruler-combined" style="color: var(--accent2); margin-right: 6px;"></i> Tampilan Papan Game di OBS</span>
+              <span class="subtext">Kerapatan baris &amp; skala ukuran kotak</span>
             </div>
 
             <!-- Baris Tebakan -->
@@ -1573,6 +2117,7 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
     socket.on("connect", () => {
       console.log("[Dashboard] Connected to server");
       socket.emit("getStatus");
+      socket.emit("get-music-state");
     });
 
     // ═══ STATUS UPDATES ═══
@@ -1793,7 +2338,8 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       shareLinkPosition: "top",
       activeGameMode: "wordle",
       transparentBg: false,
-      compactMode: false
+      compactMode: false,
+      showHostControls: false
     };
 
     socket.on("obs-config-update", (config) => {
@@ -1809,6 +2355,7 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       const modeLabel = document.getElementById("activeGameModeLabel");
       const transCheck = document.getElementById("obsTransparentCheck");
       const compCheck = document.getElementById("obsCompactCheck");
+      const hostCheck = document.getElementById("obsShowHostControlsCheck");
 
       if (shareInput && document.activeElement !== shareInput) {
         shareInput.value = cfg.shareLinkText || "";
@@ -1828,6 +2375,9 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       if (compCheck && typeof cfg.compactMode === "boolean") {
         compCheck.checked = cfg.compactMode;
         updatePresetButtonsState(cfg.compactMode ? "compact" : "tiktok_full");
+      }
+      if (hostCheck && typeof cfg.showHostControls === "boolean") {
+        hostCheck.checked = cfg.showHostControls;
       }
 
       // Highlight active game button
@@ -1897,6 +2447,7 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
     function updateObsUrlGenerated() {
       const isTransparent = document.getElementById("obsTransparentCheck")?.checked ?? false;
       const isCompact = document.getElementById("obsCompactCheck")?.checked ?? false;
+      const isShowHost = document.getElementById("obsShowHostControlsCheck")?.checked ?? false;
       const defaultMode = document.getElementById("obsDefaultModeSelect")?.value || currentObsConfig.activeGameMode || "wordle";
       const backend = document.getElementById("obsBackendSelect")?.value || "indofinity";
       
@@ -1909,6 +2460,7 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       params.set("obs", "1");
       if (isTransparent) params.set("transparent", "1");
       if (isCompact) params.set("compact", "1");
+      if (isShowHost) params.set("hostControls", "1");
       if (defaultMode) params.set("mode", defaultMode);
       if (backend) params.set("backend", backend);
 
@@ -2081,6 +2633,10 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       const fom = document.getElementById("dashFollowerOnlyMusicToggle");
       if (fom) fom.checked = !!cfg.followerOnlyMusic;
 
+      // 9.4 Requests Enabled
+      const mre = document.getElementById("dashMusicRequestsEnabledToggle");
+      if (mre && cfg.musicRequestsEnabled !== undefined) mre.checked = !!cfg.musicRequestsEnabled;
+
       // 9.5 Music Cooldown
       const mcd = document.getElementById("dashMusicCooldownInput");
       if (mcd && cfg.musicCooldown !== undefined) mcd.value = cfg.musicCooldown;
@@ -2091,7 +2647,11 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
 
       // 9.7 Random Music Genre
       const mrg = document.getElementById("dashMusicRandomGenreSelect");
-      if (mrg && cfg.musicRandomGenre) mrg.value = cfg.musicRandomGenre;
+      if (mrg && cfg.musicRandomGenre) {
+        mrg.value = cfg.musicRandomGenre;
+        const qv = document.getElementById("dashQuickVibeSelect");
+        if (qv) qv.value = cfg.musicRandomGenre;
+      }
 
       // 9.8 Playlist Options
       const mpr = document.getElementById("dashMusicPlaylistRowsSelect");
@@ -2102,6 +2662,22 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       if (mpaccent && cfg.musicPlaylistAccent) mpaccent.value = cfg.musicPlaylistAccent;
       const mpas = document.getElementById("dashMusicPlaylistAutoScrollToggle");
       if (mpas && cfg.musicPlaylistAutoScroll !== undefined) mpas.checked = !!cfg.musicPlaylistAutoScroll;
+
+      // 9.9 Extended Music Limits & Filters
+      const mmd = document.getElementById("dashMusicMaxDurationInput");
+      if (mmd && cfg.musicMaxDuration !== undefined) mmd.value = cfg.musicMaxDuration;
+      const mmg = document.getElementById("dashMusicMaxGlobalInput");
+      if (mmg && cfg.musicMaxGlobal !== undefined) mmg.value = cfg.musicMaxGlobal;
+      const mmu = document.getElementById("dashMusicMaxUserInput");
+      if (mmu && cfg.musicMaxUser !== undefined) mmu.value = cfg.musicMaxUser;
+      const mbk = document.getElementById("dashMusicBannedKeywordsInput");
+      if (mbk && cfg.musicBannedKeywords) {
+        mbk.value = Array.isArray(cfg.musicBannedKeywords) ? cfg.musicBannedKeywords.join(", ") : cfg.musicBannedKeywords;
+      }
+      const msfx = document.getElementById("dashMusicRadioSFXToggle");
+      if (msfx && cfg.musicRadioSFX !== undefined) msfx.checked = !!cfg.musicRadioSFX;
+      const mra = document.getElementById("dashMusicRadioAmbianceToggle");
+      if (mra && cfg.musicRadioAmbiance !== undefined) mra.checked = !!cfg.musicRadioAmbiance;
 
       // 10. Display Rows
       const dr = document.getElementById("dashDisplayRowsVal");
@@ -2215,7 +2791,15 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       currentGameSettings.showHints = document.getElementById("dashShowHintsToggle")?.checked ?? true;
       currentGameSettings.followerOnlyGuess = document.getElementById("dashFollowerOnlyGuessToggle")?.checked ?? false;
       currentGameSettings.followerOnlyMusic = document.getElementById("dashFollowerOnlyMusicToggle")?.checked ?? false;
+      currentGameSettings.musicRequestsEnabled = document.getElementById("dashMusicRequestsEnabledToggle")?.checked ?? true;
       currentGameSettings.musicCooldown = parseInt(document.getElementById("dashMusicCooldownInput")?.value) || 60;
+      currentGameSettings.musicMaxDuration = parseInt(document.getElementById("dashMusicMaxDurationInput")?.value) || 6;
+      currentGameSettings.musicMaxGlobal = parseInt(document.getElementById("dashMusicMaxGlobalInput")?.value) || 20;
+      currentGameSettings.musicMaxUser = parseInt(document.getElementById("dashMusicMaxUserInput")?.value) || 2;
+      const bannedRaw = document.getElementById("dashMusicBannedKeywordsInput")?.value || "";
+      currentGameSettings.musicBannedKeywords = bannedRaw.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+      currentGameSettings.musicRadioSFX = document.getElementById("dashMusicRadioSFXToggle")?.checked ?? true;
+      currentGameSettings.musicRadioAmbiance = document.getElementById("dashMusicRadioAmbianceToggle")?.checked ?? false;
       currentGameSettings.musicPlayerStyle = document.getElementById("dashMusicPlayerStyleSelect")?.value || 'vinyl';
       currentGameSettings.musicRandomGenre = document.getElementById("dashMusicRandomGenreSelect")?.value || 'milenial';
       currentGameSettings.musicPlaylistVisibleRows = parseInt(document.getElementById("dashMusicPlaylistRowsSelect")?.value) || 4;
@@ -2237,6 +2821,219 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
         btn.innerHTML = "✅ Tersinkron ke OBS!";
         setTimeout(() => { btn.innerHTML = old; }, 1800);
       }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // 🎮 REMOTE HOST GUESS & GAME HELPERS
+    // ═════════════════════════════════════════════════════════════════════════
+    function submitDashboardHostGuess() {
+      const input = document.getElementById("dashHostGuessInput");
+      const guess = input?.value?.trim()?.toUpperCase();
+      if (!guess) return;
+      socket.emit("dashboard-host-guess", { guess });
+      input.value = "";
+      const btn = event?.target?.closest('button');
+      if (btn) {
+        const old = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Terkirim!';
+        setTimeout(() => { btn.innerHTML = old; }, 1200);
+      }
+    }
+
+    function triggerDashboardHint() {
+      socket.emit("dashboard-give-hint");
+      const btn = event?.target?.closest('button');
+      if (btn) {
+        const old = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Hint Terbuka!';
+        setTimeout(() => { btn.innerHTML = old; }, 1200);
+      }
+    }
+
+    function handleObsShowHostControlsChange(checked) {
+      currentObsConfig.showHostControls = checked;
+      socket.emit("set-obs-config", currentObsConfig);
+      updateObsUrlGenerated();
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // 🎵 KONSOL REMOTE MUSIK OBS (100% REMOTE - SUARA HANYA DI LAYAR OBS)
+    // ═════════════════════════════════════════════════════════════════════════
+    function remoteMusicSearchPlay() {
+      const input = document.getElementById("dashMusicSearchInput");
+      if (!input) return;
+      const q = input.value.trim();
+      if (!q) {
+        alert("Ketik judul lagu atau nama artis yang ingin diputar!");
+        return;
+      }
+      socket.emit("dashboard-music-play", q);
+      input.value = "";
+      const stBadge = document.getElementById("dashMusicStatusBadge");
+      if (stBadge) {
+        stBadge.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim ke OBS...';
+        stBadge.style.background = 'rgba(245, 158, 11, 0.15)';
+        stBadge.style.color = '#fbbf24';
+      }
+    }
+
+    function remoteMusicPlayRandom() {
+      const genreSelect = document.getElementById("dashMusicRandomGenreSelect");
+      const genre = genreSelect ? genreSelect.value : 'milenial';
+      socket.emit("dashboard-music-random", { genre });
+      const stBadge = document.getElementById("dashMusicStatusBadge");
+      if (stBadge) {
+        stBadge.innerHTML = '<i class="fa-solid fa-shuffle"></i> Memilih Lagu Acak...';
+        stBadge.style.background = 'rgba(37, 244, 238, 0.15)';
+        stBadge.style.color = 'var(--accent2)';
+      }
+    }
+
+    function remoteMusicTogglePause() {
+      socket.emit("dashboard-music-pause-resume");
+    }
+
+    function remoteMusicSkip() {
+      socket.emit("dashboard-music-skip");
+    }
+
+    function remoteMusicStop() {
+      socket.emit("dashboard-music-stop");
+    }
+
+    function remoteMusicSetVolume(val) {
+      const v = Math.max(0, Math.min(100, parseInt(val) || 50));
+      const valLabel = document.getElementById("dashMusicVolumeVal");
+      if (valLabel) valLabel.textContent = v + "%";
+      socket.emit("dashboard-music-volume", v);
+    }
+
+    function remoteMusicRemoveQueueItem(videoId, index) {
+      socket.emit("dashboard-music-remove-queue", { videoId, index });
+    }
+
+    function remoteMusicClearQueue() {
+      if (confirm("Hapus seluruh antrian lagu di OBS?")) {
+        socket.emit("dashboard-music-clear-queue");
+      }
+    }
+
+    socket.on("music-state-update", (state) => {
+      if (!state) return;
+      updateDashboardRemoteMusicUI(state);
+    });
+
+    function updateDashboardRemoteMusicUI(state) {
+      const npTitle = document.getElementById("dashNpTitle");
+      const npAuthor = document.getElementById("dashNpAuthor");
+      const npThumb = document.getElementById("dashNpThumb");
+      const npRequester = document.getElementById("dashNpRequester");
+      const stBadge = document.getElementById("dashMusicStatusBadge");
+      const ppIcon = document.getElementById("dashMusicPlayPauseIcon");
+      const ppText = document.getElementById("dashMusicPlayPauseText");
+      const pFill = document.getElementById("dashNpProgressFill");
+      const tCur = document.getElementById("dashNpTimeCur");
+      const tTotal = document.getElementById("dashNpTimeTotal");
+      const qList = document.getElementById("dashQueueList");
+      const qCount = document.getElementById("dashQueueCount");
+      const volSlider = document.getElementById("dashMusicVolumeSlider");
+      const volVal = document.getElementById("dashMusicVolumeVal");
+
+      if (state.activeMusic) {
+        if (npTitle) npTitle.textContent = state.activeMusic.title || "Lagu Tanpa Judul";
+        if (npAuthor) npAuthor.textContent = state.activeMusic.author || "Artis YouTube";
+        if (npThumb && state.activeMusic.thumbnail) npThumb.src = state.activeMusic.thumbnail;
+        if (npRequester) {
+          npRequester.innerHTML = `<i class="fa-solid fa-user"></i> <span>Requester: ${state.activeMusic.requesterName || "Host"}</span>`;
+        }
+        if (stBadge) {
+          if (state.isPaused) {
+            stBadge.innerHTML = '⏸️ Dijeda di OBS';
+            stBadge.style.background = 'rgba(245, 158, 11, 0.15)';
+            stBadge.style.color = '#fbbf24';
+          } else {
+            stBadge.innerHTML = '🟢 Sedang Berputar di Layar OBS';
+            stBadge.style.background = 'rgba(34, 197, 94, 0.15)';
+            stBadge.style.color = '#4ade80';
+          }
+        }
+      } else {
+        if (npTitle) npTitle.textContent = "Belum ada lagu diputar";
+        if (npAuthor) npAuthor.textContent = "Ketik judul lagu untuk memutar ke OBS";
+        if (npThumb) npThumb.src = "assets/bg_nature.png";
+        if (npRequester) npRequester.innerHTML = `<i class="fa-solid fa-user"></i> <span>Requester: Host</span>`;
+        if (stBadge) {
+          stBadge.innerHTML = '⚪ Standby di OBS';
+          stBadge.style.background = 'rgba(255, 255, 255, 0.08)';
+          stBadge.style.color = 'var(--text2)';
+        }
+      }
+
+      // Play / Pause toggle button
+      if (ppIcon && ppText) {
+        if (state.isPaused) {
+          ppIcon.className = "fa-solid fa-play";
+          ppText.textContent = "Lanjutkan di OBS";
+        } else {
+          ppIcon.className = "fa-solid fa-pause";
+          ppText.textContent = "Jeda di OBS";
+        }
+      }
+
+      // Time & Progress
+      if (state.currentTime !== undefined && state.totalDuration) {
+        const pct = Math.min(100, Math.max(0, (state.currentTime / state.totalDuration) * 100));
+        if (pFill) pFill.style.width = pct + "%";
+        if (tCur) tCur.textContent = formatSecToMin(state.currentTime);
+        if (tTotal) tTotal.textContent = formatSecToMin(state.totalDuration);
+      } else {
+        if (pFill) pFill.style.width = "0%";
+        if (tCur) tCur.textContent = "00:00";
+        if (tTotal) tTotal.textContent = "00:00";
+      }
+
+      // Volume
+      if (typeof state.volume === "number" && volSlider && volVal) {
+        if (document.activeElement !== volSlider) {
+          volSlider.value = state.volume;
+          volVal.textContent = state.volume + "%";
+        }
+      }
+
+      // Queue List
+      const queue = state.queue || [];
+      if (qCount) qCount.textContent = queue.length;
+      if (qList) {
+        if (queue.length === 0) {
+          qList.innerHTML = `
+            <div style="font-size: 11.5px; color: var(--text2); text-align: center; padding: 24px 10px;">
+              <i class="fa-solid fa-music" style="display: block; font-size: 20px; margin-bottom: 6px; opacity: 0.4;"></i>
+              Antrian kosong • Penonton chat bisa request lagu dengan perintah <code>!play [judul]</code>
+            </div>
+          `;
+        } else {
+          qList.innerHTML = queue.map((item, idx) => `
+            <div class="dash-queue-item">
+              <span style="font-size: 11px; font-weight: 700; color: var(--accent2); width: 18px;">#${idx + 1}</span>
+              <img src="${item.thumbnail || 'assets/bg_nature.png'}" alt="Cover" />
+              <div class="dash-queue-item-info">
+                <div class="dash-queue-item-title" title="${item.title}">${item.title}</div>
+                <div class="dash-queue-item-sub"><i class="fa-solid fa-user" style="font-size: 9px;"></i> ${item.requesterName || "Viewer"} • ${item.duration || ""}</div>
+              </div>
+              <button type="button" class="dash-queue-del-btn" onclick="remoteMusicRemoveQueueItem('${item.videoId}', ${idx})" title="Hapus dari antrian">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          `).join("");
+        }
+      }
+    }
+
+    function formatSecToMin(sec) {
+      const s = Math.floor(sec || 0);
+      const m = Math.floor(s / 60);
+      const r = s % 60;
+      return `${m < 10 ? '0' : ''}${m}:${r < 10 ? '0' : ''}${r}`;
     }
 
     // ════ WANDER WORDS CUSTOM WORDS MANAGER ════

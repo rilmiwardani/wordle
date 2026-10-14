@@ -92,6 +92,7 @@ const urlBackend = urlParams.get('backend');
 const urlIndofinityIp = urlParams.get('ip') || urlParams.get('indofinityIp');
 const urlUsername = urlParams.get('user') || urlParams.get('username');
 const urlLang = urlParams.get('lang');
+const isObsHostControls = urlParams.get('hostControls') === '1' || urlParams.get('showHost') === '1' || urlParams.get('hostControls') === 'true';
 
 if (isObsMode) {
   document.documentElement.classList.add('obs-mode');
@@ -109,6 +110,12 @@ if (isObsCompact) {
   document.documentElement.classList.add('obs-compact');
   if (document.body) document.body.classList.add('obs-compact');
   else window.addEventListener('DOMContentLoaded', () => document.body.classList.add('obs-compact'));
+}
+
+if (isObsHostControls) {
+  document.documentElement.classList.add('show-host-controls');
+  if (document.body) document.body.classList.add('show-host-controls');
+  else window.addEventListener('DOMContentLoaded', () => document.body.classList.add('show-host-controls'));
 }
 
 let WORD_LENGTH = 5;
@@ -1622,6 +1629,10 @@ function updateMusicQueueUI() {
       queueItems.innerHTML = '';
       stopMusicQueueAutoScroll();
     }
+  }
+
+  if (typeof broadcastMusicState === 'function') {
+    broadcastMusicState();
   }
 }
 
@@ -3277,7 +3288,9 @@ function onPlayerStateChange(event) {
     if (vinyl) vinyl.classList.add('playing');
     if (eq) eq.classList.add('playing');
     if (headerEq) headerEq.classList.add('playing');
+    broadcastMusicState(false);
     
+    let progressSyncTick = 0;
     clearInterval(musicProgressInterval);
     musicProgressInterval = setInterval(() => {
       if (ytPlayer && ytPlayer.getCurrentTime && ytPlayer.getDuration) {
@@ -3302,12 +3315,21 @@ function onPlayerStateChange(event) {
 
         // Real-time Synced Karaoke Lyrics Update
         updateLyricsSync(curr);
+
+        // Sync timeline to dashboard every 1 second (4 ticks of 250ms)
+        progressSyncTick++;
+        if (progressSyncTick % 4 === 0) {
+          broadcastMusicState(false);
+        }
       }
     }, 250);
   } else {
     if (vinyl) vinyl.classList.remove('playing');
     if (eq) eq.classList.remove('playing');
     clearInterval(musicProgressInterval);
+    if (event.data == YT.PlayerState.PAUSED) {
+      broadcastMusicState(true);
+    }
   }
 
   // If video is cued/paused but not playing, force play only if music should be playing (max 3 attempts)
@@ -3362,6 +3384,52 @@ function onPlayerError(event) {
   setTimeout(() => playNextMusic(), 1000);
 }
 
+function broadcastMusicState(isPausedOverride) {
+  if (!localSocket) return;
+  try {
+    let isPaused = false;
+    let currTime = 0;
+    let totalDur = 0;
+    if (ytPlayer) {
+      if (typeof ytPlayer.getPlayerState === 'function') {
+        const st = ytPlayer.getPlayerState();
+        isPaused = (isPausedOverride !== undefined) ? isPausedOverride : (st === 2);
+      }
+      if (typeof ytPlayer.getCurrentTime === 'function') currTime = Math.floor(ytPlayer.getCurrentTime() || 0);
+      if (typeof ytPlayer.getDuration === 'function') totalDur = Math.floor(ytPlayer.getDuration() || 0);
+    }
+    const statePayload = {
+      isPlaying: isMusicPlaying && !!activeMusic,
+      isPaused: isPaused,
+      activeMusic: activeMusic ? {
+        videoId: activeMusic.videoId,
+        title: activeMusic.title,
+        author: activeMusic.author || "",
+        thumbnail: activeMusic.thumbnail || "assets/bg_nature.png",
+        duration: activeMusic.duration || "",
+        requesterName: activeMusic.requesterName || "Host",
+        requesterImg: activeMusic.requesterImg || ""
+      } : null,
+      queue: (musicQueue || []).map(m => ({
+        videoId: m.videoId,
+        title: m.title,
+        author: m.author || "",
+        thumbnail: m.thumbnail || "assets/bg_nature.png",
+        duration: m.duration || "",
+        requesterName: m.requesterName || "Viewer"
+      })),
+      volume: (typeof musicSettings !== 'undefined' && typeof musicSettings.volume === 'number') ? musicSettings.volume : 50,
+      currentTime: currTime,
+      totalDuration: totalDur,
+      formattedTime: `${formatMusicTime(currTime)} / ${activeMusic?.duration || formatMusicTime(totalDur)}`
+    };
+    localSocket.emit("music-state-update", statePayload);
+  } catch(e) {
+    console.error('[Music] Error broadcasting music state:', e);
+  }
+}
+window.broadcastMusicState = broadcastMusicState;
+
 function playNextMusic() {
   if (!ytPlayerReady || !ytPlayer || !ytPlayer.loadVideoById) {
     // If API isn't ready yet, retry in 500ms
@@ -3384,6 +3452,7 @@ function playNextMusic() {
     if (ytPlayer && ytPlayer.stopVideo) {
       try { ytPlayer.stopVideo(); } catch(e) {}
     }
+    broadcastMusicState();
     return;
   }
   
@@ -3421,6 +3490,7 @@ function playNextMusic() {
     ytPlayer.setVolume(musicSettings.volume);
     ytPlayer.loadVideoById(activeMusic.videoId);
   }
+  broadcastMusicState();
 }
 
 // Fetch words on load
@@ -7437,9 +7507,128 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  localSocket.on('trigger-random-music', (data) => {
+    if (data && data.genre) {
+      if (typeof changeMusicRandomGenre === 'function') changeMusicRandomGenre(data.genre);
+      else musicSettings.randomGenre = data.genre;
+    }
+    if (typeof window.playRandomMusic === 'function') {
+      window.playRandomMusic();
+    }
+  });
+
+  localSocket.on('music-toggle-pause', () => {
+    if (ytPlayer && typeof ytPlayer.getPlayerState === 'function') {
+      try {
+        const state = ytPlayer.getPlayerState();
+        if (state === 1) { // 1 = playing -> pause
+          ytPlayer.pauseVideo();
+          broadcastMusicState(true);
+        } else { // 2 = paused -> play
+          ytPlayer.playVideo();
+          broadcastMusicState(false);
+        }
+      } catch(e) {}
+    }
+  });
+
+  localSocket.on('music-stop', () => {
+    musicQueue = [];
+    isMusicPlaying = false;
+    activeMusic = null;
+    currentLyricsData = [];
+    currentLyricsIndex = -1;
+    if (typeof resetLyricsUI === 'function') resetLyricsUI();
+    const mw = document.getElementById('musicWidget');
+    if (mw) mw.classList.remove('show');
+    const hostSkipBtn = document.getElementById('hostSkipBtn');
+    if (hostSkipBtn) hostSkipBtn.style.display = 'none';
+    if (window.sounds && typeof window.sounds.stopRadioAmbiance === 'function') window.sounds.stopRadioAmbiance();
+    if (ytPlayer && ytPlayer.stopVideo) {
+      try { ytPlayer.stopVideo(); } catch(e) {}
+    }
+    updateMusicQueueUI();
+    broadcastMusicState();
+  });
+
+  localSocket.on('music-volume-set', (data) => {
+    if (data && typeof data.volume === 'number') {
+      musicSettings.volume = Math.max(0, Math.min(100, data.volume));
+      try { localStorage.setItem('music_settings', JSON.stringify(musicSettings)); } catch(e) {}
+      if (ytPlayer && ytPlayer.setVolume) {
+        try { ytPlayer.setVolume(musicSettings.volume); } catch(e) {}
+      }
+      const slider = document.getElementById('musicVolumeSlider');
+      const label = document.getElementById('musicVolumeLabel');
+      if (slider) slider.value = musicSettings.volume;
+      if (label) label.textContent = musicSettings.volume + '%';
+      broadcastMusicState();
+    }
+  });
+
+  localSocket.on('music-remove-queue-item', (data) => {
+    let idx = parseInt(data?.index);
+    if ((isNaN(idx) || idx < 0) && data?.videoId) {
+      idx = musicQueue.findIndex(m => m.videoId === data.videoId);
+    }
+    if (!isNaN(idx) && idx >= 0 && idx < musicQueue.length) {
+      musicQueue.splice(idx, 1);
+      updateMusicQueueUI();
+      broadcastMusicState();
+      if (typeof showToast === 'function') showToast('Lagu dihapus dari antrian', 1500);
+    }
+  });
+
+  localSocket.on('music-clear-queue', () => {
+    musicQueue = [];
+    updateMusicQueueUI();
+    broadcastMusicState();
+    if (typeof showToast === 'function') showToast('Antrian musik dikosongkan', 1500);
+  });
+
+  localSocket.on('get-music-state', () => {
+    broadcastMusicState();
+  });
+
+  localSocket.on('host-guess-submit', (data) => {
+    if (data && data.guess) {
+      const guess = data.guess.trim().toUpperCase();
+      console.log('[Host] Remote host guess received:', guess);
+      if (typeof handleChatGuess === 'function') {
+        handleChatGuess({
+          comment: guess,
+          uniqueId: 'host_offline',
+          nickname: 'Host',
+          profilePictureUrl: (typeof getHostAvatar === 'function') ? getHostAvatar() : 'assets/bg_nature.png'
+        });
+        if (typeof showToast === 'function') showToast(`Host Tebak: ${guess}`, 1800);
+      }
+    }
+  });
+
+  localSocket.on('trigger-give-hint', () => {
+    console.log('[Host] Remote hint triggered');
+    if (currentGameMode === 'wanderwords' && typeof window.wanderWordsGiveHint === 'function') {
+      window.wanderWordsGiveHint();
+      if (typeof showToast === 'function') showToast('💡 Hint Wander Words Terbuka!', 2000);
+    } else if (currentGameMode === 'wordcluster' && typeof window.revealWordClusterHint === 'function') {
+      window.revealWordClusterHint();
+      if (typeof showToast === 'function') showToast('💡 Bantuan Kata Terkait Terbuka!', 2000);
+    } else if (typeof revealHelpModal === 'function') {
+      if (typeof showToast === 'function') showToast('💡 Petunjuk Permainan', 2000);
+    }
+  });
+
   // ─── OBS Overlay & Remote Control Handlers ───
   localSocket.on('obs-config-update', (config) => {
     updateObsShareLinkUI(config);
+    if (config) {
+      document.body.classList.toggle('show-host-controls', !!config.showHostControls);
+      const hostMusic = document.getElementById('hostMusicControl');
+      if (hostMusic && config.showHostControls) {
+        hostMusic.style.display = 'flex';
+      }
+    }
   });
 
   localSocket.on('change-game-mode', (data) => {
@@ -7653,6 +7842,71 @@ function applyRemoteGameSettings(settings) {
     if (typeof window.changeMusicPlaylistAccent === 'function') {
       window.changeMusicPlaylistAccent(settings.musicPlaylistAccent);
     }
+  }
+
+  // 11.8 Music Requests Enabled (Chat !play)
+  if (settings.musicRequestsEnabled !== undefined && settings.musicRequestsEnabled !== musicSettings.requestsEnabled) {
+    musicSettings.requestsEnabled = !!settings.musicRequestsEnabled;
+    try { localStorage.setItem('music_settings', JSON.stringify(musicSettings)); } catch(e) {}
+    const mre = document.getElementById('musicRequestsEnabled');
+    if (mre) mre.checked = musicSettings.requestsEnabled;
+  }
+
+  // 11.9 Music Remote Volume
+  if (typeof settings.musicVolume === 'number' && settings.musicVolume !== musicSettings.volume) {
+    musicSettings.volume = Math.max(0, Math.min(100, settings.musicVolume));
+    try { localStorage.setItem('music_settings', JSON.stringify(musicSettings)); } catch(e) {}
+    if (ytPlayer && ytPlayer.setVolume) {
+      try { ytPlayer.setVolume(musicSettings.volume); } catch(e) {}
+    }
+    const mvol = document.getElementById('musicVolumeSlider');
+    const mlabel = document.getElementById('musicVolumeLabel');
+    if (mvol) mvol.value = musicSettings.volume;
+    if (mlabel) mlabel.textContent = musicSettings.volume + '%';
+    broadcastMusicState();
+  }
+
+  // 11.10 Music Chat Request Limits & Filter
+  if (typeof settings.musicMaxDuration === 'number') {
+    musicSettings.maxDuration = settings.musicMaxDuration;
+    try { localStorage.setItem('music_settings', JSON.stringify(musicSettings)); } catch(e) {}
+    const md = document.getElementById('musicMaxDuration');
+    if (md) md.value = musicSettings.maxDuration;
+  }
+  if (typeof settings.musicMaxGlobal === 'number') {
+    musicSettings.maxGlobal = settings.musicMaxGlobal;
+    try { localStorage.setItem('music_settings', JSON.stringify(musicSettings)); } catch(e) {}
+    const mg = document.getElementById('musicMaxGlobal');
+    if (mg) mg.value = musicSettings.maxGlobal;
+  }
+  if (typeof settings.musicMaxUser === 'number') {
+    musicSettings.maxUser = settings.musicMaxUser;
+    try { localStorage.setItem('music_settings', JSON.stringify(musicSettings)); } catch(e) {}
+    const mu = document.getElementById('musicMaxUser');
+    if (mu) mu.value = musicSettings.maxUser;
+  }
+  if (Array.isArray(settings.musicBannedKeywords)) {
+    musicSettings.bannedKeywords = settings.musicBannedKeywords;
+    try { localStorage.setItem('music_settings', JSON.stringify(musicSettings)); } catch(e) {}
+    const mbk = document.getElementById('musicBannedKeywords');
+    if (mbk) mbk.value = musicSettings.bannedKeywords.join(', ');
+  }
+  if (settings.musicRadioSFX !== undefined) {
+    musicSettings.radioSFX = !!settings.musicRadioSFX;
+    try { localStorage.setItem('music_settings', JSON.stringify(musicSettings)); } catch(e) {}
+  }
+  if (settings.musicRadioAmbiance !== undefined) {
+    musicSettings.radioAmbiance = !!settings.musicRadioAmbiance;
+    try { localStorage.setItem('music_settings', JSON.stringify(musicSettings)); } catch(e) {}
+    const mra = document.getElementById('musicRadioAmbianceToggle');
+    if (mra) mra.checked = musicSettings.radioAmbiance;
+  }
+
+  // 11.11 OBS Show Host Controls Toggle
+  if (settings.showHostControlsOnObs !== undefined) {
+    document.body.classList.toggle('show-host-controls', !!settings.showHostControlsOnObs);
+    const hostMusic = document.getElementById('hostMusicControl');
+    if (hostMusic && settings.showHostControlsOnObs) hostMusic.style.display = 'flex';
   }
 
   // 12. Wander Words Custom Words List

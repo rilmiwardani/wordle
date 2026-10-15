@@ -680,7 +680,17 @@
                 </label>
                 <label class="settings-toggle-row" onclick="event.stopPropagation()">
                   <div style="display: flex; flex-direction: column; text-align: left;">
-                    <span class="settings-toggle-label"><i class="fa-solid fa-repeat" style="color: #10b981; margin-right: 6px;"></i> Auto-Starter Word</span>
+                    <span class="settings-toggle-label"><i class="fa-solid fa-crown" style="color: #f59e0b; margin-right: 6px;"></i> Starting Word Nickname Pemenang</span>
+                    <span class="settings-subtext">Kata pembuka dari nickname pemenang & sesuaikan jumlah huruf (maks 8). Fallback ke target sblm</span>
+                  </div>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="autoStarterWinnerToggle" onchange="toggleAutoStarterWinner(this.checked)">
+                    <div class="toggle-track"></div>
+                  </div>
+                </label>
+                <label class="settings-toggle-row" onclick="event.stopPropagation()">
+                  <div style="display: flex; flex-direction: column; text-align: left;">
+                    <span class="settings-toggle-label"><i class="fa-solid fa-repeat" style="color: #10b981; margin-right: 6px;"></i> Auto-Starter Kata Target Sblm</span>
                     <span class="settings-subtext">Target sblm jika jumlah huruf sama, atau kata acak jika beda</span>
                   </div>
                   <div class="toggle-switch">

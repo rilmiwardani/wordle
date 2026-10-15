@@ -60,6 +60,7 @@ let gameSettings = {
   showHints: true,
   displayRows: 6,
   boardScale: 100,
+  autoStarterWinner: true,
   followerOnlyMusic: false,
   musicRequestsEnabled: true,
   musicVolume: 50,

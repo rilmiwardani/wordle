@@ -232,6 +232,8 @@ let localSocket = null; // Dedicated connection to local node server for music f
 
 let currentWord = "";
 let lastRoundTargetWord = "";
+let lastRoundWinner = null;
+let isAutoStarterWinnerNickname = localStorage.getItem('wordle_autoStarterWinner') !== 'false';
 let isAutoStarterPreviousTarget = localStorage.getItem('wordle_autoStarter') === 'true';
 let isShowHintsDiscovered = localStorage.getItem('wordle_showHintsDiscovered') !== 'false';
 let guesses = [];
@@ -1296,7 +1298,7 @@ function saveDailyPts(username, pts) {
 
 function addPoints(userData, points) {
   if (!userData || !userData.nickname) return;
-  if (userData.uniqueId === 'system') return;
+  if (userData.uniqueId === 'system' || userData.isStarter) return;
   const username = userData.nickname;
   if (userData.profilePictureUrl) {
     try { localStorage.setItem('pts_avatar_' + username, userData.profilePictureUrl); } catch(e) {}
@@ -6212,6 +6214,23 @@ function hasActiveGameRound() {
   return !!currentWord;
 }
 
+// Helper untuk mem-parsing nickname pemenang menjadi kata starting word yang valid
+function parseWinnerNicknameForStarter(winnerObj) {
+  if (!winnerObj) return null;
+  const candidates = [winnerObj.nickname, winnerObj.uniqueId];
+  for (const raw of candidates) {
+    if (!raw || typeof raw !== 'string') continue;
+    // Ambil hanya karakter huruf Latin alfabet (A-Z)
+    const letters = raw.toUpperCase().replace(/[^A-Z]/g, '');
+    // Minimum 3 huruf untuk batas kata yang valid di kamus (panjang 3 sampai 8)
+    if (letters.length >= 3) {
+      // Jika nickname lebih dari 8 huruf potong nickname sampai 8 huruf
+      return letters.slice(0, 8);
+    }
+  }
+  return null;
+}
+
 // Start Game
 function startNewRound() {
   applyGameModeUI();
@@ -6251,11 +6270,36 @@ function startNewRound() {
     initSquarewordRound();
     return;
   }
+
+  // Simpan kata target ronde sebelumnya sebelum menentukan WORD_LENGTH baru
+  if (currentWord && currentWord.length >= 3 && currentWord.length <= 8) {
+    lastRoundTargetWord = currentWord;
+  }
+
+  const isGuessMode = !currentGameMode || currentGameMode === 'wordle' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit';
+  let parsedWinnerWord = null;
+  if (isAutoStarterWinnerNickname && isGuessMode && lastRoundWinner) {
+    parsedWinnerWord = parseWinnerNicknameForStarter(lastRoundWinner);
+  }
+
   // Word500 always uses 5 letters; Word600 always uses 6 letters; Wordle/WordLoop randomizes 5, 6, or 7
   if (currentGameMode === 'word500') {
     WORD_LENGTH = 5;
   } else if (currentGameMode === 'word600') {
     WORD_LENGTH = 6;
+  } else if (isAutoStarterWinnerNickname && isGuessMode && parsedWinnerWord) {
+    // Jumlah huruf yang dimainkan mengikuti jumlah huruf nickname pemenang (maks 8 huruf)
+    WORD_LENGTH = parsedWinnerWord.length;
+    if (currentGameMode === 'colorfit' && WORD_LENGTH > 6) {
+      WORD_LENGTH = 6;
+      parsedWinnerWord = parsedWinnerWord.slice(0, 6);
+    }
+  } else if (isAutoStarterWinnerNickname && isGuessMode && lastRoundTargetWord && lastRoundTargetWord.length >= 3 && lastRoundTargetWord.length <= 8) {
+    // Jika nickname bukan huruf valid / tidak bisa diparsing, jumlah huruf mengikuti kata target sebelumnya
+    WORD_LENGTH = lastRoundTargetWord.length;
+    if (currentGameMode === 'colorfit' && WORD_LENGTH > 6) {
+      WORD_LENGTH = 6;
+    }
   } else {
     let allowedLengths = [5, 6, 7];
     try { allowedLengths = JSON.parse(localStorage.getItem('allowed_lengths') || '[5,6,7,8]'); } catch(e) {}
@@ -6280,8 +6324,18 @@ function startNewRound() {
   }
   syncValidWordsSet();
 
-  lastRoundTargetWord = currentWord;
+  lastRoundTargetWord = lastRoundTargetWord || currentWord;
   currentWord = getRandomWord();
+
+  // Pastikan target baru tidak sama persis dengan starting word agar tidak langsung menang seketika
+  const checkConflictWord = parsedWinnerWord || lastRoundTargetWord;
+  if (checkConflictWord && TARGET_WORDS && TARGET_WORDS.length > 1) {
+    let attempts = 0;
+    while (currentWord === checkConflictWord && attempts < 50) {
+      currentWord = getRandomWord();
+      attempts++;
+    }
+  }
   guesses = [];
   wordLoopContributors = [];
   guessQueue = [];
@@ -6471,11 +6525,40 @@ function startNewRound() {
   }
 
   // Auto-Starter logic
-  if (isAutoStarterPreviousTarget) {
-    const isGuessMode = !currentGameMode || currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit';
-    if (isGuessMode) {
-      let starterWord = null;
+  const isGuessModeForStarter = !currentGameMode || currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit';
 
+  if (isGuessModeForStarter && (isAutoStarterWinnerNickname || isAutoStarterPreviousTarget)) {
+    let starterWord = null;
+    let starterUserData = null;
+    let starterToastMsg = null;
+
+    if (isAutoStarterWinnerNickname) {
+      const winnerWord = parseWinnerNicknameForStarter(lastRoundWinner);
+      if (winnerWord && winnerWord.length === WORD_LENGTH) {
+        starterWord = winnerWord;
+        const dispName = (lastRoundWinner && (lastRoundWinner.nickname || lastRoundWinner.uniqueId)) || winnerWord;
+        starterUserData = {
+          nickname: dispName,
+          uniqueId: (lastRoundWinner && lastRoundWinner.uniqueId) || 'winner',
+          profilePictureUrl: (lastRoundWinner && lastRoundWinner.profilePictureUrl) || 'assets/bg_nature.png',
+          isStarter: true
+        };
+        starterToastMsg = `Starting Word: "${starterWord}" (${dispName} • ${WORD_LENGTH} Huruf)`;
+      } else if (lastRoundTargetWord && lastRoundTargetWord.length === WORD_LENGTH && lastRoundTargetWord !== currentWord) {
+        // Fallback: starting word menggunakan kata target sebelumnya jika nickname tidak ada/tidak valid
+        starterWord = lastRoundTargetWord;
+        starterUserData = { nickname: 'TARGET SBLM', uniqueId: 'system', isStarter: true };
+        starterToastMsg = `Starting Word: "${starterWord}" (Target Sebelumnya • ${WORD_LENGTH} Huruf)`;
+      } else {
+        // Fallback jika belum ada ronde sebelumnya (Ronde 1)
+        const wordPool = (VALID_WORDS && VALID_WORDS.length > 0) ? VALID_WORDS : (TARGET_WORDS || []);
+        if (wordPool.length > 0) {
+          const matchingWords = wordPool.filter(w => w.length === WORD_LENGTH && w !== currentWord);
+          starterWord = matchingWords.length > 0 ? matchingWords[Math.floor(Math.random() * matchingWords.length)] : wordPool[0];
+          starterUserData = { nickname: 'SISTEM', uniqueId: 'system', isStarter: true };
+        }
+      }
+    } else if (isAutoStarterPreviousTarget) {
       // 1. Jika kata target sebelumnya ada dan panjangnya sama persis
       if (lastRoundTargetWord && lastRoundTargetWord.length === WORD_LENGTH && lastRoundTargetWord !== currentWord) {
         starterWord = lastRoundTargetWord;
@@ -6491,10 +6574,16 @@ function startNewRound() {
           }
         }
       }
-
       if (starterWord) {
-        guessQueue.push({ guessWord: starterWord, userData: { nickname: 'SISTEM', uniqueId: 'system' } });
-        setTimeout(processQueue, 300);
+        starterUserData = { nickname: 'SISTEM', uniqueId: 'system', isStarter: true };
+      }
+    }
+
+    if (starterWord) {
+      guessQueue.push({ guessWord: starterWord, userData: starterUserData || { nickname: 'SISTEM', uniqueId: 'system', isStarter: true } });
+      setTimeout(processQueue, 300);
+      if (starterToastMsg) {
+        setTimeout(() => showToast(starterToastMsg, 3500), 400);
       }
     }
   }
@@ -6700,6 +6789,12 @@ window.toggleNoRepeat = function(checked) {
   if (currentGameMode === 'wordfit' || currentGameMode === 'word500' || currentGameMode === 'word600') {
     startNewRound();
   }
+};
+
+window.toggleAutoStarterWinner = function(checked) {
+  isAutoStarterWinnerNickname = checked;
+  try { localStorage.setItem('wordle_autoStarterWinner', checked); } catch(e) {}
+  showToast(checked ? 'Starting Word Nickname: AKTIF' : 'Starting Word Nickname: NONAKTIF', 2000);
 };
 
 window.toggleAutoStarter = function(checked) {
@@ -9078,7 +9173,9 @@ function addTangoGuessToFeed(word, userData, isCorrect) {
 
 // Process a valid guess — optimized: adaptive pacing & smooth flip
 function processGuess(guessWord, userData, queueLen = 0) {
-  if (isBadWordsFilterOn) {
+  const isStarterGuess = !!(userData && (userData.isStarter || userData.uniqueId === 'system'));
+
+  if (isBadWordsFilterOn && !isStarterGuess) {
     const isTarget = (currentWord && guessWord === currentWord) || 
                      (typeof betweenleSecretWord !== 'undefined' && guessWord === betweenleSecretWord);
     if (!isTarget) {
@@ -9273,6 +9370,9 @@ function processGuess(guessWord, userData, queueLen = 0) {
   let isValidWord = (VALID_WORDS_SET && VALID_WORDS_SET.size > 0) ? VALID_WORDS_SET.has(guessWord) : VALID_WORDS.includes(guessWord);
   if (currentGameMode === 'colorfit') {
     isValidWord = /^[RGBYPO]+$/.test(guessWord) && guessWord.length === WORD_LENGTH;
+  }
+  if (isStarterGuess) {
+    isValidWord = (guessWord.length === WORD_LENGTH);
   }
 
   if (currentGameMode === 'fillblanks') {
@@ -9488,7 +9588,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
   let hardModeMsg = "";
 
   // Cek duplikat untuk semua mode (kecuali fillblanks)
-  if (isValidWord && guesses.includes(guessWord)) {
+  if (!isStarterGuess && isValidWord && guesses.includes(guessWord)) {
     isValidWord = false;
     if (lastLang === 'en') hardModeMsg = `Already guessed this round`;
     else if (lastLang === 'mixed') hardModeMsg = `Sudah ditebak / Already guessed`;
@@ -9496,7 +9596,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
   }
   
   const isNoRepeatActive = isNoRepeatMode && (currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit');
-  if (isValidWord && isNoRepeatActive) {
+  if (!isStarterGuess && isValidWord && isNoRepeatActive) {
     if (new Set(guessWord).size !== guessWord.length) {
       isValidWord = false;
       if (lastLang === 'en') hardModeMsg = `No repeat letters allowed`;
@@ -9541,7 +9641,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
 
   let hardModeConflictWord = null;
 
-  if (isValidWord && currentGameMode !== 'wordloop') {
+  if (!isStarterGuess && isValidWord && currentGameMode !== 'wordloop') {
     const hmCheck = validateHardMode(guessWord);
     if (!hmCheck.valid) {
       hardModeMsg = hmCheck.msg;
@@ -9705,7 +9805,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
         
         // Wordle mode: hint discovery + assist points
         if (!isAnySortedMode && !discoveredLetters[i]) {
-          if (guessWord !== currentWord) {
+          if (guessWord !== currentWord && !isStarterGuess) {
             addPoints(userData, 2);
             showFloatingPoints(2, `tile-${currentRow}-${i}`);
           }
@@ -9931,7 +10031,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
       winPts = 0; // Equalized: all players get +5 points for their word guess
     }
   } else {
-    if (guessWord === currentWord) {
+    if (guessWord === currentWord && !isStarterGuess) {
       isWin = true;
       winPts = (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit') ? 15 : 10;
     }
@@ -9942,6 +10042,11 @@ function processGuess(guessWord, userData, queueLen = 0) {
     guessQueue = []; // Bug#1+#5 fix: clear antrian agar tebakan lama tidak masuk ronde baru
     
     if (currentGameMode === 'wordloop') {
+      const finalContrib = wordLoopContributors[wordLoopContributors.length - 1];
+      if (finalContrib && finalContrib.userData && finalContrib.userData.uniqueId !== 'system') {
+        lastRoundWinner = finalContrib.userData;
+      }
+      lastRoundTargetWord = currentWord;
       const multiWinList = document.getElementById('multiWinList');
       if (multiWinList) {
         multiWinList.innerHTML = '';
@@ -9994,6 +10099,8 @@ function processGuess(guessWord, userData, queueLen = 0) {
         recordWin(userData && (userData.uniqueId || userData.nickname));
         showFloatingPoints(winPts, `avatar-${currentRow}`);
       }
+      lastRoundWinner = userData;
+      lastRoundTargetWord = currentWord;
       const winnerName = userData ? (userData.nickname || userData.uniqueId || 'Someone') : 'Someone';
       const avatarUrl = (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : 'assets/bg_nature.png';
       const winOverlay = document.getElementById('winOverlay');
@@ -10801,6 +10908,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const fomGroupToggle = document.getElementById('musicFollowerOnlyGroupToggle');
   if (fomGroupToggle) fomGroupToggle.checked = !!musicSettings.followerOnly;
+
+  const autoStarterWinnerToggle = document.getElementById('autoStarterWinnerToggle');
+  if (autoStarterWinnerToggle) autoStarterWinnerToggle.checked = isAutoStarterWinnerNickname;
 
   const autoStarterToggle = document.getElementById('autoStarterToggle');
   if (autoStarterToggle) autoStarterToggle.checked = isAutoStarterPreviousTarget;
@@ -13764,6 +13874,8 @@ function triggerBetweenleNextAnimation() {
         }
         const winName = document.getElementById('winName');
         if (winName) winName.textContent = item.userName;
+        lastRoundWinner = item.userData || { nickname: item.userName, profilePictureUrl: item.userAvatar };
+        lastRoundTargetWord = betweenleSecretWord;
         const winPts = document.getElementById('winPts');
         if (winPts) winPts.innerHTML = `🪙 +${jackpotPts} Pts`;
         const winWord = document.getElementById('winWord');
@@ -14349,6 +14461,8 @@ function processCascadleGuess(guessWord, userData) {
         addPoints(userData, ptsAwarded);
         recordWin(userData.uniqueId || userData.nickname);
       }
+      lastRoundWinner = userData;
+      lastRoundTargetWord = word;
       showFloatingPoints(ptsAwarded, 'cascadleContainer');
 
       if (window.sounds && typeof window.sounds.playWin === 'function') {
@@ -15234,6 +15348,8 @@ function handleWanderWordsWin(userData) {
     addPoints(userData, ptsAwarded);
     recordWin(userData.uniqueId || userData.nickname);
   }
+  lastRoundWinner = userData;
+  lastRoundTargetWord = puzzle.answer;
   showFloatingPoints(ptsAwarded, 'wanderWordsContainer');
 
   showToast(`🎉 ${userName} MENEBAK BENAR: "${puzzle.answer}"! (+${ptsAwarded} Poin)`, 4000);

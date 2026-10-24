@@ -5627,7 +5627,7 @@ const WG_CLUE_HARD_EN = [
 ];
 
 function getWgClueDesc(clue) {
-  const isEn = lastLang === 'en' || lastLang === 'mixed';
+  const isEn = lastLang === 'en';
   switch (clue.type) {
     case 'length': return isEn ? `${clue.val}<br>Letters` : `${clue.val}<br>Huruf`;
     case 'length_range': return isEn ? `${clue.min}-${clue.max}<br>Letters` : `${clue.min}-${clue.max}<br>Huruf`;
@@ -5755,7 +5755,7 @@ function generateWordGridBoard() {
     wgCluesRow = [];
     wgCluesCol = [];
     
-    const isEn = lastLang === 'en' || lastLang === 'mixed';
+    const isEn = lastLang === 'en';
     let easyPool = isEn ? [...WG_CLUE_EASY_EN] : [...WG_CLUE_EASY];
     let mediumPool = isEn ? [...WG_CLUE_MEDIUM_EN] : [...WG_CLUE_MEDIUM];
     let hardPool = isEn ? [...WG_CLUE_HARD_EN] : [...WG_CLUE_HARD];

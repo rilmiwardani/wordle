@@ -6268,6 +6268,10 @@ function hasActiveGameRound() {
   if (currentGameMode === 'wanderwords') return !!wanderWordsCurrentPuzzle;
   if (currentGameMode === 'wordcluster') return !!(wordClusterItems && wordClusterItems.length > 0 && wordClusterCurrentTopic);
   if (currentGameMode === 'wordladder') return !!wordLadderTargetWord;
+  if (currentGameMode === 'wordmatch') return !!wordMatchCurrentWord;
+  if (currentGameMode === 'fillblanks') return !!(fillBlanksTargets && fillBlanksTargets.length > 0);
+  if (currentGameMode === 'wordtango') return !!(wordTangoTargets && wordTangoTargets.length > 0);
+  if (currentGameMode === 'wordgrid') return !!(wgGrid && wgGrid.length > 0);
   if (currentGameMode === 'squareword') return currentWord === 'SQUAREWORD' || (typeof squarewordSolution !== 'undefined' && !!squarewordSolution);
   return !!currentWord;
 }

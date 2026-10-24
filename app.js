@@ -24,6 +24,27 @@ function getDisplayRows() {
   return displayRowsWordle;
 }
 
+function adjustWordleBoardRows(newRows) {
+  document.documentElement.style.setProperty('--display-rows', newRows);
+  const boardEl = document.getElementById('board');
+  if (!boardEl) return;
+  if (!guesses || guesses.length === 0) {
+    if (typeof initBoard === 'function') initBoard();
+    return;
+  }
+  // Sesuaikan jumlah baris tanpa menghapus tebakan yang sudah ada di papan
+  while (boardEl.children.length < newRows) {
+    boardEl.appendChild(createEmptyBoardRow(boardEl.children.length));
+  }
+  while (boardEl.children.length > newRows) {
+    if (boardEl.lastChild) {
+      boardEl.removeChild(boardEl.lastChild);
+    } else {
+      break;
+    }
+  }
+}
+
 function changeDisplayRows(delta, e) {
   if (e) e.stopPropagation();
   if (currentGameMode === 'word500') {
@@ -40,13 +61,13 @@ function changeDisplayRows(delta, e) {
     localStorage.setItem('displayRows_wordle', displayRowsWordle);
   }
   updateDisplayRowsUI();
-  // Re-render board immediately
+  // Re-render board immediately without wiping existing Wordle guesses
   if (currentGameMode === 'word500' || currentGameMode === 'word600') {
     renderWord500Board();
   } else if (currentGameMode === 'wordfit') {
     renderWordFitBoard();
   } else {
-    initBoard();
+    adjustWordleBoardRows(getDisplayRows());
   }
 }
 
@@ -997,14 +1018,17 @@ function updateLikeCounter(data, addedLikes) {
   // Show widget
   widget.style.display = 'flex';
 
-  // Format count
-  const formatted = totalSessionLikes >= 1000 
-    ? `${(totalSessionLikes / 1000).toFixed(1)}k` 
-    : totalSessionLikes;
-  totalEl.textContent = `❤️ ${formatted}`;
+  // Per-user like count (menampilkan total likes kontribusi penonton tersebut)
+  const username = data.nickname || data.uniqueId || '';
+  const userTotalLikes = (username && playerLikes[username]) ? playerLikes[username] : addedLikes;
+  const formattedTotal = typeof formatShortNumber === 'function' ? formatShortNumber(userTotalLikes) : userTotalLikes;
+  const batchText = (addedLikes > 1 && userTotalLikes > addedLikes) ? ` <span class="like-counter-batch">(+${addedLikes})</span>` : '';
+  
+  // Format tampilan dengan ikon Font Awesome (sesuai panduan AGENTS.md)
+  totalEl.innerHTML = `<i class="fa-solid fa-heart" style="color: #fe2c55;"></i> ${formattedTotal}${batchText}`;
 
   // Update last liker info
-  const nickname = data.nickname || data.uniqueId || '';
+  const nickname = data.nickname || data.uniqueId || 'Penonton';
   const avatar = data.profilePictureUrl || '';
   if (nickname) nameEl.textContent = nickname;
   if (avatar && avatarEl) {
@@ -1176,7 +1200,7 @@ let isLyricsLoading = false;
 let previousMusicPlayerStyle = 'vinyl';
 let musicUserCooldowns = {};
 let lastUsername = "";
-let lastLang = "";
+let lastLang = localStorage.getItem('wordle_lang') || "id";
 let lastSessionId = "";
 let reconnectTimer = null;
 let isConnectedToTikTok = false;
@@ -1207,7 +1231,8 @@ const ALL_SPECIAL_PTS_PREFIXES = [
   'pts_betweenle_',
   'pts_cascadle_',
   'pts_wanderwords_',
-  'pts_wordcluster_'
+  'pts_wordcluster_',
+  'pts_wmatch_'
 ];
 
 function isOtherGameModeKey(key) {
@@ -1229,6 +1254,7 @@ function getPtsPrefix() {
   if (currentGameMode === 'cascadle') return 'pts_cascadle_';
   if (currentGameMode === 'wanderwords') return 'pts_wanderwords_';
   if (currentGameMode === 'wordcluster') return 'pts_wordcluster_';
+  if (currentGameMode === 'wordmatch') return 'pts_wmatch_';
   return 'pts_';
 }
 
@@ -3681,7 +3707,8 @@ function selectGame(mode) {
     betweenle: 'BETWEENLE',
     cascadle: 'CASCADLE',
     wanderwords: 'WANDER WORDS',
-    wordcluster: 'WORD CLUSTER'
+    wordcluster: 'WORD CLUSTER',
+    wordmatch: 'WORD MATCH'
   };
   const titleName = gameNames[mode] || mode.toUpperCase();
 
@@ -3739,6 +3766,7 @@ function switchGameMode(e) {
   else if (currentGameMode === 'betweenle') currentGameMode = 'cascadle';
   else if (currentGameMode === 'cascadle') currentGameMode = 'wanderwords';
   else if (currentGameMode === 'wanderwords') currentGameMode = 'wordcluster';
+  else if (currentGameMode === 'wordcluster') currentGameMode = 'wordmatch';
   else currentGameMode = 'wordle';
   try { sessionStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
 
@@ -3804,6 +3832,11 @@ function applyGameModeUI() {
   if (wanderWordsContainer) wanderWordsContainer.style.display = 'none';
   const wordClusterContainer = document.getElementById('wordClusterContainer');
   if (wordClusterContainer) wordClusterContainer.style.display = 'none';
+  const wordMatchContainer = document.getElementById('wordMatchContainer');
+  if (wordMatchContainer) wordMatchContainer.style.display = 'none';
+  if (currentGameMode !== 'wordmatch') {
+    if (typeof stopWordMatchAutoReveal === 'function') stopWordMatchAutoReveal();
+  }
 
   const colorFitLegend = document.getElementById('colorFitLegend');
   if (colorFitLegend) colorFitLegend.style.display = (currentGameMode === 'colorfit') ? 'flex' : 'none';
@@ -3980,11 +4013,28 @@ function applyGameModeUI() {
     }
     const wordClusterContainer = document.getElementById('wordClusterContainer');
     if (wordClusterContainer) wordClusterContainer.style.display = 'flex';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Word Match';
     if (!wordClusterCurrentTopic) {
       startWordClusterGame();
     } else {
       renderWordClusterUI();
+    }
+  } else if (currentGameMode === 'wordmatch') {
+    if (headerTitle) headerTitle.textContent = 'WORD MATCH';
+    if (hintContainer) hintContainer.style.display = 'none';
+    if (bestGuessContainer) bestGuessContainer.style.display = 'none';
+    if (boardObj) {
+      boardObj.style.display = 'none';
+      boardObj.innerHTML = '';
+      boardObj.className = '';
+    }
+    const wordMatchContainer = document.getElementById('wordMatchContainer');
+    if (wordMatchContainer) wordMatchContainer.style.display = 'flex';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
+    if (!wordMatchCurrentWord) {
+      startWordMatchGame();
+    } else {
+      renderWordMatchUI();
     }
   } else {
     if (headerTitle) headerTitle.textContent = 'WORDLE';
@@ -4555,6 +4605,12 @@ function getInstructionText() {
       if (lastLang === 'id') return `Tebak kata alfabetis di antara batas atas & batas bawah!`;
       if (lastLang === 'mixed') return `Tebak kata di antara 2 batas! / Guess word between bounds!`;
       return `Guess the secret word alphabetically between the two bounds!`;
+    }
+    if (currentGameMode === 'wordmatch') {
+      const len = wordMatchCurrentWord ? wordMatchCurrentWord.length : 5;
+      if (lastLang === 'id') return `Tebak kata ${len} huruf! Semakin mirip, makin tinggi % barnya!`;
+      if (lastLang === 'mixed') return `Tebak kata ${len} huruf! / Guess the ${len}-letter word!`;
+      return `Guess the ${len}-letter word! Closer guess gives higher % bar!`;
     }
     if (lastLang === 'id') return `Ketik kata ${WORD_LENGTH} huruf di komentar untuk menebak!`;
     if (lastLang === 'mixed') return `Ketik kata ${WORD_LENGTH} huruf di komentar! / Type a ${WORD_LENGTH}-letter word!`;
@@ -6167,7 +6223,7 @@ function showWordGridWinOverlay() {
   sortedPlayers.forEach((player, index) => {
     setTimeout(() => {
       const item = document.createElement('div');
-      item.className = 'multi-win-item';
+      item.className = 'multi-win-item' + (index === 0 ? ' mvp' : '');
       
       let avHTML = `<div class="multi-win-letter">${player.username.charAt(0).toUpperCase()}</div>`;
       if (player.profilePic) {
@@ -6185,7 +6241,9 @@ function showWordGridWinOverlay() {
       
       item.innerHTML = `
         <div style="font-weight:900; color:${rankColor}; width: 50px; text-align:center; flex-shrink: 0; font-size: 14px;">${rankText}</div>
-        ${avHTML}
+        <div class="multi-win-avatar-wrap">
+          ${avHTML}
+        </div>
         <div class="multi-win-details" style="flex: 1; padding: 0 10px; min-width: 0;">
           <div class="multi-win-name" style="font-size: 15px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff;">${player.username}</div>
           <div class="multi-win-word" style="font-size: 11px; color: #bbb; margin-top: 2px; line-height: 1.3;">Menjawab: ${wordsDisplay}</div>
@@ -6234,6 +6292,7 @@ function parseWinnerNicknameForStarter(winnerObj) {
 // Start Game
 function startNewRound() {
   applyGameModeUI();
+  if (typeof updateLangBadgeUI === 'function') updateLangBadgeUI(lastLang);
   hasPlayedCloseAudio = false;
   resetWinStreaks(); // Reset cooldown anti-dominasi setiap ronde baru
 
@@ -6255,6 +6314,11 @@ function startNewRound() {
   if (currentGameMode === 'wordcluster') {
     wordClusterRound = round;
     startWordClusterGame();
+    return;
+  }
+  if (currentGameMode === 'wordmatch') {
+    wordMatchRound = round;
+    startWordMatchGame();
     return;
   }
   if (currentGameMode === 'squareword') {
@@ -6727,12 +6791,13 @@ function changeLang(lang, e) {
 function updateLangBadgeUI(lang) {
   const badge = document.getElementById('currentLangBadge');
   if (!badge) return;
-  if (lang === 'id') {
-    badge.innerHTML = '<i class="fa-solid fa-language" style="margin-right: 4px;"></i>ID';
-  } else if (lang === 'en') {
+  const target = lang || lastLang || localStorage.getItem('wordle_lang') || 'id';
+  if (target === 'en') {
     badge.innerHTML = '<i class="fa-solid fa-language" style="margin-right: 4px;"></i>EN';
-  } else {
+  } else if (target === 'mixed') {
     badge.innerHTML = '<i class="fa-solid fa-globe" style="margin-right: 4px;"></i>MIX';
+  } else {
+    badge.innerHTML = '<i class="fa-solid fa-language" style="margin-right: 4px;"></i>ID';
   }
 }
 
@@ -6795,11 +6860,18 @@ window.toggleAutoStarterWinner = function(checked) {
   isAutoStarterWinnerNickname = checked;
   try { localStorage.setItem('wordle_autoStarterWinner', checked); } catch(e) {}
   showToast(checked ? 'Starting Word Nickname: AKTIF' : 'Starting Word Nickname: NONAKTIF', 2000);
+  if (typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
+    localSocket.emit('update-game-settings', { autoStarterWinner: checked });
+  }
 };
 
 window.toggleAutoStarter = function(checked) {
   isAutoStarterPreviousTarget = checked;
   try { localStorage.setItem('wordle_autoStarter', checked); } catch(e) {}
+  showToast(checked ? 'Auto-Starter Kata Target: AKTIF' : 'Auto-Starter Kata Target: NONAKTIF', 2000);
+  if (typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
+    localSocket.emit('update-game-settings', { autoStarterPreviousTarget: checked });
+  }
 };
 
 window.toggleShowHintsDiscovered = function(checked) {
@@ -6932,7 +7004,11 @@ function updateHardModeUI() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  updateLangBadgeUI(lastLang);
+  const savedLang = localStorage.getItem('wordle_lang') || 'id';
+  lastLang = savedLang;
+  const langSelect = document.getElementById('languageSelect');
+  if (langSelect) langSelect.value = savedLang;
+  updateLangBadgeUI(savedLang);
   const nrToggle = document.getElementById('noRepeatToggle');
   if (nrToggle) nrToggle.checked = isNoRepeatMode;
   updateNoRepeatBadgeUI();
@@ -7362,6 +7438,7 @@ function connectToLive() {
   lastUsername = backend === 'indofinity' ? 'IndoFinity_Host' : username;
   lastLang = lang;
   lastSessionId = sessionId;
+  updateLangBadgeUI(lang);
 
   // Read IndoFinity IP
   const ipInput = document.getElementById('indofinityIpInput');
@@ -7410,6 +7487,7 @@ function connectToLive() {
 function startOfflineMode() {
   const lang = document.getElementById('languageSelect').value;
   lastLang = lang;
+  updateLangBadgeUI(lang);
   lastUsername = ""; // Clear username to prevent TikTok auto-connect
   connectBtn.disabled = true;
   connectBtn.textContent = "Loading...";
@@ -7709,6 +7787,9 @@ window.addEventListener('DOMContentLoaded', () => {
     } else if (currentGameMode === 'wordcluster' && typeof window.revealWordClusterHint === 'function') {
       window.revealWordClusterHint();
       if (typeof showToast === 'function') showToast('💡 Bantuan Kata Terkait Terbuka!', 2000);
+    } else if (currentGameMode === 'wordmatch' && typeof window.revealWordMatchHint === 'function') {
+      window.revealWordMatchHint();
+      if (typeof showToast === 'function') showToast('Bantuan Word Match Terbuka!', 2000);
     } else if (typeof revealHelpModal === 'function') {
       if (typeof showToast === 'function') showToast('💡 Petunjuk Permainan', 2000);
     }
@@ -7756,6 +7837,8 @@ window.addEventListener('DOMContentLoaded', () => {
         displayRows: parseInt(localStorage.getItem('displayRows_wordle')) || 6,
         boardScale: parseInt(localStorage.getItem('board_scale')) || 100,
         theme: localStorage.getItem('wordle_theme') || 'dark',
+        autoStarterWinner: localStorage.getItem('wordle_autoStarterWinner') !== 'false',
+        autoStarterPreviousTarget: localStorage.getItem('wordle_autoStarter') === 'true',
         followerOnlyGuess: localStorage.getItem('wordle_followerOnlyGuess') === 'true',
         followerOnlyMusic: (typeof musicSettings !== 'undefined' && musicSettings.followerOnly === true),
         musicCooldown: (typeof musicSettings !== 'undefined' && typeof musicSettings.cooldownSeconds === 'number' ? musicSettings.cooldownSeconds : 60),
@@ -7849,8 +7932,25 @@ function applyRemoteGameSettings(settings) {
     if (typeof applyGameModeUI === 'function') applyGameModeUI();
   }
 
+  // 6.5. Auto Starter Winner Nickname
+  if (settings.autoStarterWinner !== undefined && settings.autoStarterWinner !== isAutoStarterWinnerNickname) {
+    isAutoStarterWinnerNickname = !!settings.autoStarterWinner;
+    try { localStorage.setItem('wordle_autoStarterWinner', isAutoStarterWinnerNickname); } catch(e) {}
+    const aswToggle = document.getElementById('autoStarterWinnerToggle');
+    if (aswToggle) aswToggle.checked = isAutoStarterWinnerNickname;
+  }
+
+  // 6.6. Auto Starter Previous Target
+  if (settings.autoStarterPreviousTarget !== undefined && settings.autoStarterPreviousTarget !== isAutoStarterPreviousTarget) {
+    isAutoStarterPreviousTarget = !!settings.autoStarterPreviousTarget;
+    try { localStorage.setItem('wordle_autoStarter', isAutoStarterPreviousTarget); } catch(e) {}
+    const astToggle = document.getElementById('autoStarterToggle');
+    if (astToggle) astToggle.checked = isAutoStarterPreviousTarget;
+  }
+
   // 7. Display Rows
-  if (typeof settings.displayRows === 'number' && settings.displayRows >= 3 && settings.displayRows <= 12) {
+  const currentModeRows = getDisplayRows();
+  if (typeof settings.displayRows === 'number' && settings.displayRows >= 3 && settings.displayRows <= 12 && settings.displayRows !== currentModeRows) {
     displayRowsWordle = settings.displayRows;
     displayRowsWord500 = settings.displayRows;
     displayRowsWord600 = settings.displayRows;
@@ -7867,7 +7967,11 @@ function applyRemoteGameSettings(settings) {
     } else if (currentGameMode === 'wordfit') {
       if (typeof renderWordFitBoard === 'function') renderWordFitBoard();
     } else {
-      if (typeof initBoard === 'function') initBoard();
+      if (typeof adjustWordleBoardRows === 'function') {
+        adjustWordleBoardRows(settings.displayRows);
+      } else if (!guesses || guesses.length === 0) {
+        if (typeof initBoard === 'function') initBoard();
+      }
     }
   }
 
@@ -8089,6 +8193,11 @@ function remoteChangeGameMode(mode) {
   currentGameMode = mode;
   try { sessionStorage.setItem('wordle_gameMode', mode); } catch(e) {}
   
+  if (typeof wgHintInterval !== 'undefined' && wgHintInterval) {
+    clearInterval(wgHintInterval);
+    wgHintInterval = null;
+  }
+  
   if (typeof initWeeklyLeaderboard === 'function') initWeeklyLeaderboard();
   
   const gSelect = document.getElementById('gameSelectOverlay');
@@ -8101,6 +8210,9 @@ function remoteChangeGameMode(mode) {
   
   const hostMusic = document.getElementById('hostMusicControl');
   if (hostMusic) hostMusic.style.display = 'flex';
+
+  const selectElement = document.getElementById('switchGameSelect');
+  if (selectElement) selectElement.value = "";
 
   if (typeof applyGameModeUI === 'function') applyGameModeUI();
   if (typeof startNewRound === 'function') startNewRound();
@@ -8127,6 +8239,8 @@ function initObsMode() {
   const targetIp = urlIndofinityIp || localStorage.getItem('wordle_indofinity_ip') || (window.location.hostname && window.location.hostname !== '0.0.0.0' ? window.location.hostname : 'localhost');
   const targetUser = urlUsername || localStorage.getItem('wordle_username') || '';
   const targetLang = urlLang || localStorage.getItem('wordle_lang') || 'id';
+  lastLang = targetLang;
+  if (typeof updateLangBadgeUI === 'function') updateLangBadgeUI(targetLang);
 
   const backendSelect = document.getElementById('backendSelect');
   if (backendSelect && targetBackend) {
@@ -8890,6 +9004,10 @@ function handleChatGuess(data, optionalUserData) {
       processWordClusterGuess(msg, data);
       return;
     }
+    if (currentGameMode === 'wordmatch') {
+      processWordMatchGuess(msg, data);
+      return;
+    }
 
     // Deduplikasi dan pra-validasi cerdas untuk Betweenle agar antrean tidak tersumbat
     if (currentGameMode === 'betweenle') {
@@ -9205,6 +9323,11 @@ function processGuess(guessWord, userData, queueLen = 0) {
 
   if (currentGameMode === 'wordcluster') {
     processWordClusterGuess(guessWord, userData);
+    return;
+  }
+
+  if (currentGameMode === 'wordmatch') {
+    processWordMatchGuess(guessWord, userData);
     return;
   }
 
@@ -11232,6 +11355,7 @@ window.saveMusicSettings = function() {
 // ─── Social Audio Settings Functions ───
 let socialAudioSettings = {
   enabled: true,
+  duckingEnabled: true,
   volume: 80,
   followSound: "https://www.myinstants.com/media/sounds/anime-wow.mp3",
   defaultGiftSound: "https://www.myinstants.com/media/sounds/coin-sound-effect.mp3",
@@ -11253,6 +11377,8 @@ window.openSocialAudioSettings = function(e) {
   if (dropdown) dropdown.classList.remove('open');
   
   document.getElementById('socialAudioEnabled').checked = socialAudioSettings.enabled !== false;
+  const duckingEl = document.getElementById('socialAudioDuckingEnabled');
+  if (duckingEl) duckingEl.checked = socialAudioSettings.duckingEnabled !== false;
   document.getElementById('socialAudioVolumeSlider').value = socialAudioSettings.volume;
   document.getElementById('socialAudioVolumeLabel').textContent = `${socialAudioSettings.volume}%`;
   document.getElementById('socialAudioFollowUrl').value = socialAudioSettings.followSound || '';
@@ -11269,6 +11395,8 @@ window.openSocialAudioSettings = function(e) {
 
 window.saveSocialAudioSettings = function() {
   socialAudioSettings.enabled = document.getElementById('socialAudioEnabled').checked;
+  const duckingEl = document.getElementById('socialAudioDuckingEnabled');
+  socialAudioSettings.duckingEnabled = duckingEl ? duckingEl.checked : true;
   socialAudioSettings.volume = parseInt(document.getElementById('socialAudioVolumeSlider').value) || 80;
   socialAudioSettings.followSound = document.getElementById('socialAudioFollowUrl').value.trim();
   socialAudioSettings.defaultGiftSound = document.getElementById('socialAudioDefaultGiftUrl').value.trim();
@@ -11300,18 +11428,25 @@ function playSocialAlertAudio(soundUrl) {
     const audio = new Audio(soundUrl);
     audio.volume = (socialAudioSettings.volume / 100);
     
-    // Duck music
-    duckMusicVolume();
-    audio.play().catch(e => console.log('[SocialAudio] Play blocked', e));
+    // Duck music if enabled
+    const shouldDuck = socialAudioSettings.duckingEnabled !== false;
+    if (shouldDuck) {
+      duckMusicVolume();
+    }
+    audio.play().catch(e => {
+      console.log('[SocialAudio] Play blocked', e);
+      if (shouldDuck) restoreMusicVolume();
+    });
     
     audio.onended = () => {
-      restoreMusicVolume();
+      if (shouldDuck) restoreMusicVolume();
     };
     audio.onerror = () => {
-      restoreMusicVolume();
+      if (shouldDuck) restoreMusicVolume();
     };
   } catch (err) {
     console.warn('[SocialAudio] Play error', err);
+    if (socialAudioSettings.duckingEnabled !== false) restoreMusicVolume();
   }
 }
 
@@ -11326,22 +11461,23 @@ window.previewAlertSound = function(url) {
     const audio = new Audio(url);
     audio.volume = vol / 100;
     
-    duckMusicVolume();
+    const shouldDuck = socialAudioSettings.duckingEnabled !== false;
+    if (shouldDuck) duckMusicVolume();
     audio.play().catch(e => {
       showToast("🚫 Gagal memutar suara! Periksa kembali URL.");
-      restoreMusicVolume();
+      if (shouldDuck) restoreMusicVolume();
     });
     
     audio.onended = () => {
-      restoreMusicVolume();
+      if (shouldDuck) restoreMusicVolume();
     };
     audio.onerror = () => {
       showToast("🚫 Gagal memutar suara! Format URL salah atau diblokir.");
-      restoreMusicVolume();
+      if (shouldDuck) restoreMusicVolume();
     };
   } catch (err) {
     showToast("🚫 Gagal memutar file audio!");
-    restoreMusicVolume();
+    if (socialAudioSettings.duckingEnabled !== false) restoreMusicVolume();
   }
 };
 
@@ -11681,22 +11817,33 @@ try {
 
 let currentHostAudio = null;
 let _musicDucked = false;
-const DUCK_VOLUME_RATIO = 0.2; // Musik turun ke 20% saat host audio bermain
+let _duckRestoreTimer = null;
+const DUCK_VOLUME_RATIO = 0.55; // Musik turun halus ke 55% saat host audio/alert bermain (Soft Ducking)
 
-// ─── Audio Ducking: turunkan volume YouTube saat host bicara ───
+// ─── Audio Ducking: turunkan volume YouTube secara halus saat host bicara / alert ───
 function duckMusicVolume() {
   if (_musicDucked) return;
   _musicDucked = true;
   try {
     if (ytPlayer && ytPlayer.setVolume && isMusicPlaying) {
-      const duckedVol = Math.round(musicSettings.volume * DUCK_VOLUME_RATIO);
+      const duckedVol = Math.max(1, Math.round(musicSettings.volume * DUCK_VOLUME_RATIO));
       ytPlayer.setVolume(duckedVol);
-      console.log('[Audio] Music ducked to', duckedVol + '%');
+      console.log('[Audio] Music soft-ducked to', duckedVol + '%');
     }
   } catch(e) { console.warn('[Audio] Duck error', e); }
+
+  // Failsafe auto-restore setelah 6 detik jika audio selesai tanpa event atau macet
+  if (_duckRestoreTimer) clearTimeout(_duckRestoreTimer);
+  _duckRestoreTimer = setTimeout(() => {
+    restoreMusicVolume();
+  }, 6000);
 }
 
 function restoreMusicVolume() {
+  if (_duckRestoreTimer) {
+    clearTimeout(_duckRestoreTimer);
+    _duckRestoreTimer = null;
+  }
   if (!_musicDucked) return;
   _musicDucked = false;
   try {
@@ -15877,5 +16024,437 @@ window.revealWordClusterHint = revealWordClusterHint;
 window.skipWordClusterRound = skipWordClusterRound;
 window.startWordClusterGame = startWordClusterGame;
 window.processWordClusterGuess = processWordClusterGuess;
+
+// ═══════════════════════════════════════════════════════════════════
+// WORD MATCH (LEVENSHTEIN DISTANCE & PERCENTAGE SIMILARITY) GAME LOGIC
+// ═══════════════════════════════════════════════════════════════════
+let wordMatchCurrentWord = "";
+let wordMatchRevealed = [];
+let wordMatchGuesses = [];
+let wordMatchLatestGuess = null;
+let wordMatchRound = 1;
+let wordMatchAutoRevealTimer = null;
+let wordMatchAutoRevealSeconds = 60;
+let wordMatchAutoRevealTick = 60;
+let wordMatchGameOver = false;
+let wordMatchHintsGiven = 0;
+let wordMatchTransitionTimer = null;
+
+function wmLevenshtein(a, b) {
+  const matrix = [];
+  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+  return matrix[b.length][a.length];
+}
+
+function wmCalculateScore(guess, target) {
+  if (guess === target) return 100;
+  const dist = wmLevenshtein(guess, target);
+  if (dist === 1) return 99;
+
+  const maxLen = Math.max(guess.length, target.length);
+  const similarity = Math.max(0, 1 - (dist / maxLen));
+  let score = Math.floor(Math.pow(similarity, 1.2) * 100);
+
+  if (score >= 99) score = 98;
+  if (score <= 0) score = 1;
+  return score;
+}
+
+function startWordMatchGame(forceWord = null) {
+  if (currentGameMode !== 'wordmatch') return;
+
+  if (wordMatchTransitionTimer) {
+    clearTimeout(wordMatchTransitionTimer);
+    wordMatchTransitionTimer = null;
+  }
+  stopWordMatchAutoReveal();
+
+  wordMatchGameOver = false;
+  wordMatchHintsGiven = 0;
+  wordMatchGuesses = [];
+  wordMatchLatestGuess = null;
+
+  if (forceWord) {
+    wordMatchCurrentWord = forceWord.toUpperCase().trim().replace(/[^A-Z]/g, '');
+    WORD_LENGTH = wordMatchCurrentWord.length;
+  } else {
+    // Ambil opsi panjang kata yang diaktifkan host di pengaturan (localStorage allowed_lengths)
+    let allowedLengths = [4, 5, 6, 7, 8];
+    try {
+      const saved = JSON.parse(localStorage.getItem('allowed_lengths'));
+      if (Array.isArray(saved) && saved.length > 0) {
+        allowedLengths = saved.filter(l => l >= 3 && l <= 8);
+      }
+    } catch(e) {}
+    if (allowedLengths.length === 0) allowedLengths = [4, 5, 6, 7];
+
+    // Acak panjang kata tiap ronde baru dari daftar panjang kata yang dipilih host
+    const chosenLen = allowedLengths[Math.floor(Math.random() * allowedLengths.length)];
+    WORD_LENGTH = chosenLen;
+
+    let pool = (allTargetWords && allTargetWords[chosenLen] && allTargetWords[chosenLen].length > 0)
+      ? allTargetWords[chosenLen]
+      : (allValidWords && allValidWords[chosenLen] && allValidWords[chosenLen].length > 0
+          ? allValidWords[chosenLen]
+          : ["LAMPU", "PINTU", "RUMAH", "KUCING", "KERETA", "BELAJAR", "BINTANG"]);
+
+    let candidate = pool[Math.floor(Math.random() * pool.length)];
+    wordMatchCurrentWord = (candidate || "PINTU").toUpperCase().trim().replace(/[^A-Z]/g, '');
+  }
+
+  const len = wordMatchCurrentWord.length;
+  // Clues: Buka 1 huruf (pertama) untuk kata <= 5 huruf, buka 2 huruf (pertama & terakhir) untuk kata >= 6 huruf
+  let clueIndices = [0];
+  if (len >= 6) clueIndices.push(len - 1);
+
+  wordMatchRevealed = wordMatchCurrentWord.split('').map((char, idx) => clueIndices.includes(idx) ? char : '_');
+
+  renderWordMatchUI();
+  initWordMatchAutoReveal();
+
+  console.log(`[WordMatch] Round ${wordMatchRound} started: "${wordMatchCurrentWord}" (${len} letters)`);
+}
+
+function initWordMatchAutoReveal() {
+  stopWordMatchAutoReveal();
+  wordMatchAutoRevealTick = wordMatchAutoRevealSeconds;
+  updateWordMatchTimerUI();
+
+  wordMatchAutoRevealTimer = setInterval(() => {
+    if (wordMatchGameOver || currentGameMode !== 'wordmatch') {
+      stopWordMatchAutoReveal();
+      return;
+    }
+
+    wordMatchAutoRevealTick--;
+    if (wordMatchAutoRevealTick <= 0) {
+      wordMatchAutoRevealTick = wordMatchAutoRevealSeconds;
+      revealWordMatchLetter(false);
+    }
+    updateWordMatchTimerUI();
+  }, 1000);
+}
+
+function stopWordMatchAutoReveal() {
+  if (wordMatchAutoRevealTimer) {
+    clearInterval(wordMatchAutoRevealTimer);
+    wordMatchAutoRevealTimer = null;
+  }
+}
+
+function updateWordMatchTimerUI() {
+  const timerTextEl = document.getElementById('wmTimerText');
+  if (timerTextEl) {
+    timerTextEl.textContent = `${wordMatchAutoRevealTick}s`;
+  }
+}
+
+function revealWordMatchLetter(isManual = false) {
+  if (wordMatchGameOver || currentGameMode !== 'wordmatch') return;
+
+  const hiddenIndices = [];
+  for (let i = 0; i < wordMatchRevealed.length; i++) {
+    if (wordMatchRevealed[i] === '_') hiddenIndices.push(i);
+  }
+
+  // Jaga minimal 1 huruf tetap tertutup agar sistem tidak membocorkan 100% kata secara otomatis
+  if (hiddenIndices.length > (isManual ? 0 : 1)) {
+    const randomIndex = hiddenIndices[Math.floor(Math.random() * hiddenIndices.length)];
+    wordMatchRevealed[randomIndex] = wordMatchCurrentWord[randomIndex];
+    wordMatchHintsGiven++;
+    renderWordMatchUI();
+    if (window.sounds && typeof window.sounds.playFlip === 'function') window.sounds.playFlip(0);
+
+    if (isManual) {
+      showToast(`Bantuan: Huruf ke-${randomIndex + 1} terbuka: "${wordMatchCurrentWord[randomIndex]}"!`, 2000);
+    } else {
+      showToast(`Bantuan Otomatis: Huruf ke-${randomIndex + 1} terbuka!`, 2000);
+    }
+  } else if (isManual && hiddenIndices.length === 1) {
+    showToast("Hanya tersisa 1 huruf lagi, ayo tebak sekarang!", 2000);
+  }
+}
+
+function revealWordMatchHint() {
+  if (wordMatchGameOver || currentGameMode !== 'wordmatch') return;
+  revealWordMatchLetter(true);
+}
+
+function skipWordMatchRound() {
+  if (currentGameMode !== 'wordmatch') return;
+  if (window.playHostAudio) playHostAudio('click');
+  showToast(`Melewati kata "${wordMatchCurrentWord}"...`, 2000);
+  startWordMatchGame();
+}
+
+function renderWordMatchUI() {
+  const container = document.getElementById('wordMatchContainer');
+  if (!container || currentGameMode !== 'wordmatch') return;
+
+  const globalRoundEl = document.getElementById('roundNumber');
+  if (globalRoundEl) globalRoundEl.textContent = wordMatchRound;
+  round = wordMatchRound;
+
+  // 1. Secret tiles
+  const tilesRow = document.getElementById('wmTilesRow');
+  if (tilesRow) {
+    tilesRow.innerHTML = wordMatchRevealed.map(char => {
+      const isRevealed = char !== '_';
+      return `<div class="wm-tile ${isRevealed ? 'revealed' : 'empty'}">${isRevealed ? char : '?'}</div>`;
+    }).join('');
+  }
+
+  // 3. Guesses feed
+  renderWordMatchGuesses();
+
+  // 4. Update chat hint text
+  const chatHintEl = document.getElementById('wmChatHintText');
+  if (chatHintEl && wordMatchCurrentWord) {
+    chatHintEl.textContent = `Ketik kata ${wordMatchCurrentWord.length} huruf di komentar live!`;
+  }
+}
+
+function renderWordMatchGuesses() {
+  const container = document.getElementById('wmGuessesContainer');
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (!wordMatchLatestGuess && wordMatchGuesses.length === 0) {
+    container.innerHTML = `
+      <div class="wm-empty-placeholder">
+        <div class="wm-empty-icon"><i class="fa-solid fa-comment-dots"></i></div>
+        <div class="wm-empty-title">Belum Ada Tebakan</div>
+        <div class="wm-empty-desc">Ketik kata tebakan ${wordMatchCurrentWord ? wordMatchCurrentWord.length : 5} huruf di kolom komentar live!</div>
+      </div>
+    `;
+    return;
+  }
+
+  // Tebakan Terbaru (Latest Guess)
+  if (wordMatchLatestGuess) {
+    const latestTitle = document.createElement('div');
+    latestTitle.className = 'wm-section-title';
+    latestTitle.innerHTML = '<i class="fa-solid fa-bolt" style="color: #22c55e;"></i> TEBAKAN TERBARU';
+    container.appendChild(latestTitle);
+
+    container.appendChild(createWordMatchGuessElement(wordMatchLatestGuess, wordMatchLatestGuess.isNew));
+    wordMatchLatestGuess.isNew = false;
+
+    if (wordMatchGuesses.length > 0) {
+      const divider = document.createElement('div');
+      divider.className = 'wm-guess-divider';
+      container.appendChild(divider);
+
+      const bestTitle = document.createElement('div');
+      bestTitle.className = 'wm-section-title';
+      bestTitle.innerHTML = '<i class="fa-solid fa-fire" style="color: #f59e0b;"></i> TEBAKAN TERBAIK';
+      container.appendChild(bestTitle);
+    }
+  }
+
+  // Tebakan Terbaik (Top 4 sorted guesses)
+  const topGuesses = wordMatchGuesses.slice(0, 4);
+  topGuesses.forEach(g => {
+    container.appendChild(createWordMatchGuessElement(g, g.isNew));
+    g.isNew = false;
+  });
+}
+
+function createWordMatchGuessElement(guessObj, isNew = false) {
+  const el = document.createElement('div');
+  el.className = `wm-guess-item ${isNew ? 'new-pop' : ''}`;
+
+  const fill = document.createElement('div');
+  fill.className = 'wm-guess-fill';
+  const hue = Math.min(130, guessObj.score * 1.3);
+  fill.style.setProperty('--wm-hue', hue);
+  fill.style.width = isNew ? '0%' : `${guessObj.score}%`;
+
+  const content = document.createElement('div');
+  content.className = 'wm-guess-content';
+
+  const wordSpan = document.createElement('span');
+  wordSpan.className = 'wm-guess-word';
+  wordSpan.textContent = guessObj.word;
+
+  const userWrap = document.createElement('div');
+  userWrap.className = 'wm-guess-user';
+
+  const avatarImg = document.createElement('img');
+  avatarImg.className = 'wm-guess-avatar';
+  avatarImg.referrerPolicy = 'no-referrer';
+  avatarImg.src = guessObj.avatar || 'assets/bg_nature.png';
+  avatarImg.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
+
+  const nameSpan = document.createElement('span');
+  nameSpan.className = 'wm-guess-name';
+  nameSpan.textContent = guessObj.nickname;
+
+  userWrap.appendChild(avatarImg);
+  userWrap.appendChild(nameSpan);
+
+  const scoreBadge = document.createElement('span');
+  scoreBadge.className = 'wm-guess-score';
+  scoreBadge.textContent = `${guessObj.score}%`;
+
+  content.appendChild(wordSpan);
+  content.appendChild(userWrap);
+  content.appendChild(scoreBadge);
+
+  el.appendChild(fill);
+  el.appendChild(content);
+
+  if (isNew) {
+    setTimeout(() => {
+      fill.style.width = `${guessObj.score}%`;
+    }, 40);
+  }
+
+  return el;
+}
+
+function processWordMatchGuess(rawWord, userData) {
+  if (wordMatchGameOver || currentGameMode !== 'wordmatch') return;
+  if (!wordMatchCurrentWord) return;
+
+  const guess = (rawWord || '').toUpperCase().trim().replace(/[^A-Z]/g, '');
+  if (!guess) return;
+
+  // Filter panjang kata: tebakan harus memiliki panjang yang sama dengan kata target
+  if (guess.length !== wordMatchCurrentWord.length) return;
+
+  const score = wmCalculateScore(guess, wordMatchCurrentWord);
+  const nickname = (userData && (userData.nickname || userData.uniqueId)) || 'Sobat';
+  const avatar = (userData && userData.profilePictureUrl) || 'assets/bg_nature.png';
+  const userId = (userData && (userData.uniqueId || userData.nickname)) || 'unknown';
+
+  // Sound feedback adaptif berdasarkan skor kemiripan tebakan
+  if (score < 100) {
+    if (window.sounds && typeof window.sounds.playWordMatchScore === 'function') {
+      window.sounds.playWordMatchScore(score);
+    } else if (window.sounds && typeof window.sounds.playFlip === 'function') {
+      window.sounds.playFlip(0);
+    }
+  }
+
+  wordMatchLatestGuess = {
+    word: guess,
+    score: score,
+    nickname: nickname,
+    avatar: avatar,
+    userId: userId,
+    isNew: true
+  };
+
+  // Masukkan ke daftar tebakan terbaik (hanya simpan kata unik dengan skor tertinggi)
+  const existingIdx = wordMatchGuesses.findIndex(g => g.word === guess);
+  if (existingIdx === -1) {
+    wordMatchGuesses.push({ ...wordMatchLatestGuess });
+    wordMatchGuesses.sort((a, b) => b.score - a.score);
+    if (wordMatchGuesses.length > 50) wordMatchGuesses = wordMatchGuesses.slice(0, 50);
+  }
+
+  renderWordMatchGuesses();
+
+  // Kemenangan (100% atau guess === wordMatchCurrentWord)
+  if (guess === wordMatchCurrentWord || score === 100) {
+    wordMatchGameOver = true;
+    stopWordMatchAutoReveal();
+
+    // Buka seluruh huruf di papan
+    wordMatchRevealed = wordMatchCurrentWord.split('');
+    renderWordMatchUI();
+
+    handleWordMatchWin(userData);
+  }
+}
+
+function handleWordMatchWin(userData) {
+  const winnerName = userData ? (userData.nickname || userData.uniqueId || 'Someone') : 'Someone';
+  const avatarUrl = (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : 'assets/bg_nature.png';
+  const userId = userData ? (userData.uniqueId || userData.nickname) : null;
+  
+  // Opsi A: Poin dinamis berdasarkan bantuan clue yang telah terbuka
+  // 0 Bantuan tambahan (menebak sebelum ada bantuan): +25 Poin (Tebakan Cepat)
+  // 1 Bantuan tambahan terbuka: +15 Poin
+  // 2+ Bantuan tambahan terbuka: +10 Poin
+  let winPts = 25;
+  if (wordMatchHintsGiven === 1) {
+    winPts = 15;
+  } else if (wordMatchHintsGiven >= 2) {
+    winPts = 10;
+  }
+
+  if (winPts > 0) {
+    addPoints(userData, winPts);
+    if (typeof recordWin === 'function' && userId) {
+      recordWin(userId);
+    }
+    if (typeof showFloatingPoints === 'function') {
+      showFloatingPoints(winPts, 'wmTilesRow');
+    }
+  }
+
+  lastRoundWinner = userData;
+  lastRoundTargetWord = wordMatchCurrentWord;
+
+  const winOverlay = document.getElementById('winOverlay');
+  const winAvatar = document.getElementById('winAvatar');
+  if (winAvatar) {
+    winAvatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
+    winAvatar.src = avatarUrl;
+  }
+
+  const winNameEl = document.getElementById('winName');
+  if (winNameEl) winNameEl.textContent = winnerName;
+
+  const winPtsEl = document.getElementById('winPts');
+  if (winPtsEl) {
+    winPtsEl.innerHTML = `<i class="fa-solid fa-coins" style="color: #ffd54f;"></i> +${winPts} Pts`;
+  }
+
+  const winWordEl = document.getElementById('winWord');
+  if (winWordEl) {
+    winWordEl.innerHTML = '';
+    winWordEl.textContent = wordMatchCurrentWord;
+    winWordEl.style.display = 'block';
+    winWordEl.style.fontSize = '';
+    winWordEl.style.letterSpacing = '';
+    winWordEl.style.marginTop = '';
+  }
+
+  if (window.sounds) {
+    if (typeof window.sounds.playGreenChime === 'function') window.sounds.playGreenChime();
+    if (typeof window.sounds.playWin === 'function') window.sounds.playWin();
+  }
+
+  wordMatchRound++;
+
+  setTimeout(() => {
+    triggerWinTransition(4000, false);
+  }, 1000);
+}
+
+window.revealWordMatchHint = revealWordMatchHint;
+window.skipWordMatchRound = skipWordMatchRound;
+window.startWordMatchGame = startWordMatchGame;
+window.processWordMatchGuess = processWordMatchGuess;
+window.handleWordMatchWin = handleWordMatchWin;
+
 
 

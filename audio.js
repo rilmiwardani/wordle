@@ -736,6 +736,76 @@ class SoundEngine {
             });
         } catch(e) {}
     }
+
+    // Suara umpan balik adaptif Word Match berdasarkan persentase kemiripan kata
+    playWordMatchScore(score = 0) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        try {
+            const now = this.ctx.currentTime;
+            if (score >= 95) {
+                // Super Hot / Selisih 1 huruf (Sparkle Chime nada tinggi yang adiktif)
+                [880, 1174.66, 1479.98, 1760].forEach((freq, idx) => {
+                    const noteTime = now + (idx * 0.045);
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, noteTime);
+
+                    gain.gain.setValueAtTime(0.22, noteTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.25);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(noteTime);
+                    osc.stop(noteTime + 0.25);
+                });
+            } else if (score >= 80) {
+                // Hot / Sangat Dekat (Trio Nada Arpeggio Terang)
+                [587.33, 739.99, 880.00].forEach((freq, idx) => {
+                    const noteTime = now + (idx * 0.05);
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, noteTime);
+
+                    gain.gain.setValueAtTime(0.18, noteTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.18);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(noteTime);
+                    osc.stop(noteTime + 0.18);
+                });
+            } else if (score >= 50) {
+                // Warm / Sedang (Dual Nada Naik Harmonis)
+                const baseFreq = 440 + ((score - 50) * 4);
+                [baseFreq, baseFreq * 1.25].forEach((freq, idx) => {
+                    const noteTime = now + (idx * 0.04);
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, noteTime);
+
+                    gain.gain.setValueAtTime(0.14, noteTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.12);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(noteTime);
+                    osc.stop(noteTime + 0.12);
+                });
+            } else {
+                // Low / Jauh (Soft click thud biasa)
+                this.playFlip(0);
+            }
+        } catch(e) {}
+    }
 }
 
 window.sounds = new SoundEngine();

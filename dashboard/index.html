@@ -1343,8 +1343,8 @@
             </label>
 
             <div class="obs-mode-select-wrap">
-              <label for="obsDefaultModeSelect" style="color:var(--text2); margin-right:4px;">Game Awal:</label>
-              <select id="obsDefaultModeSelect" onchange="updateObsUrlGenerated()">
+              <label for="obsDefaultModeSelect" style="color:var(--text2); margin-right:4px;">Game Awal / Mode:</label>
+              <select id="obsDefaultModeSelect" onchange="updateObsUrlGenerated(); remoteChangeGame(this.value);">
                 <option value="wordle">Wordle</option>
                 <option value="word500">Word500</option>
                 <option value="word600">Word600</option>
@@ -1359,6 +1359,8 @@
                 <option value="betweenle">Betweenle</option>
                 <option value="cascadle">Cascadle</option>
                 <option value="wanderwords">Wander Words</option>
+                <option value="wordcluster">Word Cluster</option>
+                <option value="wordmatch">Word Match</option>
               </select>
             </div>
           </div>
@@ -1485,6 +1487,7 @@
           <button class="game-btn" data-game="cascadle" onclick="remoteChangeGame('cascadle')">Cascadle</button>
           <button class="game-btn" data-game="wanderwords" onclick="remoteChangeGame('wanderwords')">Wander Words</button>
           <button class="game-btn" data-game="wordcluster" onclick="remoteChangeGame('wordcluster')">Word Cluster</button>
+          <button class="game-btn" data-game="wordmatch" onclick="remoteChangeGame('wordmatch')">Word Match</button>
         </div>
 
         <!-- HOST INLINE ACTION BAR (KIRIM TEBAKAN & CLUE LANGSUNG KE OBS) -->
@@ -1637,6 +1640,36 @@
       </div>
       <div class="obs-card-body">
         
+        <!-- ACTIVE GAME MODE BANNER & SWITCHER -->
+        <div style="margin-bottom: 16px; padding: 10px 14px; background: rgba(37, 244, 238, 0.08); border: 1px solid rgba(37, 244, 238, 0.25); border-radius: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-gamepad" style="color: var(--accent2); font-size: 15px;"></i>
+            <span style="font-size: 12px; color: #fff; font-weight: 700;">Mode Game Aktif di OBS:</span>
+            <span class="badge" id="dashActiveGameBadge" style="background: var(--accent2); color: #000; font-weight: 800; font-size: 11px; padding: 3px 9px; border-radius: 6px;">WORDLE</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label for="dashQuickGameSelect" style="font-size: 11.5px; color: var(--text2); font-weight: 600;">Ganti Mode Game:</label>
+            <select id="dashQuickGameSelect" onchange="remoteChangeGame(this.value)" style="background: #14141e; border: 1px solid var(--accent2); color: #fff; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">
+              <option value="wordle">Wordle</option>
+              <option value="word500">Word500</option>
+              <option value="word600">Word600</option>
+              <option value="wordfit">Word Fit</option>
+              <option value="colorfit">Color Fit</option>
+              <option value="wordloop">Word Loop</option>
+              <option value="fillblanks">Word Fill</option>
+              <option value="wordtango">Word Tango</option>
+              <option value="wordgrid">Word Grid</option>
+              <option value="squareword">Squareword</option>
+              <option value="wordladder">Word Ladder</option>
+              <option value="betweenle">Betweenle</option>
+              <option value="cascadle">Cascadle</option>
+              <option value="wanderwords">Wander Words</option>
+              <option value="wordcluster">Word Cluster</option>
+              <option value="wordmatch">Word Match</option>
+            </select>
+          </div>
+        </div>
+
         <!-- SECTION 1: PANJANG HURUF & BAHASA -->
         <div class="settings-control-grid">
           
@@ -1743,6 +1776,30 @@
                 </div>
                 <label class="switch-ui">
                   <input type="checkbox" id="dashShowHintsToggle" checked onchange="autoSaveSettings()">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+              <!-- Starting Word Nickname Pemenang -->
+              <div class="dash-toggle-row">
+                <div>
+                  <div class="dash-toggle-title"><i class="fa-solid fa-crown" style="color: #f59e0b; margin-right: 6px;"></i> Starting Word Nickname Pemenang</div>
+                  <div class="dash-toggle-sub">Kata pembuka dari nickname pemenang (3-8 huruf). Fallback ke target sblm / acak</div>
+                </div>
+                <label class="switch-ui">
+                  <input type="checkbox" id="dashAutoStarterWinnerToggle" checked onchange="autoSaveSettings()">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+              <!-- Auto-Starter Kata Target Sblm -->
+              <div class="dash-toggle-row">
+                <div>
+                  <div class="dash-toggle-title"><i class="fa-solid fa-repeat" style="color: #10b981; margin-right: 6px;"></i> Auto-Starter Kata Target Sblm</div>
+                  <div class="dash-toggle-sub">Target sblm jika jumlah huruf sama, atau kata acak jika beda (tanpa nickname)</div>
+                </div>
+                <label class="switch-ui">
+                  <input type="checkbox" id="dashAutoStarterToggle" onchange="autoSaveSettings()">
                   <span class="slider round"></span>
                 </label>
               </div>
@@ -1900,22 +1957,28 @@
                 <input type="text" id="dashMusicBannedKeywordsInput" placeholder="contoh: koplo, dj, remix, jedag jedug" onchange="autoSaveSettings()" style="width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 6px; color: #fff; padding: 6px 10px; font-size: 12px;">
               </div>
 
-              <!-- SFX & Suasana Radio Ambiance -->
+              <!-- SFX Notifikasi Request Lagu -->
               <div class="dash-toggle-row">
                 <div>
-                  <div class="dash-toggle-title"><i class="fa-solid fa-volume-high" style="color: var(--accent2); margin-right: 6px;"></i> Sound Effect Request &amp; Lo-Fi Ambiance</div>
-                  <div class="dash-toggle-sub">SFX notifikasi request &amp; efek suasana piringan hitam radio</div>
+                  <div class="dash-toggle-title"><i class="fa-solid fa-bell" style="color: var(--accent2); margin-right: 6px;"></i> SFX Notifikasi Request Lagu</div>
+                  <div class="dash-toggle-sub">Bunyi nada/chime saat penonton berhasil request lagu via chat</div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 12px;">
-                  <label class="switch-ui" title="SFX Request">
-                    <input type="checkbox" id="dashMusicRadioSFXToggle" checked onchange="autoSaveSettings()">
-                    <span class="slider round"></span>
-                  </label>
-                  <label class="switch-ui" title="Efek Lo-Fi Vinyl Ambiance">
-                    <input type="checkbox" id="dashMusicRadioAmbianceToggle" onchange="autoSaveSettings()">
-                    <span class="slider round"></span>
-                  </label>
+                <label class="switch-ui">
+                  <input type="checkbox" id="dashMusicRadioSFXToggle" checked onchange="autoSaveSettings()">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+              <!-- Efek Suasana Radio & Vinyl Lo-Fi -->
+              <div class="dash-toggle-row">
+                <div>
+                  <div class="dash-toggle-title"><i class="fa-solid fa-compact-disc" style="color: #a855f7; margin-right: 6px;"></i> Suasana Radio &amp; Vinyl Lo-Fi</div>
+                  <div class="dash-toggle-sub">Efek desis udara radio dan retakan piringan hitam di latar musik</div>
                 </div>
+                <label class="switch-ui">
+                  <input type="checkbox" id="dashMusicRadioAmbianceToggle" onchange="autoSaveSettings()">
+                  <span class="slider round"></span>
+                </label>
               </div>
             </div>
           </div>
@@ -2369,6 +2432,18 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       if (modeLabel && cfg.activeGameMode) {
         modeLabel.textContent = cfg.activeGameMode.toUpperCase();
       }
+      const activeBadge = document.getElementById("dashActiveGameBadge");
+      if (activeBadge && cfg.activeGameMode) {
+        activeBadge.textContent = cfg.activeGameMode.toUpperCase();
+      }
+      const defaultModeSelect = document.getElementById("obsDefaultModeSelect");
+      if (defaultModeSelect && cfg.activeGameMode) {
+        defaultModeSelect.value = cfg.activeGameMode;
+      }
+      const quickGameSelect = document.getElementById("dashQuickGameSelect");
+      if (quickGameSelect && cfg.activeGameMode) {
+        quickGameSelect.value = cfg.activeGameMode;
+      }
       if (transCheck && typeof cfg.transparentBg === "boolean") {
         transCheck.checked = cfg.transparentBg;
       }
@@ -2533,12 +2608,22 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
     }
 
     function remoteChangeGame(mode) {
+      if (!mode) return;
       currentObsConfig.activeGameMode = mode;
-      document.getElementById("activeGameModeLabel").textContent = mode.toUpperCase();
+      const label = document.getElementById("activeGameModeLabel");
+      if (label) label.textContent = mode.toUpperCase();
+      const activeBadge = document.getElementById("dashActiveGameBadge");
+      if (activeBadge) activeBadge.textContent = mode.toUpperCase();
+      const defaultModeSelect = document.getElementById("obsDefaultModeSelect");
+      if (defaultModeSelect) defaultModeSelect.value = mode;
+      const quickGameSelect = document.getElementById("dashQuickGameSelect");
+      if (quickGameSelect) quickGameSelect.value = mode;
+
       document.querySelectorAll(".game-btn").forEach((btn) => {
         btn.classList.toggle("active", btn.getAttribute("data-game") === mode);
       });
       socket.emit("dashboard-change-game", mode);
+      updateObsUrlGenerated();
     }
 
     function triggerRemoteNewRound() {
@@ -2571,6 +2656,8 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       noRepeat: false,
       noYellow: false,
       showHints: true,
+      autoStarterWinner: true,
+      autoStarterPreviousTarget: false,
       displayRows: 6,
       boardScale: 100,
       theme: "dark",
@@ -2624,6 +2711,13 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       // 7. Show Hints
       const sh = document.getElementById("dashShowHintsToggle");
       if (sh) sh.checked = !!cfg.showHints;
+
+      // 7.5 Starting Word Toggles
+      const asw = document.getElementById("dashAutoStarterWinnerToggle");
+      if (asw && cfg.autoStarterWinner !== undefined) asw.checked = !!cfg.autoStarterWinner;
+
+      const ast = document.getElementById("dashAutoStarterToggle");
+      if (ast && cfg.autoStarterPreviousTarget !== undefined) ast.checked = !!cfg.autoStarterPreviousTarget;
 
       // 8. Follower Only Guess
       const fog = document.getElementById("dashFollowerOnlyGuessToggle");
@@ -2789,6 +2883,8 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       currentGameSettings.noRepeat = document.getElementById("dashNoRepeatToggle")?.checked ?? false;
       currentGameSettings.noYellow = document.getElementById("dashNoYellowToggle")?.checked ?? false;
       currentGameSettings.showHints = document.getElementById("dashShowHintsToggle")?.checked ?? true;
+      currentGameSettings.autoStarterWinner = document.getElementById("dashAutoStarterWinnerToggle")?.checked ?? true;
+      currentGameSettings.autoStarterPreviousTarget = document.getElementById("dashAutoStarterToggle")?.checked ?? false;
       currentGameSettings.followerOnlyGuess = document.getElementById("dashFollowerOnlyGuessToggle")?.checked ?? false;
       currentGameSettings.followerOnlyMusic = document.getElementById("dashFollowerOnlyMusicToggle")?.checked ?? false;
       currentGameSettings.musicRequestsEnabled = document.getElementById("dashMusicRequestsEnabledToggle")?.checked ?? true;

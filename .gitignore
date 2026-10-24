@@ -6,3 +6,4 @@ scratch/
 src-tauri/
 target/
 game_settings.json
+obs_config.json

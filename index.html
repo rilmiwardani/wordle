@@ -264,6 +264,18 @@
               </div>
             </div>
           </div>
+
+          <!-- 16. Word Match -->
+          <div class="game-card card-wordmatch" onclick="selectGame('wordmatch')" id="cardWordMatch">
+            <div class="card-visual" style="display: flex; align-items: center; justify-content: center; gap: 3px;">
+              <i class="fa-solid fa-bullseye" style="font-size: 20px; color: #22c55e;"></i>
+            </div>
+            <div class="card-body">
+              <div class="card-top-row">
+                <span class="card-title">WORD MATCH</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -339,7 +351,7 @@
     <div class="like-counter-pulse" id="likeCounterPulse"></div>
     <img class="like-counter-avatar" id="likeCounterAvatar" src="" alt="">
     <div class="like-counter-info">
-      <span class="like-counter-total" id="likeCounterTotal">❤️ 0</span>
+      <span class="like-counter-total" id="likeCounterTotal"><i class="fa-solid fa-heart" style="color: #fe2c55;"></i> 0</span>
       <span class="like-counter-name" id="likeCounterName"></span>
     </div>
   </div>
@@ -598,6 +610,17 @@
                     <div class="game-card-text">
                       <div class="game-card-title">Word Cluster</div>
                       <div class="game-card-desc">Tebak 6 Kata Terkait (60pt - 10pt)</div>
+                    </div>
+                  </div>
+
+                  <!-- Word Match -->
+                  <div class="game-card" data-value="wordmatch" onclick="selectCustomGame('wordmatch', event)">
+                    <div class="game-card-icon badge-wordmatch">
+                      <i class="fa-solid fa-bullseye" style="font-size: 16px; color: #22c55e;"></i>
+                    </div>
+                    <div class="game-card-text">
+                      <div class="game-card-title">Word Match</div>
+                      <div class="game-card-desc">Tebak Kata & Skor Kemiripan Bar (1-100%)</div>
                     </div>
                   </div>
                 </div>
@@ -1595,6 +1618,38 @@
         </div>
       </div>
 
+      <!-- Word Match (Levenshtein Distance) Container -->
+      <div id="wordMatchContainer" class="wordmatch-container" style="display: none;">
+        <!-- Unified Board Card -->
+        <div class="wordmatch-board-card">
+          <!-- Top Utility Row (Timer Chip) -->
+          <div class="wordmatch-top-row">
+            <div class="wordmatch-timer-pill" id="wmTimerPill" title="Bantuan huruf berikutnya terbuka otomatis">
+              <i class="fa-solid fa-hourglass-half"></i>
+              <span id="wmTimerText">60s</span>
+            </div>
+          </div>
+
+          <!-- Secret Word Display Tiles -->
+          <div class="wordmatch-tiles-row" id="wmTilesRow">
+            <!-- Tiles populated by renderWordMatchUI() -->
+          </div>
+
+          <!-- Guesses Feed Area -->
+          <div class="wordmatch-guesses-wrapper" id="wmGuessesContainer">
+            <!-- Latest and Top Guesses populated by renderWordMatchGuesses() -->
+          </div>
+        </div>
+
+        <!-- Word Match Live Chat Instruction Bar -->
+        <div class="wordmatch-footer">
+          <div class="wordmatch-chat-hint">
+            <i class="fa-solid fa-comment-dots" style="color: #fe2c55; margin-right: 6px;"></i>
+            <span id="wmChatHintText">Ketik kata tebakanmu di komentar live!</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Supporter Spotlight Rotator (Fade In/Out) -->
       <div id="marqueeContainer" class="supporter-spotlight-container" style="display: none;">
         <div class="supporter-spotlight-inner" id="marqueeContent"></div>
@@ -2029,6 +2084,17 @@
           <span style="font-size: 12.5px; color: #e2e8f0; font-weight: 600;">Aktifkan Sound Alert:</span>
           <div class="toggle-switch">
             <input type="checkbox" id="socialAudioEnabled">
+            <div class="toggle-track"></div>
+          </div>
+        </label>
+
+        <label class="modal-section-card" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin: 0;">
+          <div>
+            <div style="font-size: 12.5px; color: #e2e8f0; font-weight: 600;">Redupkan Musik saat Alert (Ducking):</div>
+            <div style="font-size: 10.5px; color: #94a3b8; margin-top: 1px;">Turunkan volume musik halus (~55%) saat sound alert berbunyi</div>
+          </div>
+          <div class="toggle-switch">
+            <input type="checkbox" id="socialAudioDuckingEnabled" checked>
             <div class="toggle-track"></div>
           </div>
         </label>

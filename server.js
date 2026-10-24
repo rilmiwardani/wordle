@@ -61,6 +61,7 @@ let gameSettings = {
   displayRows: 6,
   boardScale: 100,
   autoStarterWinner: true,
+  autoStarterPreviousTarget: false,
   followerOnlyMusic: false,
   musicRequestsEnabled: true,
   musicVolume: 50,
@@ -80,6 +81,7 @@ let gameSettings = {
   musicPlaylistAutoScroll: true,
   wanderWordsCustomList: [],
   wordClusterCustomList: [],
+  wordMatchCustomList: [],
 };
 
 // Live Music Playback State Tracker (for live sync with Dashboard)

@@ -737,73 +737,166 @@ class SoundEngine {
         } catch(e) {}
     }
 
-    // Suara umpan balik adaptif Word Match berdasarkan persentase kemiripan kata
-    playWordMatchScore(score = 0) {
+    // Suara umpan balik adaptif Word Match yang super renyah & adiktif
+    playWordMatchScore(score = 0, isNewTop = false) {
         if (!this.enabled) return;
         this.init();
         if (!this.ctx) return;
 
         try {
             const now = this.ctx.currentTime;
+            
+            // Helper sintesis: Memadukan attack transient 'snap' + harmonic body + crystal overtone
+            const playCrispTone = (freq, startTime, duration = 0.14, baseGain = 0.18, isHighSparkle = false) => {
+                // 1. Attack Click / Transient Pop (Memberikan sensasi 'renyah' & 'crunchy')
+                const oscClick = this.ctx.createOscillator();
+                const gainClick = this.ctx.createGain();
+                oscClick.type = 'triangle';
+                oscClick.frequency.setValueAtTime(freq * 2.2, startTime);
+                oscClick.frequency.exponentialRampToValueAtTime(120, startTime + 0.012);
+                gainClick.gain.setValueAtTime(baseGain * 0.9, startTime);
+                gainClick.gain.exponentialRampToValueAtTime(0.001, startTime + 0.012);
+                oscClick.connect(gainClick);
+                gainClick.connect(this.ctx.destination);
+                oscClick.start(startTime);
+                oscClick.stop(startTime + 0.012);
+
+                // 2. Tonal Body (Triangle wave yang hangat, punchy, dan padat)
+                const oscBody = this.ctx.createOscillator();
+                const gainBody = this.ctx.createGain();
+                oscBody.type = 'triangle';
+                oscBody.frequency.setValueAtTime(freq, startTime);
+                gainBody.gain.setValueAtTime(baseGain, startTime);
+                gainBody.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+                oscBody.connect(gainBody);
+                gainBody.connect(this.ctx.destination);
+                oscBody.start(startTime);
+                oscBody.stop(startTime + duration);
+
+                // 3. Crystal Overtone Shimmer (Sine di harmoni ke-2 atau ke-2.5 untuk kejernihan/kilau)
+                const oscOvertone = this.ctx.createOscillator();
+                const gainOvertone = this.ctx.createGain();
+                oscOvertone.type = 'sine';
+                const overtoneFreq = isHighSparkle ? freq * 2.5 : freq * 2;
+                oscOvertone.frequency.setValueAtTime(overtoneFreq, startTime);
+                gainOvertone.gain.setValueAtTime(baseGain * 0.45, startTime);
+                gainOvertone.gain.exponentialRampToValueAtTime(0.001, startTime + (duration * 0.85));
+                oscOvertone.connect(gainOvertone);
+                gainOvertone.connect(this.ctx.destination);
+                oscOvertone.start(startTime);
+                oscOvertone.stop(startTime + (duration * 0.85));
+            };
+
             if (score >= 95) {
-                // Super Hot / Selisih 1 huruf (Sparkle Chime nada tinggi yang adiktif)
-                [880, 1174.66, 1479.98, 1760].forEach((freq, idx) => {
+                // 💎 TIER 5: ULTRA HOT / Selisih 1 Huruf (95% - 99%)
+                // Kaskade pentatonic 5-nada super cepat + tension shimmer ring!
+                const notes = [1174.66, 1479.98, 1760.00, 2349.32, 2959.96]; // D6, F#6, A6, D7, F#7
+                notes.forEach((freq, idx) => {
+                    const noteTime = now + (idx * 0.032);
+                    playCrispTone(freq, noteTime, 0.28, 0.20, true);
+                });
+                // Ekor dengung kristal berkilau
+                const sparkleOsc = this.ctx.createOscillator();
+                const sparkleGain = this.ctx.createGain();
+                sparkleOsc.type = 'sine';
+                sparkleOsc.frequency.setValueAtTime(3520, now + 0.16);
+                sparkleGain.gain.setValueAtTime(0.12, now + 0.16);
+                sparkleGain.gain.exponentialRampToValueAtTime(0.001, now + 0.42);
+                sparkleOsc.connect(sparkleGain);
+                sparkleGain.connect(this.ctx.destination);
+                sparkleOsc.start(now + 0.16);
+                sparkleOsc.stop(now + 0.42);
+
+            } else if (score >= 85) {
+                // 🔥 TIER 4: SUPER HOT (85% - 94%)
+                // 4-Note Rush Arpeggio Kristal (C6 -> E6 -> G6 -> C7)
+                const notes = [1046.50, 1318.51, 1567.98, 2093.00];
+                notes.forEach((freq, idx) => {
+                    const noteTime = now + (idx * 0.038);
+                    playCrispTone(freq, noteTime, 0.22, 0.19, true);
+                });
+
+            } else if (score >= 65) {
+                // 🌟 TIER 3: HOT / DEKAT (65% - 84%)
+                // 3-Note Major Triad Arpeggio Renyah (G5 -> B5 -> D6)
+                const base = 783.99 + ((score - 65) * 6);
+                const notes = [base, base * 1.25, base * 1.5];
+                notes.forEach((freq, idx) => {
                     const noteTime = now + (idx * 0.045);
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
-
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(freq, noteTime);
-
-                    gain.gain.setValueAtTime(0.22, noteTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.25);
-
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    osc.start(noteTime);
-                    osc.stop(noteTime + 0.25);
+                    playCrispTone(freq, noteTime, 0.18, 0.17, false);
                 });
-            } else if (score >= 80) {
-                // Hot / Sangat Dekat (Trio Nada Arpeggio Terang)
-                [587.33, 739.99, 880.00].forEach((freq, idx) => {
+
+            } else if (score >= 40) {
+                // ☀️ TIER 2: WARM (40% - 64%)
+                // 2-Step Bouncy Kalimba Pluck (Interval 4th/5th naik)
+                const base = 523.25 + ((score - 40) * 5);
+                const notes = [base, base * 1.334];
+                notes.forEach((freq, idx) => {
                     const noteTime = now + (idx * 0.05);
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
-
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(freq, noteTime);
-
-                    gain.gain.setValueAtTime(0.18, noteTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.18);
-
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    osc.start(noteTime);
-                    osc.stop(noteTime + 0.18);
+                    playCrispTone(freq, noteTime, 0.14, 0.15, false);
                 });
-            } else if (score >= 50) {
-                // Warm / Sedang (Dual Nada Naik Harmonis)
-                const baseFreq = 440 + ((score - 50) * 4);
-                [baseFreq, baseFreq * 1.25].forEach((freq, idx) => {
-                    const noteTime = now + (idx * 0.04);
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
 
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(freq, noteTime);
-
-                    gain.gain.setValueAtTime(0.14, noteTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.12);
-
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    osc.start(noteTime);
-                    osc.stop(noteTime + 0.12);
-                });
             } else {
-                // Low / Jauh (Soft click thud biasa)
-                this.playFlip(0);
+                // 🫧 TIER 1: COLD / LOW (0% - 39%)
+                // Crisp Wooden Bubble Pop (Snappy tactile pop, tidak lemas)
+                const pitch = 330 + (score * 2.8);
+                playCrispTone(pitch, now, 0.09, 0.13, false);
             }
+
+            // ⭐ BONUS: Golden Chime Accent jika memecahkan rekor skor tertinggi baru di ronde ini!
+            if (isNewTop && score >= 45) {
+                const bonusTime = now + 0.18;
+                const bonusOsc = this.ctx.createOscillator();
+                const bonusGain = this.ctx.createGain();
+                bonusOsc.type = 'triangle';
+                bonusOsc.frequency.setValueAtTime(2637.02, bonusTime); // E7 golden sparkle
+                bonusGain.gain.setValueAtTime(0.14, bonusTime);
+                bonusGain.gain.exponentialRampToValueAtTime(0.001, bonusTime + 0.25);
+                bonusOsc.connect(bonusGain);
+                bonusGain.connect(this.ctx.destination);
+                bonusOsc.start(bonusTime);
+                bonusOsc.stop(bonusTime + 0.25);
+            }
+        } catch(e) {}
+    }
+
+    // Suara saat petunjuk huruf terbuka di Word Match (Magical Unlock Pop)
+    playWordMatchHint() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        try {
+            const now = this.ctx.currentTime;
+            // Dua nada lonceng magis yang mekar lembut & renyah
+            [880.00, 1318.51].forEach((freq, idx) => {
+                const noteTime = now + (idx * 0.06);
+                
+                // Click transient
+                const clickOsc = this.ctx.createOscillator();
+                const clickGain = this.ctx.createGain();
+                clickOsc.type = 'triangle';
+                clickOsc.frequency.setValueAtTime(1600, noteTime);
+                clickOsc.frequency.exponentialRampToValueAtTime(200, noteTime + 0.012);
+                clickGain.gain.setValueAtTime(0.14, noteTime);
+                clickGain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.012);
+                clickOsc.connect(clickGain);
+                clickGain.connect(this.ctx.destination);
+                clickOsc.start(noteTime);
+                clickOsc.stop(noteTime + 0.012);
+
+                // Body tone
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, noteTime);
+                gain.gain.setValueAtTime(0.16, noteTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.22);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(noteTime);
+                osc.stop(noteTime + 0.22);
+            });
         } catch(e) {}
     }
 }

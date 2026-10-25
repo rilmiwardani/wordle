@@ -6939,9 +6939,13 @@ function toggleHardMode(e) {
   updateHardModeUI();
   
   let msg = 'Hard Mode Dinonaktifkan';
-  if (hardModeState === 'hard') msg = '🔥 Hard Mode Diaktifkan';
-  if (hardModeState === 'ultra') msg = '☠️ Ultra Hard Mode Diaktifkan';
-  showToast(msg, 2000);
+  const isSortedClueMode = (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit');
+  if (hardModeState === 'hard') {
+    msg = isSortedClueMode ? '🔥 Hard Mode: Wajib cocok dgn skor petunjuk!' : '🔥 Hard Mode Diaktifkan';
+  } else if (hardModeState === 'ultra') {
+    msg = isSortedClueMode ? '☠️ Ultra Hard: Wajib cocok semua petunjuk!' : '☠️ Ultra Hard Mode Diaktifkan';
+  }
+  showToast(msg, 2500);
 
   // Restart round so the new mode is applied immediately
   startNewRound();
@@ -7257,19 +7261,32 @@ function validateHardMode(guessWord) {
       const actual = getScore(past, currentWord);
       const simulated = getScore(past, guessWord);
       if (actual.c !== simulated.c || actual.p !== simulated.p) {
-        // Pesan singkat agar mudah dibaca di live stream
+        // Pesan singkat, jelas, & manusiawi agar langsung dipahami penonton live stream
         let reason = "";
         const actC = actual.c, actP = actual.p;
         const simC = simulated.c, simP = simulated.p;
+        const isEn = (typeof lastLang !== 'undefined' && lastLang === 'en');
 
-        if (simC + simP < actC + actP) {
-           reason = `Kurang mirip dengan clue "${past}" (Harusnya ${actC}🟩 ${actP}🟨)`;
+        if (actC === 0 && actP === 0) {
+          reason = isEn 
+            ? `All letters in "${past}" are wrong (0🟩 0🟨)! Cannot use them` 
+            : `Huruf di "${past}" salah semua (0🟩 0🟨)! Dilarang dipakai`;
+        } else if (simC + simP < actC + actP) {
+          reason = isEn 
+            ? `Need more matching letters from "${past}" (Must have ${actC}🟩 ${actP}🟨)` 
+            : `Kurang huruf cocok dgn "${past}"! Wajib ada ${actC}🟩 ${actP}🟨`;
         } else if (simC + simP > actC + actP) {
-           reason = `Terlalu mirip dengan clue "${past}" (Padahal cuma ${actC}🟩 ${actP}🟨)`;
+          reason = isEn 
+            ? `Too many matching letters with "${past}" (Max ${actC}🟩 ${actP}🟨)` 
+            : `Kebanyakan huruf sama dgn "${past}"! Maksimal ${actC}🟩 ${actP}🟨`;
         } else if (simC !== actC) {
-           reason = `Posisi huruf kurang pas dengan clue "${past}" (Harusnya ${actC}🟩 ${actP}🟨)`;
+          reason = isEn 
+            ? `Green position mismatch with "${past}"! Must have ${actC}🟩` 
+            : `Posisi hijau bentrok dgn petunjuk "${past}"! Wajib tepat ${actC}🟩`;
         } else {
-           reason = `Tidak cocok dengan clue "${past}" (${actC}🟩 ${actP}🟨)`;
+          reason = isEn 
+            ? `Score doesn't match clue "${past}"! Must be ${actC}🟩 ${actP}🟨` 
+            : `Menabrak petunjuk "${past}"! Wajib cocok ${actC}🟩 ${actP}🟨`;
         }
         return { 
           valid: false, 
@@ -16182,7 +16199,11 @@ function revealWordMatchLetter(isManual = false) {
     wordMatchRevealed[randomIndex] = wordMatchCurrentWord[randomIndex];
     wordMatchHintsGiven++;
     renderWordMatchUI();
-    if (window.sounds && typeof window.sounds.playFlip === 'function') window.sounds.playFlip(0);
+    if (window.sounds && typeof window.sounds.playWordMatchHint === 'function') {
+      window.sounds.playWordMatchHint();
+    } else if (window.sounds && typeof window.sounds.playFlip === 'function') {
+      window.sounds.playFlip(0);
+    }
 
     if (isManual) {
       showToast(`Bantuan: Huruf ke-${randomIndex + 1} terbuka: "${wordMatchCurrentWord[randomIndex]}"!`, 2000);
@@ -16347,10 +16368,13 @@ function processWordMatchGuess(rawWord, userData) {
   const avatar = (userData && userData.profilePictureUrl) || 'assets/bg_nature.png';
   const userId = (userData && (userData.uniqueId || userData.nickname)) || 'unknown';
 
+  const currentTopScore = (wordMatchGuesses.length > 0) ? wordMatchGuesses[0].score : 0;
+  const isNewTop = score > currentTopScore && currentTopScore > 0;
+
   // Sound feedback adaptif berdasarkan skor kemiripan tebakan
   if (score < 100) {
     if (window.sounds && typeof window.sounds.playWordMatchScore === 'function') {
-      window.sounds.playWordMatchScore(score);
+      window.sounds.playWordMatchScore(score, isNewTop);
     } else if (window.sounds && typeof window.sounds.playFlip === 'function') {
       window.sounds.playFlip(0);
     }

@@ -1251,7 +1251,7 @@ window.WORDCLUSTER_DEFAULT_PUZZLES = [
   },
   {
     topic: "CENDOL",
-    words: ["SANTAN","NANGKA","KENYAL","HIJAU","SEGER","MANIS"]
+    words: ["SANTAN","NANGKA","KENYAL","HIJAU","SEGAR","MANIS"]
   },
   {
     topic: "DOGER",
@@ -1307,7 +1307,7 @@ window.WORDCLUSTER_DEFAULT_PUZZLES = [
   },
   {
     topic: "MENDOAN",
-    words: ["BANYUMAS","GORENG","RENYAH","HANGAT","TEMPE","TIPIS"]
+    words: ["BANYUMAS","GORENG","GURIH","HANGAT","TEMPE","TIPIS"]
   },
   {
     topic: "DUKU",
@@ -1319,7 +1319,7 @@ window.WORDCLUSTER_DEFAULT_PUZZLES = [
   },
   {
     topic: "MARKISA",
-    words: ["WANGI","MASAM","SEGAR","ASAM","BIJI","UNGU"]
+    words: ["WANGI","KUNING","SEGAR","ASAM","BIJI","UNGU"]
   },
   {
     topic: "KEDONDONG",
@@ -1427,7 +1427,7 @@ window.WORDCLUSTER_DEFAULT_PUZZLES = [
   },
   {
     topic: "KURA-KURA",
-    words: ["CANGKANG","PANJANG","LAMBAT","AMFIBI","HIJAU","KERAS"]
+    words: ["CANGKANG","PANJANG","LAMBAT","REPTIL","HIJAU","KERAS"]
   },
   {
     topic: "KATAK",
@@ -1491,7 +1491,7 @@ window.WORDCLUSTER_DEFAULT_PUZZLES = [
   },
   {
     topic: "BOROBUDUR",
-    words: ["MAGELANG","SEJARAH","WISATA","CANDI","STUPA","BUDA"]
+    words: ["MAGELANG","SEJARAH","WISATA","CANDI","STUPA","BUDDHA"]
   },
   {
     topic: "PRAMBANAN",
@@ -1507,7 +1507,7 @@ window.WORDCLUSTER_DEFAULT_PUZZLES = [
   },
   {
     topic: "WAIGEO",
-    words: ["KARANG","PAPUA","PULAU","INDAH","LAUT","DIVE"]
+    words: ["KARANG","PAPUA","PULAU","INDAH","LAUT","SELAM"]
   },
   {
     topic: "ULUWATU",
@@ -1519,7 +1519,7 @@ window.WORDCLUSTER_DEFAULT_PUZZLES = [
   },
   {
     topic: "MALIOBORO",
-    words: ["BELANJA","YOGYA","JALAN","JOGJA","RAMAI","BATIK"]
+    words: ["BELANJA","YOGYA","JALAN","BAKPIA","RAMAI","BATIK"]
   },
   {
     topic: "IJEN",
@@ -1538,8 +1538,8 @@ window.WORDCLUSTER_DEFAULT_PUZZLES = [
     words: ["SNORKELING","LOMBOK","PANTAI","TENANG","SEPEDA","SENJA"]
   },
   {
-    topic: "GADANG",
-    words: ["BUKITTINGGI","MENARA","PADANG","SUMBAR","TINGGI","IKON"]
+    topic: "JAM GADANG",
+    words: ["BUKITTINGGI","MENARA","LONCENG","SUMBAR","TINGGI","IKON"]
   },
   {
     topic: "FATAHILLAH",
@@ -1907,7 +1907,7 @@ window.WORDCLUSTER_DEFAULT_PUZZLES = [
   },
   {
     topic: "WAISAK",
-    words: ["BOROBUDUR","PELITA","LILIN","CANDI","BUDA","SUCI"]
+    words: ["BOROBUDUR","PELITA","LILIN","CANDI","BUDDHA","SUCI"]
   },
   {
     topic: "MILAD",

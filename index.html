@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=overlays-content">
   <title>TikTok Live Games</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=63">
+  <link rel="stylesheet" href="style.css?v=67">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
   <script src="https://www.youtube.com/iframe_api"></script>
@@ -1083,6 +1083,70 @@
               </div>
             </div>
 
+            <!-- Group: 🏆 Turnamen & Rotasi Game -->
+            <div class="settings-group">
+              <div class="settings-group-header" onclick="toggleSettingsGroup(this, event)">
+                <span><i class="fa-solid fa-trophy" style="color: #ffd700; margin-right: 8px;"></i> Turnamen & Rotasi Game</span>
+                <span class="arrow">▼</span>
+              </div>
+              <div class="settings-group-content" style="padding: 10px 12px;">
+                <label class="settings-toggle-row" onclick="event.stopPropagation()">
+                  <div style="display: flex; flex-direction: column; text-align: left;">
+                    <span class="settings-toggle-label"><i class="fa-solid fa-arrows-spin" style="color: #ffd700; margin-right: 6px;"></i> Rotasi Game Otomatis</span>
+                    <span class="settings-subtext">Pindah game acak setelah target juara tercapai</span>
+                  </div>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="tourneyAutoRotateToggle" onchange="toggleTourneyAutoRotate(this.checked)">
+                    <div class="toggle-track"></div>
+                  </div>
+                </label>
+
+                <div id="tourneyOptionsContainer" style="display: none; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+                  <div style="margin-bottom: 8px;">
+                    <span style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 3px;">Kondisi Juara Sesi:</span>
+                    <select id="tourneyTriggerTypeSelect" onchange="changeTourneyTriggerType(this.value)" onclick="event.stopPropagation()" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; font-size: 11.5px; cursor: pointer;">
+                      <option value="score" selected>Target Poin Pemain (Default)</option>
+                      <option value="rounds">Jumlah Ronde Selesai</option>
+                    </select>
+                  </div>
+
+                  <div id="tourneyScoreGroup" style="margin-bottom: 8px;">
+                    <span style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 3px;">Target Skor Juara:</span>
+                    <select id="tourneyTargetScoreSelect" onchange="changeTourneyTargetScore(this.value)" onclick="event.stopPropagation()" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; font-size: 11.5px; cursor: pointer;">
+                      <option value="30">30 Poin (Cepat / ~3-4 ronde)</option>
+                      <option value="50" selected>50 Poin (Standar / ~5-6 ronde)</option>
+                      <option value="100">100 Poin (Seru / ~10 ronde)</option>
+                      <option value="150">150 Poin (Turnamen Akbar)</option>
+                    </select>
+                  </div>
+
+                  <div id="tourneyRoundsGroup" style="margin-bottom: 8px; display: none;">
+                    <span style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 3px;">Target Jumlah Ronde:</span>
+                    <select id="tourneyTargetRoundsSelect" onchange="changeTourneyTargetRounds(this.value)" onclick="event.stopPropagation()" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; font-size: 11.5px; cursor: pointer;">
+                      <option value="3">3 Ronde</option>
+                      <option value="5" selected>5 Ronde</option>
+                      <option value="7">7 Ronde</option>
+                      <option value="10">10 Ronde</option>
+                    </select>
+                  </div>
+
+                  <div style="margin-bottom: 10px;">
+                    <span style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 3px;">Durasi Tampilan Podium:</span>
+                    <select id="tourneyPodiumDurationSelect" onchange="changeTourneyPodiumDuration(this.value)" onclick="event.stopPropagation()" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; font-size: 11.5px; cursor: pointer;">
+                      <option value="6">6 Detik (Cepat)</option>
+                      <option value="8" selected>8 Detik (Ideal)</option>
+                      <option value="10">10 Detik (Santai)</option>
+                      <option value="14">14 Detik (Lama)</option>
+                    </select>
+                  </div>
+
+                  <button type="button" class="lang-option" onclick="previewTourneyPodium(event)" style="justify-content: center; background: rgba(255, 215, 0, 0.15); border: 1px solid rgba(255, 215, 0, 0.4); color: #ffd700; font-weight: 600; padding: 7px; border-radius: 6px; width: 100%;">
+                    <i class="fa-solid fa-eye" style="margin-right: 6px;"></i> Pratinjau Tampilan Podium Juara
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <!-- Group: 👤 Profil & Avatar Host -->
             <div class="settings-group">
               <div class="settings-group-header" onclick="toggleSettingsGroup(this, event)">
@@ -1149,6 +1213,7 @@
         <div class="lang-badge" id="currentLangBadge" title="Bahasa yang digunakan"><i class="fa-solid fa-language" style="margin-right: 4px;"></i>ID</div>
         <div class="lang-badge follower-badge" id="followerOnlyBadge" title="Hanya Follower yang Dapat Menebak" style="display: none;"><i class="fa-solid fa-user-check" style="margin-right: 4px;"></i> Follower Only</div>
         <div class="lang-badge isogram-badge" id="noRepeatBadge" title="Mode Tanpa Huruf Ganda (Isogram)" style="display: none;"><i class="fa-solid fa-font" style="margin-right: 4px;"></i> 1x Huruf</div>
+        <div class="lang-badge tourney-badge" id="tourneyBadge" title="Mode Turnamen Rotasi Otomatis Aktif" style="display: none;"><i class="fa-solid fa-trophy" style="margin-right: 4px; color: #ffd54f;"></i> <span id="tourneyBadgeText">Target: 50 Poin</span></div>
       </div>
     </header>
 
@@ -1725,6 +1790,90 @@
       </div>
 
       <div class="win-footer" id="multiWinFooter">Next round starting soon...</div>
+    </div>
+  </div>
+
+  <!-- Grand Finale Tournament Podium Overlay -->
+  <div class="tourney-podium-overlay" id="tourneyPodiumOverlay">
+    <div class="tourney-podium-card">
+      <!-- Header Trophy & Title -->
+      <div class="tourney-header">
+        <div class="tourney-trophy-badge">
+          <i class="fa-solid fa-trophy tourney-trophy-icon"></i>
+        </div>
+        <h2 class="tourney-title" id="tourneyTitle">JUARA TURNAMEN</h2>
+        <div class="tourney-subtitle" id="tourneySubtitle">Target 50 Poin Tercapai!</div>
+      </div>
+
+      <!-- 3-Column Olympic Podium Stage -->
+      <div class="tourney-stage" id="tourneyStage">
+        <!-- Rank 2: Silver (Left) -->
+        <div class="podium-col rank-2" id="podiumRank2">
+          <div class="podium-player">
+            <img class="podium-avatar" id="podiumAvatar2" src="assets/bg_nature.png" alt="Rank 2">
+            <span class="podium-name" id="podiumName2">Player 2</span>
+            <span class="podium-pts" id="podiumPts2">0 Pts</span>
+          </div>
+          <div class="podium-block block-silver">
+            <div class="podium-step-num">2</div>
+          </div>
+        </div>
+
+        <!-- Rank 1: Gold Champion (Center, Tallest) -->
+        <div class="podium-col rank-1" id="podiumRank1">
+          <div class="podium-player">
+            <div class="podium-crown"><i class="fa-solid fa-crown"></i></div>
+            <img class="podium-avatar avatar-gold" id="podiumAvatar1" src="assets/bg_nature.png" alt="Champion">
+            <span class="podium-name name-gold" id="podiumName1">Champion</span>
+            <span class="podium-pts pts-gold" id="podiumPts1">0 Pts</span>
+          </div>
+          <div class="podium-block block-gold">
+            <div class="podium-step-num">1</div>
+          </div>
+        </div>
+
+        <!-- Rank 3: Bronze (Right) -->
+        <div class="podium-col rank-3" id="podiumRank3">
+          <div class="podium-player">
+            <img class="podium-avatar" id="podiumAvatar3" src="assets/bg_nature.png" alt="Rank 3">
+            <span class="podium-name" id="podiumName3">Player 3</span>
+            <span class="podium-pts" id="podiumPts3">0 Pts</span>
+          </div>
+          <div class="podium-block block-bronze">
+            <div class="podium-step-num">3</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Standings List (Peringkat 4 - 8) -->
+      <div class="tourney-standings-section">
+        <div class="tourney-standings-title">
+          <span><i class="fa-solid fa-list-ol" style="color: #38bdf8; margin-right: 5px;"></i> KLASEMEN SESI</span>
+          <span class="tourney-standings-mode-chip" id="tourneyModeChip">WORDLE</span>
+        </div>
+        <div class="tourney-standings-list" id="tourneyStandingsList">
+          <!-- Rows injected via JS -->
+        </div>
+      </div>
+
+      <!-- Countdown & Next Game Transition Footer -->
+      <div class="tourney-transition-footer">
+        <div class="tourney-next-info">
+          <span class="tourney-next-label"><i class="fa-solid fa-dice" style="color: #f43f5e; margin-right: 4px;"></i> Game Berikutnya:</span>
+          <strong class="tourney-next-title" id="tourneyNextTitle">WORD MATCH</strong>
+        </div>
+        <div class="tourney-countdown-wrap">
+          <div class="tourney-countdown-bar">
+            <div class="tourney-countdown-fill" id="tourneyCountdownFill"></div>
+          </div>
+          <div class="tourney-countdown-meta">
+            <span id="tourneyCountdownLabel"><i class="fa-solid fa-stopwatch" style="margin-right: 4px;"></i> Beralih dalam <strong id="tourneyCountdownSec">8</strong> detik...</span>
+            <button onclick="skipTourneyTransitionNow(event)" class="tourney-skip-btn" title="Langsung Mulai Game Baru">
+              <i class="fa-solid fa-forward-step"></i> Mulai
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2314,6 +2463,6 @@
   <script src="wordladder_puzzles_en.js"></script>
   <script src="wanderwords_puzzles.js"></script>
   <script src="wordcluster_puzzles.js?v=8"></script>
-  <script src="app.js?v=67"></script>
+  <script src="app.js?v=70"></script>
 </body>
 </html>

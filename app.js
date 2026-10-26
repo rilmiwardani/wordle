@@ -1064,6 +1064,12 @@ window.executeRestartTransition = function() {
   const multiWinOverlay = document.getElementById('multiWinOverlay');
   if (multiWinOverlay) multiWinOverlay.classList.remove('show');
   
+  // Periksa apakah kondisi turnamen juara sesi / rotasi tercapai
+  if (typeof checkTourneyConditionMet === 'function' && checkTourneyConditionMet()) {
+    triggerTourneyPodiumFinale();
+    return;
+  }
+  
   const board = document.getElementById('board');
   if (board) board.classList.add('board-transitioning');
   
@@ -1322,6 +1328,380 @@ function saveDailyPts(username, pts) {
   localStorage.setItem(getPtsPrefix() + 'daily_' + username, pts);
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// 🏆 TOURNAMENT & AUTO-ROTATION ENGINE (GRAND FINALE PODIUM)
+// ═════════════════════════════════════════════════════════════════════════════
+
+const ALL_ROTATION_MODES = [
+  'wordle', 'word500', 'word600', 'wordfit', 'colorfit',
+  'wordloop', 'fillblanks', 'wordtango', 'wordgrid', 'squareword',
+  'wordladder', 'betweenle', 'cascadle', 'wanderwords', 'wordcluster', 'wordmatch'
+];
+
+const GAME_MODE_PRETTY_NAMES = {
+  wordle: 'Wordle',
+  word500: 'Word500',
+  word600: 'Word600',
+  wordfit: 'Word Fit',
+  colorfit: 'Color Fit',
+  wordloop: 'Word Loop',
+  fillblanks: 'Word Fill',
+  wordtango: 'Word Tango',
+  wordgrid: 'Word Grid',
+  squareword: 'Squareword',
+  wordladder: 'Word Ladder',
+  betweenle: 'Betweenle',
+  cascadle: 'Cascadle',
+  wanderwords: 'Wander Words',
+  wordcluster: 'Word Cluster',
+  wordmatch: 'Word Match'
+};
+
+let tourneySettings = {
+  enabled: false,
+  triggerType: 'score',     // 'score' or 'rounds'
+  targetScore: 50,
+  targetRounds: 5,
+  podiumDuration: 8,
+  allowedModes: [...ALL_ROTATION_MODES]
+};
+
+try {
+  const savedTourney = localStorage.getItem('wordle_tourney_settings');
+  if (savedTourney) {
+    const parsed = JSON.parse(savedTourney);
+    tourneySettings = { ...tourneySettings, ...parsed };
+  }
+} catch(e) {}
+
+let tourneySessionScores = {}; // { [username]: { nickname, avatar, pts } }
+let tourneySessionRounds = 0;
+let isTourneyPodiumActive = false;
+let tourneyCountdownTimer = null;
+let tourneyPendingNextMode = null;
+
+function saveTourneySettings() {
+  try {
+    localStorage.setItem('wordle_tourney_settings', JSON.stringify(tourneySettings));
+  } catch(e) {}
+  updateTourneyUIElements();
+}
+
+function updateTourneyUIElements() {
+  const toggle = document.getElementById('tourneyAutoRotateToggle');
+  const optionsContainer = document.getElementById('tourneyOptionsContainer');
+  const triggerSelect = document.getElementById('tourneyTriggerTypeSelect');
+  const scoreSelect = document.getElementById('tourneyTargetScoreSelect');
+  const roundsSelect = document.getElementById('tourneyTargetRoundsSelect');
+  const durationSelect = document.getElementById('tourneyPodiumDurationSelect');
+  const scoreGroup = document.getElementById('tourneyScoreGroup');
+  const roundsGroup = document.getElementById('tourneyRoundsGroup');
+  const badge = document.getElementById('tourneyBadge');
+  const badgeText = document.getElementById('tourneyBadgeText');
+
+  if (toggle) toggle.checked = !!tourneySettings.enabled;
+  if (optionsContainer) optionsContainer.style.display = tourneySettings.enabled ? 'block' : 'none';
+  if (triggerSelect) triggerSelect.value = tourneySettings.triggerType || 'score';
+  if (scoreSelect) scoreSelect.value = String(tourneySettings.targetScore || 50);
+  if (roundsSelect) roundsSelect.value = String(tourneySettings.targetRounds || 5);
+  if (durationSelect) durationSelect.value = String(tourneySettings.podiumDuration || 8);
+
+  if (scoreGroup) scoreGroup.style.display = (tourneySettings.triggerType === 'rounds') ? 'none' : 'block';
+  if (roundsGroup) roundsGroup.style.display = (tourneySettings.triggerType === 'rounds') ? 'block' : 'none';
+
+  if (badge) {
+    if (tourneySettings.enabled) {
+      badge.style.display = 'inline-flex';
+      if (badgeText) {
+        if (tourneySettings.triggerType === 'rounds') {
+          badgeText.textContent = `Ronde ${tourneySessionRounds}/${tourneySettings.targetRounds}`;
+        } else {
+          let topPts = 0;
+          for (const u in tourneySessionScores) {
+            if (tourneySessionScores[u].pts > topPts) topPts = tourneySessionScores[u].pts;
+          }
+          badgeText.textContent = `Target: ${tourneySettings.targetScore} Poin (Top: ${topPts})`;
+        }
+      }
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+}
+
+window.toggleTourneyAutoRotate = function(checked) {
+  tourneySettings.enabled = !!checked;
+  saveTourneySettings();
+  if (typeof showToast === 'function') {
+    showToast(tourneySettings.enabled ? '🏆 Mode Turnamen & Rotasi Game Aktif!' : '⏹️ Mode Turnamen Dinonaktifkan (Manual)', 2500);
+  }
+};
+
+window.changeTourneyTriggerType = function(val) {
+  tourneySettings.triggerType = (val === 'rounds') ? 'rounds' : 'score';
+  saveTourneySettings();
+};
+
+window.changeTourneyTargetScore = function(val) {
+  const num = parseInt(val, 10) || 50;
+  tourneySettings.targetScore = num;
+  saveTourneySettings();
+};
+
+window.changeTourneyTargetRounds = function(val) {
+  const num = parseInt(val, 10) || 5;
+  tourneySettings.targetRounds = num;
+  saveTourneySettings();
+};
+
+window.changeTourneyPodiumDuration = function(val) {
+  const num = parseInt(val, 10) || 8;
+  tourneySettings.podiumDuration = num;
+  saveTourneySettings();
+};
+
+function recordTourneySessionScore(userData, points) {
+  if (!tourneySettings.enabled || !userData || !userData.nickname) return;
+  const username = userData.nickname;
+  if (!tourneySessionScores[username]) {
+    tourneySessionScores[username] = {
+      nickname: username,
+      avatar: userData.profilePictureUrl || 'assets/bg_nature.png',
+      pts: 0
+    };
+  }
+  tourneySessionScores[username].pts += points;
+  if (userData.profilePictureUrl) tourneySessionScores[username].avatar = userData.profilePictureUrl;
+  updateTourneyUIElements();
+}
+
+function checkTourneyConditionMet() {
+  if (!tourneySettings.enabled) return false;
+  if (tourneySettings.triggerType === 'rounds') {
+    tourneySessionRounds++;
+    updateTourneyUIElements();
+    return tourneySessionRounds >= tourneySettings.targetRounds;
+  } else {
+    let topPts = 0;
+    for (const u in tourneySessionScores) {
+      if (tourneySessionScores[u].pts > topPts) topPts = tourneySessionScores[u].pts;
+    }
+    return topPts >= tourneySettings.targetScore;
+  }
+}
+
+function pickNextRandomGameMode() {
+  const allowed = (tourneySettings.allowedModes && tourneySettings.allowedModes.length > 0)
+    ? tourneySettings.allowedModes
+    : ALL_ROTATION_MODES;
+  const filtered = allowed.filter(m => m !== currentGameMode);
+  if (filtered.length === 0) return allowed[0] || 'wordle';
+  const randIdx = Math.floor(Math.random() * filtered.length);
+  return filtered[randIdx];
+}
+
+function triggerTourneyPodiumFinale(isManualPreview = false) {
+  if (isTourneyPodiumActive && !isManualPreview) return;
+  isTourneyPodiumActive = true;
+
+  const winOverlay = document.getElementById('winOverlay');
+  if (winOverlay) winOverlay.classList.remove('show');
+  const multiWinOverlay = document.getElementById('multiWinOverlay');
+  if (multiWinOverlay) multiWinOverlay.classList.remove('show');
+  const settingsDropdown = document.getElementById('settingsDropdown');
+  if (settingsDropdown) settingsDropdown.classList.remove('open');
+
+  let sortedPlayers = Object.values(tourneySessionScores)
+    .filter(p => p.pts > 0)
+    .sort((a, b) => b.pts - a.pts);
+
+  if (isManualPreview && sortedPlayers.length === 0) {
+    sortedPlayers = [
+      { nickname: 'Budi_Santoso', avatar: 'assets/bg_nature.png', pts: 55 },
+      { nickname: 'Siti_Gamer', avatar: 'assets/bg_nature.png', pts: 38 },
+      { nickname: 'Rian_Pro', avatar: 'assets/bg_nature.png', pts: 25 },
+      { nickname: 'Dina_Lover', avatar: 'assets/bg_nature.png', pts: 18 },
+      { nickname: 'Arief_99', avatar: 'assets/bg_nature.png', pts: 12 }
+    ];
+  }
+
+  tourneyPendingNextMode = pickNextRandomGameMode();
+  const nextGameName = GAME_MODE_PRETTY_NAMES[tourneyPendingNextMode] || tourneyPendingNextMode.toUpperCase();
+  const currentGamePretty = GAME_MODE_PRETTY_NAMES[currentGameMode] || (currentGameMode ? currentGameMode.toUpperCase() : 'WORDLE');
+
+  const titleElem = document.getElementById('tourneyTitle');
+  const subtitleElem = document.getElementById('tourneySubtitle');
+  const modeChip = document.getElementById('tourneyModeChip');
+  const nextTitleElem = document.getElementById('tourneyNextTitle');
+
+  if (titleElem) titleElem.textContent = `JUARA SESI ${currentGamePretty}`;
+  if (subtitleElem) {
+    if (tourneySettings.triggerType === 'rounds') {
+      subtitleElem.textContent = `Target Selesai ${tourneySettings.targetRounds} Ronde!`;
+    } else {
+      subtitleElem.textContent = `Target ${tourneySettings.targetScore} Poin Tercapai!`;
+    }
+  }
+  if (modeChip) modeChip.textContent = currentGamePretty;
+  if (nextTitleElem) nextTitleElem.textContent = nextGameName;
+
+  const p1 = sortedPlayers[0] || { nickname: 'Belum Ada', avatar: 'assets/bg_nature.png', pts: 0 };
+  const p2 = sortedPlayers[1] || { nickname: '—', avatar: 'assets/bg_nature.png', pts: 0 };
+  const p3 = sortedPlayers[2] || { nickname: '—', avatar: 'assets/bg_nature.png', pts: 0 };
+
+  const avatar1 = document.getElementById('podiumAvatar1');
+  const name1 = document.getElementById('podiumName1');
+  const pts1 = document.getElementById('podiumPts1');
+  if (avatar1) avatar1.src = p1.avatar || 'assets/bg_nature.png';
+  if (name1) name1.textContent = p1.nickname || 'Champion';
+  if (pts1) pts1.textContent = `${p1.pts} Poin`;
+
+  const avatar2 = document.getElementById('podiumAvatar2');
+  const name2 = document.getElementById('podiumName2');
+  const pts2 = document.getElementById('podiumPts2');
+  if (avatar2) avatar2.src = p2.avatar || 'assets/bg_nature.png';
+  if (name2) name2.textContent = p2.nickname || '—';
+  if (pts2) pts2.textContent = `${p2.pts} Poin`;
+
+  const avatar3 = document.getElementById('podiumAvatar3');
+  const name3 = document.getElementById('podiumName3');
+  const pts3 = document.getElementById('podiumPts3');
+  if (avatar3) avatar3.src = p3.avatar || 'assets/bg_nature.png';
+  if (name3) name3.textContent = p3.nickname || '—';
+  if (pts3) pts3.textContent = `${p3.pts} Poin`;
+
+  const standingsList = document.getElementById('tourneyStandingsList');
+  if (standingsList) {
+    const runnersUp = sortedPlayers.slice(3, 8);
+    if (runnersUp.length === 0) {
+      standingsList.innerHTML = `<div class="tourney-standings-empty">Semua penonton lainnya siap menyusul di game berikutnya!</div>`;
+    } else {
+      standingsList.innerHTML = runnersUp.map((p, idx) => {
+        const rankNum = idx + 4;
+        return `
+          <div class="tourney-standings-row">
+            <div class="tourney-row-left">
+              <span class="tourney-rank-pill">#${rankNum}</span>
+              <img class="tourney-row-avatar" src="${p.avatar || 'assets/bg_nature.png'}" onerror="this.src='assets/bg_nature.png'" alt="${escapeHTML(p.nickname)}">
+              <span class="tourney-row-name">${escapeHTML(p.nickname)}</span>
+            </div>
+            <span class="tourney-row-pts">${p.pts} Poin</span>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  const overlay = document.getElementById('tourneyPodiumOverlay');
+  if (overlay) overlay.classList.add('show');
+
+  if (window.sounds && typeof window.sounds.playWin === 'function') {
+    try { window.sounds.playWin(); } catch(e) {}
+  }
+  if (typeof triggerConfetti === 'function') {
+    try { triggerConfetti(); } catch(e) {}
+  }
+
+  startTourneyCountdown(tourneySettings.podiumDuration || 8, isManualPreview);
+}
+
+function startTourneyCountdown(totalSec, isManualPreview = false) {
+  if (tourneyCountdownTimer) {
+    clearInterval(tourneyCountdownTimer);
+    tourneyCountdownTimer = null;
+  }
+
+  let remaining = totalSec;
+  const secElem = document.getElementById('tourneyCountdownSec');
+  const fillElem = document.getElementById('tourneyCountdownFill');
+
+  if (secElem) secElem.textContent = remaining;
+  if (fillElem) {
+    fillElem.style.transition = 'none';
+    fillElem.style.width = '100%';
+    setTimeout(() => {
+      if (fillElem) {
+        fillElem.style.transition = `width ${totalSec}s linear`;
+        fillElem.style.width = '0%';
+      }
+    }, 40);
+  }
+
+  tourneyCountdownTimer = setInterval(() => {
+    remaining--;
+    if (secElem) secElem.textContent = Math.max(0, remaining);
+
+    if (remaining <= 0) {
+      clearInterval(tourneyCountdownTimer);
+      tourneyCountdownTimer = null;
+      if (isManualPreview) {
+        closeTourneyPodium();
+        if (typeof showToast === 'function') showToast('✅ Pratinjau Podium Selesai', 2000);
+      } else {
+        finishTourneyTransition();
+      }
+    }
+  }, 1000);
+}
+
+window.skipTourneyTransitionNow = function(e) {
+  if (e) e.stopPropagation();
+  if (tourneyCountdownTimer) {
+    clearInterval(tourneyCountdownTimer);
+    tourneyCountdownTimer = null;
+  }
+  finishTourneyTransition();
+};
+
+window.previewTourneyPodium = function(e) {
+  if (e) e.stopPropagation();
+  const settingsDropdown = document.getElementById('settingsDropdown');
+  if (settingsDropdown) settingsDropdown.classList.remove('open');
+  triggerTourneyPodiumFinale(true);
+};
+
+function closeTourneyPodium() {
+  isTourneyPodiumActive = false;
+  const overlay = document.getElementById('tourneyPodiumOverlay');
+  if (overlay) overlay.classList.remove('show');
+}
+
+function finishTourneyTransition() {
+  closeTourneyPodium();
+  const nextMode = tourneyPendingNextMode || pickNextRandomGameMode();
+  const nextGameName = GAME_MODE_PRETTY_NAMES[nextMode] || nextMode.toUpperCase();
+
+  tourneySessionScores = {};
+  tourneySessionRounds = 0;
+  updateTourneyUIElements();
+
+  if (typeof changeGameModeDirect === 'function') {
+    changeGameModeDirect(nextMode);
+  }
+
+  if (typeof showToast === 'function') {
+    const targetText = (tourneySettings.triggerType === 'rounds')
+      ? `${tourneySettings.targetRounds} Ronde`
+      : `${tourneySettings.targetScore} Poin`;
+    showToast(`🏆 Turnamen Baru: ${nextGameName}! Target Juara: ${targetText}`, 3500);
+  }
+
+  try {
+    if (typeof localSocket !== 'undefined' && localSocket && localSocket.emit) {
+      localSocket.emit('dashboard-change-game', nextMode);
+    }
+  } catch(e) {}
+}
+
+function initTourneyEngine() {
+  updateTourneyUIElements();
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initTourneyEngine);
+} else {
+  try { initTourneyEngine(); } catch(e) {}
+}
+
 function addPoints(userData, points) {
   if (!userData || !userData.nickname) return;
   if (userData.uniqueId === 'system' || userData.isStarter) return;
@@ -1342,6 +1722,9 @@ function addPoints(userData, points) {
   saveDailyPts(username, playerPoints[username].sessionPts);
   saveWeeklyPts(username, playerPoints[username].weeklyPts);
   renderLeaderboard();
+  if (typeof recordTourneySessionScore === 'function') {
+    recordTourneySessionScore(userData, points);
+  }
 }
 
 function switchLbTab(tab) {
@@ -3801,6 +4184,10 @@ function changeGameModeDirect(mode, e) {
 
   const selectElement = document.getElementById('switchGameSelect');
   if (selectElement) selectElement.value = "";
+
+  tourneySessionScores = {};
+  tourneySessionRounds = 0;
+  if (typeof updateTourneyUIElements === 'function') updateTourneyUIElements();
 
   applyGameModeUI();
   initWeeklyLeaderboard();

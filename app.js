@@ -1063,6 +1063,7 @@ window.executeRestartTransition = function() {
   
   const multiWinOverlay = document.getElementById('multiWinOverlay');
   if (multiWinOverlay) multiWinOverlay.classList.remove('show');
+  if (typeof stopMultiWinAutoScroll === 'function') stopMultiWinAutoScroll();
   
   // Periksa apakah kondisi turnamen juara sesi / rotasi tercapai
   if (typeof checkTourneyConditionMet === 'function' && checkTourneyConditionMet()) {
@@ -1123,6 +1124,9 @@ function triggerWinTransition(winDuration, isMultiWinner = false) {
   }
 
   if (activeOverlay) activeOverlay.classList.add('show');
+  if (isMultiWinner) {
+    startMultiWinAutoScroll();
+  }
   if (window.sounds) window.sounds.playWin();
   if (window.playHostAudio) playHostAudio('win');
   
@@ -1151,6 +1155,112 @@ function triggerWinTransition(winDuration, isMultiWinner = false) {
   }
 }
 window.triggerWinTransition = triggerWinTransition;
+
+// ═══════════════════════════════════════════════════════════════════
+// MULTI-WINNER OVERLAY AUTO-SCROLL SYSTEM (BROADCAST QUALITY)
+// ═══════════════════════════════════════════════════════════════════
+let multiWinScrollRAF = null;
+let multiWinScrollTimer = null;
+let multiWinIsHovered = false;
+
+function stopMultiWinAutoScroll() {
+  if (multiWinScrollRAF) {
+    cancelAnimationFrame(multiWinScrollRAF);
+    multiWinScrollRAF = null;
+  }
+  if (multiWinScrollTimer) {
+    clearTimeout(multiWinScrollTimer);
+    multiWinScrollTimer = null;
+  }
+  const list = document.getElementById('multiWinList');
+  if (list) {
+    list.classList.remove('has-overflow');
+  }
+}
+
+function startMultiWinAutoScroll() {
+  stopMultiWinAutoScroll();
+  const list = document.getElementById('multiWinList');
+  if (!list) return;
+
+  list.scrollTop = 0;
+
+  // Pasang listener hover agar jika host mengarahkan mouse, scrolling berhenti sementara
+  if (!list._hasAutoScrollListeners) {
+    list._hasAutoScrollListeners = true;
+    list.addEventListener('mouseenter', () => { multiWinIsHovered = true; });
+    list.addEventListener('mouseleave', () => { multiWinIsHovered = false; });
+  }
+
+  // Jeda 1.5 detik agar penonton sempat membaca Juara 1 (MVP) dan animasi kartu selesai
+  multiWinScrollTimer = setTimeout(() => {
+    const scrollMax = list.scrollHeight - list.clientHeight;
+    // Jika daftar pendek dan muat di dalam kartu (tidak meluap), tidak perlu auto-scroll
+    if (scrollMax <= 10) {
+      list.classList.remove('has-overflow');
+      return;
+    }
+
+    list.classList.add('has-overflow');
+
+    const SCROLL_SPEED = 28; // Pixel per detik (kecepatan stabil, nyaman dibaca di video stream HP)
+    let lastTime = null;
+    let direction = 1; // 1 = scroll ke bawah, -1 = scroll ke atas (ping-pong smooth)
+    let isPaused = false;
+
+    function step(timestamp) {
+      const overlay = document.getElementById('multiWinOverlay');
+      if (!overlay || !overlay.classList.contains('show')) {
+        stopMultiWinAutoScroll();
+        return;
+      }
+
+      if (!lastTime) lastTime = timestamp;
+      const deltaTime = (timestamp - lastTime) / 1000;
+      lastTime = timestamp;
+
+      if (!isPaused && !multiWinIsHovered) {
+        if (direction === 1) {
+          list.scrollTop += SCROLL_SPEED * deltaTime;
+          if (list.scrollTop >= scrollMax - 2) {
+            list.scrollTop = scrollMax;
+            isPaused = true;
+            // Jeda 2.2 detik di posisi paling bawah agar nama penutup terbaca jelas
+            multiWinScrollTimer = setTimeout(() => {
+              direction = -1;
+              isPaused = false;
+              lastTime = null;
+              multiWinScrollRAF = requestAnimationFrame(step);
+            }, 2200);
+            return;
+          }
+        } else {
+          // Scroll kembali ke atas dengan kecepatan 1.5x lebih cepat agar dinamis
+          list.scrollTop -= (SCROLL_SPEED * 1.5) * deltaTime;
+          if (list.scrollTop <= 2) {
+            list.scrollTop = 0;
+            isPaused = true;
+            // Jeda 2.0 detik di posisi paling atas sebelum siklus bergulir lagi
+            multiWinScrollTimer = setTimeout(() => {
+              direction = 1;
+              isPaused = false;
+              lastTime = null;
+              multiWinScrollRAF = requestAnimationFrame(step);
+            }, 2000);
+            return;
+          }
+        }
+      }
+
+      multiWinScrollRAF = requestAnimationFrame(step);
+    }
+
+    multiWinScrollRAF = requestAnimationFrame(step);
+  }, 1500);
+}
+
+window.startMultiWinAutoScroll = startMultiWinAutoScroll;
+window.stopMultiWinAutoScroll = stopMultiWinAutoScroll;
 
 let TARGET_WORDS = [];
 let VALID_WORDS = [];
@@ -1511,6 +1621,7 @@ function triggerTourneyPodiumFinale(isManualPreview = false) {
   if (winOverlay) winOverlay.classList.remove('show');
   const multiWinOverlay = document.getElementById('multiWinOverlay');
   if (multiWinOverlay) multiWinOverlay.classList.remove('show');
+  if (typeof stopMultiWinAutoScroll === 'function') stopMultiWinAutoScroll();
   const settingsDropdown = document.getElementById('settingsDropdown');
   if (settingsDropdown) settingsDropdown.classList.remove('open');
 
@@ -13595,7 +13706,10 @@ function processWordLadderGuess(guessWord, userData) {
       }
 
       const multiWinOverlay = document.getElementById('multiWinOverlay');
-      if (multiWinOverlay) multiWinOverlay.classList.add('show');
+      if (multiWinOverlay) {
+        multiWinOverlay.classList.add('show');
+        if (typeof startMultiWinAutoScroll === 'function') startMultiWinAutoScroll();
+      }
 
       const isLikeRestart = document.getElementById('likeRestartToggle') ? document.getElementById('likeRestartToggle').checked : false;
       const progressContainer = document.getElementById('multiLikeProgressContainer');
@@ -16487,6 +16601,7 @@ function executeWordClusterRestart() {
   }
   const multiWin = document.getElementById('multiWinOverlay');
   if (multiWin) multiWin.classList.remove('show');
+  if (typeof stopMultiWinAutoScroll === 'function') stopMultiWinAutoScroll();
   const likeProg = document.getElementById('multiLikeProgressContainer');
   if (likeProg) likeProg.style.display = 'none';
 

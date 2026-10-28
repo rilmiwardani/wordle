@@ -3090,21 +3090,24 @@ header {
   flex-direction: column;
   gap: 8px;
   margin: 0 0 12px 0;
-  max-height: 40vh;
+  max-height: 42vh;
   overflow-y: auto;
-  padding: 2px;
+  overflow-x: hidden;
+  padding: 4px 2px;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  transition: -webkit-mask-image 0.3s ease, mask-image 0.3s ease;
+}
+
+.multi-win-list.has-overflow {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 14px, black calc(100% - 14px), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 14px, black calc(100% - 14px), transparent 100%);
 }
 
 .multi-win-list::-webkit-scrollbar {
-  width: 4px;
-}
-.multi-win-list::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-}
-.multi-win-list::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .multi-win-item {
@@ -8382,12 +8385,15 @@ body.theme-sepia .multi-win-card {
   color: #1a120a !important;
 }
 
-body.theme-sepia .multi-win-list::-webkit-scrollbar-track {
-  background: #baa793 !important;
+body.theme-sepia .multi-win-list {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
 
-body.theme-sepia .multi-win-list::-webkit-scrollbar-thumb {
-  background: #9f8c77 !important;
+body.theme-sepia .multi-win-list::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 body.theme-sepia .multi-win-item {

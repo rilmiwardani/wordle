@@ -22,10 +22,18 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+html {
+  overflow: hidden !important;
+  height: 100% !important;
+  width: 100% !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
 body {
   background-color: #000;
   color: var(--text);
-  overflow: hidden; /* Prevent scrolling on mobile */
+  overflow: hidden !important; /* Prevent scrolling on mobile & OBS */
   height: 100vh;
   width: 100vw;
   display: flex;
@@ -35,6 +43,18 @@ body {
   -moz-user-select: none;
   -ms-user-select: none;
   cursor: default;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+/* Hide scrollbar on whole window and main game view (Chrome, Safari, Edge, OBS) */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.game-container::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
 }
 
 /* Kolom input form dan textarea tetap bisa diketik dan diblok teksnya */
@@ -178,23 +198,16 @@ input, textarea, [contenteditable="true"] {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-right: 4px;
+  padding-right: 0;
   margin-top: 4px;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
 
 .game-cards-scroll::-webkit-scrollbar {
-  width: 5px;
-}
-.game-cards-scroll::-webkit-scrollbar-track {
-  background: #18181b;
-  border-radius: 4px;
-}
-.game-cards-scroll::-webkit-scrollbar-thumb {
-  background: #3f3f46;
-  border-radius: 4px;
-}
-.game-cards-scroll::-webkit-scrollbar-thumb:hover {
-  background: #71717a;
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .game-cards {
@@ -942,6 +955,7 @@ input, textarea, [contenteditable="true"] {
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden !important;
   padding: env(safe-area-inset-top, 20px) 16px env(safe-area-inset-bottom, 20px);
 }
 
@@ -11379,6 +11393,17 @@ body.theme-sepia .tourney-skip-btn {
   min-height: 270px;
   padding: 4px 0;
   box-sizing: border-box;
+  overflow: hidden !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.wordpyramid-board-area::-webkit-scrollbar,
+.wordpyramid-rows-container::-webkit-scrollbar,
+.wordpyramid-container::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .wordpyramid-rows-container {
@@ -11387,6 +11412,8 @@ body.theme-sepia .tourney-skip-btn {
   align-items: center;
   gap: var(--wp-row-gap);
   width: 100%;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
 
 /* Row item: Pure Centered Tiles (Clean Pyramid Layout - No side clutter) */

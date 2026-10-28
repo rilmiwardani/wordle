@@ -1238,7 +1238,8 @@ const ALL_SPECIAL_PTS_PREFIXES = [
   'pts_cascadle_',
   'pts_wanderwords_',
   'pts_wordcluster_',
-  'pts_wmatch_'
+  'pts_wmatch_',
+  'pts_wpyramid_'
 ];
 
 function isOtherGameModeKey(key) {
@@ -1261,6 +1262,7 @@ function getPtsPrefix() {
   if (currentGameMode === 'wanderwords') return 'pts_wanderwords_';
   if (currentGameMode === 'wordcluster') return 'pts_wordcluster_';
   if (currentGameMode === 'wordmatch') return 'pts_wmatch_';
+  if (currentGameMode === 'wordpyramid') return 'pts_wpyramid_';
   return 'pts_';
 }
 
@@ -1335,7 +1337,7 @@ function saveDailyPts(username, pts) {
 const ALL_ROTATION_MODES = [
   'wordle', 'word500', 'word600', 'wordfit', 'colorfit',
   'wordloop', 'fillblanks', 'wordtango', 'wordgrid', 'squareword',
-  'wordladder', 'betweenle', 'cascadle', 'wanderwords', 'wordcluster', 'wordmatch'
+  'wordladder', 'betweenle', 'cascadle', 'wanderwords', 'wordcluster', 'wordmatch', 'wordpyramid'
 ];
 
 const GAME_MODE_PRETTY_NAMES = {
@@ -1354,7 +1356,8 @@ const GAME_MODE_PRETTY_NAMES = {
   cascadle: 'Cascadle',
   wanderwords: 'Wander Words',
   wordcluster: 'Word Cluster',
-  wordmatch: 'Word Match'
+  wordmatch: 'Word Match',
+  wordpyramid: 'Word Pyramid'
 };
 
 let tourneySettings = {

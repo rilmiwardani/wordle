@@ -3984,9 +3984,13 @@ function loadWordLists(lang) {
       fullValidDictionary.clear();
       fullDictText.split('\n').forEach(w => {
          const word = w.trim().replace(/"/g, '').toUpperCase();
-         if (word.length >= 3) fullValidDictionary.add(word);
+         if (word.length >= 2) fullValidDictionary.add(word);
       });
       console.log(`Loaded FULL dictionary: ${fullValidDictionary.size} words`);
+
+      if (typeof initWordPyramidExtendableSets === 'function') {
+        try { initWordPyramidExtendableSets(); } catch(e) { console.error('Error initializing Piramida Kata extendable sets:', e); }
+      }
       
       resolve();
     }).catch(err => {
@@ -4091,7 +4095,8 @@ function selectGame(mode) {
     cascadle: 'CASCADLE',
     wanderwords: 'WANDER WORDS',
     wordcluster: 'WORD CLUSTER',
-    wordmatch: 'WORD MATCH'
+    wordmatch: 'WORD MATCH',
+    wordpyramid: 'WORD PYRAMID'
   };
   const titleName = gameNames[mode] || mode.toUpperCase();
 
@@ -4150,6 +4155,7 @@ function switchGameMode(e) {
   else if (currentGameMode === 'cascadle') currentGameMode = 'wanderwords';
   else if (currentGameMode === 'wanderwords') currentGameMode = 'wordcluster';
   else if (currentGameMode === 'wordcluster') currentGameMode = 'wordmatch';
+  else if (currentGameMode === 'wordmatch') currentGameMode = 'wordpyramid';
   else currentGameMode = 'wordle';
   try { sessionStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
 
@@ -4221,6 +4227,8 @@ function applyGameModeUI() {
   if (wordClusterContainer) wordClusterContainer.style.display = 'none';
   const wordMatchContainer = document.getElementById('wordMatchContainer');
   if (wordMatchContainer) wordMatchContainer.style.display = 'none';
+  const wordPyramidContainer = document.getElementById('wordPyramidContainer');
+  if (wordPyramidContainer) wordPyramidContainer.style.display = 'none';
   if (currentGameMode !== 'wordmatch') {
     if (typeof stopWordMatchAutoReveal === 'function') stopWordMatchAutoReveal();
   }
@@ -4417,11 +4425,28 @@ function applyGameModeUI() {
     }
     const wordMatchContainer = document.getElementById('wordMatchContainer');
     if (wordMatchContainer) wordMatchContainer.style.display = 'flex';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Word Pyramid';
     if (!wordMatchCurrentWord) {
       startWordMatchGame();
     } else {
       renderWordMatchUI();
+    }
+  } else if (currentGameMode === 'wordpyramid') {
+    if (headerTitle) headerTitle.textContent = 'WORD PYRAMID';
+    if (hintContainer) hintContainer.style.display = 'none';
+    if (bestGuessContainer) bestGuessContainer.style.display = 'none';
+    if (boardObj) {
+      boardObj.style.display = 'none';
+      boardObj.innerHTML = '';
+      boardObj.className = '';
+    }
+    const wordPyramidContainer = document.getElementById('wordPyramidContainer');
+    if (wordPyramidContainer) wordPyramidContainer.style.display = 'flex';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
+    if (!wordPyramidBaseWord) {
+      startWordPyramidGame();
+    } else {
+      renderWordPyramidUI();
     }
   } else {
     if (headerTitle) headerTitle.textContent = 'WORDLE';
@@ -4998,6 +5023,13 @@ function getInstructionText() {
       if (lastLang === 'id') return `Tebak kata ${len} huruf! Semakin mirip, makin tinggi % barnya!`;
       if (lastLang === 'mixed') return `Tebak kata ${len} huruf! / Guess the ${len}-letter word!`;
       return `Guess the ${len}-letter word! Closer guess gives higher % bar!`;
+    }
+    if (currentGameMode === 'wordpyramid') {
+      const prevStep = (wordPyramidSolvedSteps && wordPyramidSolvedSteps.length > 0) ? wordPyramidSolvedSteps[wordPyramidSolvedSteps.length - 1] : null;
+      const prevWord = prevStep ? prevStep.word : (wordPyramidBaseWord || '2 huruf');
+      if (lastLang === 'id') return `Susun kata ${wordPyramidCurrentLevel} huruf dari "${prevWord}" + 1 huruf baru!`;
+      if (lastLang === 'mixed') return `Susun ${wordPyramidCurrentLevel} huruf dari "${prevWord}" + 1 huruf!`;
+      return `Form a ${wordPyramidCurrentLevel}-letter word from "${prevWord}" + 1 new letter!`;
     }
     if (lastLang === 'id') return `Ketik kata ${WORD_LENGTH} huruf di komentar untuk menebak!`;
     if (lastLang === 'mixed') return `Ketik kata ${WORD_LENGTH} huruf di komentar! / Type a ${WORD_LENGTH}-letter word!`;
@@ -6712,6 +6744,11 @@ function startNewRound() {
     startWordMatchGame();
     return;
   }
+  if (currentGameMode === 'wordpyramid') {
+    wordPyramidRound = round;
+    startWordPyramidGame();
+    return;
+  }
   if (currentGameMode === 'squareword') {
     WORD_LENGTH = 5;
     document.documentElement.style.setProperty('--word-length', 5);
@@ -8198,6 +8235,8 @@ window.addEventListener('DOMContentLoaded', () => {
     } else if (currentGameMode === 'wordmatch' && typeof window.revealWordMatchHint === 'function') {
       window.revealWordMatchHint();
       if (typeof showToast === 'function') showToast('Bantuan Word Match Terbuka!', 2000);
+    } else if (currentGameMode === 'wordpyramid' && typeof window.revealWordPyramidHint === 'function') {
+      window.revealWordPyramidHint();
     } else if (typeof revealHelpModal === 'function') {
       if (typeof showToast === 'function') showToast('💡 Petunjuk Permainan', 2000);
     }
@@ -9339,7 +9378,7 @@ function handleChatGuess(data, optionalUserData) {
     return;
   }
 
-  const isCurrentOver = (currentGameMode === 'betweenle') ? betweenleIsGameOver : ((currentGameMode === 'cascadle') ? cascadleIsGameOver : ((currentGameMode === 'wanderwords') ? wanderWordsIsGameOver : isGameOver));
+  const isCurrentOver = (currentGameMode === 'betweenle') ? betweenleIsGameOver : ((currentGameMode === 'cascadle') ? cascadleIsGameOver : ((currentGameMode === 'wanderwords') ? wanderWordsIsGameOver : ((currentGameMode === 'wordpyramid') ? wordPyramidIsGameOver : isGameOver)));
   if (isCurrentOver) return;
 
   // Hapus semua karakter selain huruf A-Z untuk bypass filter TikTok
@@ -9362,6 +9401,10 @@ function handleChatGuess(data, optionalUserData) {
     isAllowedLength = Boolean(targetClean ? (msg.length === targetClean.length || msg === targetClean) : (msg.length >= 4));
   } else if (currentGameMode === 'wordcluster') {
     isAllowedLength = (msg.length >= 2);
+  } else if (currentGameMode === 'wordmatch') {
+    isAllowedLength = (msg.length >= 2);
+  } else if (currentGameMode === 'wordpyramid') {
+    isAllowedLength = (msg.length === wordPyramidCurrentLevel);
   }
 
   if (isAllowedLength) {
@@ -9414,6 +9457,10 @@ function handleChatGuess(data, optionalUserData) {
     }
     if (currentGameMode === 'wordmatch') {
       processWordMatchGuess(msg, data);
+      return;
+    }
+    if (currentGameMode === 'wordpyramid') {
+      processWordPyramidGuess(msg, data);
       return;
     }
 
@@ -9736,6 +9783,11 @@ function processGuess(guessWord, userData, queueLen = 0) {
 
   if (currentGameMode === 'wordmatch') {
     processWordMatchGuess(guessWord, userData);
+    return;
+  }
+
+  if (currentGameMode === 'wordpyramid') {
+    processWordPyramidGuess(guessWord, userData);
     return;
   }
 
@@ -10787,6 +10839,44 @@ const hostGuessInputContainer = document.getElementById('hostGuessInputContainer
 if (hostGuessBtn && hostGuessInput && hostGuessInputContainer) {
   const submitHostGuess = () => {
     const guess = hostGuessInput.value.trim().toUpperCase();
+    if (guess === '/TESTPEAK' || guess === 'TESTPEAK') {
+      if (wordPyramidSolvedSteps.length <= 1) {
+        wordPyramidSolvedSteps = [
+          { level: 2, word: 'AN', userName: 'KATA AWAL', userAvatar: 'assets/bg_nature.png', addedChar: null, points: 0, isBase: true },
+          { level: 3, word: 'INA', userName: 'Budi Santoso', userAvatar: DEFAULT_HOST_AVATAR, addedChar: 'I', points: 3, isBase: false },
+          { level: 4, word: 'KINA', userName: 'Siti Rahma', userAvatar: DEFAULT_HOST_AVATAR, addedChar: 'K', points: 5, isBase: false },
+          { level: 5, word: 'TIKNA', userName: 'Rian Pratama', userAvatar: DEFAULT_HOST_AVATAR, addedChar: 'T', points: 7, isBase: false },
+          { level: 6, word: 'CANTIK', userName: 'Dedi Kurnia', userAvatar: DEFAULT_HOST_AVATAR, addedChar: 'C', points: 10, isBase: false },
+          { level: 7, word: 'CANTRIK', userName: 'Agus Pemenang', userAvatar: DEFAULT_HOST_AVATAR, addedChar: 'R', points: 25, isBase: false }
+        ];
+        wordPyramidCurrentLevel = 7;
+        wordPyramidIsGameOver = true;
+      }
+      if (typeof showWordPyramidPeakOverlay === 'function') {
+        showWordPyramidPeakOverlay('CANTRIK', 7, { nickname: 'Agus Pemenang', userId: 'user_agus' }, 25);
+      }
+      hostGuessInput.value = '';
+      return;
+    }
+    if (guess === '/TESTSHOWCASE' || guess === 'TESTSHOWCASE') {
+      if (wordPyramidSolvedSteps.length <= 1) {
+        wordPyramidSolvedSteps = [
+          { level: 2, word: 'AN', userName: 'KATA AWAL', userAvatar: 'assets/bg_nature.png', addedChar: null, points: 0, isBase: true },
+          { level: 3, word: 'INA', userName: 'Budi Santoso', userAvatar: DEFAULT_HOST_AVATAR, addedChar: 'I', points: 3, isBase: false },
+          { level: 4, word: 'KINA', userName: 'Siti Rahma', userAvatar: DEFAULT_HOST_AVATAR, addedChar: 'K', points: 5, isBase: false },
+          { level: 5, word: 'TIKNA', userName: 'Rian Pratama', userAvatar: DEFAULT_HOST_AVATAR, addedChar: 'T', points: 7, isBase: false },
+          { level: 6, word: 'CANTIK', userName: 'Dedi Kurnia', userAvatar: DEFAULT_HOST_AVATAR, addedChar: 'C', points: 10, isBase: false },
+          { level: 7, word: 'CANTRIK', userName: 'Agus Pemenang', userAvatar: DEFAULT_HOST_AVATAR, addedChar: 'R', points: 25, isBase: false }
+        ];
+        wordPyramidCurrentLevel = 7;
+        wordPyramidIsGameOver = true;
+      }
+      if (typeof launchWordPyramidVictoryShowcase === 'function') {
+        launchWordPyramidVictoryShowcase();
+      }
+      hostGuessInput.value = '';
+      return;
+    }
     if (guess) {
       handleChatGuess({
         comment: guess,
@@ -10808,7 +10898,7 @@ if (hostGuessBtn && hostGuessInput && hostGuessInputContainer) {
     }
   });
 
-  hostGuessInput.addEventListener('keypress', (e) => {
+  hostGuessInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       submitHostGuess();
       hostGuessInputContainer.classList.remove('open');
@@ -16870,6 +16960,834 @@ window.skipWordMatchRound = skipWordMatchRound;
 window.startWordMatchGame = startWordMatchGame;
 window.processWordMatchGuess = processWordMatchGuess;
 window.handleWordMatchWin = handleWordMatchWin;
+
+// ==========================================================================
+// PIRAMIDA KATA (WORD PYRAMID) ENGINE & GAMEPLAY CONTROLLER
+// Menyusun kata dengan menambah 1 huruf (2H -> 3H -> 4H -> 5H -> 6H -> 7H -> 8H)
+// ==========================================================================
+let wordPyramidRound = 1;
+let wordPyramidCurrentLevel = 3; // Level 3 hingga 8
+let wordPyramidBaseWord = ''; // Kata awal 2 huruf
+let wordPyramidSolvedSteps = []; // [{ level, word, userName, userAvatar, addedChar, points, isBase }]
+let wordPyramidIsGameOver = false;
+let wordPyramidIsAnimating = false;
+const wordPyramidUserCooldown = new Map();
+const wordPyramidRecentBases = [];
+
+const wpExtendableKeys = { 2: new Set(), 3: new Set(), 4: new Set(), 5: new Set(), 6: new Set(), 7: new Set(), 8: new Set() };
+let wpExtendableInitialized = false;
+
+// Bank kata 2 huruf populer yang terbukti memiliki cabang hingga 8 huruf
+const WORD_PYRAMID_STARTERS_ID = [
+  'AN', 'AS', 'IK', 'DA', 'PA', 'MA', 'UN', 'HA', 'AL', 'TA',
+  'KU', 'MU', 'TO', 'AR', 'TI', 'NI', 'BA', 'WA', 'SI', 'KE',
+  'BU', 'DI', 'ME', 'OM', 'AY', 'IA', 'SA', 'NA'
+];
+const WORD_PYRAMID_STARTERS_EN = [
+  'AN', 'AT', 'IN', 'ON', 'IT', 'IS', 'AS', 'HE', 'WE', 'ME',
+  'TO', 'SO', 'NO', 'GO', 'DO', 'UP', 'US', 'BY', 'MY'
+];
+
+let wpKeysByLength = { 2: new Set(), 3: new Set(), 4: new Set(), 5: new Set(), 6: new Set(), 7: new Set(), 8: new Set() };
+
+// Inisialisasi graf rantai kata bercabang (Backwards Pruning dari 8 ke 2 huruf)
+function initWordPyramidExtendableSets() {
+  if (wpExtendableInitialized) return;
+  const t0 = performance.now();
+
+  const wpKeysByLen = { 2: new Set(), 3: new Set(), 4: new Set(), 5: new Set(), 6: new Set(), 7: new Set(), 8: new Set() };
+
+  // 1. Kumpulkan seluruh kata dari fullValidDictionary dan allValidWordsSets
+  if (fullValidDictionary && fullValidDictionary.size > 0) {
+    fullValidDictionary.forEach(w => {
+      if (w.length >= 2 && w.length <= 8 && /^[A-Z]+$/.test(w)) {
+        wpKeysByLen[w.length].add(w.split('').sort().join(''));
+      }
+    });
+  }
+
+  for (let len = 3; len <= 8; len++) {
+    if (allValidWordsSets[len]) {
+      allValidWordsSets[len].forEach(w => {
+        if (w.length === len && /^[A-Z]+$/.test(w)) {
+          wpKeysByLen[len].add(w.split('').sort().join(''));
+        }
+      });
+    }
+  }
+
+  // Tambahkan starter 2 huruf
+  WORD_PYRAMID_STARTERS_ID.forEach(w => wpKeysByLen[2].add(w.split('').sort().join('')));
+  WORD_PYRAMID_STARTERS_EN.forEach(w => wpKeysByLen[2].add(w.split('').sort().join('')));
+
+  wpKeysByLength = wpKeysByLen;
+
+  // 2. Backwards prune dari 8 ke 2
+  wpExtendableKeys[8] = wpKeysByLen[8];
+
+  for (let len = 7; len >= 2; len--) {
+    wpExtendableKeys[len] = new Set();
+    const nextSet = wpExtendableKeys[len + 1];
+    wpKeysByLen[len].forEach(key => {
+      for (let code = 65; code <= 90; code++) {
+        const ch = String.fromCharCode(code);
+        const parentKey = (key + ch).split('').sort().join('');
+        if (nextSet.has(parentKey)) {
+          wpExtendableKeys[len].add(key);
+          break;
+        }
+      }
+    });
+  }
+
+  wpExtendableInitialized = true;
+  console.log(`[Piramida Kata] Extendable keys siap dalam ${(performance.now() - t0).toFixed(1)}ms. (2H: ${wpExtendableKeys[2].size}, 3H: ${wpExtendableKeys[3].size}, 4H: ${wpExtendableKeys[4].size}, 5H: ${wpExtendableKeys[5].size}, 6H: ${wpExtendableKeys[6].size}, 7H: ${wpExtendableKeys[7].size}, 8H: ${wpExtendableKeys[8].size})`);
+}
+
+// Cek apakah ada kata valid di kamus yang bisa dibentuk dari word + 1 huruf baru
+function hasWordPyramidNextExtensions(word) {
+  const nextLen = (word || '').length + 1;
+  if (nextLen > 8) return false;
+  if (!wpKeysByLength[nextLen] || wpKeysByLength[nextLen].size === 0) return false;
+  const key = word.toUpperCase().split('').sort().join('');
+  for (let code = 65; code <= 90; code++) {
+    const ch = String.fromCharCode(code);
+    const candidateKey = (key + ch).split('').sort().join('');
+    if (wpKeysByLength[nextLen].has(candidateKey)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Validasi pembentukan kata: panjang tepat +1 dan mengandung semua huruf kata sebelumnya
+function checkWordPyramidExtension(prevWord, guessWord) {
+  if (guessWord.length !== prevWord.length + 1) {
+    return { valid: false, reason: 'length' };
+  }
+  const freq = {};
+  for (let i = 0; i < guessWord.length; i++) {
+    const c = guessWord[i];
+    freq[c] = (freq[c] || 0) + 1;
+  }
+  for (let i = 0; i < prevWord.length; i++) {
+    const c = prevWord[i];
+    if (!freq[c] || freq[c] <= 0) {
+      return { valid: false, reason: 'missing_char', missing: c };
+    }
+    freq[c]--;
+  }
+  let addedChar = '';
+  for (const c in freq) {
+    if (freq[c] > 0) {
+      addedChar = c;
+      break;
+    }
+  }
+  return { valid: true, addedChar };
+}
+
+// Memulai ronde baru Piramida Kata
+function startWordPyramidGame() {
+  if (!wordsLoaded) {
+    const currentLang = localStorage.getItem('wordle_lang') || 'id';
+    loadWordLists(currentLang).then(() => {
+      startWordPyramidGame();
+    }).catch(() => {
+      showToast('Gagal memuat kamus kata Piramida!', 3000);
+    });
+    return;
+  }
+
+  initWordPyramidExtendableSets();
+
+  const currentLang = localStorage.getItem('wordle_lang') || 'id';
+  const starters = (currentLang === 'en') ? WORD_PYRAMID_STARTERS_EN : WORD_PYRAMID_STARTERS_ID;
+
+  // Pilih kata 2 huruf yang terbukti bisa sampai 8 huruf dan tidak baru saja dipakai
+  let candidates = starters.filter(w => {
+    const k = w.split('').sort().join('');
+    return wpExtendableKeys[2] && wpExtendableKeys[2].has(k) && !wordPyramidRecentBases.includes(w);
+  });
+  if (candidates.length === 0) {
+    candidates = starters.filter(w => {
+      const k = w.split('').sort().join('');
+      return wpExtendableKeys[2] && wpExtendableKeys[2].has(k);
+    });
+  }
+  if (candidates.length === 0) candidates = ['AN', 'DI', 'AS', 'IK', 'DA', 'KU'];
+
+  wordPyramidBaseWord = candidates[Math.floor(Math.random() * candidates.length)].toUpperCase();
+  wordPyramidRecentBases.push(wordPyramidBaseWord);
+  if (wordPyramidRecentBases.length > 15) wordPyramidRecentBases.shift();
+
+  wordPyramidCurrentLevel = 3;
+  wordPyramidSolvedSteps = [
+    {
+      level: 2,
+      word: wordPyramidBaseWord,
+      userName: 'KATA AWAL',
+      userAvatar: 'assets/bg_nature.png',
+      addedChar: null,
+      points: 0,
+      isBase: true
+    }
+  ];
+  wordPyramidIsGameOver = false;
+  wordPyramidIsAnimating = false;
+  wordPyramidCurrentHintTarget = null;
+  if (wpInvalidAttemptTimer) {
+    clearTimeout(wpInvalidAttemptTimer);
+    wpInvalidAttemptTimer = null;
+  }
+  if (wpShowcaseTimer) {
+    clearInterval(wpShowcaseTimer);
+    wpShowcaseTimer = null;
+  }
+  const peakOverlay = document.getElementById('wpPeakOverlay');
+  if (peakOverlay) {
+    peakOverlay.classList.remove('show');
+    peakOverlay.style.display = 'none';
+  }
+
+  console.log(`[Piramida Kata] Ronde ${wordPyramidRound} dimulai dengan kata awal: "${wordPyramidBaseWord}"`);
+
+  renderWordPyramidUI();
+}
+
+let wpInvalidAttemptTimer = null;
+let wordPyramidCurrentHintTarget = null;
+
+// Mengambil target kata bantuan sah di KBBI untuk level saat ini (memilih kata yang memiliki turunan lanjutan)
+function getWordPyramidHintTarget() {
+  if (wordPyramidCurrentHintTarget && wordPyramidCurrentHintTarget.length === wordPyramidCurrentLevel) {
+    return wordPyramidCurrentHintTarget;
+  }
+
+  const prevStep = wordPyramidSolvedSteps[wordPyramidSolvedSteps.length - 1];
+  const prevWord = prevStep ? prevStep.word : wordPyramidBaseWord;
+  const nextLen = wordPyramidCurrentLevel;
+
+  const validSet = allValidWordsSets[nextLen];
+  const candidates = [];
+
+  if (validSet) {
+    validSet.forEach(w => {
+      if (checkWordPyramidExtension(prevWord, w).valid) {
+        candidates.push(w);
+      }
+    });
+  }
+
+  if (candidates.length === 0 && fullValidDictionary) {
+    fullValidDictionary.forEach(w => {
+      if (w.length === nextLen && checkWordPyramidExtension(prevWord, w).valid) {
+        candidates.push(w);
+      }
+    });
+  }
+
+  if (candidates.length === 0) return null;
+
+  // Prioritaskan kata yang memiliki cabang ke level berikutnya agar tidak buntu jika ada pilihan
+  let best = null;
+  for (let cand of candidates) {
+    if (nextLen === 8 || hasWordPyramidNextExtensions(cand)) {
+      best = cand;
+      break;
+    }
+  }
+  wordPyramidCurrentHintTarget = best || candidates[0];
+  return wordPyramidCurrentHintTarget;
+}
+
+// Menampilkan tebakan tidak valid secara sementara di kotak kosong dengan efek getar dan teks huruf
+function showWordPyramidInvalidAttempt(word) {
+  const activeRow = document.querySelector('.wordpyramid-row.active-input');
+  if (!activeRow) return;
+
+  if (wpInvalidAttemptTimer) {
+    clearTimeout(wpInvalidAttemptTimer);
+    wpInvalidAttemptTimer = null;
+  }
+
+  const tiles = activeRow.querySelectorAll('.wordpyramid-tile');
+  const letters = (word || '').toUpperCase().split('');
+  tiles.forEach((tile, idx) => {
+    tile.textContent = letters[idx] || '';
+  });
+
+  // Re-trigger animasi getar CSS
+  activeRow.classList.remove('animating-shake');
+  void activeRow.offsetWidth; // Force reflow
+  activeRow.classList.add('animating-shake');
+
+  if (window.sounds && typeof window.sounds.playInvalid === 'function') {
+    window.sounds.playInvalid();
+  }
+
+  wpInvalidAttemptTimer = setTimeout(() => {
+    activeRow.classList.remove('animating-shake');
+    tiles.forEach(tile => {
+      if (tile.dataset.hintChar) {
+        tile.textContent = tile.dataset.hintChar;
+      } else {
+        tile.textContent = '';
+      }
+    });
+    wpInvalidAttemptTimer = null;
+  }, 750);
+}
+
+// Menampilkan overlay penjelasan puncak piramida (Opsi 2: kata sah di kamus tapi tidak ada turunan huruf berikutnya)
+function showWordPyramidPeakOverlay(word, level, userData, ptsAwarded) {
+  const overlay = document.getElementById('wpPeakOverlay');
+  if (!overlay) {
+    handleWordPyramidWin(userData, word, ptsAwarded);
+    return;
+  }
+
+  const peakWordEl = document.getElementById('wpPeakWord');
+  const peakDescEl = document.getElementById('wpPeakDesc');
+  const peakLevelEl = document.getElementById('wpPeakLevel');
+  const peakBarFill = document.getElementById('wpPeakBarFill');
+
+  if (peakWordEl) peakWordEl.textContent = word;
+  if (peakLevelEl) peakLevelEl.textContent = level;
+  if (peakDescEl) {
+    peakDescEl.innerHTML = `Kata <strong>"${word}"</strong> adalah kata puncak sah di kamus KBBI.<br>Tidak ada kata turunan <strong>${level + 1} huruf</strong> yang dapat dibentuk dari kombinasi huruf ini.`;
+  }
+
+  if (peakBarFill) {
+    peakBarFill.style.transition = 'none';
+    peakBarFill.style.width = '100%';
+    void peakBarFill.offsetWidth;
+    peakBarFill.style.transition = 'width 4.2s linear';
+    peakBarFill.style.width = '0%';
+  }
+
+  overlay.style.display = 'flex';
+  void overlay.offsetWidth;
+  overlay.classList.add('show');
+
+  if (window.sounds) {
+    if (typeof window.sounds.playCelebration === 'function') {
+      window.sounds.playCelebration();
+    } else if (typeof window.sounds.playWin === 'function') {
+      window.sounds.playWin();
+    }
+  }
+
+  setTimeout(() => {
+    overlay.classList.remove('show');
+    setTimeout(() => {
+      overlay.style.display = 'none';
+      handleWordPyramidWin(userData, word, ptsAwarded);
+    }, 350);
+  }, 4500);
+}
+
+// Memproses tebakan kata masuk untuk mode Piramida Kata
+function processWordPyramidGuess(rawWord, userData) {
+  if (currentGameMode !== 'wordpyramid' || wordPyramidIsGameOver || wordPyramidIsAnimating) return;
+  if (!rawWord) return;
+
+  const word = rawWord.trim().toUpperCase();
+  const userId = (userData && (userData.userId || userData.uniqueId)) || 'host';
+  const userName = (userData && (userData.nickname || userData.uniqueId)) || 'Pemain';
+  const isHost = (userId === 'host' || userId === 'host_offline' || (typeof userId === 'string' && userId.toLowerCase().includes('host')));
+  const userAvatar = (userData && userData.profilePictureUrl && userData.profilePictureUrl !== 'assets/bg_nature.png') ? userData.profilePictureUrl : (isHost ? getHostAvatar() : DEFAULT_HOST_AVATAR);
+  const now = Date.now();
+
+  // 1. Validasi panjang kata harus tepat sama dengan level aktif
+  if (word.length !== wordPyramidCurrentLevel) {
+    if (isHost) {
+      showToast(`Kata harus ${wordPyramidCurrentLevel} huruf!`, 2000);
+    }
+    return;
+  }
+
+  // 2. Cooldown 800ms per penonton
+  if (!isHost) {
+    if (wordPyramidUserCooldown.has(userId) && (now - wordPyramidUserCooldown.get(userId) < 800)) {
+      return;
+    }
+    wordPyramidUserCooldown.set(userId, now);
+  }
+
+  // 3. Validasi aturan pembentukan kata: mengandung semua huruf kata level sebelumnya + 1 huruf baru
+  const prevStep = wordPyramidSolvedSteps[wordPyramidSolvedSteps.length - 1];
+  const prevWord = prevStep ? prevStep.word : wordPyramidBaseWord;
+  const ext = checkWordPyramidExtension(prevWord, word);
+
+  if (!ext.valid) {
+    if (isHost) {
+      showToast(`Harus memakai semua huruf dari "${prevWord}" ditambah 1 huruf baru!`, 2500);
+    }
+    // Kata yang tidak mengandung huruf clue tidak ditampilkan di kotak ubin
+    return;
+  }
+
+  // 4. Validasi Kamus Baku (KBBI / Dictionary)
+  const validSet = allValidWordsSets[wordPyramidCurrentLevel];
+  const isValidInKBBI = (validSet && validSet.has(word)) || (fullValidDictionary && fullValidDictionary.has(word));
+  if (!isValidInKBBI) {
+    if (isHost) {
+      showToast(`"${word}" bukan kata baku di kamus!`, 2000);
+    }
+    showWordPyramidInvalidAttempt(word);
+    return;
+  }
+
+  // Bersihkan timer attempt jika tebakan valid/berhasil
+  if (wpInvalidAttemptTimer) {
+    clearTimeout(wpInvalidAttemptTimer);
+    wpInvalidAttemptTimer = null;
+  }
+
+  // ── BERHASIL MENYUSUN LEVEL INI! ──
+  const WP_POINTS = { 3: 3, 4: 5, 5: 7, 6: 10, 7: 15, 8: 25 };
+  const basePts = WP_POINTS[wordPyramidCurrentLevel] || 5;
+
+  // Cek apakah ada kata turunan valid di kamus untuk level berikutnya (+1 huruf)
+  const hasNext = hasWordPyramidNextExtensions(word);
+  const isBranchPeak = (wordPyramidCurrentLevel < 8 && !hasNext);
+  const isJackpot = (wordPyramidCurrentLevel === 8 || isBranchPeak);
+
+  // Jika mencapai puncak cabang (kata baku sah tanpa turunan), berikan bonus jackpot setara level puncak!
+  const ptsAwarded = isBranchPeak ? (basePts + 10) : basePts;
+
+  wordPyramidSolvedSteps.push({
+    level: wordPyramidCurrentLevel,
+    word: word,
+    userName: userName,
+    userAvatar: userAvatar,
+    addedChar: ext.addedChar,
+    points: ptsAwarded,
+    isBase: false
+  });
+
+  if (typeof addPoints === 'function' && userData) {
+    addPoints(userData, ptsAwarded);
+    recordWin(userData.uniqueId || userData.nickname);
+  }
+  showFloatingPoints(ptsAwarded, 'wordPyramidContainer');
+
+  if (window.sounds) {
+    if (typeof window.sounds.playFlip === 'function') window.sounds.playFlip(0);
+    if (typeof window.sounds.playGreenChime === 'function') window.sounds.playGreenChime();
+  }
+
+  if (!isJackpot) {
+    const nextLevel = wordPyramidCurrentLevel + 1;
+    showToast(`🎉 ${userName} menyusun: ${word} (+${ext.addedChar})! (+${ptsAwarded} Pts) ➔ Lanjut ${nextLevel} Huruf!`, 3000);
+    wordPyramidCurrentLevel = nextLevel;
+    wordPyramidCurrentHintTarget = null;
+    renderWordPyramidUI();
+  } else {
+    // 👑 SELESAI / PUNCAK PIRAMIDA TERCAPAI
+    wordPyramidIsGameOver = true;
+    renderWordPyramidUI();
+
+    if (isBranchPeak) {
+      // OPSI 2: Tampilkan overlay penjelasan puncak dengan transisi estetik
+      showWordPyramidPeakOverlay(word, wordPyramidCurrentLevel, userData, ptsAwarded);
+    } else {
+      // Level 8 Maksimal Tuntas
+      showToast(`👑 LUAR BIASA! ${userName} MENYELESAIKAN WORD PYRAMID 8 HURUF: ${word}! (+${ptsAwarded} Pts)`, 4000);
+      setTimeout(() => {
+        handleWordPyramidWin(userData, word, ptsAwarded);
+      }, 800);
+    }
+  }
+}
+
+// Merender UI Papan Piramida Kata
+// (Sesuai instruksi: terbaru berada paling atas seperti Wordle, terus ke bawah s/d kata awal)
+function renderWordPyramidUI() {
+  const container = document.getElementById('wordPyramidContainer');
+  if (!container || currentGameMode !== 'wordpyramid') return;
+
+  // 1. Update Stages Progress Chips (2H s/d 8H)
+  for (let len = 2; len <= 8; len++) {
+    const chip = document.getElementById(`wpChip${len}`);
+    if (chip) {
+      chip.className = 'wordpyramid-stage-chip';
+      const iconSpan = chip.querySelector('.chip-icon');
+      if (len <= wordPyramidCurrentLevel && (len < wordPyramidCurrentLevel || wordPyramidIsGameOver)) {
+        chip.classList.add('completed');
+        if (iconSpan) iconSpan.innerHTML = '<i class="fa-solid fa-check"></i>';
+      } else if (len === wordPyramidCurrentLevel && !wordPyramidIsGameOver) {
+        chip.classList.add('active');
+        if (iconSpan) iconSpan.innerHTML = (len === 8) ? '<i class="fa-solid fa-crown"></i>' : '<i class="fa-solid fa-play"></i>';
+      } else {
+        chip.classList.add('locked');
+        if (iconSpan) iconSpan.innerHTML = (len === 8) ? '<i class="fa-solid fa-crown"></i>' : '<i class="fa-solid fa-lock"></i>';
+      }
+    }
+  }
+
+  // 2. Update Header Clue / Rule Card
+  const prevStep = wordPyramidSolvedSteps[wordPyramidSolvedSteps.length - 1];
+  const prevWord = prevStep ? prevStep.word : wordPyramidBaseWord;
+  const levelBadge = document.getElementById('wpLevelBadge');
+  const targetLenEl = document.getElementById('wpTargetLen');
+  const prevWordPill = document.getElementById('wpPrevWordPill');
+  const ruleTitleEl = document.getElementById('wpRuleTitle');
+
+  if (levelBadge) {
+    if (wordPyramidIsGameOver) {
+      levelBadge.textContent = 'PIRAMIDA SELESAI';
+    } else {
+      levelBadge.textContent = `LEVEL ${wordPyramidCurrentLevel - 2} / 6`;
+    }
+  }
+  if (targetLenEl) targetLenEl.textContent = wordPyramidCurrentLevel;
+  if (prevWordPill) prevWordPill.textContent = prevWord;
+  if (ruleTitleEl) {
+    if (wordPyramidIsGameOver) {
+      ruleTitleEl.innerHTML = `Selamat! Rantai kata piramida berhasil diselesaikan!`;
+    } else {
+      ruleTitleEl.innerHTML = `Susun kata <strong>${wordPyramidCurrentLevel}</strong> huruf dari huruf <span id="wpPrevWordPill">${prevWord}</span> + 1 huruf baru!`;
+    }
+  }
+
+  // Update info penebak kata sebelumnya di Header Clue (Opsi 1)
+  const prevSolverEl = document.getElementById('wpPrevSolver');
+  if (prevSolverEl) {
+    if (prevStep && !prevStep.isBase && !wordPyramidIsGameOver) {
+      const solverAvatar = document.getElementById('wpSolverAvatar');
+      const solverName = document.getElementById('wpSolverName');
+      const solverPts = document.getElementById('wpSolverPts');
+      const prevWordName = document.getElementById('wpPrevWordName');
+
+      if (solverAvatar) {
+        solverAvatar.onerror = function() { this.onerror = null; this.src = DEFAULT_HOST_AVATAR; };
+        solverAvatar.src = prevStep.userAvatar || DEFAULT_HOST_AVATAR;
+      }
+      if (solverName) solverName.textContent = (prevStep.userName || 'Pemain').replace(/^@+/, '');
+      if (solverPts) solverPts.textContent = `+${prevStep.points} Pts`;
+      if (prevWordName) prevWordName.textContent = prevStep.word;
+
+      prevSolverEl.style.display = 'inline-flex';
+    } else {
+      prevSolverEl.style.display = 'none';
+    }
+  }
+
+  // 3. Render Pyramid Rows: Yang terbaru berada paling atas seperti Wordle, terus ke bawah s/d kata awal!
+  const rowsContainer = document.getElementById('wordPyramidRowsContainer');
+  if (!rowsContainer) return;
+  rowsContainer.innerHTML = '';
+
+  // 3a. Baris Input Aktif (Placeholder kotak kosong berkedip) SELALU DI PALING ATAS saat game berlangsung
+  if (!wordPyramidIsGameOver) {
+    const activeRow = document.createElement('div');
+    activeRow.className = 'wordpyramid-row active-input';
+    activeRow.setAttribute('data-len', wordPyramidCurrentLevel);
+
+    const activeTiles = document.createElement('div');
+    activeTiles.className = 'wordpyramid-row-tiles';
+    for (let i = 0; i < wordPyramidCurrentLevel; i++) {
+      const tile = document.createElement('div');
+      tile.className = 'wordpyramid-tile';
+      tile.setAttribute('data-index', i);
+      tile.style.cursor = 'pointer';
+      tile.title = 'Sentuh / klik untuk huruf bantuan';
+
+      // Interaktivitas: Host klik / sentuh kotak kosong untuk memunculkan huruf bantuan
+      tile.onclick = function(e) {
+        if (e) e.stopPropagation();
+        if (wordPyramidIsGameOver || wordPyramidIsAnimating) return;
+
+        const hintWord = getWordPyramidHintTarget();
+        if (!hintWord || !hintWord[i]) return;
+
+        if (!tile.dataset.hintChar) {
+          const char = hintWord[i];
+          tile.textContent = char;
+          tile.dataset.hintChar = char;
+          tile.classList.add('tile-hint');
+          tile.style.transform = 'scale(1.15)';
+          setTimeout(() => { tile.style.transform = 'scale(1)'; }, 200);
+
+          if (window.sounds && typeof window.sounds.playLetter === 'function') {
+            window.sounds.playLetter();
+          } else if (window.playHostAudio) {
+            playHostAudio('click');
+          }
+
+          if (typeof showToast === 'function') {
+            showToast(`💡 Bantuan: Huruf "${char}" di kotak ke-${i + 1}!`, 2000);
+          }
+        } else {
+          // Sentuh lagi untuk menutup/menyembunyikan kembali huruf bantuan
+          tile.textContent = '';
+          delete tile.dataset.hintChar;
+          tile.classList.remove('tile-hint');
+          if (window.playHostAudio) playHostAudio('click');
+        }
+      };
+
+      activeTiles.appendChild(tile);
+    }
+    activeRow.appendChild(activeTiles);
+    rowsContainer.appendChild(activeRow);
+  }
+
+  // 3b. Render Solved Rows secara terbalik (Level tertinggi/terbaru di atas, level 2 di bawah)
+  for (let i = wordPyramidSolvedSteps.length - 1; i >= 0; i--) {
+    const step = wordPyramidSolvedSteps[i];
+    const row = document.createElement('div');
+    row.className = 'wordpyramid-row solved-row';
+    row.setAttribute('data-len', step.level);
+
+    // Tiles murni di tengah piramida tanpa indikator kiri & kanan yang mengganggu
+    const tilesDiv = document.createElement('div');
+    tilesDiv.className = 'wordpyramid-row-tiles';
+    const letters = step.word.split('');
+
+    letters.forEach(ch => {
+      const tile = document.createElement('div');
+      tile.className = 'wordpyramid-tile';
+      if (step.isBase) {
+        tile.classList.add('tile-base');
+      } else {
+        tile.classList.add('tile-correct');
+        if (ch === step.addedChar) {
+          tile.classList.add('tile-added');
+        }
+      }
+      tile.textContent = ch;
+      tilesDiv.appendChild(tile);
+    });
+    row.appendChild(tilesDiv);
+    rowsContainer.appendChild(row);
+  }
+}
+
+let wpShowcaseTimer = null;
+
+// Menampilkan animasi susunan tangga kata kemenangan 2-8 huruf langsung di layar papan game (Cascadle style Hall of Fame)
+function launchWordPyramidVictoryShowcase() {
+  const container = document.getElementById('wordPyramidContainer');
+  const rowsContainer = document.getElementById('wordPyramidRowsContainer');
+  if (!container || !rowsContainer) return;
+
+  if (wpShowcaseTimer) {
+    clearInterval(wpShowcaseTimer);
+    wpShowcaseTimer = null;
+  }
+
+  // 1. Update Chips progress agar semua tampak selesai (centang hijau / mahkota)
+  const finalStep = wordPyramidSolvedSteps[wordPyramidSolvedSteps.length - 1];
+  const maxReachedLen = finalStep ? finalStep.level : wordPyramidCurrentLevel;
+
+  for (let len = 2; len <= 8; len++) {
+    const chip = document.getElementById(`wpChip${len}`);
+    if (chip) {
+      if (len <= maxReachedLen) {
+        chip.className = 'wordpyramid-stage-chip completed';
+        const iconSpan = chip.querySelector('.chip-icon');
+        if (iconSpan) iconSpan.innerHTML = (len === maxReachedLen) ? '<i class="fa-solid fa-crown"></i>' : '<i class="fa-solid fa-check"></i>';
+      } else {
+        chip.className = 'wordpyramid-stage-chip locked';
+      }
+    }
+  }
+
+  // 2. Render Wadah Showcase di dalam rowsContainer
+  const finalWord = finalStep ? finalStep.word : 'PUNCAK';
+  rowsContainer.innerHTML = `
+    <div class="wordpyramid-showcase-box">
+      <div class="wordpyramid-showcase-header">
+        <div class="wordpyramid-showcase-badge"><i class="fa-solid fa-crown" style="color: #fbbf24;"></i> WORD PYRAMID HALL OF FAME</div>
+        <div class="wordpyramid-showcase-sub">Pemenang Rantai Kata (Level 2 hingga Level ${maxReachedLen}: "${finalWord}")</div>
+      </div>
+      <div class="wordpyramid-showcase-rows" id="wpShowcaseRows"></div>
+      <div class="wordpyramid-showcase-footer">
+        <div class="wordpyramid-showcase-countdown">
+          <i class="fa-solid fa-clock-rotate-left"></i> Ronde baru dalam <span id="wpCountdownNum" class="wordpyramid-countdown-val">10</span>s
+        </div>
+        <button class="wordpyramid-showcase-btn" onclick="startNewRound()">
+          Ronde Baru <i class="fa-solid fa-forward-step"></i>
+        </button>
+      </div>
+    </div>
+  `;
+
+  const showcaseRowsEl = document.getElementById('wpShowcaseRows');
+  if (!showcaseRowsEl) return;
+
+  // 3. Render baris-baris dari Level 2 s/d Level Puncak secara bertahap (Staggered Animation)
+  wordPyramidSolvedSteps.forEach((step, idx) => {
+    const isJackpot = (idx === wordPyramidSolvedSteps.length - 1);
+    const rowEl = document.createElement('div');
+    rowEl.className = `wordpyramid-showcase-row ${isJackpot ? 'is-jackpot-row' : ''}`;
+    rowEl.style.opacity = '0';
+    rowEl.style.transform = 'translateY(12px) scale(0.95)';
+
+    // Tiles Huruf
+    const tilesCol = document.createElement('div');
+    tilesCol.className = 'wordpyramid-showcase-tiles';
+    const letters = step.word.split('');
+    letters.forEach(ch => {
+      const tile = document.createElement('div');
+      tile.className = 'wordpyramid-showcase-tile';
+      if (step.isBase) {
+        tile.classList.add('tile-base');
+      } else {
+        tile.classList.add('tile-correct');
+        if (ch === step.addedChar) {
+          tile.classList.add('tile-added');
+        }
+      }
+      tile.textContent = ch;
+      tilesCol.appendChild(tile);
+    });
+    rowEl.appendChild(tilesCol);
+
+    // Info Penebak & Poin di Sebelah Kanan
+    const metaEl = document.createElement('div');
+    metaEl.className = 'wordpyramid-showcase-meta';
+    
+    let badgeHtml = '';
+    if (step.isBase) {
+      badgeHtml = `<span class="wordpyramid-badge-base">KATA DASAR</span>`;
+    } else if (isJackpot) {
+      badgeHtml = `<span class="wordpyramid-badge-jackpot"><i class="fa-solid fa-crown"></i> +${step.points || 25} PTS</span>`;
+    } else {
+      badgeHtml = `<span class="wordpyramid-badge-pts">+${step.points || 5} PTS</span>`;
+    }
+
+    const avatarSrc = step.userAvatar || DEFAULT_HOST_AVATAR;
+    const cleanStepUser = (step.userName || 'Pemain').replace(/^@+/, '');
+    metaEl.innerHTML = `
+      <img class="wordpyramid-showcase-avatar ${isJackpot ? 'jackpot-avatar' : ''}" src="${avatarSrc}" onerror="this.onerror=null; this.src=DEFAULT_HOST_AVATAR;">
+      <div class="wordpyramid-showcase-userinfo">
+        <span class="wordpyramid-showcase-name" title="${cleanStepUser}">${cleanStepUser}</span>
+        ${badgeHtml}
+      </div>
+    `;
+    rowEl.appendChild(metaEl);
+    showcaseRowsEl.appendChild(rowEl);
+
+    // Staggered Reveal Animation per Baris
+    setTimeout(() => {
+      rowEl.classList.add('reveal-active');
+      rowEl.style.opacity = '1';
+      rowEl.style.transform = 'translateY(0) scale(1)';
+
+      if (window.sounds) {
+        if (isJackpot) {
+          if (typeof window.sounds.playWin === 'function') window.sounds.playWin();
+          if (typeof triggerConfetti === 'function') triggerConfetti();
+        } else {
+          if (typeof window.sounds.playScanRow === 'function') {
+            window.sounds.playScanRow(idx);
+          } else if (typeof window.sounds.playCorrect === 'function') {
+            window.sounds.playCorrect();
+          }
+        }
+      }
+    }, (idx + 1) * 420);
+  });
+
+  // 4. Hitung mundur otomatis 10 detik menuju ronde berikutnya
+  let timeLeft = 10;
+  wpShowcaseTimer = setInterval(() => {
+    timeLeft--;
+    const numEl = document.getElementById('wpCountdownNum');
+    if (numEl) numEl.textContent = timeLeft;
+
+    if (timeLeft <= 0) {
+      clearInterval(wpShowcaseTimer);
+      wpShowcaseTimer = null;
+      if (currentGameMode === 'wordpyramid') {
+        startNewRound();
+      }
+    }
+  }, 1000);
+}
+
+// Menangani kemenangan jackpot ronde Piramida Kata via Victory Showcase
+function handleWordPyramidWin(userData, word, winPts) {
+  wordPyramidRound++;
+  launchWordPyramidVictoryShowcase();
+}
+
+// Bantuan huruf dari host atau tombol hint
+function revealWordPyramidHint() {
+  if (currentGameMode !== 'wordpyramid' || wordPyramidIsGameOver) return;
+  const prevStep = wordPyramidSolvedSteps[wordPyramidSolvedSteps.length - 1];
+  const prevWord = prevStep ? prevStep.word : wordPyramidBaseWord;
+  const prevKey = prevWord.split('').sort().join('');
+
+  if (!wpExtendableInitialized) initWordPyramidExtendableSets();
+
+  const nextLen = wordPyramidCurrentLevel;
+  const validAddedChars = [];
+  for (let code = 65; code <= 90; code++) {
+    const ch = String.fromCharCode(code);
+    const candidateKey = (prevKey + ch).split('').sort().join('');
+    if (wpExtendableKeys[nextLen] && wpExtendableKeys[nextLen].has(candidateKey)) {
+      validAddedChars.push(ch);
+    }
+  }
+
+  // Buka huruf bantuan di kotak kosong pertama yang belum terbuka
+  const activeRow = document.querySelector('.wordpyramid-row.active-input');
+  const hintWord = getWordPyramidHintTarget();
+  let revealedChar = null;
+
+  if (activeRow && hintWord) {
+    const tiles = activeRow.querySelectorAll('.wordpyramid-tile');
+    for (let i = 0; i < tiles.length; i++) {
+      const tile = tiles[i];
+      if (!tile.dataset.hintChar && (!tile.textContent || tile.textContent === '')) {
+        revealedChar = hintWord[i];
+        tile.textContent = revealedChar;
+        tile.dataset.hintChar = revealedChar;
+        tile.classList.add('tile-hint');
+        tile.style.transform = 'scale(1.15)';
+        setTimeout(() => { tile.style.transform = 'scale(1)'; }, 200);
+        break;
+      }
+    }
+  }
+
+  if (revealedChar) {
+    showToast(`💡 Huruf Bantuan: "${revealedChar}" telah dibuka di kotak!`, 3000);
+    if (window.sounds && typeof window.sounds.playLetter === 'function') {
+      window.sounds.playLetter();
+    }
+  } else if (validAddedChars.length > 0) {
+    const sample = validAddedChars.slice(0, 3).join(', ');
+    showToast(`💡 Petunjuk Huruf: Coba tambahkan salah satu huruf [ ${sample} ] ke "${prevWord}"!`, 4000);
+    if (window.sounds && typeof window.sounds.playLetter === 'function') {
+      window.sounds.playLetter();
+    }
+  } else {
+    showToast(`💡 Petunjuk: Susun kata ${nextLen} huruf dari huruf-huruf "${prevWord}" + 1 huruf bebas!`, 3000);
+  }
+}
+
+// Lewati ronde Piramida Kata
+function skipWordPyramidRound() {
+  if (currentGameMode !== 'wordpyramid') return;
+  showToast('⏭️ Melewati ronde Word Pyramid...', 1500);
+  startWordPyramidGame();
+}
+
+window.startWordPyramidGame = startWordPyramidGame;
+window.processWordPyramidGuess = processWordPyramidGuess;
+window.revealWordPyramidHint = revealWordPyramidHint;
+window.skipWordPyramidRound = skipWordPyramidRound;
+window.handleWordPyramidWin = handleWordPyramidWin;
+window.launchWordPyramidVictoryShowcase = launchWordPyramidVictoryShowcase;
+window.initWordPyramidExtendableSets = initWordPyramidExtendableSets;
+
+
 
 
 

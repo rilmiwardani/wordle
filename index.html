@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=overlays-content">
   <title>TikTok Live Games</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=67">
+  <link rel="stylesheet" href="style.css?v=76">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
   <script src="https://www.youtube.com/iframe_api"></script>
@@ -29,7 +29,7 @@
     <div class="game-select-container">
       <div class="game-select-header">
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 8px;">
-          <div class="game-select-badge">TIKTOK LIVE PARTY • 12 GAMES</div>
+          <div class="game-select-badge">TIKTOK LIVE PARTY • 17 GAMES</div>
           <button id="frontThemeToggleBtn" class="front-theme-toggle-btn" title="Ganti Tema (Gelap / Sepia Cream)" onclick="toggleVisualTheme(event)">
             <i class="fa-solid fa-sun" id="frontThemeIcon"></i> <span id="frontThemeLabel">Tema: Sepia Cream</span>
           </button>
@@ -273,6 +273,18 @@
             <div class="card-body">
               <div class="card-top-row">
                 <span class="card-title">WORD MATCH</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 17. Piramida Kata -->
+          <div class="game-card card-wordpyramid" onclick="selectGame('wordpyramid')" id="cardWordPyramid">
+            <div class="card-visual" style="display: flex; align-items: center; justify-content: center; gap: 3px;">
+              <i class="fa-solid fa-shapes" style="font-size: 20px; color: #f59e0b;"></i>
+            </div>
+            <div class="card-body">
+              <div class="card-top-row">
+                <span class="card-title">WORD PYRAMID</span>
               </div>
             </div>
           </div>
@@ -621,6 +633,17 @@
                     <div class="game-card-text">
                       <div class="game-card-title">Word Match</div>
                       <div class="game-card-desc">Tebak Kata & Skor Kemiripan Bar (1-100%)</div>
+                    </div>
+                  </div>
+
+                  <!-- Piramida Kata -->
+                  <div class="game-card" data-value="wordpyramid" onclick="selectCustomGame('wordpyramid', event)">
+                    <div class="game-card-icon badge-wordpyramid">
+                      <i class="fa-solid fa-shapes" style="font-size: 16px; color: #f59e0b;"></i>
+                    </div>
+                    <div class="game-card-text">
+                      <div class="game-card-title">Word Pyramid</div>
+                      <div class="game-card-desc">Susun +1 Huruf dari 2 hingga 8 Huruf</div>
                     </div>
                   </div>
                 </div>
@@ -1715,6 +1738,92 @@
         </div>
       </div>
 
+      <!-- Piramida Kata (Word Pyramid) Container -->
+      <div id="wordPyramidContainer" class="wordpyramid-container" style="display: none;">
+        <!-- Top Stage Progress Header (2H -> 3H -> 4H -> 5H -> 6H -> 7H -> 8H) -->
+        <div class="wordpyramid-stages-bar" id="wordPyramidStagesBar">
+          <div class="wordpyramid-stage-chip completed" id="wpChip2" data-len="2">
+            <span class="chip-num">2H</span>
+            <span class="chip-icon"><i class="fa-solid fa-check"></i></span>
+          </div>
+          <div class="wordpyramid-stage-arrow">›</div>
+          <div class="wordpyramid-stage-chip active" id="wpChip3" data-len="3">
+            <span class="chip-num">3H</span>
+            <span class="chip-pts">+3</span>
+          </div>
+          <div class="wordpyramid-stage-arrow">›</div>
+          <div class="wordpyramid-stage-chip" id="wpChip4" data-len="4">
+            <span class="chip-num">4H</span>
+            <span class="chip-pts">+5</span>
+          </div>
+          <div class="wordpyramid-stage-arrow">›</div>
+          <div class="wordpyramid-stage-chip" id="wpChip5" data-len="5">
+            <span class="chip-num">5H</span>
+            <span class="chip-pts">+7</span>
+          </div>
+          <div class="wordpyramid-stage-arrow">›</div>
+          <div class="wordpyramid-stage-chip" id="wpChip6" data-len="6">
+            <span class="chip-num">6H</span>
+            <span class="chip-pts">+10</span>
+          </div>
+          <div class="wordpyramid-stage-arrow">›</div>
+          <div class="wordpyramid-stage-chip" id="wpChip7" data-len="7">
+            <span class="chip-num">7H</span>
+            <span class="chip-pts">+15</span>
+          </div>
+          <div class="wordpyramid-stage-arrow">›</div>
+          <div class="wordpyramid-stage-chip" id="wpChip8" data-len="8">
+            <span class="chip-num">8H</span>
+            <span class="chip-icon"><i class="fa-solid fa-crown"></i></span>
+            <span class="chip-pts">+25</span>
+          </div>
+        </div>
+
+        <!-- Clue / Instruction Card -->
+        <div class="wordpyramid-header-card">
+          <div class="wordpyramid-header-top">
+            <div class="wordpyramid-rule-badge">
+              <i class="fa-solid fa-layer-group"></i>
+              <span id="wpLevelBadge">LEVEL 1 / 6</span>
+            </div>
+            <div class="wordpyramid-rule-content">
+              <span class="wordpyramid-rule-title" id="wpRuleTitle">Susun kata <strong id="wpTargetLen">3</strong> huruf dari huruf <span id="wpPrevWordPill">AN</span> + 1 huruf baru!</span>
+            </div>
+          </div>
+          <!-- Contributor pill of previous word solver (Option 1) -->
+          <div class="wordpyramid-prev-solver" id="wpPrevSolver" style="display: none;">
+            <img class="wordpyramid-solver-avatar" id="wpSolverAvatar" src="" alt="Avatar">
+            <span class="wordpyramid-solver-name" id="wpSolverName">Pemain</span>
+            <span class="wordpyramid-solver-dot">•</span>
+            <span class="wordpyramid-solver-word" id="wpPrevWordName">AN</span>
+            <span class="wordpyramid-solver-pts" id="wpSolverPts">+3 Pts</span>
+          </div>
+        </div>
+
+        <!-- Piramida Kata Dynamic Board Area (Wordle style: Terbaru di paling atas, ke bawah s/d kata awal) -->
+        <div class="wordpyramid-board-area" id="wordPyramidBoardArea">
+          <div class="wordpyramid-rows-container" id="wordPyramidRowsContainer">
+            <!-- Dynamically populated via renderWordPyramidUI() -->
+          </div>
+        </div>
+
+        <!-- Bottom Helper & Controls -->
+        <div class="wordpyramid-footer">
+          <div class="wordpyramid-chat-hint">
+            <i class="fa-solid fa-comment-dots" style="color: #fe2c55; margin-right: 6px;"></i>
+            <span id="wpChatHintText">Ketik kata valid di komentar live TikTok!</span>
+          </div>
+          <div class="wordpyramid-btn-group">
+            <button class="wordpyramid-ctrl-btn hint-btn" onclick="revealWordPyramidHint()" id="wpHintBtn" title="Beri petunjuk huruf bantuan">
+              <i class="fa-solid fa-lightbulb"></i> Bantuan
+            </button>
+            <button class="wordpyramid-ctrl-btn skip-btn" onclick="skipWordPyramidRound()" title="Lewati ronde ini">
+              <i class="fa-solid fa-forward-step"></i> Lewati
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Supporter Spotlight Rotator (Fade In/Out) -->
       <div id="marqueeContainer" class="supporter-spotlight-container" style="display: none;">
         <div class="supporter-spotlight-inner" id="marqueeContent"></div>
@@ -1790,6 +1899,28 @@
       </div>
 
       <div class="win-footer" id="multiWinFooter">Next round starting soon...</div>
+    </div>
+  </div>
+
+  <!-- Word Pyramid Peak / Branch-End Explanation Overlay -->
+  <div class="wordpyramid-peak-overlay" id="wpPeakOverlay" style="display: none;">
+    <div class="wordpyramid-peak-card">
+      <div class="wordpyramid-peak-badge">
+        <i class="fa-solid fa-mountain"></i>
+        <span>WORD PYRAMID PEAK</span>
+      </div>
+      <div class="wordpyramid-peak-word" id="wpPeakWord">CANTRIK</div>
+      <div class="wordpyramid-peak-desc" id="wpPeakDesc">
+        Kata <strong>"CANTRIK"</strong> adalah kata puncak sah di kamus KBBI.<br>
+        Tidak ada kata berikutnya yang dapat dibentuk dari kombinasi huruf ini.
+      </div>
+      <div class="wordpyramid-peak-congrats">
+        <i class="fa-solid fa-trophy" style="color: #ffd54f;"></i>
+        <span>Word Pyramid Selesai di Level <strong id="wpPeakLevel">7</strong>!</span>
+      </div>
+      <div class="wordpyramid-peak-bar">
+        <div class="wordpyramid-peak-bar-fill" id="wpPeakBarFill"></div>
+      </div>
     </div>
   </div>
 
@@ -2463,6 +2594,6 @@
   <script src="wordladder_puzzles_en.js"></script>
   <script src="wanderwords_puzzles.js"></script>
   <script src="wordcluster_puzzles.js?v=8"></script>
-  <script src="app.js?v=70"></script>
+  <script src="app.js?v=81"></script>
 </body>
 </html>

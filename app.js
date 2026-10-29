@@ -8006,6 +8006,7 @@ function connectToLive() {
         socket = new IndoFinitySocket(`ws://${indofinityIp}:62024`);
       } else {
         socket = io(SOCKET_URL);
+        loginStatus.textContent = "Connecting to TikTok Live...";
       }
       setupSocketListeners();
     } else if (socket.connected) {
@@ -8014,6 +8015,7 @@ function connectToLive() {
           socket.listeners['statusUpdate'].forEach(cb => cb({ status: 'connected', uniqueId: 'IndoFinity' }));
         }
       } else {
+        loginStatus.textContent = "Connecting to TikTok Live...";
         socket.emit('connect-tiktok', { uniqueId: username, sessionId });
       }
     } else {
@@ -8827,6 +8829,7 @@ function setupSocketListeners() {
     hideDisconnectBanner();
     // Only send connect-tiktok if we're NOT already connected (prevent duplicates)
     if (lastUsername && !isConnectedToTikTok) {
+      if (loginStatus) loginStatus.textContent = "Connecting to TikTok Live...";
       socket.emit('connect-tiktok', { uniqueId: lastUsername, sessionId: lastSessionId });
     }
   });
@@ -11514,6 +11517,22 @@ window.updateAllowedLengths = function() {
 window.applyAllowedLengths = function(e) {
   if (e) e.stopPropagation();
   updateAllowedLengths();
+
+  // Sync allowedLengths ke server agar server tidak kirim balik nilai lama yang akan menimpa localStorage
+  try {
+    const newLengths = JSON.parse(localStorage.getItem('allowed_lengths') || '[5]');
+    if (typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
+      localSocket.emit('update-game-settings', { allowedLengths: newLengths });
+    }
+  } catch(e) {}
+
+  // Reset state ronde sebelumnya agar startNewRound tidak terkunci di panjang kata lama.
+  // PENTING: currentWord juga harus di-null-kan karena baris pertama startNewRound()
+  // selalu mengisi ulang lastRoundTargetWord dari currentWord, sehingga cabang
+  // (isAutoStarterWinnerNickname && lastRoundTargetWord) akan mengabaikan allowed_lengths.
+  lastRoundTargetWord = null;
+  lastRoundWinner = null;
+  currentWord = null;
   startNewRound();
   showToast("⚡ Panjang kata diterapkan & ronde baru dimulai!");
 };

@@ -5462,9 +5462,7 @@ body.theme-sepia .like-counter-name {
 /* Thematic badge color palettes */
 .badge-wordle { background: rgba(16, 185, 129, 0.18); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
 .badge-word500 { background: rgba(6, 182, 212, 0.18); color: #06b6d4; border: 1px solid rgba(6, 182, 212, 0.3); }
-.badge-word600 { background: rgba(14, 165, 233, 0.18); color: #0ea5e9; border: 1px solid rgba(14, 165, 233, 0.3); }
 .badge-wordfit { background: rgba(139, 92, 246, 0.18); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.3); }
-.badge-wordloop { background: rgba(59, 130, 246, 0.18); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
 .badge-wordfill { background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
 .badge-wordtango { background: rgba(236, 72, 153, 0.18); color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.3); }
 .badge-wordgrid { background: rgba(234, 179, 8, 0.18); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.3); }
@@ -5633,7 +5631,6 @@ body.theme-sepia .like-counter-name {
 /* Hanya menonaktifkan animasi pada elemen papan permainan & ubin tebakan agar alur game instan dan hemat resource */
 body.no-animations #board *,
 body.no-animations #wordfitBoardContainer *,
-body.no-animations #wordloopBoardContainer *,
 body.no-animations #fillblanksBoardContainer *,
 body.no-animations #wordtangoBoardContainer *,
 body.no-animations #wordgridBoardContainer *,
@@ -8023,7 +8020,7 @@ body.theme-sepia .connected-username {
   color: #26592d !important;
 }
 
-/* Game Board & Tiles (Wordle, Word500, Word600, Wordfit, Fillblanks, Wordtango, Squareword) */
+/* Game Board & Tiles (Wordle, Word500, Wordfit, Fillblanks, Wordtango, Squareword) */
 body.theme-sepia .tile {
   background: #d7c8b4 !important;
   border: 2px solid #a08a72 !important;

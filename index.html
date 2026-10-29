@@ -78,19 +78,7 @@
             </div>
           </div>
 
-          <!-- 3. Word600 -->
-          <div class="game-card card-nyt-word600" onclick="selectGame('word600')" id="cardWord600">
-            <div class="card-visual">
-              <span class="mini-peg peg-green">6</span>
-              <span class="mini-peg peg-yellow">0</span>
-              <span class="mini-peg peg-gray">0</span>
-            </div>
-            <div class="card-body">
-              <div class="card-top-row">
-                <span class="card-title" id="cardNameW600">WORD600</span>
-              </div>
-            </div>
-          </div>
+          
 
           <!-- 4. Word Fit -->
           <div class="game-card card-nyt-wordfit" onclick="selectGame('wordfit')" id="cardWordFit">
@@ -120,19 +108,7 @@
             </div>
           </div>
 
-          <!-- 6. Word Loop -->
-          <div class="game-card card-nyt-wordloop" onclick="selectGame('wordloop')" id="cardWordLoop">
-            <div class="card-visual">
-              <span class="mini-tag tag-chain-a">KA</span>
-              <span class="chain-arrow">→</span>
-              <span class="mini-tag tag-chain-b">TA</span>
-            </div>
-            <div class="card-body">
-              <div class="card-top-row">
-                <span class="card-title">WORD LOOP</span>
-              </div>
-            </div>
-          </div>
+          
 
           <!-- 7. Word Fill -->
           <div class="game-card card-nyt-fillblanks" onclick="selectGame('fillblanks')" id="cardFillBlanks">
@@ -192,7 +168,7 @@
             </div>
             <div class="card-body">
               <div class="card-top-row">
-                <span class="card-title">SQUAREWORD</span>
+                <span class="card-title">KOTAK KATA</span>
               </div>
             </div>
           </div>
@@ -424,25 +400,11 @@
                     </div>
                     <div class="game-card-text">
                       <div class="game-card-title">Word500</div>
-                      <div class="game-card-desc">Mastermind 5H</div>
+                      <div class="game-card-desc">Mastermind 4-6H</div>
                     </div>
                   </div>
 
-                  <!-- Word600 -->
-                  <div class="game-card" data-value="word600" onclick="selectCustomGame('word600', event)">
-                    <div class="game-card-icon badge-word600">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="5" width="18" height="14" rx="2"></rect>
-                        <line x1="7" y1="5" x2="7" y2="19"></line>
-                        <line x1="11" y1="5" x2="11" y2="19"></line>
-                        <line x1="15" y1="5" x2="15" y2="19"></line>
-                      </svg>
-                    </div>
-                    <div class="game-card-text">
-                      <div class="game-card-title">Word600</div>
-                      <div class="game-card-desc">Mastermind 6H</div>
-                    </div>
-                  </div>
+                  
 
                   <!-- Word Fit -->
                   <div class="game-card" data-value="wordfit" onclick="selectCustomGame('wordfit', event)">
@@ -458,21 +420,7 @@
                     </div>
                   </div>
 
-                  <!-- Word Loop -->
-                  <div class="game-card" data-value="wordloop" onclick="selectCustomGame('wordloop', event)">
-                    <div class="game-card-icon badge-wordloop">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="17 1 21 5 17 9"></polyline>
-                        <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
-                        <polyline points="7 23 3 19 7 15"></polyline>
-                        <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
-                      </svg>
-                    </div>
-                    <div class="game-card-text">
-                      <div class="game-card-title">Word Loop</div>
-                      <div class="game-card-desc">Sambung Kata</div>
-                    </div>
-                  </div>
+                  
 
                   <!-- Word Fill -->
                   <div class="game-card" data-value="fillblanks" onclick="selectCustomGame('fillblanks', event)">
@@ -549,7 +497,7 @@
                       </svg>
                     </div>
                     <div class="game-card-text">
-                      <div class="game-card-title">Squareword</div>
+                      <div class="game-card-title">Kotak Kata</div>
                       <div class="game-card-desc">Grid 5×5</div>
                     </div>
                   </div>
@@ -688,7 +636,7 @@
               <div class="settings-group-content">
                 <div class="settings-card-box">
                   <button class="lang-option" id="hardModeBtn" onclick="toggleHardMode(event)" style="margin: 0; padding: 6px 0; width: 100%; border: none; text-align: center;"><i class="fa-solid fa-fire" style="color: #f97316; margin-right: 6px;"></i> Hard Mode: OFF</button>
-                  <span class="settings-subtext is-center">Berlaku untuk: Wordle, Word500, Word600, Word Fit, Color Fit, Word Fill</span>
+                  <span class="settings-subtext is-center">Berlaku untuk: Wordle, Word500, Word Fit, Color Fit, Word Fill</span>
                 </div>
                 <div class="settings-card-box">
                   <button class="lang-option" id="wgDifficultyBtn" onclick="toggleWgDifficulty(event)" style="margin: 0; padding: 6px 0; width: 100%; border: none; text-align: center;"><i class="fa-solid fa-puzzle-piece" style="color: #38bdf8; margin-right: 6px;"></i> Kesulitan Board: MUDAH</button>
@@ -717,7 +665,7 @@
                 <label class="settings-toggle-row" onclick="event.stopPropagation()">
                   <div style="display: flex; flex-direction: column; text-align: left;">
                     <span class="settings-toggle-label"><i class="fa-solid fa-font" style="color: #06b6d4; margin-right: 6px;"></i> Tanpa Huruf Ganda (Isogram)</span>
-                    <span class="settings-subtext">Berlaku untuk: Wordle, Word500, Word600, Word Fit, Word Loop, Word Fill</span>
+                    <span class="settings-subtext">Berlaku untuk: Wordle, Word500, Word Fit, Word Fill, Kotak Kata</span>
                   </div>
                   <div class="toggle-switch">
                     <input type="checkbox" id="noRepeatToggle" onchange="toggleNoRepeat(this.checked)">
@@ -1125,7 +1073,7 @@
                 </label>
 
                 <div id="tourneyOptionsContainer" style="display: none; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
-                  <div style="margin-bottom: 8px;">
+                  <div style="margin-bottom: 10px;">
                     <span style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 3px;">Kondisi Juara Sesi:</span>
                     <select id="tourneyTriggerTypeSelect" onchange="changeTourneyTriggerType(this.value)" onclick="event.stopPropagation()" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; font-size: 11.5px; cursor: pointer;">
                       <option value="score" selected>Target Poin Pemain (Default)</option>
@@ -1133,34 +1081,57 @@
                     </select>
                   </div>
 
-                  <div id="tourneyScoreGroup" style="margin-bottom: 8px;">
-                    <span style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 3px;">Target Skor Juara:</span>
-                    <select id="tourneyTargetScoreSelect" onchange="changeTourneyTargetScore(this.value)" onclick="event.stopPropagation()" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; font-size: 11.5px; cursor: pointer;">
-                      <option value="30">30 Poin (Cepat / ~3-4 ronde)</option>
-                      <option value="50" selected>50 Poin (Standar / ~5-6 ronde)</option>
-                      <option value="100">100 Poin (Seru / ~10 ronde)</option>
-                      <option value="150">150 Poin (Turnamen Akbar)</option>
-                    </select>
+                  <!-- Target Skor Manual + Presets -->
+                  <div id="tourneyScoreGroup" style="margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <span style="font-size: 11px; color: #94a3b8;"><i class="fa-solid fa-coins" style="color: #ffd54f; margin-right: 4px;"></i> Target Skor Juara:</span>
+                      <span style="font-size: 10px; color: #64748b;">Ketik manual angka</span>
+                    </div>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                      <input type="number" id="tourneyTargetScoreInput" min="5" max="9999" step="5" value="50" oninput="changeTourneyTargetScore(this.value)" onclick="event.stopPropagation()" placeholder="50" style="flex: 1; width: 100%; padding: 7px 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.25); color: #ffd54f; border-radius: 6px; font-size: 13px; font-weight: 700; box-sizing: border-box;">
+                    </div>
+                    <div style="display: flex; gap: 5px; margin-top: 5px;" onclick="event.stopPropagation()">
+                      <button type="button" class="lang-option" onclick="setTourneyScorePreset(25, event)" style="flex: 1; justify-content: center; padding: 3px 0; font-size: 10.5px; border-radius: 4px; margin: 0;">25</button>
+                      <button type="button" class="lang-option" onclick="setTourneyScorePreset(50, event)" style="flex: 1; justify-content: center; padding: 3px 0; font-size: 10.5px; border-radius: 4px; margin: 0;">50</button>
+                      <button type="button" class="lang-option" onclick="setTourneyScorePreset(75, event)" style="flex: 1; justify-content: center; padding: 3px 0; font-size: 10.5px; border-radius: 4px; margin: 0;">75</button>
+                      <button type="button" class="lang-option" onclick="setTourneyScorePreset(100, event)" style="flex: 1; justify-content: center; padding: 3px 0; font-size: 10.5px; border-radius: 4px; margin: 0;">100</button>
+                      <button type="button" class="lang-option" onclick="setTourneyScorePreset(200, event)" style="flex: 1; justify-content: center; padding: 3px 0; font-size: 10.5px; border-radius: 4px; margin: 0;">200</button>
+                    </div>
                   </div>
 
-                  <div id="tourneyRoundsGroup" style="margin-bottom: 8px; display: none;">
-                    <span style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 3px;">Target Jumlah Ronde:</span>
-                    <select id="tourneyTargetRoundsSelect" onchange="changeTourneyTargetRounds(this.value)" onclick="event.stopPropagation()" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; font-size: 11.5px; cursor: pointer;">
-                      <option value="3">3 Ronde</option>
-                      <option value="5" selected>5 Ronde</option>
-                      <option value="7">7 Ronde</option>
-                      <option value="10">10 Ronde</option>
-                    </select>
+                  <!-- Target Ronde Manual + Presets -->
+                  <div id="tourneyRoundsGroup" style="margin-bottom: 10px; display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <span style="font-size: 11px; color: #94a3b8;"><i class="fa-solid fa-flag-checkered" style="color: #38bdf8; margin-right: 4px;"></i> Target Jumlah Ronde:</span>
+                      <span style="font-size: 10px; color: #64748b;">Ketik manual angka</span>
+                    </div>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                      <input type="number" id="tourneyTargetRoundsInput" min="1" max="500" step="1" value="5" oninput="changeTourneyTargetRounds(this.value)" onclick="event.stopPropagation()" placeholder="5" style="flex: 1; width: 100%; padding: 7px 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.25); color: #38bdf8; border-radius: 6px; font-size: 13px; font-weight: 700; box-sizing: border-box;">
+                    </div>
+                    <div style="display: flex; gap: 5px; margin-top: 5px;" onclick="event.stopPropagation()">
+                      <button type="button" class="lang-option" onclick="setTourneyRoundsPreset(2, event)" style="flex: 1; justify-content: center; padding: 3px 0; font-size: 10.5px; border-radius: 4px; margin: 0;">2 Rnd</button>
+                      <button type="button" class="lang-option" onclick="setTourneyRoundsPreset(3, event)" style="flex: 1; justify-content: center; padding: 3px 0; font-size: 10.5px; border-radius: 4px; margin: 0;">3 Rnd</button>
+                      <button type="button" class="lang-option" onclick="setTourneyRoundsPreset(5, event)" style="flex: 1; justify-content: center; padding: 3px 0; font-size: 10.5px; border-radius: 4px; margin: 0;">5 Rnd</button>
+                      <button type="button" class="lang-option" onclick="setTourneyRoundsPreset(7, event)" style="flex: 1; justify-content: center; padding: 3px 0; font-size: 10.5px; border-radius: 4px; margin: 0;">7 Rnd</button>
+                      <button type="button" class="lang-option" onclick="setTourneyRoundsPreset(10, event)" style="flex: 1; justify-content: center; padding: 3px 0; font-size: 10.5px; border-radius: 4px; margin: 0;">10 Rnd</button>
+                    </div>
                   </div>
 
+                  <!-- Durasi Podium Manual + Presets -->
                   <div style="margin-bottom: 10px;">
-                    <span style="font-size: 11px; color: #94a3b8; display: block; margin-bottom: 3px;">Durasi Tampilan Podium:</span>
-                    <select id="tourneyPodiumDurationSelect" onchange="changeTourneyPodiumDuration(this.value)" onclick="event.stopPropagation()" style="width: 100%; padding: 6px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; font-size: 11.5px; cursor: pointer;">
-                      <option value="6">6 Detik (Cepat)</option>
-                      <option value="8" selected>8 Detik (Ideal)</option>
-                      <option value="10">10 Detik (Santai)</option>
-                      <option value="14">14 Detik (Lama)</option>
-                    </select>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <span style="font-size: 11px; color: #94a3b8;"><i class="fa-solid fa-stopwatch" style="color: #a855f7; margin-right: 4px;"></i> Durasi Tampilan Podium (detik):</span>
+                      <span style="font-size: 10px; color: #64748b;">Ketik manual detik</span>
+                    </div>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                      <input type="number" id="tourneyPodiumDurationInput" min="3" max="60" step="1" value="8" oninput="changeTourneyPodiumDuration(this.value)" onclick="event.stopPropagation()" placeholder="8" style="flex: 1; width: 100%; padding: 7px 10px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.25); color: white; border-radius: 6px; font-size: 13px; font-weight: 700; box-sizing: border-box;">
+                    </div>
+                    <div style="display: flex; gap: 5px; margin-top: 5px;" onclick="event.stopPropagation()">
+                      <button type="button" class="lang-option" onclick="setTourneyDurationPreset(5, event)" style="flex: 1; justify-content: center; padding: 3px 0; font-size: 10.5px; border-radius: 4px; margin: 0;">5 dtk</button>
+                      <button type="button" class="lang-option" onclick="setTourneyDurationPreset(8, event)" style="flex: 1; justify-content: center; padding: 3px 0; font-size: 10.5px; border-radius: 4px; margin: 0;">8 dtk</button>
+                      <button type="button" class="lang-option" onclick="setTourneyDurationPreset(12, event)" style="flex: 1; justify-content: center; padding: 3px 0; font-size: 10.5px; border-radius: 4px; margin: 0;">12 dtk</button>
+                      <button type="button" class="lang-option" onclick="setTourneyDurationPreset(15, event)" style="flex: 1; justify-content: center; padding: 3px 0; font-size: 10.5px; border-radius: 4px; margin: 0;">15 dtk</button>
+                    </div>
                   </div>
 
                   <button type="button" class="lang-option" onclick="previewTourneyPodium(event)" style="justify-content: center; background: rgba(255, 215, 0, 0.15); border: 1px solid rgba(255, 215, 0, 0.4); color: #ffd700; font-weight: 600; padding: 7px; border-radius: 6px; width: 100%;">
@@ -1377,13 +1348,7 @@
       </div>
     </div>
 
-    <!-- Word Loop Info -->
-    <div id="wordLoopInfoContainer" style="display: none; max-width: 540px; width: 100%; margin: 0 auto 15px; text-align: center;">
-      <div class="hint-label" style="color: #3b82f6; margin-bottom: 5px;">INFO SAMBUNGAN</div>
-      <div id="wordLoopCount" style="color: rgba(255,255,255,0.8); font-size: 16px; font-weight: 600;">
-        Ketik kata 5 huruf bebas untuk mulai!
-      </div>
-    </div>
+    
 
     <!-- Word Tango Info -->
     <div id="wordTangoInfoContainer" style="display: none; max-width: 540px; width: 100%; margin: 0 auto 12px; text-align: center;">

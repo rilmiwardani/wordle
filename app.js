@@ -5,12 +5,11 @@ const SOCKET_URL = (window.location.port === '3500' || !window.location.port)
   ? (window.location.origin || `${socketProto}//${socketHost}:3500`)
   : `${socketProto}//${socketHost}:9200`;
 // Max visible rows on board — per mode, configurable via Settings
-const DISPLAY_ROWS_DEFAULT = { wordle: 6, word500: 8, word600: 8, wordfit: 8 };
+const DISPLAY_ROWS_DEFAULT = { wordle: 6, word500: 8, wordfit: 8 };
 const DISPLAY_ROWS_MIN = 3;
 const DISPLAY_ROWS_MAX = 12;
 let displayRowsWordle  = parseInt(localStorage.getItem('displayRows_wordle'))  || DISPLAY_ROWS_DEFAULT.wordle;
 let displayRowsWord500 = parseInt(localStorage.getItem('displayRows_word500')) || DISPLAY_ROWS_DEFAULT.word500;
-let displayRowsWord600 = parseInt(localStorage.getItem('displayRows_word600')) || DISPLAY_ROWS_DEFAULT.word600;
 let displayRowsWordfit = parseInt(localStorage.getItem('displayRows_wordfit')) || DISPLAY_ROWS_DEFAULT.wordfit;
 
 function getDisplayRows() {
@@ -18,9 +17,7 @@ function getDisplayRows() {
   if (currentGameMode === 'fillblanks') return 6;
   if (currentGameMode === 'wordtango') return 4;
   if (currentGameMode === 'word500') return displayRowsWord500;
-  if (currentGameMode === 'word600') return displayRowsWord600;
   if (currentGameMode === 'wordfit') return displayRowsWordfit;
-  if (currentGameMode === 'wordloop') return 6;
   return displayRowsWordle;
 }
 
@@ -50,9 +47,6 @@ function changeDisplayRows(delta, e) {
   if (currentGameMode === 'word500') {
     displayRowsWord500 = Math.min(DISPLAY_ROWS_MAX, Math.max(DISPLAY_ROWS_MIN, displayRowsWord500 + delta));
     localStorage.setItem('displayRows_word500', displayRowsWord500);
-  } else if (currentGameMode === 'word600') {
-    displayRowsWord600 = Math.min(DISPLAY_ROWS_MAX, Math.max(DISPLAY_ROWS_MIN, displayRowsWord600 + delta));
-    localStorage.setItem('displayRows_word600', displayRowsWord600);
   } else if (currentGameMode === 'wordfit') {
     displayRowsWordfit = Math.min(DISPLAY_ROWS_MAX, Math.max(DISPLAY_ROWS_MIN, displayRowsWordfit + delta));
     localStorage.setItem('displayRows_wordfit', displayRowsWordfit);
@@ -62,7 +56,7 @@ function changeDisplayRows(delta, e) {
   }
   updateDisplayRowsUI();
   // Re-render board immediately without wiping existing Wordle guesses
-  if (currentGameMode === 'word500' || currentGameMode === 'word600') {
+  if (currentGameMode === 'word500') {
     renderWord500Board();
   } else if (currentGameMode === 'wordfit') {
     renderWordFitBoard();
@@ -90,7 +84,7 @@ function updateBoardScaleUI() {
   if (label) label.textContent = boardScale + '%';
 
   let baseWidth = 420;
-  if (currentGameMode === 'word500' || currentGameMode === 'word600') {
+  if (currentGameMode === 'word500') {
     baseWidth = 540;
   } else if (currentGameMode === 'wordfit') {
     const baseWidths = { 3: 280, 4: 350, 5: 420, 6: 460, 7: 500, 8: 540 };
@@ -171,7 +165,7 @@ let wgDifficulty = localStorage.getItem('wordle_wgDifficulty') || 'easy'; // 'ea
 let wgHintInterval = null;
 
 function getMaxGuesses() {
-  return (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit') ? Infinity : 6;
+  return (currentGameMode === 'word500' || currentGameMode === 'wordfit') ? Infinity : 6;
 }
 
 class IndoFinitySocket {
@@ -1052,7 +1046,6 @@ function updateLikeCounter(data, addedLikes) {
 }
 
 let isWaitingForLikes = false;
-let wordLoopContributors = [];
 
 window.executeRestartTransition = function() {
   if (!isWaitingForLikes) return; // Prevent double trigger
@@ -1109,10 +1102,8 @@ function triggerWinTransition(winDuration, isMultiWinner = false) {
   if (isMultiWinner) {
     const multiWinTitle = document.getElementById('multiWinTitle');
     if (multiWinTitle) {
-      if (currentGameMode === 'wordloop') {
-        multiWinTitle.textContent = 'LOOP COMPLETED!';
-      } else if (currentGameMode === 'squareword') {
-        multiWinTitle.textContent = '🎉 SQUAREWORD 5×5 SELESAI!';
+      if (currentGameMode === 'squareword') {
+        multiWinTitle.textContent = '🎉 KOTAK KATA 5×5 SELESAI!';
       } else if (currentGameMode === 'wordgrid') {
         multiWinTitle.textContent = 'LEADERBOARD WORD GRID';
       } else if (currentGameMode === 'wordcluster') {
@@ -1358,10 +1349,8 @@ function isOtherGameModeKey(key) {
 
 function getPtsPrefix() {
   if (currentGameMode === 'word500') return 'pts_w500_';
-  if (currentGameMode === 'word600') return 'pts_w600_';
   if (currentGameMode === 'wordfit') return 'pts_wfit_';
   if (currentGameMode === 'colorfit') return 'pts_colorfit_';
-  if (currentGameMode === 'wordloop') return 'pts_wloop_';
   if (currentGameMode === 'fillblanks') return 'pts_fill_';
   if (currentGameMode === 'wordtango') return 'pts_tango_';
   if (currentGameMode === 'wordgrid') return 'pts_wgrid_';
@@ -1445,22 +1434,20 @@ function saveDailyPts(username, pts) {
 // ═════════════════════════════════════════════════════════════════════════════
 
 const ALL_ROTATION_MODES = [
-  'wordle', 'word500', 'word600', 'wordfit', 'colorfit',
-  'wordloop', 'fillblanks', 'wordtango', 'wordgrid', 'squareword',
+  'wordle', 'word500', 'wordfit', 'colorfit',
+  'fillblanks', 'wordtango', 'wordgrid', 'squareword',
   'wordladder', 'betweenle', 'cascadle', 'wanderwords', 'wordcluster', 'wordmatch', 'wordpyramid'
 ];
 
 const GAME_MODE_PRETTY_NAMES = {
   wordle: 'Wordle',
   word500: 'Word500',
-  word600: 'Word600',
   wordfit: 'Word Fit',
   colorfit: 'Color Fit',
-  wordloop: 'Word Loop',
   fillblanks: 'Word Fill',
   wordtango: 'Word Tango',
   wordgrid: 'Word Grid',
-  squareword: 'Squareword',
+  squareword: 'Kotak Kata',
   wordladder: 'Word Ladder',
   betweenle: 'Betweenle',
   cascadle: 'Cascadle',
@@ -1504,9 +1491,9 @@ function updateTourneyUIElements() {
   const toggle = document.getElementById('tourneyAutoRotateToggle');
   const optionsContainer = document.getElementById('tourneyOptionsContainer');
   const triggerSelect = document.getElementById('tourneyTriggerTypeSelect');
-  const scoreSelect = document.getElementById('tourneyTargetScoreSelect');
-  const roundsSelect = document.getElementById('tourneyTargetRoundsSelect');
-  const durationSelect = document.getElementById('tourneyPodiumDurationSelect');
+  const scoreInput = document.getElementById('tourneyTargetScoreInput') || document.getElementById('tourneyTargetScoreSelect');
+  const roundsInput = document.getElementById('tourneyTargetRoundsInput') || document.getElementById('tourneyTargetRoundsSelect');
+  const durationInput = document.getElementById('tourneyPodiumDurationInput') || document.getElementById('tourneyPodiumDurationSelect');
   const scoreGroup = document.getElementById('tourneyScoreGroup');
   const roundsGroup = document.getElementById('tourneyRoundsGroup');
   const badge = document.getElementById('tourneyBadge');
@@ -1515,9 +1502,9 @@ function updateTourneyUIElements() {
   if (toggle) toggle.checked = !!tourneySettings.enabled;
   if (optionsContainer) optionsContainer.style.display = tourneySettings.enabled ? 'block' : 'none';
   if (triggerSelect) triggerSelect.value = tourneySettings.triggerType || 'score';
-  if (scoreSelect) scoreSelect.value = String(tourneySettings.targetScore || 50);
-  if (roundsSelect) roundsSelect.value = String(tourneySettings.targetRounds || 5);
-  if (durationSelect) durationSelect.value = String(tourneySettings.podiumDuration || 8);
+  if (scoreInput) scoreInput.value = String(tourneySettings.targetScore || 50);
+  if (roundsInput) roundsInput.value = String(tourneySettings.targetRounds || 5);
+  if (durationInput) durationInput.value = String(tourneySettings.podiumDuration || 8);
 
   if (scoreGroup) scoreGroup.style.display = (tourneySettings.triggerType === 'rounds') ? 'none' : 'block';
   if (roundsGroup) roundsGroup.style.display = (tourneySettings.triggerType === 'rounds') ? 'block' : 'none';
@@ -1556,21 +1543,45 @@ window.changeTourneyTriggerType = function(val) {
 };
 
 window.changeTourneyTargetScore = function(val) {
-  const num = parseInt(val, 10) || 50;
+  let num = parseInt(val, 10);
+  if (isNaN(num) || num < 5) num = 5;
   tourneySettings.targetScore = num;
   saveTourneySettings();
 };
 
 window.changeTourneyTargetRounds = function(val) {
-  const num = parseInt(val, 10) || 5;
+  let num = parseInt(val, 10);
+  if (isNaN(num) || num < 1) num = 1;
   tourneySettings.targetRounds = num;
   saveTourneySettings();
 };
 
 window.changeTourneyPodiumDuration = function(val) {
-  const num = parseInt(val, 10) || 8;
+  let num = parseInt(val, 10);
+  if (isNaN(num) || num < 3) num = 3;
   tourneySettings.podiumDuration = num;
   saveTourneySettings();
+};
+
+window.setTourneyScorePreset = function(score, e) {
+  if (e) e.stopPropagation();
+  const input = document.getElementById('tourneyTargetScoreInput');
+  if (input) input.value = score;
+  changeTourneyTargetScore(score);
+};
+
+window.setTourneyRoundsPreset = function(rounds, e) {
+  if (e) e.stopPropagation();
+  const input = document.getElementById('tourneyTargetRoundsInput');
+  if (input) input.value = rounds;
+  changeTourneyTargetRounds(rounds);
+};
+
+window.setTourneyDurationPreset = function(sec, e) {
+  if (e) e.stopPropagation();
+  const input = document.getElementById('tourneyPodiumDurationInput');
+  if (input) input.value = sec;
+  changeTourneyPodiumDuration(sec);
 };
 
 function recordTourneySessionScore(userData, points) {
@@ -4142,7 +4153,7 @@ function getRandomWord() {
   if (TARGET_WORDS.length === 0) return WORD_LENGTH === 5 ? "HELLO" : "RANDOM"; // fallback
 
   let pool = TARGET_WORDS;
-  const isNoRepeatActive = isNoRepeatMode && (currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit');
+  const isNoRepeatActive = isNoRepeatMode && (currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'wordfit');
   if (isNoRepeatActive) {
     pool = TARGET_WORDS.filter(w => new Set(w).size === w.length);
     if (pool.length === 0) pool = TARGET_WORDS; // fallback
@@ -4195,15 +4206,13 @@ function selectGame(mode) {
   const loginGameChip = document.getElementById('loginGameChip');
   const gameNames = {
     wordle: 'WORDLE',
-    word500: window.w500UseMastermind ? 'WORD PEGS 5' : 'WORD500',
-    word600: window.w500UseMastermind ? 'WORD PEGS 6' : 'WORD600',
+    word500: window.w500UseMastermind ? 'WORD PEGS' : 'WORD500',
     wordfit: 'WORD FIT',
     colorfit: 'COLOR FIT',
-    wordloop: 'WORD LOOP',
     fillblanks: 'WORD FILL',
     wordtango: 'WORD TANGO',
     wordgrid: 'WORD GRID',
-    squareword: 'SQUAREWORD 5×5',
+    squareword: 'KOTAK KATA 5×5',
     wordladder: 'WORD LADDER',
     betweenle: 'BETWEENLE',
     cascadle: 'CASCADLE',
@@ -4255,11 +4264,9 @@ function switchGameMode(e) {
 
   // Seamless switch
   if (currentGameMode === 'wordle') currentGameMode = 'word500';
-  else if (currentGameMode === 'word500') currentGameMode = 'word600';
-  else if (currentGameMode === 'word600') currentGameMode = 'wordfit';
+  else if (currentGameMode === 'word500') currentGameMode = 'wordfit';
   else if (currentGameMode === 'wordfit') currentGameMode = 'colorfit';
-  else if (currentGameMode === 'colorfit') currentGameMode = 'wordloop';
-  else if (currentGameMode === 'wordloop') currentGameMode = 'fillblanks';
+  else if (currentGameMode === 'colorfit') currentGameMode = 'fillblanks';
   else if (currentGameMode === 'fillblanks') currentGameMode = 'wordtango';
   else if (currentGameMode === 'wordtango') currentGameMode = 'wordgrid';
   else if (currentGameMode === 'wordgrid') currentGameMode = 'squareword';
@@ -4319,7 +4326,6 @@ function applyGameModeUI() {
   const hintContainer = document.getElementById('hintContainer');
   const bestGuessContainer = document.getElementById('bestGuessContainer');
   const switchBtn = document.getElementById('switchGameBtn');
-  const wordLoopInfoContainer = document.getElementById('wordLoopInfoContainer');
   const wordTangoInfoContainer = document.getElementById('wordTangoInfoContainer');
   const tangoPoolContainer = document.getElementById('tangoPoolContainer');
   const tangoGuessFeed = document.getElementById('tangoGuessFeed');
@@ -4356,8 +4362,6 @@ function applyGameModeUI() {
       boardObj.parentElement.classList.remove('colorfit-mode');
     }
   }
-
-  if (wordLoopInfoContainer) wordLoopInfoContainer.style.display = 'none';
   if (wordTangoInfoContainer) wordTangoInfoContainer.style.display = 'none';
   if (tangoPoolContainer) {
     tangoPoolContainer.style.display = 'none';
@@ -4393,12 +4397,10 @@ function applyGameModeUI() {
     }
   });
 
-  if (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit') {
+  if (currentGameMode === 'word500' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit') {
     if (headerTitle) {
       if (currentGameMode === 'word500') {
-        headerTitle.textContent = window.w500UseMastermind ? 'WORD PEGS 5' : 'WORD500';
-      } else if (currentGameMode === 'word600') {
-        headerTitle.textContent = window.w500UseMastermind ? 'WORD PEGS 6' : 'WORD600';
+        headerTitle.textContent = window.w500UseMastermind ? 'WORD PEGS' : 'WORD500';
       } else if (currentGameMode === 'colorfit') {
         headerTitle.textContent = 'COLOR FIT';
       } else {
@@ -4408,17 +4410,10 @@ function applyGameModeUI() {
     if (hintContainer) hintContainer.style.display = 'none';
     if (bestGuessContainer) bestGuessContainer.style.display = 'none'; // replaced by sorted board
     if (switchBtn) {
-      if (currentGameMode === 'word500') switchBtn.textContent = window.w500UseMastermind ? '🔄 Switch to Word Pegs 6' : '🔄 Switch to Word600';
-      else if (currentGameMode === 'word600') switchBtn.textContent = '🔄 Switch to Word Fit';
+      if (currentGameMode === 'word500') switchBtn.textContent = '🔄 Switch to Word Fit';
       else if (currentGameMode === 'wordfit') switchBtn.textContent = '🔄 Switch to Color Fit';
-      else switchBtn.textContent = '🔄 Switch to Word Loop';
+      else switchBtn.textContent = '🔄 Switch to Word Fill';
     }
-  } else if (currentGameMode === 'wordloop') {
-    if (headerTitle) headerTitle.textContent = 'WORD LOOP';
-    if (hintContainer) hintContainer.style.display = 'none';
-    if (bestGuessContainer) bestGuessContainer.style.display = 'none';
-    if (wordLoopInfoContainer) wordLoopInfoContainer.style.display = '';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Word Fill';
   } else if (currentGameMode === 'fillblanks') {
     if (headerTitle) headerTitle.textContent = 'WORD FILL';
     if (hintContainer) hintContainer.style.display = 'none';
@@ -4443,9 +4438,9 @@ function applyGameModeUI() {
       boardObj.innerHTML = '';
       boardObj.className = '';
     }
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Squareword';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Kotak Kata';
   } else if (currentGameMode === 'squareword') {
-    if (headerTitle) headerTitle.textContent = 'SQUAREWORD 5×5';
+    if (headerTitle) headerTitle.textContent = 'KOTAK KATA 5×5';
     if (hintContainer) hintContainer.style.display = 'none';
     if (bestGuessContainer) bestGuessContainer.style.display = 'none';
     if (boardObj) {
@@ -4566,7 +4561,7 @@ function applyGameModeUI() {
     if (headerTitle) headerTitle.textContent = 'WORDLE';
     if (hintContainer) hintContainer.style.display = isShowHintsDiscovered ? '' : 'none';
     if (bestGuessContainer) bestGuessContainer.style.display = 'none';
-    const nextName = window.w500UseMastermind ? 'Word Pegs 5' : 'Word500';
+    const nextName = window.w500UseMastermind ? 'Word Pegs' : 'Word500';
     if (switchBtn) switchBtn.textContent = `🔄 Switch to ${nextName}`;
   }
   updateBoardScaleUI();
@@ -4961,7 +4956,7 @@ function initBoard() {
   if (currentGameMode === 'wordfit' || currentGameMode === 'colorfit') {
     renderWordFitBoard();
     return;
-  } else if (currentGameMode === 'word500' || currentGameMode === 'word600') {
+  } else if (currentGameMode === 'word500') {
     renderWord500Board();
     return;
   } else if (currentGameMode === 'wordtango') {
@@ -5055,7 +5050,7 @@ function createEmptyBoardRow(i) {
   }
 
   // Word500/600: add feedback placeholders
-  if (currentGameMode === 'word500' || currentGameMode === 'word600') {
+  if (currentGameMode === 'word500') {
     row.classList.add('w500-row');
     if (window.w500UseMastermind) {
       const mmContainer = document.createElement('div');
@@ -6888,11 +6883,23 @@ function startNewRound() {
     parsedWinnerWord = parseWinnerNicknameForStarter(lastRoundWinner);
   }
 
-  // Word500 always uses 5 letters; Word600 always uses 6 letters; Wordle/WordLoop randomizes 5, 6, or 7
+  // Word500 uses lengths selected by host from allowed_lengths (Panjang Kata checkboxes)
   if (currentGameMode === 'word500') {
-    WORD_LENGTH = 5;
-  } else if (currentGameMode === 'word600') {
-    WORD_LENGTH = 6;
+    let allowedLengths = [5];
+    try {
+      const saved = JSON.parse(localStorage.getItem('allowed_lengths') || '[5]');
+      // Ambil panjang kata yang dipilih host (cocok untuk Word500: 4, 5, 6 huruf)
+      const validForW500 = saved.filter(l => l >= 4 && l <= 6);
+      if (validForW500.length > 0) {
+        allowedLengths = validForW500;
+      } else if (saved.some(l => l > 6)) {
+        allowedLengths = [6];
+      } else if (saved.includes(3)) {
+        allowedLengths = [4];
+      }
+    } catch(e) {}
+    const rIdx = Math.floor(Math.random() * allowedLengths.length);
+    WORD_LENGTH = allowedLengths[rIdx];
   } else if (isAutoStarterWinnerNickname && isGuessMode && parsedWinnerWord) {
     // Jumlah huruf yang dimainkan mengikuti jumlah huruf nickname pemenang (maks 8 huruf)
     WORD_LENGTH = parsedWinnerWord.length;
@@ -6943,7 +6950,6 @@ function startNewRound() {
     }
   }
   guesses = [];
-  wordLoopContributors = [];
   guessQueue = [];
   discoveredLetters = Array(WORD_LENGTH).fill(null);
   bestGuess = null;
@@ -7093,7 +7099,7 @@ function startNewRound() {
   // Apply mode-specific UI
   applyGameModeUI();
   initBoard();
-  if (currentGameMode !== 'word500' && currentGameMode !== 'word600' && currentGameMode !== 'fillblanks' && currentGameMode !== 'wordtango') {
+  if (currentGameMode !== 'word500' && currentGameMode !== 'fillblanks' && currentGameMode !== 'wordtango') {
     initHintBoard();
   }
   updateBestGuessUI();
@@ -7101,37 +7107,13 @@ function startNewRound() {
   console.log(`[Cheat] Target word is: ${currentWord}`);
   startInstructionRotation();
   const getW500Name = () => window.w500UseMastermind ? 'Word Pegs 5' : 'Word500';
-  const getW600Name = () => window.w500UseMastermind ? 'Word Pegs 6' : 'Word600';
-  const gameName = currentGameMode === 'wordladder' ? 'Word Ladder' : (currentGameMode === 'squareword' ? 'Squareword' : (currentGameMode === 'wordtango' ? 'Word Tango' : (currentGameMode === 'fillblanks' ? 'Word Fill' : (currentGameMode === 'word500' ? getW500Name() : (currentGameMode === 'word600' ? getW600Name() : (currentGameMode === 'wordloop' ? 'Word Loop' : 'Wordle'))))));
+  const gameName = currentGameMode === 'wordladder' ? 'Word Ladder' : (currentGameMode === 'squareword' ? 'Kotak Kata' : (currentGameMode === 'wordtango' ? 'Word Tango' : (currentGameMode === 'fillblanks' ? 'Word Fill' : (currentGameMode === 'word500' ? getW500Name() : 'Wordle'))));
   showToast(`${gameName} Round ${round} Started!`, 2000);
   
   if (window.playHostAudio) playHostAudio('start');
-  
-  if (currentGameMode === 'wordloop') {
-    updateWordLoopUI();
-    
-    // Automatically pick the first word to prevent looping cheats and provide an immediate constraint
-    if (VALID_WORDS.length > 0) {
-      let loopWord = null;
-      let attempts = 0;
-      while (!loopWord && attempts < 1000) {
-          const candidate = VALID_WORDS[Math.floor(Math.random() * VALID_WORDS.length)];
-          if (candidate.length === WORD_LENGTH && checkWordLoopPath(candidate.slice(-2), candidate.slice(0, 2), 5)) {
-              loopWord = candidate;
-          }
-          attempts++;
-      }
-      
-      if (loopWord) {
-          // Add to queue to simulate system play
-          guessQueue.push({ guessWord: loopWord, userData: { nickname: 'SISTEM', uniqueId: 'system' } });
-          setTimeout(processQueue, 300);
-      }
-    }
-  }
 
   // Auto-Starter logic
-  const isGuessModeForStarter = !currentGameMode || currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit';
+  const isGuessModeForStarter = !currentGameMode || currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit';
 
   if (isGuessModeForStarter && (isAutoStarterWinnerNickname || isAutoStarterPreviousTarget)) {
     let starterWord = null;
@@ -7364,7 +7346,7 @@ if (localStorage.getItem('wordle_hardMode') === 'true') {
 function toggleNoYellow(checked) {
   isNoYellowMode = checked;
   try { localStorage.setItem('wordle_noYellow', checked); } catch(e) {}
-  if (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit') {
+  if (currentGameMode === 'word500' || currentGameMode === 'wordfit') {
     if (currentGameMode === 'wordfit') renderWordFitBoard();
     else renderWord500Board();
   }
@@ -7376,7 +7358,7 @@ window.isNoRepeatActiveForMode = function() {
   if (!isNoRepeatMode) return false;
   return currentGameMode === 'wordle' || 
          currentGameMode === 'word500' || 
-         currentGameMode === 'word600' || 
+         
          currentGameMode === 'wordfit' || 
          currentGameMode === 'colorfit';
 };
@@ -7393,7 +7375,7 @@ window.toggleNoRepeat = function(checked) {
   updateNoRepeatBadgeUI();
   
   // Restart round for puzzle modes so the new rule applies immediately
-  if (currentGameMode === 'wordfit' || currentGameMode === 'word500' || currentGameMode === 'word600') {
+  if (currentGameMode === 'wordfit' || currentGameMode === 'word500') {
     startNewRound();
   }
 };
@@ -7477,7 +7459,7 @@ function toggleHardMode(e) {
   updateHardModeUI();
   
   let msg = 'Hard Mode Dinonaktifkan';
-  const isSortedClueMode = (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit');
+  const isSortedClueMode = (currentGameMode === 'word500' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit');
   if (hardModeState === 'hard') {
     msg = isSortedClueMode ? '🔥 Hard Mode: Wajib cocok dgn skor petunjuk!' : '🔥 Hard Mode Diaktifkan';
   } else if (hardModeState === 'ultra') {
@@ -7795,7 +7777,7 @@ function validateHardMode(guessWord) {
   }
 
   for (const past of validPastGuesses) {
-    if (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit') {
+    if (currentGameMode === 'word500' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit') {
       const actual = getScore(past, currentWord);
       const simulated = getScore(past, guessWord);
       if (actual.c !== simulated.c || actual.p !== simulated.p) {
@@ -8481,7 +8463,7 @@ function applyRemoteGameSettings(settings) {
     const nyToggle = document.getElementById('noYellowToggle');
     if (nyToggle) nyToggle.checked = isNoYellowMode;
     if (currentGameMode === 'wordfit' && typeof renderWordFitBoard === 'function') renderWordFitBoard();
-    else if ((currentGameMode === 'word500' || currentGameMode === 'word600') && typeof renderWord500Board === 'function') renderWord500Board();
+    else if ((currentGameMode === 'word500') && typeof renderWord500Board === 'function') renderWord500Board();
   }
 
   // 6. Show Hints Discovered
@@ -8514,16 +8496,14 @@ function applyRemoteGameSettings(settings) {
   if (typeof settings.displayRows === 'number' && settings.displayRows >= 3 && settings.displayRows <= 12 && settings.displayRows !== currentModeRows) {
     displayRowsWordle = settings.displayRows;
     displayRowsWord500 = settings.displayRows;
-    displayRowsWord600 = settings.displayRows;
     displayRowsWordfit = settings.displayRows;
     try {
       localStorage.setItem('displayRows_wordle', settings.displayRows);
       localStorage.setItem('displayRows_word500', settings.displayRows);
-      localStorage.setItem('displayRows_word600', settings.displayRows);
       localStorage.setItem('displayRows_wordfit', settings.displayRows);
     } catch(e) {}
     if (typeof updateDisplayRowsUI === 'function') updateDisplayRowsUI();
-    if (currentGameMode === 'word500' || currentGameMode === 'word600') {
+    if (currentGameMode === 'word500') {
       if (typeof renderWord500Board === 'function') renderWord500Board();
     } else if (currentGameMode === 'wordfit') {
       if (typeof renderWordFitBoard === 'function') renderWordFitBoard();
@@ -9609,7 +9589,7 @@ function handleChatGuess(data, optionalUserData) {
         // Jika kata sudah pernah dievaluasi di ronde ini & antrean sedang ramai, skip agar stream responsif
         if (squarewordGuesses && squarewordGuesses.includes(msg) && guessQueue.length >= 2) return;
       }
-    } else if (currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit') {
+    } else if (currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit') {
       if (!isHost) {
         if (msg.length !== WORD_LENGTH) return;
 
@@ -9704,112 +9684,7 @@ function showFloatingPoints(points, targetElementId) {
 
 let lastInvalidTime = 0;
 
-function updateWordLoopUI() {
-  if (currentGameMode !== 'wordloop') return;
-  const wordLoopCountEl = document.getElementById('wordLoopCount');
-  
-  if (guesses.length === 0) {
-    if (wordLoopCountEl) wordLoopCountEl.textContent = `Ketik kata ${WORD_LENGTH} huruf bebas untuk mulai!`;
-    return;
-  }
-  
-  if (guesses.length === 6) {
-    if (wordLoopCountEl) wordLoopCountEl.textContent = `LOOP SELESAI! 🎉`;
-    return;
-  }
-  
-  const lastWord = guesses[guesses.length - 1];
-  const requiredPrefix = lastWord.slice(-2);
-  let available = 0;
-  
-  if (guesses.length === 5) {
-     const requiredSuffix = guesses[0].slice(0, 2);
-     for (let w of VALID_WORDS) {
-        if (w.length === WORD_LENGTH && w.startsWith(requiredPrefix) && w.endsWith(requiredSuffix)) available++;
-     }
-     if (wordLoopCountEl) wordLoopCountEl.textContent = `Tersedia ${available} kata (Awal: ${requiredPrefix}, Akhir: ${requiredSuffix})`;
-  } else {
-     for (let w of VALID_WORDS) {
-        if (w.length === WORD_LENGTH && w.startsWith(requiredPrefix)) available++;
-     }
-     if (wordLoopCountEl) wordLoopCountEl.textContent = `Tersedia ${available} kata (Awal: ${requiredPrefix})`;
-  }
-  
-  // Pre-fill next row
-  const nextEmptyRow = document.getElementById(`row-empty-${guesses.length}`);
-  if (nextEmptyRow) {
-    const tiles = nextEmptyRow.querySelectorAll('.tile');
-    if (tiles.length >= WORD_LENGTH) {
-      // Clear all first
-      tiles.forEach(t => { t.textContent = ''; t.className = 'tile'; });
-      
-      // Fill prefix
-      tiles[0].textContent = requiredPrefix[0];
-      tiles[1].textContent = requiredPrefix[1];
-      tiles[0].classList.add('prefilled');
-      tiles[1].classList.add('prefilled');
-      
-      // If row 6, fill suffix too
-      if (guesses.length === 5) {
-        const requiredSuffix = guesses[0].slice(0, 2);
-        tiles[WORD_LENGTH - 2].textContent = requiredSuffix[0];
-        tiles[WORD_LENGTH - 1].textContent = requiredSuffix[1];
-        tiles[WORD_LENGTH - 2].classList.add('prefilled');
-        tiles[WORD_LENGTH - 1].classList.add('prefilled');
-      }
-    }
-  }
-  
-  // Always pre-fill the suffix on the 6th row (if we haven't reached it yet)
-  if (guesses.length > 0 && guesses.length < 5) {
-    const sixthRow = document.getElementById('row-empty-5');
-    if (sixthRow) {
-      const sixthTiles = sixthRow.querySelectorAll('.tile');
-      if (sixthTiles.length >= WORD_LENGTH) {
-        const requiredSuffix = guesses[0].slice(0, 2);
-        sixthTiles[WORD_LENGTH - 2].textContent = requiredSuffix[0];
-        sixthTiles[WORD_LENGTH - 1].textContent = requiredSuffix[1];
-        sixthTiles[WORD_LENGTH - 2].classList.add('prefilled');
-        sixthTiles[WORD_LENGTH - 1].classList.add('prefilled');
-      }
-    }
-  }
-}
 
-// Graph BFS to check if there is a path from startPrefix to targetSuffix of exact length stepsLeft
-function checkWordLoopPath(startPrefix, targetSuffix, stepsLeft) {
-    if (stepsLeft === 0) return startPrefix === targetSuffix;
-    
-    if (!window.wordLoopAdjCache || window.wordLoopAdjCache.wordLength !== WORD_LENGTH || window.wordLoopAdjCache.validWords !== VALID_WORDS) {
-        const adj = {};
-        for (let w of VALID_WORDS) {
-            if (w.length !== WORD_LENGTH) continue;
-            const p = w.slice(0, 2);
-            const s = w.slice(-2);
-            if (!adj[p]) adj[p] = new Set();
-            adj[p].add(s);
-        }
-        window.wordLoopAdjCache = { wordLength: WORD_LENGTH, validWords: VALID_WORDS, adj: adj };
-    }
-    
-    const adj = window.wordLoopAdjCache.adj;
-    let currentLevel = new Set([startPrefix]);
-    
-    for (let step = 0; step < stepsLeft; step++) {
-        let nextLevel = new Set();
-        for (let prefix of currentLevel) {
-            if (adj[prefix]) {
-                for (let nextPrefix of adj[prefix]) {
-                    nextLevel.add(nextPrefix);
-                }
-            }
-        }
-        currentLevel = nextLevel;
-        if (currentLevel.size === 0) return false;
-    }
-    
-    return currentLevel.has(targetSuffix);
-}
 
 // Keep track of guessed words for the feed in Word Tango
 let tangoGuessedWords = new Set();
@@ -10292,7 +10167,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
     else hardModeMsg = `Kata sudah ditebak di ronde ini`;
   }
   
-  const isNoRepeatActive = isNoRepeatMode && (currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit');
+  const isNoRepeatActive = isNoRepeatMode && (currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'wordfit');
   if (!isStarterGuess && isValidWord && isNoRepeatActive) {
     if (new Set(guessWord).size !== guessWord.length) {
       isValidWord = false;
@@ -10301,44 +10176,10 @@ function processGuess(guessWord, userData, queueLen = 0) {
       else hardModeMsg = `Tidak boleh ada huruf ganda`;
     }
   }
-  
-  // Word Loop logic
-  if (currentGameMode === 'wordloop' && isValidWord) {
-    if (isValidWord && guesses.length > 0) {
-      const lastWord = guesses[guesses.length - 1];
-      const requiredPrefix = lastWord.slice(-2);
-      if (!guessWord.startsWith(requiredPrefix)) {
-        isValidWord = false;
-        hardModeMsg = `Harus diawali huruf "${requiredPrefix}"`;
-      }
-    }
-    
-    if (isValidWord && guesses.length === 5) {
-      const firstWord = guesses[0];
-      const requiredSuffix = firstWord.slice(0, 2);
-      if (!guessWord.endsWith(requiredSuffix)) {
-        isValidWord = false;
-        hardModeMsg = `Akhir loop harus "${requiredSuffix}"`;
-      }
-    }
-    
-    if (isValidWord && guesses.length < 5) {
-      const newPrefix = guessWord.slice(-2);
-      const targetSuffix = guesses.length === 0 ? guessWord.slice(0, 2) : guesses[0].slice(0, 2);
-      const stepsLeft = 5 - guesses.length;
-      
-      const hasContinuations = checkWordLoopPath(newPrefix, targetSuffix, stepsLeft);
-      
-      if (!hasContinuations) {
-        isValidWord = false;
-        hardModeMsg = `Jalan buntu! Tidak ada kata sambungan hingga akhir.`;
-      }
-    }
-  }
 
   let hardModeConflictWord = null;
 
-  if (!isStarterGuess && isValidWord && currentGameMode !== 'wordloop') {
+  if (!isStarterGuess && isValidWord) {
     const hmCheck = validateHardMode(guessWord);
     if (!hmCheck.valid) {
       hardModeMsg = hmCheck.msg;
@@ -10362,7 +10203,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
     lastInvalidTime = now;
   }
 
-  const isWord500 = currentGameMode === 'word500' || currentGameMode === 'word600';
+  const isWord500 = currentGameMode === 'word500';
   const isWordFit = currentGameMode === 'wordfit' || currentGameMode === 'colorfit';
   const isAnySortedMode = isWord500 || isWordFit;
 
@@ -10487,13 +10328,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
   let absentCount = 0;
 
   if (isValidWord) {
-    if (currentGameMode === 'wordloop') {
-      for (let i = 0; i < WORD_LENGTH; i++) statuses[i] = 'correct';
-      // Word Loop gives 5 points per valid word
-      addPoints(userData, 5);
-      showFloatingPoints(5, `avatar-${currentRow}`);
-    } else {
-      // First pass: correct
+    // First pass: correct
     for (let i = 0; i < WORD_LENGTH; i++) {
       if (guessArray[i] === targetArray[i]) {
         statuses[i] = 'correct';
@@ -10548,7 +10383,6 @@ function processGuess(guessWord, userData, queueLen = 0) {
         updateBestGuessUI();
       }
     }
-  }
   }
   
   // 3. Apply tile classes
@@ -10668,36 +10502,13 @@ function processGuess(guessWord, userData, queueLen = 0) {
     // Simpan referensi agar bisa dihapus tepat saat tebakan berikutnya masuk
     word500PendingInvalidRow = row;
   } else {
-    // Wordle valid/invalid, ATAU Word Loop: insert ke board
-    if (currentGameMode === 'wordloop') {
-       if (isValidWord) {
-          const emptyRow = document.getElementById(`row-empty-${currentRow}`);
-          if (emptyRow) board.replaceChild(row, emptyRow);
-          else board.appendChild(row);
-       } else {
-          // Temporarily show invalid guess at bottom
-          board.appendChild(row);
-       }
-    } else {
-       // WORDLE: Tebakan terbaru selalu berada di baris paling atas
-       board.insertBefore(row, board.firstChild);
-       const displayRows = getDisplayRows();
-       if (board.children.length > displayRows) board.removeChild(board.lastChild);
-    }
+    // WORDLE: Tebakan terbaru selalu berada di baris paling atas
+    board.insertBefore(row, board.firstChild);
+    const displayRows = getDisplayRows();
+    if (board.children.length > displayRows) board.removeChild(board.lastChild);
     
     if (isValidWord) {
       guesses.push(guessWord);
-      if (currentGameMode === 'wordloop') {
-        wordLoopContributors.push({
-          word: guessWord,
-          userData: userData ? {
-            nickname: userData.nickname,
-            profilePictureUrl: userData.profilePictureUrl,
-            uniqueId: userData.uniqueId
-          } : { nickname: 'SISTEM', uniqueId: 'system' }
-        });
-        updateWordLoopUI();
-      }
     } else {
       row.classList.add('is-invalid-row');
     }
@@ -10722,75 +10533,16 @@ function processGuess(guessWord, userData, queueLen = 0) {
   // Check win
   let isWin = false;
   let winPts = 0;
-  if (currentGameMode === 'wordloop') {
-    if (guesses.length === 6) {
-      isWin = true;
-      winPts = 0; // Equalized: all players get +5 points for their word guess
-    }
-  } else {
-    if (guessWord === currentWord && !isStarterGuess) {
-      isWin = true;
-      winPts = (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit') ? 15 : 10;
-    }
+  if (guessWord === currentWord && !isStarterGuess) {
+    isWin = true;
+    winPts = (currentGameMode === 'word500' || currentGameMode === 'wordfit') ? 15 : 10;
   }
 
   if (isWin) {
     isGameOver = true;
     guessQueue = []; // Bug#1+#5 fix: clear antrian agar tebakan lama tidak masuk ronde baru
     
-    if (currentGameMode === 'wordloop') {
-      const finalContrib = wordLoopContributors[wordLoopContributors.length - 1];
-      if (finalContrib && finalContrib.userData && finalContrib.userData.uniqueId !== 'system') {
-        lastRoundWinner = finalContrib.userData;
-      }
-      lastRoundTargetWord = currentWord;
-      const multiWinList = document.getElementById('multiWinList');
-      if (multiWinList) {
-        multiWinList.innerHTML = '';
-        
-        wordLoopContributors.forEach((c, idx) => {
-          const isSystem = (c.userData.uniqueId === 'system');
-          const pointsEarned = isSystem ? 0 : 5;
-          const displayPoints = isSystem ? 'Start' : `+${pointsEarned}`;
-          
-          const item = document.createElement('div');
-          item.className = 'multi-win-item';
-          
-          item.innerHTML = `
-            <img class="multi-win-avatar" src="${c.userData.profilePictureUrl || 'assets/bg_nature.png'}" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="Avatar">
-            <div class="multi-win-info">
-              <div class="multi-win-name">${c.userData.nickname || 'Unknown'}</div>
-              <div class="multi-win-word">${c.word}</div>
-            </div>
-            <div class="multi-win-points">${displayPoints}</div>
-          `;
-          multiWinList.appendChild(item);
-        });
-      }
-      
-      if (isGameAnimationsEnabled) {
-        if (row) {
-          const winningTiles = row.querySelectorAll('.tile');
-          setTimeout(() => {
-            winningTiles.forEach((t, idx) => {
-              setTimeout(() => {
-                t.classList.add('win-wave');
-                if (window.sounds && typeof window.sounds.playWaveTile === 'function') {
-                  window.sounds.playWaveTile(idx, winningTiles.length);
-                }
-              }, idx * 100);
-            });
-          }, 1200);
-        }
-        
-        setTimeout(() => {
-          triggerWinTransition(6000, true);
-        }, 2400);
-      } else {
-        triggerWinTransition(6000, true);
-      }
-      
-    } else {
+
       if (winPts > 0) {
         addPoints(userData, winPts);
         recordWin(userData && (userData.uniqueId || userData.nickname));
@@ -10838,15 +10590,15 @@ function processGuess(guessWord, userData, queueLen = 0) {
         }
       }
       
-      // Jika di mode Word500/Word600/WordFit, reveal seluruh grid sebelum overlay muncul
-      if (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit') {
+      // Jika di mode Word500/WordFit, reveal seluruh grid sebelum overlay muncul
+      if (currentGameMode === 'word500' || currentGameMode === 'wordfit') {
           if (currentGameMode === 'wordfit') renderWordFitBoard(true);
           else renderWord500Board(true);
       }
       
       // Tunggu 2 detik dulu agar jawaban di grid (dan efek reveal) terlihat, baru tampilkan overlay
       if (isGameAnimationsEnabled) {
-        const winningRow = (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit') ? board.firstChild : row;
+        const winningRow = (currentGameMode === 'word500' || currentGameMode === 'wordfit') ? board.firstChild : row;
         if (winningRow) {
           const winningTiles = winningRow.querySelectorAll('.tile');
           setTimeout(() => {
@@ -10867,7 +10619,6 @@ function processGuess(guessWord, userData, queueLen = 0) {
       } else {
         triggerWinTransition(4000);
       }
-    }
   }
 
   if (isValidWord && !isWin && !isClose) {
@@ -11766,9 +11517,9 @@ window.applyAllowedLengths = function(e) {
   showToast("⚡ Panjang kata diterapkan & ronde baru dimulai!");
 };
 
-// Word500/600 manual hint marking
+// Word500/WordFit manual hint marking
 document.addEventListener('click', (e) => {
-  if (currentGameMode !== 'word500' && currentGameMode !== 'word600' && currentGameMode !== 'wordfit') return;
+  if (currentGameMode !== 'word500' && currentGameMode !== 'wordfit') return;
   const tile = e.target.closest('.tile');
   if (!tile || !tile.textContent.trim()) return;
   
@@ -11798,21 +11549,13 @@ window.updateMastermindNames = function() {
   const nameW500 = document.getElementById('cardNameW500');
   const descW500 = document.getElementById('cardDescW500');
   const iconW500 = document.getElementById('cardIconW500');
-  const nameW600 = document.getElementById('cardNameW600');
-  const descW600 = document.getElementById('cardDescW600');
-  const iconW600 = document.getElementById('cardIconW600');
 
-  if (nameW500) nameW500.textContent = isMM ? 'WORD PEGS 5' : 'WORD500';
-  if (descW500) descW500.textContent = isMM ? 'Clue balok warna: berapa huruf hijau & kuning tanpa posisi pasti. Unlimited!' : 'Hanya dapat angka: berapa huruf benar & hampir benar. Unlimited!';
+  if (nameW500) nameW500.textContent = isMM ? 'WORD PEGS' : 'WORD500';
+  if (descW500) descW500.textContent = isMM ? 'Clue balok warna Mastermind (4-6 huruf): berapa huruf hijau & kuning tanpa posisi pasti. Unlimited!' : 'Hanya dapat angka (4-6 huruf): berapa huruf benar & hampir benar. Unlimited!';
   const w500PegsSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="3"></circle><circle cx="12" cy="12" r="3"></circle><circle cx="18" cy="12" r="3"></circle></svg>';
   const w500LockSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
-  const w600KeySvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>';
 
   if (iconW500) iconW500.innerHTML = isMM ? w500PegsSvg : w500LockSvg;
-
-  if (nameW600) nameW600.textContent = isMM ? 'WORD PEGS 6' : 'WORD600';
-  if (descW600) descW600.textContent = isMM ? 'Sama seperti Word Pegs 5 tapi dengan tebakan 6 huruf.' : 'Sama seperti Word500 tapi dengan tebakan 6 huruf.';
-  if (iconW600) iconW600.innerHTML = isMM ? w500PegsSvg : w600KeySvg;
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -11838,7 +11581,7 @@ window.toggleW500Style = function(checked) {
   if (window.updateMastermindNames) window.updateMastermindNames();
   if (typeof applyGameModeUI === 'function') applyGameModeUI();
   updateBestGuessUI();
-  if (currentGameMode === 'word500' || currentGameMode === 'word600' || currentGameMode === 'wordfit') {
+  if (currentGameMode === 'word500' || currentGameMode === 'wordfit') {
     if (currentGameMode === 'wordfit') renderWordFitBoard();
     else renderWord500Board();
   }
@@ -13294,7 +13037,7 @@ async function processSquarewordGuess(guessWord, userData) {
     setTimeout(() => {
       const multiWinList = document.getElementById('multiWinList');
       const multiWinTitle = document.getElementById('multiWinTitle');
-      if (multiWinTitle) multiWinTitle.textContent = '🎉 SQUAREWORD 5×5 SELESAI!';
+      if (multiWinTitle) multiWinTitle.textContent = '🎉 KOTAK KATA 5×5 SELESAI!';
 
       if (multiWinList) {
         multiWinList.innerHTML = '';

@@ -4,7 +4,7 @@ echo ============================================================
 echo   🎮 TikTok Live Game - Cloudflare Public Tunnel Launcher
 echo ============================================================
 echo.
-echo [1/2] Menyalakan Server Node.js (Port 3500 & 9200)...
+echo [1/2] Menyalakan Server Node.js (Port 3500)...
 start "TikTok Game Server" cmd /k "node server.js"
 timeout /t 3 /nobreak >nul
 

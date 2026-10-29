@@ -1,9 +1,10 @@
 // Auto-detect hostname so it works on web browser, WiFi devices, and Tauri desktop
-const isTauriHost = window.location.hostname === 'tauri.localhost' || !window.location.hostname;
-const socketHost = isTauriHost ? 'localhost' : window.location.hostname;
-const SOCKET_URL = (window.location.port === '3500' || !window.location.port)
-  ? (window.location.origin || `${socketProto}//${socketHost}:3500`)
-  : `${socketProto}//${socketHost}:9200`;
+const isTauriHost = typeof window !== 'undefined' && (window.location.hostname === 'tauri.localhost' || !window.location.hostname || window.location.protocol === 'file:');
+const socketHost = isTauriHost ? 'localhost' : (window.location.hostname || 'localhost');
+const socketProto = (typeof window !== 'undefined' && window.location.protocol === 'https:') ? 'https:' : 'http:';
+const SOCKET_URL = (typeof window !== 'undefined' && window.location.origin && !isTauriHost && window.location.protocol.startsWith('http'))
+  ? window.location.origin
+  : `${socketProto}//${socketHost}:3500`;
 // Max visible rows on board — per mode, configurable via Settings
 const DISPLAY_ROWS_DEFAULT = { wordle: 6, word500: 8, wordfit: 8 };
 const DISPLAY_ROWS_MIN = 3;

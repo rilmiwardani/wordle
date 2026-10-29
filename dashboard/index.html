@@ -2143,7 +2143,7 @@
         <div class="code-block"><span class="cm">// Connect to this server from your game</span>
 <span class="kw">import</span> { io } <span class="kw">from</span> <span class="str">"socket.io-client"</span>;
 
-<span class="kw">const</span> socket = <span class="fn">io</span>(<span class="str">"http://localhost:9200"</span>);
+<span class="kw">const</span> socket = <span class="fn">io</span>();
 
 socket.<span class="fn">on</span>(<span class="str">"chat"</span>, (data) => {
   console.<span class="fn">log</span>(data.nickname, data.comment);
@@ -2170,7 +2170,7 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
   <script>
     // ═══ SOCKET CONNECTION ═══
-    const socket = (window.location.port === '3500' || !window.location.port) ? io() : io("http://localhost:9200");
+    const socket = io();
     let currentFilter = "all";
     let events = [];
 

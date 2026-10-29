@@ -21,8 +21,9 @@ const ytSearch = require("yt-search");
 // ═══════════════════════════════════════════════════════
 //  CONFIG
 // ═══════════════════════════════════════════════════════
-const SOCKET_PORT = process.env.SOCKET_PORT || 9200;
-const DASHBOARD_PORT = process.env.DASHBOARD_PORT || 3500;
+// Unified Single Port Configuration (Compatible with Localhost, Termux & Cloud Hosting)
+const PORT = process.env.PORT || process.env.DASHBOARD_PORT || 3500;
+const LEGACY_SOCKET_PORT = process.env.SOCKET_PORT;
 
 // ═══════════════════════════════════════════════════════
 //  STATE
@@ -267,11 +268,11 @@ function logEvent(type, data) {
 }
 
 // ═══════════════════════════════════════════════════════
-//  SOCKET.IO SERVER (port 9100 - IndoFinity compatible)
+//  UNIFIED WEB & SOCKET.IO SERVER
 // ═══════════════════════════════════════════════════════
-const socketApp = express();
-const socketHttpServer = http.createServer(socketApp);
-const io = new Server(socketHttpServer, {
+const app = express();
+const httpServer = http.createServer(app);
+const io = new Server(httpServer, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"],
@@ -583,74 +584,67 @@ io.on("connection", (socket) => {
   });
 });
 
-socketHttpServer.listen(SOCKET_PORT, '0.0.0.0', () => {
-  console.log(`\n╔═══════════════════════════════════════════════════╗`);
-  console.log(`║  🔌 Socket.IO Server listening on port ${SOCKET_PORT}      ║`);
-  console.log(`╚═══════════════════════════════════════════════════╝\n`);
-});
-
 // ═══════════════════════════════════════════════════════
-//  DASHBOARD SERVER (port 3500)
+//  EXPRESS WEB & DASHBOARD ROUTES
 // ═══════════════════════════════════════════════════════
-const dashApp = express();
-dashApp.use(express.json());
-dashApp.use(express.static(__dirname)); // Serve Wordle Game on root
-dashApp.use("/dashboard", express.static(path.join(__dirname, "dashboard"))); // Serve dashboard on /dashboard
-dashApp.use("/assets", express.static(path.join(__dirname, "assets")));
-dashApp.use("/dashboard/assets", express.static(path.join(__dirname, "assets")));
+app.use(express.json());
+app.use(express.static(__dirname)); // Serve Game on root
+app.use("/dashboard", express.static(path.join(__dirname, "dashboard"))); // Serve dashboard on /dashboard
+app.use("/assets", express.static(path.join(__dirname, "assets")));
+app.use("/dashboard/assets", express.static(path.join(__dirname, "assets")));
 
 // API endpoints
-dashApp.get("/api/status", (req, res) => {
+app.get("/api/status", (req, res) => {
   res.json(getStatusPayload());
 });
 
-dashApp.get("/api/spotify-charts", (req, res) => {
+app.get("/api/spotify-charts", (req, res) => {
   res.json(spotifyChartsData);
 });
 
-dashApp.post("/api/connect", (req, res) => {
+app.post("/api/connect", (req, res) => {
   const { uniqueId } = req.body;
   if (!uniqueId) return res.status(400).json({ error: "uniqueId required" });
   connectToTikTok(uniqueId);
   res.json({ status: "connecting", uniqueId });
 });
 
-dashApp.post("/api/disconnect", (req, res) => {
+app.post("/api/disconnect", (req, res) => {
   disconnectFromTikTok();
   res.json({ status: "disconnected" });
 });
 
-dashApp.get("/api/events", (req, res) => {
+app.get("/api/events", (req, res) => {
   res.json(recentEvents);
 });
 
-dashApp.get("/api/stats", (req, res) => {
+app.get("/api/stats", (req, res) => {
   res.json(eventStats);
 });
 
-dashApp.get("/api/obs-config", (req, res) => {
+app.get("/api/obs-config", (req, res) => {
   res.json(obsConfig);
 });
 
-dashApp.post("/api/obs-config", (req, res) => {
+app.post("/api/obs-config", (req, res) => {
   obsConfig = { ...obsConfig, ...req.body };
   saveObsConfig();
   io.emit("obs-config-update", obsConfig);
   res.json(obsConfig);
 });
 
-dashApp.get("/api/game-settings", (req, res) => {
+app.get("/api/game-settings", (req, res) => {
   res.json(gameSettings);
 });
 
-dashApp.post("/api/game-settings", (req, res) => {
+app.post("/api/game-settings", (req, res) => {
   gameSettings = { ...gameSettings, ...req.body };
   saveGameSettings();
   io.emit("game-settings-update", gameSettings);
   res.json(gameSettings);
 });
 
-dashApp.get("/api/lyrics", async (req, res) => {
+app.get("/api/lyrics", async (req, res) => {
   const query = req.query.q;
   if (!query) return res.status(400).json({ error: "Missing query" });
   try {
@@ -663,14 +657,24 @@ dashApp.get("/api/lyrics", async (req, res) => {
   }
 });
 
-const dashHttpServer = http.createServer(dashApp);
-io.attach(dashHttpServer);
-
-dashHttpServer.listen(DASHBOARD_PORT, '0.0.0.0', () => {
-  console.log(`╔═══════════════════════════════════════════════════╗`);
-  console.log(`║  🖥️  Dashboard: http://0.0.0.0:${DASHBOARD_PORT}            ║`);
+httpServer.listen(PORT, '0.0.0.0', () => {
+  console.log(`\n╔═══════════════════════════════════════════════════╗`);
+  console.log(`║  🎮  TikTok Live Interactive Game Server          ║`);
+  console.log(`║  ─────────────────────────────────────────────    ║`);
+  console.log(`║  🌐  URL / OBS : http://0.0.0.0:${PORT}            ║`);
+  console.log(`║  🖥️  Dashboard : http://0.0.0.0:${PORT}/dashboard  ║`);
+  console.log(`║  🔌  Socket.IO : ws://0.0.0.0:${PORT}              ║`);
   console.log(`╚═══════════════════════════════════════════════════╝\n`);
 });
+
+// Optional legacy secondary port fallback (if explicitly requested in .env)
+if (LEGACY_SOCKET_PORT && String(LEGACY_SOCKET_PORT) !== String(PORT)) {
+  const legacyServer = http.createServer();
+  io.attach(legacyServer);
+  legacyServer.listen(LEGACY_SOCKET_PORT, '0.0.0.0', () => {
+    console.log(`[Socket.IO] Legacy fallback port active on ${LEGACY_SOCKET_PORT}`);
+  });
+}
 
 // ═══════════════════════════════════════════════════════
 //  HELPER
@@ -1389,8 +1393,8 @@ console.log(`
 ║   ─────────────────────────────────────────────           ║
 ║   IndoFinity-compatible WebSocket Backend                 ║
 ║                                                           ║
-║   Socket.IO : ws://localhost:${SOCKET_PORT}                       ║
-║   Dashboard : http://localhost:${DASHBOARD_PORT}                     ║
+║   Web & Socket.IO : http://localhost:${PORT}             ║
+║   Dashboard       : http://localhost:${PORT}/dashboard   ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
 `);

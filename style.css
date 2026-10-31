@@ -12178,12 +12178,25 @@ body.theme-sepia .wordpyramid-solver-pts {
   color: #15803d;
 }
 
-
-
-
-
-
-
-
-
+/* ═══════════════════════════════════════════════════════════════════
+   TOURNAMENT MODE SELECTION & FAST-PACED PRESETS
+   ═══════════════════════════════════════════════════════════════════ */
+.tourney-mode-item {
+  transition: all 0.15s ease;
+}
+.tourney-mode-item:hover {
+  background: rgba(56, 189, 248, 0.15) !important;
+  border-color: rgba(56, 189, 248, 0.5) !important;
+}
+body.theme-sepia .tourney-mode-item {
+  background: #d4c4af !important;
+  border-color: #a08a72 !important;
+}
+body.theme-sepia .tourney-mode-item:hover {
+  background: #dfd2be !important;
+  border-color: #8c3e1b !important;
+}
+body.theme-sepia .tourney-mode-item span {
+  color: #3b2818 !important;
+}
 

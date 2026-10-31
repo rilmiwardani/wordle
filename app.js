@@ -1468,6 +1468,10 @@ const ALL_ROTATION_MODES = [
   'wordladder', 'betweenle', 'cascadle', 'wanderwords', 'wordcluster', 'wordmatch', 'wordpyramid'
 ];
 
+const FAST_PACED_MODES = [
+  'wordle', 'word500', 'squareword', 'betweenle', 'wordladder', 'fillblanks', 'wordpyramid'
+];
+
 const GAME_MODE_PRETTY_NAMES = {
   wordle: 'Wordle',
   word500: 'Word500',
@@ -1566,6 +1570,10 @@ function updateTourneyUIElements() {
       badge.style.display = 'none';
     }
   }
+
+  if (typeof renderTourneyModesChecklist === 'function') {
+    renderTourneyModesChecklist();
+  }
 }
 
 window.toggleTourneyAutoRotate = function(checked) {
@@ -1621,6 +1629,74 @@ window.setTourneyDurationPreset = function(sec, e) {
   const input = document.getElementById('tourneyPodiumDurationInput');
   if (input) input.value = sec;
   changeTourneyPodiumDuration(sec);
+};
+
+window.renderTourneyModesChecklist = function() {
+  const container = document.getElementById('tourneyModesChecklistGrid');
+  const countBadge = document.getElementById('tourneyActiveModesCount');
+  if (!container) return;
+
+  const allowed = (Array.isArray(tourneySettings.allowedModes) && tourneySettings.allowedModes.length > 0)
+    ? tourneySettings.allowedModes
+    : ALL_ROTATION_MODES;
+
+  if (countBadge) {
+    countBadge.textContent = `${allowed.length} / ${ALL_ROTATION_MODES.length} Aktif`;
+  }
+
+  container.innerHTML = ALL_ROTATION_MODES.map(mode => {
+    const isChecked = allowed.includes(mode);
+    const prettyName = GAME_MODE_PRETTY_NAMES[mode] || mode.toUpperCase();
+    const isFastPaced = (typeof FAST_PACED_MODES !== 'undefined' ? FAST_PACED_MODES : []).includes(mode);
+    return `
+      <label class="tourney-mode-item" style="display: flex; align-items: center; gap: 5px; padding: 4px 6px; background: ${isChecked ? 'rgba(56, 189, 248, 0.08)' : 'rgba(0,0,0,0.3)'}; border: 1px solid ${isChecked ? 'rgba(56, 189, 248, 0.35)' : 'rgba(255,255,255,0.08)'}; border-radius: 4px; font-size: 11px; cursor: pointer; user-select: none;">
+        <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleTourneyAllowedMode('${mode}', this.checked)" style="accent-color: #38bdf8; cursor: pointer; margin: 0; width: 13px; height: 13px;">
+        <span style="color: ${isChecked ? '#f8fafc' : '#94a3b8'}; font-weight: ${isChecked ? '600' : '400'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 3px; font-size: 10.5px;">
+          ${escapeHTML(prettyName)}
+          ${isFastPaced ? '<i class="fa-solid fa-bolt" style="font-size: 8.5px; color: #38bdf8;" title="Rekomendasi Mode Cepat"></i>' : ''}
+        </span>
+      </label>
+    `;
+  }).join('');
+};
+
+window.toggleTourneyAllowedMode = function(mode, isChecked) {
+  if (!Array.isArray(tourneySettings.allowedModes)) {
+    tourneySettings.allowedModes = [...ALL_ROTATION_MODES];
+  }
+  if (isChecked) {
+    if (!tourneySettings.allowedModes.includes(mode)) {
+      tourneySettings.allowedModes.push(mode);
+    }
+  } else {
+    if (tourneySettings.allowedModes.length <= 1) {
+      if (typeof showToast === 'function') {
+        showToast('⚠️ Minimal 1 game harus aktif dalam turnamen!', 2000);
+      }
+      renderTourneyModesChecklist();
+      return;
+    }
+    tourneySettings.allowedModes = tourneySettings.allowedModes.filter(m => m !== mode);
+  }
+  saveTourneySettings();
+  renderTourneyModesChecklist();
+};
+
+window.setTourneyModePreset = function(preset, e) {
+  if (e) e.stopPropagation();
+  if (preset === 'fast') {
+    tourneySettings.allowedModes = [...FAST_PACED_MODES];
+    if (typeof showToast === 'function') {
+      showToast('⚡ Mode Cepat Aktif: 7 Game Terbaik Dipilih', 2200);
+    }
+  } else {
+    tourneySettings.allowedModes = [...ALL_ROTATION_MODES];
+    if (typeof showToast === 'function') {
+      showToast('🌟 Semua Game Aktif: 15 Game Masuk Rotasi', 2200);
+    }
+  }
+  saveTourneySettings();
+  renderTourneyModesChecklist();
 };
 
 function recordTourneySessionScore(userData, points) {

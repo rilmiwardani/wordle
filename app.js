@@ -9233,29 +9233,60 @@ function setupSocketListeners() {
   }
 
   // Animasi Floating Gift & Sparkle Particles di Layar
+  // Gerak dipisah 3 lapis agar natural: item = naik (1 kurva kontinu),
+  // sway = ayunan sinus kiri-kanan, content = pop-in. Tidak ada keyframe
+  // berlapis yang membuat gerak "berhenti-jalan" di tiap titik.
+  const FLOATING_GIFT_MAX = 8;
+  const _decodedGiftImgs = new Set();
+  function preloadGiftImage(url) {
+    if (!url || _decodedGiftImgs.has(url)) return Promise.resolve();
+    return new Promise((resolve) => {
+      const img = new Image();
+      let done = false;
+      const finish = () => { if (!done) { done = true; _decodedGiftImgs.add(url); resolve(); } };
+      img.onload = finish;
+      img.onerror = finish;
+      img.src = url;
+      if (img.decode) img.decode().then(finish, finish);
+      setTimeout(finish, 300); // jangan tahan animasi terlalu lama
+    });
+  }
+
   function spawnFloatingGift(userData) {
     const container = document.getElementById('floatingGiftContainer');
     if (!container || !userData) return;
 
     const repeatCount = userData.repeatCount || 1;
-    const spawnCount = repeatCount >= 10 ? 3 : (repeatCount >= 3 ? 2 : 1);
+    let spawnCount = repeatCount >= 10 ? 3 : (repeatCount >= 3 ? 2 : 1);
+    if (isLowPowerMode) spawnCount = 1;
     const avatarSrc = userData.profilePictureUrl || 'assets/default-avatar.png';
     const rawName = userData.nickname || userData.uniqueId || 'Seseorang';
     const cleanNick = rawName.replace(/^@+/, '').trim() || 'Seseorang';
 
+    preloadGiftImage(userData.giftPictureUrl).then(() => {
     for (let i = 0; i < spawnCount; i++) {
       setTimeout(() => {
+        // Batasi jumlah gift melayang bersamaan (gift storm)
+        while (container.children.length >= FLOATING_GIFT_MAX) {
+          container.firstElementChild.remove();
+        }
+
         const item = document.createElement('div');
         item.className = 'floating-gift-item';
 
-        const randomLeft = Math.floor(15 + Math.random() * 70);
+        // Sebar posisi per gelombang agar tidak menumpuk di satu titik
+        const randomLeft = Math.floor(12 + Math.random() * 76);
         item.style.left = `${randomLeft}%`;
+        item.style.setProperty('--rise-dur', `${(4.2 + Math.random() * 0.8).toFixed(2)}s`);
 
-        const randomRot = (Math.random() * 12 - 6).toFixed(1);
-        item.style.setProperty('--rot-start', `${randomRot}deg`);
-
-        const halo = document.createElement('div');
-        halo.className = 'floating-gift-halo';
+        const sway = document.createElement('div');
+        sway.className = 'floating-gift-sway';
+        const swayDur = 1.6 + Math.random() * 0.6;
+        sway.style.setProperty('--sway-x', `${(8 + Math.random() * 10).toFixed(1)}px`);
+        sway.style.setProperty('--sway-rot', `${(2 + Math.random() * 3).toFixed(1)}deg`);
+        sway.style.setProperty('--sway-dur', `${swayDur.toFixed(2)}s`);
+        // Fase acak supaya tiap gift tidak berayun serempak
+        sway.style.animationDelay = `-${(Math.random() * swayDur).toFixed(2)}s`;
 
         const content = document.createElement('div');
         content.className = 'floating-gift-content';
@@ -9302,39 +9333,42 @@ function setupSocketListeners() {
         senderPill.appendChild(senderName);
         content.appendChild(senderPill);
 
-        content.appendChild(halo);
-        item.appendChild(content);
+        sway.appendChild(content);
+        item.appendChild(sway);
 
-        const sparkleColors = ['#ffd700', '#ff0055', '#00e5ff', '#ffffff', '#ff9900'];
-        for (let s = 0; s < 8; s++) {
+        // Percikan kecil saat muncul (tanpa glow, warna palet resmi)
+        const sparkleColors = ['#ffd54f', '#fe2c55', '#25f4ee', '#ffffff', '#f59e0b'];
+        const sparkleCount = isLowPowerMode ? 0 : 6;
+        for (let s = 0; s < sparkleCount; s++) {
           const sparkle = document.createElement('div');
           sparkle.className = 'floating-sparkle';
-          const size = Math.floor(Math.random() * 8 + 6);
+          const size = Math.floor(Math.random() * 5 + 5);
           sparkle.style.width = `${size}px`;
           sparkle.style.height = `${size}px`;
           sparkle.style.backgroundColor = sparkleColors[Math.floor(Math.random() * sparkleColors.length)];
-          sparkle.style.boxShadow = `0 0 10px ${sparkle.style.backgroundColor}`;
 
-          const angle = (Math.PI * 2 / 8) * s + (Math.random() * 0.3);
-          const dist = Math.random() * 55 + 35;
+          const angle = (Math.PI * 2 / sparkleCount) * s + (Math.random() * 0.4);
+          const dist = Math.random() * 40 + 40;
           const tx = Math.cos(angle) * dist;
-          const ty = Math.sin(angle) * dist - 30;
+          const ty = Math.sin(angle) * dist - 20;
 
-          sparkle.style.setProperty('--tx', `${tx}px`);
-          sparkle.style.setProperty('--ty', `${ty}px`);
-          sparkle.style.setProperty('--duration', `${(1.2 + Math.random() * 0.6).toFixed(2)}s`);
-          sparkle.style.left = '50%';
-          sparkle.style.top = '50%';
+          sparkle.style.setProperty('--tx', `${tx.toFixed(1)}px`);
+          sparkle.style.setProperty('--ty', `${ty.toFixed(1)}px`);
+          sparkle.style.setProperty('--duration', `${(0.9 + Math.random() * 0.5).toFixed(2)}s`);
+          sparkle.addEventListener('animationend', () => sparkle.remove(), { once: true });
           item.appendChild(sparkle);
         }
 
-        container.appendChild(item);
+        const cleanup = () => { if (item.parentNode) item.remove(); };
+        item.addEventListener('animationend', (e) => {
+          if (e.target === item && e.animationName === 'floatingGiftRise') cleanup();
+        });
+        setTimeout(cleanup, 5600); // fallback jika animationend tidak terpicu
 
-        setTimeout(() => {
-          if (item.parentNode) item.remove();
-        }, 3900);
-      }, i * 250);
+        container.appendChild(item);
+      }, i * 320);
     }
+    });
   }
   window.spawnFloatingGift = spawnFloatingGift;
 

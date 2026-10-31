@@ -1047,10 +1047,14 @@ function updateLikeCounter(data, addedLikes) {
 }
 
 let isWaitingForLikes = false;
+let _winRevealPending = false;
+let _winRevealToken = 0;
 
 window.executeRestartTransition = function() {
   if (!isWaitingForLikes) return; // Prevent double trigger
   isWaitingForLikes = false;
+  _winRevealToken++; // Batalkan reveal overlay yang masih tertunda
+  _winRevealPending = false;
   
   const winOverlay = document.getElementById('winOverlay');
   if (winOverlay) winOverlay.classList.remove('show');
@@ -1115,16 +1119,40 @@ function triggerWinTransition(winDuration, isMultiWinner = false) {
     }
   }
 
-  if (activeOverlay) activeOverlay.classList.add('show');
-  if (isMultiWinner) {
-    startMultiWinAutoScroll();
-  }
-  if (window.sounds) window.sounds.playWin();
-  if (window.playHostAudio) playHostAudio('win');
-  
-  // Burst confetti on any win
-  if (typeof triggerConfetti === 'function') {
-    triggerConfetti();
+  // Guard: cegah trigger ganda (chat flood) yang mengulang animasi, suara & confetti -> kedip
+  if (_winRevealPending || (activeOverlay && activeOverlay.classList.contains('show'))) return;
+  _winRevealPending = true;
+  const revealToken = _winRevealToken;
+
+  const revealOverlay = () => {
+    // Tampilkan di frame berikutnya agar perubahan teks/avatar sudah ter-layout dulu
+    requestAnimationFrame(() => {
+      if (revealToken !== _winRevealToken) return; // sudah di-skip host
+      _winRevealPending = false;
+      if (activeOverlay) activeOverlay.classList.add('show');
+      if (isMultiWinner) {
+        startMultiWinAutoScroll();
+      }
+      if (window.sounds) window.sounds.playWin();
+      if (window.playHostAudio) playHostAudio('win');
+      
+      // Burst confetti setelah kartu mulai muncul, bukan di frame yang sama
+      if (typeof triggerConfetti === 'function') {
+        setTimeout(triggerConfetti, 180);
+      }
+    });
+  };
+
+  // Tunggu avatar pemenang selesai di-download & di-decode (maks 350ms)
+  // agar foto tidak "pop-in" / berkedip di tengah animasi kartu.
+  const winAvatarEl = !isMultiWinner ? document.getElementById('winAvatar') : null;
+  if (winAvatarEl && typeof winAvatarEl.decode === 'function' && !winAvatarEl.complete) {
+    let revealed = false;
+    const once = () => { if (!revealed) { revealed = true; revealOverlay(); } };
+    winAvatarEl.decode().then(once, once);
+    setTimeout(once, 350);
+  } else {
+    revealOverlay();
   }
   
   if (isLikeRestartEnabled) {
@@ -6677,12 +6705,15 @@ function triggerCellParticleEffect(row, col, score) {
 }
 
 function triggerConfetti() {
-  const colors = ['#a855f7', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#fde047'];
-  const count = isLowPowerMode ? 15 : 100;
+  const colors = ['#fe2c55', '#25f4ee', '#16a34a', '#f59e0b', '#ffd54f', '#c6aa24', '#ffffff'];
+  // Anti-stutter: 100 elemen sekaligus terlalu berat untuk OBS/HP. 45 sudah cukup meriah.
+  const count = isLowPowerMode ? 15 : 45;
+  const frag = document.createDocumentFragment();
+  const pieces = [];
+  let maxDuration = 0;
   for (let i = 0; i < count; i++) {
     const confetti = document.createElement('div');
     confetti.className = 'confetti';
-    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
     
     // Spread in a circle
     const angle = Math.random() * Math.PI * 2;
@@ -6690,16 +6721,24 @@ function triggerConfetti() {
     const tx = Math.cos(angle) * velocity;
     const ty = Math.sin(angle) * velocity + (Math.random() * 200);
     const duration = 1 + Math.random();
+    if (duration > maxDuration) maxDuration = duration;
     
-    confetti.style.setProperty('--tx', `${tx}px`);
-    confetti.style.setProperty('--ty', `${ty}px`);
-    confetti.style.animationDuration = `${duration}s`;
+    // Satu kali tulis style (cssText) agar tidak memicu banyak style recalc
+    confetti.style.cssText =
+      `background-color:${colors[Math.floor(Math.random() * colors.length)]};` +
+      `--tx:${tx}px;--ty:${ty}px;animation-duration:${duration}s;` +
+      (Math.random() > 0.5 ? 'border-radius:50%;' : '');
     
-    if (Math.random() > 0.5) confetti.style.borderRadius = '50%';
-    
-    document.body.appendChild(confetti);
-    setTimeout(() => confetti.remove(), duration * 1000);
+    confetti.addEventListener('animationend', () => confetti.remove(), { once: true });
+    frag.appendChild(confetti);
+    pieces.push(confetti);
   }
+  // Satu kali insert ke DOM (1 reflow, bukan 100)
+  document.body.appendChild(frag);
+  // Fallback cleanup jika animationend tidak terpicu (tab background, dsb.)
+  setTimeout(() => {
+    pieces.forEach(el => { if (el.isConnected) el.remove(); });
+  }, maxDuration * 1000 + 300);
 }
 
 function checkWordGridWin() {

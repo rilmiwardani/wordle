@@ -1503,6 +1503,16 @@ try {
   }
 } catch(e) {}
 
+// Pastikan mode lama (seperti wordloop / word600) dibersihkan dari cache browser
+if (Array.isArray(tourneySettings.allowedModes)) {
+  tourneySettings.allowedModes = tourneySettings.allowedModes.filter(m => ALL_ROTATION_MODES.includes(m));
+  if (tourneySettings.allowedModes.length === 0) {
+    tourneySettings.allowedModes = [...ALL_ROTATION_MODES];
+  }
+} else {
+  tourneySettings.allowedModes = [...ALL_ROTATION_MODES];
+}
+
 let tourneySessionScores = {}; // { [username]: { nickname, avatar, pts } }
 let tourneySessionRounds = 0;
 let isTourneyPodiumActive = false;

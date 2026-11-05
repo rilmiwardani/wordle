@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Rekap Game Tunggal - TikTok Live</title>
+  
+  <!-- Font Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- html2canvas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    :root {
+      --bg-canvas: #090d16;
+      --card-bg: #0f172a;
+      --card-inner: #162032;
+      --border-soft: rgba(255, 255, 255, 0.1);
+      --border-strong: rgba(255, 255, 255, 0.18);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-sub: #64748b;
+      --accent-gold: #f59e0b;
+      --accent-gold-light: #ffd54f;
+      --accent-silver: #cbd5e1;
+      --accent-bronze: #d97706;
+      --accent-green: #16a34a;
+      --accent-red: #fe2c55;
+      --accent-cyan: #25f4ee;
+      --accent-sky: #38bdf8;
+      --shadow-natural: 0 4px 18px rgba(0, 0, 0, 0.35);
+      --shadow-elevation: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    /* Sepia / Daylight Theme */
+    body.theme-sepia {
+      --bg-canvas: #cdc1af;
+      --card-bg: #e2d7c5;
+      --card-inner: #d7cbba;
+      --border-soft: rgba(66, 52, 40, 0.2);
+      --border-strong: rgba(66, 52, 40, 0.35);
+      --text-main: #2b1f14;
+      --text-muted: #5e4834;
+      --text-sub: #7a624d;
+      --accent-gold: #b45309;
+      --accent-gold-light: #d97706;
+      --accent-silver: #64748b;
+      --accent-bronze: #9a3412;
+      --accent-green: #15803d;
+      --accent-sky: #0369a1;
+      --shadow-natural: 0 4px 16px rgba(66, 52, 40, 0.2);
+      --shadow-elevation: 0 8px 20px rgba(66, 52, 40, 0.25);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg-canvas);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 16px 12px 30px;
+      overflow-x: hidden;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    /* Top Action Bar (Controls for Host) */
+    .host-toolbar {
+      width: 100%;
+      max-width: 440px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-soft);
+      border-radius: 14px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-natural);
+    }
+
+    .toolbar-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-select-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      min-width: 180px;
+    }
+
+    .toolbar-select-wrap label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    .toolbar-select {
+      flex: 1;
+      background: var(--card-inner);
+      color: var(--text-main);
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .timeframe-pill-wrap {
+      display: flex;
+      background: var(--card-inner);
+      border: 1px solid var(--border-soft);
+      border-radius: 8px;
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .timeframe-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'Outfit', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .timeframe-btn.active {
+      background: var(--accent-red);
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(254, 44, 85, 0.35);
+    }
+
+    .action-btn {
+      background: var(--card-inner);
+      border: 1px solid var(--border-strong);
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .action-btn:active {
+      transform: scale(0.97);
+    }
+
+    .action-btn.btn-download {
+      background: #16a34a;
+      border-color: #15803d;
+      color: #ffffff;
+      font-weight: 800;
+    }
+    .action-btn.btn-download:hover {
+      background: #15803d;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       THE 9:16 MOBILE STORY CARD (RECAP POSTER)
+       ══════════════════════════════════════════════════════════ */
+    .recap-capture-frame {
+      width: 100%;
+      max-width: 410px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .recap-card {
+      width: 405px;
+      height: 720px; /* Exact 9:16 aspect ratio */
+      background-color: var(--card-bg);
+      background-image: 
+        linear-gradient(180deg, rgba(15, 23, 42, 0.94) 0%, rgba(10, 15, 29, 0.98) 100%),
+        url('assets/bg_nature.png');
+      background-size: cover;
+      background-position: center;
+      border: 1px solid var(--border-strong);
+      border-radius: 20px;
+      padding: 16px 16px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      box-shadow: var(--shadow-elevation);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    body.theme-sepia .recap-card {
+      background-image: 
+        linear-gradient(180deg, rgba(226, 215, 197, 0.96) 0%, rgba(205, 193, 175, 0.98) 100%),
+        url('assets/bg_nature.png');
+    }
+
+    /* Decorative Edge Accent */
+    .recap-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--accent-red) 0%, var(--accent-gold) 50%, var(--accent-cyan) 100%);
+    }
+
+    /* Header Section */
+    .card-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .tiktok-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--accent-red);
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.8px;
+      padding: 3px 8px;
+      border-radius: 5px;
+      text-transform: uppercase;
+      box-shadow: 0 2px 8px rgba(254, 44, 85, 0.35);
+    }
+
+    .session-date {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.3px;
+    }
+
+    .game-hero-header {
+      text-align: center;
+      padding: 4px 0 10px;
+      border-bottom: 1px solid var(--border-soft);
+      margin-bottom: 10px;
+    }
+
+    .game-badge-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--card-inner);
+      border: 1px solid var(--border-soft);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--accent-gold-light);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 4px;
+    }
+
+    .game-hero-title {
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      color: var(--text-main);
+      text-transform: uppercase;
+      line-height: 1.15;
+    }
+
+    .game-hero-subtitle {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       THE TOP 3 PODIUM
+       ══════════════════════════════════════════════════════════ */
+    .podium-container {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding: 0 4px;
+    }
+
+    .podium-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      max-width: 115px;
+      text-align: center;
+    }
+
+    .podium-avatar-wrap {
+      position: relative;
+      margin-bottom: 6px;
+    }
+
+    .podium-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #1e293b;
+      display: block;
+      box-shadow: var(--shadow-natural);
+    }
+
+    .podium-rank-badge {
+      position: absolute;
+      bottom: -4px;
+      right: -4px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 900;
+      color: #ffffff;
+      border: 1.5px solid var(--card-bg);
+    }
+
+    .podium-name {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--text-main);
+      width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+
+    .podium-pts {
+      font-size: 12px;
+      font-weight: 900;
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-bottom: 6px;
+    }
+
+    .podium-pedestal {
+      width: 100%;
+      border-radius: 8px 8px 0 0;
+      border-top: 2px solid;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 2px;
+    }
+
+    .podium-pedestal-num {
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1;
+      opacity: 0.9;
+    }
+
+    /* Rank 1 (Champion) Styling */
+    .podium-col-1 {
+      order: 2;
+      transform: translateY(-8px);
+    }
+    .podium-col-1 .podium-avatar {
+      width: 60px;
+      height: 60px;
+      border: 3px solid var(--accent-gold);
+    }
+    .podium-col-1 .crown-icon {
+      color: var(--accent-gold-light);
+      font-size: 16px;
+      margin-bottom: -4px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+    }
+    .podium-col-1 .podium-rank-badge {
+      background: var(--accent-gold);
+      color: #2b1f14;
+      width: 22px;
+      height: 22px;
+      font-size: 11px;
+    }
+    .podium-col-1 .podium-pts {
+      background: rgba(245, 158, 11, 0.2);
+      border: 1px solid rgba(245, 158, 11, 0.45);
+      color: var(--accent-gold-light);
+    }
+    .podium-col-1 .podium-pedestal {
+      height: 68px;
+      background: linear-gradient(180deg, rgba(245, 158, 11, 0.25) 0%, rgba(245, 158, 11, 0.08) 100%);
+      border-color: var(--accent-gold);
+      color: var(--accent-gold-light);
+    }
+
+    /* Rank 2 (Silver) Styling */
+    .podium-col-2 {
+      order: 1;
+    }
+    .podium-col-2 .podium-avatar {
+      border: 2px solid var(--accent-silver);
+    }
+    .podium-col-2 .podium-rank-badge {
+      background: var(--accent-silver);
+      color: #0f172a;
+    }
+    .podium-col-2 .podium-pts {
+      background: rgba(203, 213, 225, 0.15);
+      border: 1px solid rgba(203, 213, 225, 0.35);
+      color: var(--accent-silver);
+    }
+    .podium-col-2 .podium-pedestal {
+      height: 52px;
+      background: linear-gradient(180deg, rgba(203, 213, 225, 0.2) 0%, rgba(203, 213, 225, 0.05) 100%);
+      border-color: var(--accent-silver);
+      color: var(--accent-silver);
+    }
+
+    /* Rank 3 (Bronze) Styling */
+    .podium-col-3 {
+      order: 3;
+    }
+    .podium-col-3 .podium-avatar {
+      border: 2px solid var(--accent-bronze);
+    }
+    .podium-col-3 .podium-rank-badge {
+      background: var(--accent-bronze);
+      color: #ffffff;
+    }
+    .podium-col-3 .podium-pts {
+      background: rgba(217, 119, 6, 0.15);
+      border: 1px solid rgba(217, 119, 6, 0.35);
+      color: #fb923c;
+    }
+    .podium-col-3 .podium-pedestal {
+      height: 42px;
+      background: linear-gradient(180deg, rgba(217, 119, 6, 0.2) 0%, rgba(217, 119, 6, 0.05) 100%);
+      border-color: var(--accent-bronze);
+      color: #fb923c;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       RUNNER-UPS LIST (#4 - #8)
+       ══════════════════════════════════════════════════════════ */
+    .runnerups-card {
+      background: var(--card-inner);
+      border: 1px solid var(--border-soft);
+      border-radius: 12px;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 5px;
+    }
+
+    .runnerups-title {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 2px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .runner-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 3.5px 6px;
+      background: rgba(0, 0, 0, 0.18);
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    body.theme-sepia .runner-row {
+      background: rgba(66, 52, 40, 0.08);
+      border-color: rgba(66, 52, 40, 0.12);
+    }
+
+    .runner-left {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .runner-rank {
+      font-size: 10.5px;
+      font-weight: 900;
+      color: var(--text-muted);
+      width: 18px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .runner-avatar {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #334155;
+      flex-shrink: 0;
+    }
+
+    .runner-name {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .runner-pts {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--accent-sky);
+      flex-shrink: 0;
+      padding-left: 6px;
+    }
+
+    .empty-solvers-msg {
+      font-size: 11px;
+      color: var(--text-sub);
+      text-align: center;
+      padding: 12px 0;
+      font-style: italic;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       HIGHLIGHT STATS MINI-GRID
+       ══════════════════════════════════════════════════════════ */
+    .stats-trio-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .stat-mini-box {
+      background: var(--card-inner);
+      border: 1px solid var(--border-soft);
+      border-radius: 8px;
+      padding: 6px 4px;
+      text-align: center;
+    }
+
+    .stat-mini-val {
+      font-size: 14px;
+      font-weight: 900;
+      color: var(--text-main);
+      line-height: 1.1;
+    }
+
+    .stat-mini-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-top: 2px;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       FOOTER WATERMARK SECTION
+       ══════════════════════════════════════════════════════════ */
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-soft);
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .footer-host-brand {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: 700;
+    }
+
+    .footer-host-brand i {
+      color: var(--accent-red);
+    }
+
+    .footer-app-sig {
+      font-weight: 600;
+      color: var(--text-sub);
+    }
+
+    /* Download loading overlay */
+    #downloadNotice {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--accent-green);
+      color: #ffffff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      z-index: 9999;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Host Toolbar (Non-captured controls) -->
+  <div class="host-toolbar">
+    <div class="toolbar-row">
+      <div class="toolbar-select-wrap">
+        <label><i class="fa-solid fa-gamepad" style="color: var(--accent-sky); margin-right: 4px;"></i> Game:</label>
+        <select id="gameModeSelect" class="toolbar-select" onchange="changeActiveMode(this.value)">
+          <!-- Diisi via JavaScript -->
+        </select>
+      </div>
+
+      <div class="timeframe-pill-wrap">
+        <button type="button" class="timeframe-btn active" id="btnDaily" onclick="setTimeframe('daily')">Sesi Ini (Daily)</button>
+        <button type="button" class="timeframe-btn" id="btnWeekly" onclick="setTimeframe('weekly')">Mingguan</button>
+      </div>
+    </div>
+
+    <div class="toolbar-row" style="justify-content: flex-end;">
+      <button type="button" class="action-btn" onclick="toggleTheme()" title="Ganti Dark Nature / Daylight Sepia">
+        <i class="fa-solid fa-circle-half-stroke"></i> Tema
+      </button>
+      <button type="button" class="action-btn btn-download" onclick="downloadRecapPoster()">
+        <i class="fa-solid fa-download"></i> Unduh Poster (PNG)
+      </button>
+    </div>
+  </div>
+
+  <!-- Capture Frame: Exactly 9:16 Story Aspect Ratio -->
+  <div class="recap-capture-frame">
+    <div class="recap-card" id="recapCardPoster">
+      
+      <!-- Topbar Header -->
+      <div>
+        <div class="card-topbar">
+          <div class="tiktok-badge">
+            <i class="fa-brands fa-tiktok"></i> Live Match
+          </div>
+          <div class="session-date" id="recapDateDisplay">
+            <!-- Tanggal otomatis -->
+          </div>
+        </div>
+
+        <div class="game-hero-header">
+          <div class="game-badge-chip" id="gameTypeChip">
+            <i class="fa-solid fa-trophy"></i> REKAP JUARA GAME
+          </div>
+          <h1 class="game-hero-title" id="gameHeroTitle">WORDLE</h1>
+          <p class="game-hero-subtitle" id="gameHeroSubtitle">Penebak Terbaik Sesi Live TikTok</p>
+        </div>
+      </div>
+
+      <!-- The Grand Podium Trio (1, 2, 3) -->
+      <div class="podium-container">
+        <!-- Rank 2 (Silver) -->
+        <div class="podium-column podium-col-2">
+          <div class="podium-avatar-wrap">
+            <img id="podiumAvatar2" class="podium-avatar" src="assets/bg_nature.png" alt="Rank 2">
+            <div class="podium-rank-badge">2</div>
+          </div>
+          <div class="podium-name" id="podiumName2">—</div>
+          <div class="podium-pts" id="podiumPts2">0 Pts</div>
+          <div class="podium-pedestal">
+            <div class="podium-pedestal-num">2</div>
+          </div>
+        </div>
+
+        <!-- Rank 1 (Gold Champion) -->
+        <div class="podium-column podium-col-1">
+          <i class="fa-solid fa-crown crown-icon"></i>
+          <div class="podium-avatar-wrap">
+            <img id="podiumAvatar1" class="podium-avatar" src="assets/bg_nature.png" alt="Rank 1">
+            <div class="podium-rank-badge">1</div>
+          </div>
+          <div class="podium-name" id="podiumName1">—</div>
+          <div class="podium-pts" id="podiumPts1">0 Pts</div>
+          <div class="podium-pedestal">
+            <div class="podium-pedestal-num">1</div>
+          </div>
+        </div>
+
+        <!-- Rank 3 (Bronze) -->
+        <div class="podium-column podium-col-3">
+          <div class="podium-avatar-wrap">
+            <img id="podiumAvatar3" class="podium-avatar" src="assets/bg_nature.png" alt="Rank 3">
+            <div class="podium-rank-badge">3</div>
+          </div>
+          <div class="podium-name" id="podiumName3">—</div>
+          <div class="podium-pts" id="podiumPts3">0 Pts</div>
+          <div class="podium-pedestal">
+            <div class="podium-pedestal-num">3</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Runner-ups (#4 - #8) -->
+      <div class="runnerups-card">
+        <div class="runnerups-title">
+          <span><i class="fa-solid fa-ranking-star" style="margin-right: 4px; color: var(--accent-gold);"></i> Peringkat #4 - #8</span>
+          <span style="font-size: 9px; opacity: 0.8;">Poin Tebakan</span>
+        </div>
+        <div id="runnerupsListWrap" style="display: flex; flex-direction: column; gap: 4px;">
+          <!-- Diisi via render -->
+        </div>
+      </div>
+
+      <!-- Session Highlights (3 Mini Metrics) -->
+      <div class="stats-trio-grid">
+        <div class="stat-mini-box">
+          <div class="stat-mini-val" id="statUniqueSolvers">0</div>
+          <div class="stat-mini-label"><i class="fa-solid fa-users"></i> Penebak</div>
+        </div>
+        <div class="stat-mini-box">
+          <div class="stat-mini-val" id="statTopPoints" style="color: var(--accent-gold);">0</div>
+          <div class="stat-mini-label"><i class="fa-solid fa-trophy"></i> Poin Top</div>
+        </div>
+        <div class="stat-mini-box">
+          <div class="stat-mini-val" id="statTotalScore" style="color: var(--accent-green);">0</div>
+          <div class="stat-mini-label"><i class="fa-solid fa-coins"></i> Total Poin</div>
+        </div>
+      </div>
+
+      <!-- Footer Watermark -->
+      <div class="card-footer">
+        <div class="footer-host-brand">
+          <i class="fa-brands fa-tiktok"></i>
+          <span id="hostUsernameDisplay">Live TikTok Stream</span>
+        </div>
+        <div class="footer-app-sig">
+          Wordle Interactive Game
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="downloadNotice">
+    <i class="fa-solid fa-circle-notch fa-spin" style="margin-right: 6px;"></i> Membuat file poster HD...
+  </div>
+
+  <script>
+    // ══════════════════════════════════════════════════════════
+    // DATA DEFINITION FOR ALL 15 OFFICIAL GAMES
+    // ══════════════════════════════════════════════════════════
+    const SUPPORTED_GAMES = [
+      { id: 'wordle', name: 'Wordle', prefix: 'pts_', icon: 'fa-cubes' },
+      { id: 'squareword', name: 'Kotak Kata (Squareword)', prefix: 'pts_sqword_', icon: 'fa-border-all' },
+      { id: 'word500', name: 'Word500', prefix: 'pts_w500_', icon: 'fa-bullseye' },
+      { id: 'betweenle', name: 'Betweenle', prefix: 'pts_betweenle_', icon: 'fa-arrow-right-arrow-left' },
+      { id: 'wordladder', name: 'Word Ladder', prefix: 'pts_wladder_', icon: 'fa-stairs' },
+      { id: 'fillblanks', name: 'Word Fill', prefix: 'pts_fill_', icon: 'fa-pencil' },
+      { id: 'wordpyramid', name: 'Word Pyramid', prefix: 'pts_wpyramid_', icon: 'fa-mountain' },
+      { id: 'wordfit', name: 'Word Fit', prefix: 'pts_wfit_', icon: 'fa-ruler-combined' },
+      { id: 'colorfit', name: 'Color Fit', prefix: 'pts_colorfit_', icon: 'fa-palette' },
+      { id: 'wordtango', name: 'Word Tango', prefix: 'pts_tango_', icon: 'fa-puzzle-piece' },
+      { id: 'wordgrid', name: 'Word Grid', prefix: 'pts_wgrid_', icon: 'fa-table-cells' },
+      { id: 'cascadle', name: 'Cascadle', prefix: 'pts_cascadle_', icon: 'fa-water' },
+      { id: 'wanderwords', name: 'Wander Words', prefix: 'pts_wanderwords_', icon: 'fa-compass' },
+      { id: 'wordcluster', name: 'Word Cluster', prefix: 'pts_wordcluster_', icon: 'fa-circle-nodes' },
+      { id: 'wordmatch', name: 'Word Match', prefix: 'pts_wmatch_', icon: 'fa-link' }
+    ];
+
+    let currentSelectedMode = 'wordle';
+    let currentTimeframe = 'daily';
+
+    // Format Indonesian Date
+    const today = new Date();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    const dateFormatted = `${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`;
+    document.getElementById('recapDateDisplay').textContent = dateFormatted;
+
+    // Check query param or sessionStorage for currently played game
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialMode = urlParams.get('mode');
+    if (initialMode && SUPPORTED_GAMES.some(g => g.id === initialMode)) {
+      currentSelectedMode = initialMode;
+    } else {
+      try {
+        const savedMode = sessionStorage.getItem('wordle_gameMode') || localStorage.getItem('last_game_mode');
+        if (savedMode && SUPPORTED_GAMES.some(g => g.id === savedMode)) {
+          currentSelectedMode = savedMode;
+        }
+      } catch(e) {}
+    }
+
+    // Populate dropdown
+    const selectEl = document.getElementById('gameModeSelect');
+    SUPPORTED_GAMES.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g.id;
+      opt.textContent = g.name;
+      if (g.id === currentSelectedMode) opt.selected = true;
+      selectEl.appendChild(opt);
+    });
+
+    // Check if host name saved in localStorage
+    try {
+      const savedHost = localStorage.getItem('tiktok_username') || localStorage.getItem('host_account_name');
+      if (savedHost) {
+        document.getElementById('hostUsernameDisplay').textContent = '@' + savedHost.replace('@', '');
+      }
+    } catch(e) {}
+
+    // ══════════════════════════════════════════════════════════
+    // LOAD LOCALSTORAGE LEADERBOARD DATA FOR SELECTED GAME
+    // ══════════════════════════════════════════════════════════
+    function getGameScores(gameId, timeframe) {
+      const game = SUPPORTED_GAMES.find(g => g.id === gameId) || SUPPORTED_GAMES[0];
+      const prefix = game.prefix;
+      const isDaily = (timeframe === 'daily');
+
+      const scores = {};
+      const avatars = {};
+
+      const avatarPrefix = 'pts_avatar_';
+      const otherSpecialPrefixes = SUPPORTED_GAMES
+        .filter(g => g.prefix !== 'pts_')
+        .map(g => g.prefix);
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+
+        if (key.startsWith(avatarPrefix)) {
+          const u = key.substring(avatarPrefix.length);
+          avatars[u] = localStorage.getItem(key);
+        } else if (key.startsWith(prefix)) {
+          // Skip social metrics
+          if (key.includes('_like_') || key.includes('_share_') || key.includes('_gift_') || key.includes('_active_') || key.includes('_avatar_')) {
+            continue;
+          }
+          // For Wordle ('pts_'), make sure we don't accidentally match special prefixes like pts_sqword_
+          if (prefix === 'pts_' && otherSpecialPrefixes.some(sp => key.startsWith(sp))) {
+            continue;
+          }
+
+          const hasDaily = key.includes('daily_');
+          if (isDaily && !hasDaily) continue;
+          if (!isDaily && hasDaily) continue;
+
+          let username = '';
+          if (isDaily) {
+            const dailyPrefix = (prefix === 'pts_') ? 'pts_daily_' : (prefix + 'daily_');
+            if (key.startsWith(dailyPrefix)) {
+              username = key.substring(dailyPrefix.length);
+            }
+          } else {
+            username = key.substring(prefix.length);
+          }
+
+          if (username) {
+            const pts = parseInt(localStorage.getItem(key)) || 0;
+            if (pts > 0) {
+              scores[username] = pts;
+            }
+          }
+        }
+      }
+
+      const list = Object.entries(scores).map(([username, pts]) => ({
+        username,
+        pts,
+        avatar: avatars[username] || 'assets/bg_nature.png'
+      })).sort((a, b) => b.pts - a.pts);
+
+      return list;
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // RENDER RECAP CARD FOR SELECTED GAME
+    // ══════════════════════════════════════════════════════════
+    function renderRecap() {
+      const game = SUPPORTED_GAMES.find(g => g.id === currentSelectedMode) || SUPPORTED_GAMES[0];
+      
+      document.getElementById('gameHeroTitle').textContent = game.name.split('(')[0].trim().toUpperCase();
+      document.getElementById('gameTypeChip').innerHTML = `<i class="fa-solid ${game.icon}"></i> ${currentTimeframe === 'daily' ? 'SESI LIVE HARI INI' : 'REKAP MINGGUAN'}`;
+      document.getElementById('gameHeroSubtitle').textContent = `Papan Rekap Juara Resmi • ${currentTimeframe === 'daily' ? 'Live Hari Ini' : 'Akumulasi Mingguan'}`;
+
+      const players = getGameScores(currentSelectedMode, currentTimeframe);
+
+      // Stats
+      const uniqueCount = players.length;
+      const topScore = players.length > 0 ? players[0].pts : 0;
+      const totalScore = players.reduce((sum, p) => sum + p.pts, 0);
+
+      document.getElementById('statUniqueSolvers').textContent = uniqueCount;
+      document.getElementById('statTopPoints').textContent = topScore;
+      document.getElementById('statTotalScore').textContent = totalScore;
+
+      // Podium Top 3
+      const p1 = players[0] || { username: 'Belum Ada', pts: 0, avatar: 'assets/bg_nature.png' };
+      const p2 = players[1] || { username: '—', pts: 0, avatar: 'assets/bg_nature.png' };
+      const p3 = players[2] || { username: '—', pts: 0, avatar: 'assets/bg_nature.png' };
+
+      document.getElementById('podiumName1').textContent = p1.username;
+      document.getElementById('podiumPts1').textContent = `${p1.pts} Poin`;
+      document.getElementById('podiumAvatar1').src = p1.avatar;
+
+      document.getElementById('podiumName2').textContent = p2.username;
+      document.getElementById('podiumPts2').textContent = `${p2.pts} Poin`;
+      document.getElementById('podiumAvatar2').src = p2.avatar;
+
+      document.getElementById('podiumName3').textContent = p3.username;
+      document.getElementById('podiumPts3').textContent = `${p3.pts} Poin`;
+      document.getElementById('podiumAvatar3').src = p3.avatar;
+
+      // Runner-ups (#4 - #8)
+      const runnerups = players.slice(3, 8);
+      const runnerWrap = document.getElementById('runnerupsListWrap');
+      runnerWrap.innerHTML = '';
+
+      if (runnerups.length === 0) {
+        runnerWrap.innerHTML = `<div class="empty-solvers-msg">Semua penebak lainnya siap merebut posisi di sesi berikutnya!</div>`;
+      } else {
+        runnerups.forEach((p, idx) => {
+          const rank = idx + 4;
+          const row = document.createElement('div');
+          row.className = 'runner-row';
+          row.innerHTML = `
+            <div class="runner-left">
+              <span class="runner-rank">#${rank}</span>
+              <img class="runner-avatar" src="${p.avatar}" onerror="this.src='assets/bg_nature.png'" alt="${p.username}">
+              <span class="runner-name">${escapeText(p.username)}</span>
+            </div>
+            <span class="runner-pts">${p.pts} Poin</span>
+          `;
+          runnerWrap.appendChild(row);
+        });
+      }
+    }
+
+    function escapeText(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+      }[m]));
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // USER INTERACTIONS
+    // ══════════════════════════════════════════════════════════
+    function changeActiveMode(mode) {
+      currentSelectedMode = mode;
+      renderRecap();
+    }
+
+    function setTimeframe(tf) {
+      currentTimeframe = tf;
+      document.getElementById('btnDaily').classList.toggle('active', tf === 'daily');
+      document.getElementById('btnWeekly').classList.toggle('active', tf === 'weekly');
+      renderRecap();
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle('theme-sepia');
+    }
+
+    // Download High-Resolution Poster
+    function downloadRecapPoster() {
+      const card = document.getElementById('recapCardPoster');
+      const notice = document.getElementById('downloadNotice');
+      if (notice) notice.style.display = 'block';
+
+      html2canvas(card, {
+        scale: 2.5, // Crisp 1080x1920 for mobile story
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null
+      }).then(canvas => {
+        if (notice) notice.style.display = 'none';
+        const link = document.createElement('a');
+        link.download = `Rekap_${currentSelectedMode}_${currentTimeframe}_${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      }).catch(err => {
+        if (notice) notice.style.display = 'none';
+        console.error('Error generating image:', err);
+        alert('Gagal membuat gambar: ' + err.message);
+      });
+    }
+
+    // Initialize
+    renderRecap();
+  </script>
+</body>
+</html>

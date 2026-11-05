@@ -1218,7 +1218,7 @@
               </div>
               <div class="settings-group-content">
                 <button class="lang-option" id="recapBtn" onclick="event.stopPropagation(); document.getElementById('recapIframe').src='recap.html'; document.getElementById('recapOverlay').style.display='block';"><i class="fa-solid fa-trophy" style="color: #ffd700; margin-right: 6px;"></i> Supporter Recap</button>
-                <button class="lang-option" id="gameRecapBtn" onclick="event.stopPropagation(); document.getElementById('recapIframe').src='game_recap.html'; document.getElementById('recapOverlay').style.display='block';"><i class="fa-solid fa-gamepad" style="color: #38bdf8; margin-right: 6px;"></i> Game Solver Recap</button>
+                <button class="lang-option" id="gameRecapBtn" onclick="event.stopPropagation(); document.getElementById('recapIframe').src='single_recap.html?mode=' + (typeof currentGameMode !== 'undefined' ? currentGameMode : 'wordle'); document.getElementById('recapOverlay').style.display='block';"><i class="fa-solid fa-gamepad" style="color: #38bdf8; margin-right: 6px;"></i> Rekap 1 Game (Juara Sesi)</button>
                 <button class="lang-option" id="wordGridSolverBtn" onclick="event.stopPropagation(); window.open('wordgrid_solver.html', '_blank');"><i class="fa-solid fa-calculator" style="color: #10b981; margin-right: 6px;"></i> Word Grid Solver</button>
                 
                 <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">

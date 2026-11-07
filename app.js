@@ -9770,6 +9770,12 @@ function handleChatGuess(data, optionalUserData) {
     return;
   }
 
+  // Khusus Mode Sambung Kata: langsung proses tanpa terhalang filter Wordle / isGameOver / batas huruf
+  if (currentGameMode === 'sambungkata') {
+    processSambungKataGuess(data.comment, data);
+    return;
+  }
+
   const isCurrentOver = (currentGameMode === 'betweenle') ? betweenleIsGameOver : ((currentGameMode === 'cascadle') ? cascadleIsGameOver : ((currentGameMode === 'wanderwords') ? wanderWordsIsGameOver : ((currentGameMode === 'wordpyramid') ? wordPyramidIsGameOver : isGameOver)));
   if (isCurrentOver) return;
 
@@ -9853,10 +9859,6 @@ function handleChatGuess(data, optionalUserData) {
     }
     if (currentGameMode === 'wordpyramid') {
       processWordPyramidGuess(msg, data);
-      return;
-    }
-    if (currentGameMode === 'sambungkata') {
-      processSambungKataGuess(msg, data);
       return;
     }
 
@@ -18216,14 +18218,21 @@ function startSambungKataGame() {
 // Bergabung ke Kursi Meja Bundar (Chat: JOIN / IKUT / DUDUK)
 function joinSambungKataSeat(userData) {
   if (!userData) return false;
-  const userId = userData.userId || userData.uniqueId || 'player_' + Date.now();
+
+  // Jika game sedang berlangsung (fase playing), tolak join tengah jalan
+  if (sambungKataPhase !== 'lobby') {
+    showToast(`⚠️ Permainan sedang berlangsung! Tunggu ronde berikutnya untuk JOIN.`, 2200);
+    return false;
+  }
+
+  const userId = userData.uniqueId || userData.userId || 'player_' + Date.now();
   const userName = (userData.nickname || userData.uniqueId || 'Pemain').replace(/^@+/, '');
   const userAvatar = (userData.profilePictureUrl && userData.profilePictureUrl !== 'assets/bg_nature.png') 
     ? userData.profilePictureUrl 
     : DEFAULT_HOST_AVATAR;
 
   // Cek apakah pemain sudah duduk di kursi manapun
-  const alreadySeated = sambungKataSeats.some(s => s && s.userId === userId);
+  const alreadySeated = sambungKataSeats.some(s => s && (s.userId === userId || (s.userName && userName && s.userName.toLowerCase() === userName.toLowerCase())));
   if (alreadySeated) return false;
 
   // Cari kursi kosong pertama
@@ -18528,9 +18537,16 @@ function processSambungKataGuess(guessWord, userData) {
 
   const raw = guessWord.trim().toUpperCase();
   const clean = raw.replace(/[^A-Z]/g, '');
+  const words = raw.split(/\s+/);
+  const firstWordClean = words[0] ? words[0].replace(/[^A-Z]/g, '') : '';
 
-  // 1. Tangani Pemicu Masuk Meja (JOIN / IKUT / IKUTAN / DUDUK)
-  if (clean === 'JOIN' || clean === 'IKUT' || clean === 'IKUTAN' || clean === 'DUDUK' || raw === '!JOIN') {
+  // 1. Tangani Pemicu Masuk Meja (JOIN / IKUT / IKUTAN / DUDUK / !JOIN)
+  const isJoinCmd = (
+    clean === 'JOIN' || clean === 'IKUT' || clean === 'IKUTAN' || clean === 'DUDUK' || 
+    raw === '!JOIN' || raw.startsWith('!JOIN') ||
+    firstWordClean === 'JOIN' || firstWordClean === 'IKUT' || firstWordClean === 'DUDUK'
+  );
+  if (isJoinCmd) {
     joinSambungKataSeat(userData);
     return;
   }

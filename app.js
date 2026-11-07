@@ -7043,6 +7043,8 @@ function hasActiveGameRound() {
   if (currentGameMode === 'wordtango') return !!(wordTangoTargets && wordTangoTargets.length > 0);
   if (currentGameMode === 'wordgrid') return !!(wgGrid && wgGrid.length > 0);
   if (currentGameMode === 'squareword') return currentWord === 'SQUAREWORD' || (typeof squarewordSolution !== 'undefined' && !!squarewordSolution);
+  if (currentGameMode === 'wordpyramid') return !!wordPyramidBaseWord;
+  if (currentGameMode === 'sambungkata') return true;
   return !!currentWord;
 }
 
@@ -18212,6 +18214,9 @@ function initSambungKataGame() {
 
 // Mulai Ronde Baru Sambung Kata
 function startSambungKataGame() {
+  if (sambungKataPhase === 'playing') {
+    return;
+  }
   initSambungKataGame();
   showToast(`🎮 Mode Sambung Kata • Ronde ${sambungKataRound}`, 2500);
 }

@@ -4439,6 +4439,7 @@ function selectGame(mode) {
 
   // If already connected to TikTok, skip login and go straight to game
   if (isConnectedToTikTok && socket && socket.connected) {
+    try { sessionStorage.setItem('wordle_gameMode', mode); } catch(e) {}
     gameSelectOverlay.style.display = 'none';
     loginOverlay.style.display = 'none';
     gameContainer.style.display = 'flex';
@@ -7044,7 +7045,10 @@ function hasActiveGameRound() {
   if (currentGameMode === 'wordgrid') return !!(wgGrid && wgGrid.length > 0);
   if (currentGameMode === 'squareword') return currentWord === 'SQUAREWORD' || (typeof squarewordSolution !== 'undefined' && !!squarewordSolution);
   if (currentGameMode === 'wordpyramid') return !!wordPyramidBaseWord;
-  if (currentGameMode === 'sambungkata') return true;
+  if (currentGameMode === 'sambungkata') {
+    const skContainer = document.getElementById('sambungKataContainer');
+    return !!(skContainer && skContainer.style.display === 'flex');
+  }
   return !!currentWord;
 }
 
@@ -7491,6 +7495,9 @@ function backToGameList(e) {
   guesses = [];
   round = 1;
   playerPoints = {};
+
+  const skContainer = document.getElementById('sambungKataContainer');
+  if (skContainer) skContainer.style.display = 'none';
 
   // Sembunyikan container game & login overlay, tampilkan game selection
   gameContainer.style.display = 'none';

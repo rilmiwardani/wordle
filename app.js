@@ -18529,8 +18529,8 @@ function processSambungKataGuess(guessWord, userData) {
   const raw = guessWord.trim().toUpperCase();
   const clean = raw.replace(/[^A-Z]/g, '');
 
-  // 1. Tangani Pemicu Masuk Meja (JOIN / IKUT / DUDUK)
-  if (raw === 'JOIN' || raw === 'IKUT' || raw === 'DUDUK' || raw === '!JOIN') {
+  // 1. Tangani Pemicu Masuk Meja (JOIN / IKUT / IKUTAN / DUDUK)
+  if (clean === 'JOIN' || clean === 'IKUT' || clean === 'IKUTAN' || clean === 'DUDUK' || raw === '!JOIN') {
     joinSambungKataSeat(userData);
     return;
   }

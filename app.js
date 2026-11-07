@@ -18031,11 +18031,11 @@ const SAMBUNG_KATA_STARTERS = [
   'MATAHARI', 'JEMBATAN', 'KERAJAAN', 'PAHLAWAN', 'SEMANGAT'
 ];
 
-// Pengaturan Jumlah Kursi (3 s/d 8 Kursi)
+// Pengaturan Jumlah Kursi (3 s/d 12 Kursi)
 function setSambungKataSeats(numSeats, event) {
   if (event) event.stopPropagation();
   const n = parseInt(numSeats);
-  if (isNaN(n) || n < 3 || n > 8) return;
+  if (isNaN(n) || n < 3 || n > 12) return;
 
   sambungKataMaxSeats = n;
   try { localStorage.setItem('sambungkata_max_seats', n); } catch(e) {}
@@ -18072,9 +18072,11 @@ function setSambungKataSeats(numSeats, event) {
   showToast(`🪑 Meja Bundar disetel ke ${n} Kursi!`, 1800);
 }
 
-// Shortcut klik cepat ganti kapasitas kursi
+// Shortcut klik cepat ganti kapasitas kursi (3, 4, 5, 6, 7, 8, 10, 12 kursi)
 function cycleSambungKataSeats() {
-  const nextSeats = (sambungKataMaxSeats >= 8) ? 3 : (sambungKataMaxSeats + 1);
+  const presets = [3, 4, 5, 6, 7, 8, 10, 12];
+  const idx = presets.indexOf(sambungKataMaxSeats);
+  const nextSeats = (idx === -1 || idx === presets.length - 1) ? presets[0] : presets[idx + 1];
   setSambungKataSeats(nextSeats);
 }
 
@@ -18774,13 +18776,24 @@ function renderSambungKataUI() {
     btn.classList.toggle('active', val === sambungKataWordLength);
   });
 
-  // 3. Render Dinamis Kursi Melingkar (3 s.d. 8 Kursi)
+  // 3. Render Dinamis Kursi Melingkar (3 s.d. 12 Kursi)
   const seatsContainer = document.getElementById('skSeatsContainer');
   if (seatsContainer) {
     seatsContainer.innerHTML = '';
     const maxSeats = sambungKataMaxSeats;
-    const radius = (maxSeats >= 7) ? 42 : 41; // % dari tengah
-    const ringStyle = (maxSeats >= 7) ? 'width: 40px; height: 40px;' : '';
+    seatsContainer.className = 'sk-seats-container seats-' + maxSeats;
+    let radius = 41; // % dari tengah
+    let ringStyle = '';
+    if (maxSeats >= 12) {
+      radius = 43.5;
+      ringStyle = 'width: 32px; height: 32px; border-width: 1.5px;';
+    } else if (maxSeats >= 10) {
+      radius = 42.5;
+      ringStyle = 'width: 36px; height: 36px; border-width: 2px;';
+    } else if (maxSeats >= 7) {
+      radius = 42;
+      ringStyle = 'width: 40px; height: 40px;';
+    }
 
     for (let i = 0; i < maxSeats; i++) {
       const angle = -90 + (360 / maxSeats) * i;

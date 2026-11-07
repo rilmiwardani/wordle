@@ -2047,6 +2047,8 @@
                 <button type="button" class="preset-pill-badge active" id="dashSkSeat6" onclick="setDashSambungKataSeats(6)">6 Kursi</button>
                 <button type="button" class="preset-pill-badge" id="dashSkSeat7" onclick="setDashSambungKataSeats(7)">7</button>
                 <button type="button" class="preset-pill-badge" id="dashSkSeat8" onclick="setDashSambungKataSeats(8)">8 Kursi</button>
+                <button type="button" class="preset-pill-badge" id="dashSkSeat10" onclick="setDashSambungKataSeats(10)">10 Kursi</button>
+                <button type="button" class="preset-pill-badge" id="dashSkSeat12" onclick="setDashSambungKataSeats(12)">12 Kursi</button>
               </div>
             </div>
 
@@ -2997,7 +2999,7 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
 
     function setDashSambungKataSeats(n, noSave) {
       localStorage.setItem('sambungkata_max_seats', n);
-      [3, 4, 5, 6, 7, 8].forEach(i => {
+      [3, 4, 5, 6, 7, 8, 10, 12].forEach(i => {
         const btn = document.getElementById(`dashSkSeat${i}`);
         if (btn) btn.classList.toggle('active', i === n);
       });

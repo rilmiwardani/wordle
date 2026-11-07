@@ -17997,10 +17997,10 @@ try {
   if (savedDur >= 5 && savedDur <= 60) sambungKataTurnDuration = savedDur;
 } catch(e) {}
 
-let sambungKataWordLength = 0; // Default 0 = Bebas (3-8 huruf), atau 4, 5, 6
+let sambungKataWordLength = 0; // Default 0 = Bebas (3-8 huruf), atau 4, 5, 6, 7, 8
 try {
   const savedLen = parseInt(localStorage.getItem('sambungkata_word_length'));
-  if (!isNaN(savedLen) && [0, 4, 5, 6].includes(savedLen)) sambungKataWordLength = savedLen;
+  if (!isNaN(savedLen) && [0, 4, 5, 6, 7, 8].includes(savedLen)) sambungKataWordLength = savedLen;
 } catch(e) {}
 
 let sambungKataSeats = Array(sambungKataMaxSeats).fill(null);
@@ -18013,12 +18013,13 @@ let sambungKataTimerInterval = null;
 let sambungKataLobbyInterval = null;
 let sambungKataLobbyTime = 10;
 
-// Daftar kata awal acak untuk pembuka ronde Sambung Kata (variasi 4, 5, 6, 7 huruf)
+// Daftar kata awal acak untuk pembuka ronde Sambung Kata (variasi 4, 5, 6, 7, 8 huruf)
 const SAMBUNG_KATA_STARTERS = [
   'BOLA', 'BUKU', 'MEJA', 'KURA', 'GULA', 'ROTI', 'SAPI', 'KERA', 'KOTA', 'PADI',
   'MAKAN', 'PINTU', 'LAMPU', 'RUMAH', 'TAMAN', 'HUJAN', 'ANGIN', 'KAPAL', 'MERDU',
   'KUCING', 'GARUDA', 'BURUNG', 'KERTAS', 'PISANG', 'KELAPA', 'LAUTAN', 'PANTAI', 'KERETA',
-  'BINTANG', 'PESAWAT'
+  'BINTANG', 'PESAWAT', 'PELANGI', 'SEKOLAH', 'KEMBANG',
+  'MATAHARI', 'JEMBATAN', 'KERAJAAN', 'PAHLAWAN', 'SEMANGAT'
 ];
 
 // Pengaturan Jumlah Kursi (3 s/d 8 Kursi)
@@ -18149,11 +18150,11 @@ function cycleSambungKataTurnDuration() {
   setSambungKataTurnDuration(nextVal);
 }
 
-// Pengaturan Panjang Huruf Kata Tebakan (0 = Bebas 3-8, atau 4, 5, 6)
+// Pengaturan Panjang Huruf Kata Tebakan (0 = Bebas 3-8, atau 4, 5, 6, 7, 8)
 function setSambungKataWordLength(len, event) {
   if (event) event.stopPropagation();
   const l = parseInt(len);
-  if (isNaN(l) || ![0, 4, 5, 6].includes(l)) return;
+  if (isNaN(l) || ![0, 4, 5, 6, 7, 8].includes(l)) return;
 
   sambungKataWordLength = l;
   try { localStorage.setItem('sambungkata_word_length', l); } catch(e) {}
@@ -18184,7 +18185,7 @@ function setSambungKataWordLength(len, event) {
 
 // Shortcut klik cepat ganti panjang kata di bar pill lobby
 function cycleSambungKataWordLength() {
-  const presets = [0, 4, 5, 6];
+  const presets = [0, 4, 5, 6, 7, 8];
   const idx = presets.indexOf(sambungKataWordLength);
   const nextVal = (idx === -1 || idx === presets.length - 1) ? presets[0] : presets[idx + 1];
   setSambungKataWordLength(nextVal);

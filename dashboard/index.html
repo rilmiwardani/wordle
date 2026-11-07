@@ -2034,6 +2034,18 @@
               <span class="subtext">Kapasitas kursi & panjang huruf sambungan belakang</span>
             </div>
 
+            <!-- Sub-Mode Aturan -->
+            <div style="margin-bottom: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 12px; color: var(--text2); font-weight: 600;"><i class="fa-solid fa-arrows-rotate" style="color: #38bdf8; margin-right: 4px;"></i> Sub-Mode Aturan:</span>
+                <span id="dashSkSubModeVal" style="font-size: 12px; font-weight: 800; color: #38bdf8;">Sambung Huruf</span>
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <button type="button" class="preset-pill-badge active" id="dashSkSubModeClassic" onclick="setDashSambungKataSubMode('classic')" style="flex: 1;">Sambung Huruf</button>
+                <button type="button" class="preset-pill-badge" id="dashSkSubModeMorph" onclick="setDashSambungKataSubMode('morph')" style="flex: 1;">Ganti 1 Huruf (Morph)</button>
+              </div>
+            </div>
+
             <!-- Jumlah Kursi -->
             <div style="margin-bottom: 12px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
@@ -2866,6 +2878,23 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
 
       // 12. Word Cluster Custom Words UI
       initWordClusterDashboardUI();
+
+      // 13. Sambung Kata Sync
+      if (cfg.sambungKataSubMode) {
+        setDashSambungKataSubMode(cfg.sambungKataSubMode, true);
+      }
+      if (typeof cfg.sambungKataMaxSeats === 'number') {
+        setDashSambungKataSeats(cfg.sambungKataMaxSeats, true);
+      }
+      if (typeof cfg.sambungKataConnectorLen === 'number') {
+        setDashSambungKataConnector(cfg.sambungKataConnectorLen, true);
+      }
+      if (typeof cfg.sambungKataTurnDuration === 'number') {
+        setDashSambungKataTurnDuration(cfg.sambungKataTurnDuration, true);
+      }
+      if (typeof cfg.sambungKataWordLength === 'number') {
+        setDashSambungKataWordLength(cfg.sambungKataWordLength, true);
+      }
     }
 
     function setLengthPreset(lengths) {
@@ -2980,6 +3009,7 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       currentGameSettings.boardScale = parseInt(document.getElementById("dashBoardScaleVal")?.textContent) || 100;
 
       // Sambung Kata settings
+      currentGameSettings.sambungKataSubMode = localStorage.getItem('sambungkata_sub_mode') || 'classic';
       currentGameSettings.sambungKataMaxSeats = parseInt(localStorage.getItem('sambungkata_max_seats')) || 6;
       currentGameSettings.sambungKataConnectorLen = parseInt(localStorage.getItem('sambungkata_connector_len')) || 1;
       currentGameSettings.sambungKataTurnDuration = parseInt(localStorage.getItem('sambungkata_turn_duration')) || 15;
@@ -2995,6 +3025,19 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
         btn.innerHTML = "✅ Tersinkron ke OBS!";
         setTimeout(() => { btn.innerHTML = old; }, 1800);
       }
+    }
+
+    function setDashSambungKataSubMode(m, noSave) {
+      const mode = (m === 'morph') ? 'morph' : 'classic';
+      localStorage.setItem('sambungkata_sub_mode', mode);
+      const isClassic = (mode !== 'morph');
+      const classicBtn = document.getElementById('dashSkSubModeClassic');
+      const morphBtn = document.getElementById('dashSkSubModeMorph');
+      if (classicBtn) classicBtn.classList.toggle('active', isClassic);
+      if (morphBtn) morphBtn.classList.toggle('active', !isClassic);
+      const lbl = document.getElementById('dashSkSubModeVal');
+      if (lbl) lbl.textContent = isClassic ? 'Sambung Huruf' : 'Ganti 1 Huruf';
+      if (!noSave) autoSaveSettings();
     }
 
     function setDashSambungKataSeats(n, noSave) {
@@ -3042,6 +3085,8 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
     }
 
     function initDashSambungKataSettings() {
+      const subMode = localStorage.getItem('sambungkata_sub_mode') || 'classic';
+      setDashSambungKataSubMode(subMode, true);
       const seats = parseInt(localStorage.getItem('sambungkata_max_seats')) || 6;
       setDashSambungKataSeats(seats, true);
       const conn = parseInt(localStorage.getItem('sambungkata_connector_len')) || 1;

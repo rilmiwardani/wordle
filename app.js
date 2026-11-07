@@ -8643,7 +8643,12 @@ window.addEventListener('DOMContentLoaded', () => {
         followerOnlyGuess: localStorage.getItem('wordle_followerOnlyGuess') === 'true',
         followerOnlyMusic: (typeof musicSettings !== 'undefined' && musicSettings.followerOnly === true),
         musicCooldown: (typeof musicSettings !== 'undefined' && typeof musicSettings.cooldownSeconds === 'number' ? musicSettings.cooldownSeconds : 60),
-        musicPlayerStyle: (typeof musicSettings !== 'undefined' ? (musicSettings.playerStyle || 'vinyl') : 'vinyl')
+        musicPlayerStyle: (typeof musicSettings !== 'undefined' ? (musicSettings.playerStyle || 'vinyl') : 'vinyl'),
+        sambungKataSubMode: localStorage.getItem('sambungkata_sub_mode') || 'classic',
+        sambungKataMaxSeats: parseInt(localStorage.getItem('sambungkata_max_seats')) || 6,
+        sambungKataConnectorLen: parseInt(localStorage.getItem('sambungkata_connector_len')) || 1,
+        sambungKataTurnDuration: parseInt(localStorage.getItem('sambungkata_turn_duration')) || 15,
+        sambungKataWordLength: parseInt(localStorage.getItem('sambungkata_word_length')) || 0
       };
       localSocket.emit('sync-game-settings-from-overlay', overlayCfg);
     } catch(e) {}
@@ -8933,6 +8938,9 @@ function applyRemoteGameSettings(settings) {
   }
 
   // 14. Sambung Kata (Meja Bundar) Settings
+  if (typeof settings.sambungKataSubMode === 'string' && typeof setSambungKataSubMode === 'function') {
+    setSambungKataSubMode(settings.sambungKataSubMode);
+  }
   if (typeof settings.sambungKataMaxSeats === 'number' && typeof setSambungKataSeats === 'function') {
     setSambungKataSeats(settings.sambungKataMaxSeats);
   }
@@ -17988,10 +17996,16 @@ window.initWordPyramidExtendableSets = initWordPyramidExtendableSets;
 // ═══════════════════════════════════════════════════════════════════
 let sambungKataRound = 1;
 let sambungKataPhase = 'lobby'; // 'lobby' | 'playing' | 'gameover'
-let sambungKataMaxSeats = 6; // Default 6 kursi (dapat disetting 3-8)
+let sambungKataSubMode = 'classic'; // 'classic' (Sambung Huruf Akhir) | 'morph' (Ganti 1 Huruf)
+try {
+  const savedSubMode = localStorage.getItem('sambungkata_sub_mode');
+  if (savedSubMode === 'classic' || savedSubMode === 'morph') sambungKataSubMode = savedSubMode;
+} catch(e) {}
+
+let sambungKataMaxSeats = 6; // Default 6 kursi (dapat disetting 3-12)
 try {
   const savedSeats = parseInt(localStorage.getItem('sambungkata_max_seats'));
-  if (savedSeats >= 3 && savedSeats <= 8) sambungKataMaxSeats = savedSeats;
+  if (savedSeats >= 3 && savedSeats <= 12) sambungKataMaxSeats = savedSeats;
 } catch(e) {}
 
 let sambungKataConnectorLen = 1; // Default 1 huruf (dapat disetting 1, 2, atau 3)
@@ -18030,6 +18044,45 @@ const SAMBUNG_KATA_STARTERS = [
   'BINTANG', 'PESAWAT', 'PELANGI', 'SEKOLAH', 'KEMBANG',
   'MATAHARI', 'JEMBATAN', 'KERAJAAN', 'PAHLAWAN', 'SEMANGAT'
 ];
+
+// Pengaturan Sub-Mode Aturan Sambung Kata ('classic' = Sambung Huruf Akhir, 'morph' = Ganti 1 Huruf)
+function setSambungKataSubMode(mode, event) {
+  if (event) event.stopPropagation();
+  const m = (mode === 'morph') ? 'morph' : 'classic';
+  sambungKataSubMode = m;
+  try { localStorage.setItem('sambungkata_sub_mode', m); } catch(e) {}
+
+  // Update button states di settings modal
+  document.querySelectorAll('.sk-submode-btn').forEach(btn => {
+    const val = btn.getAttribute('data-submode');
+    btn.classList.toggle('active', val === m);
+  });
+  const subModeLabel = document.getElementById('skSubModeLabel');
+  if (subModeLabel) {
+    subModeLabel.textContent = (m === 'morph') ? 'Ganti 1 Huruf (Morph)' : 'Sambung Huruf Akhir';
+  }
+
+  // Update quick config pill
+  const pillText = document.getElementById('skSubModeConfigText');
+  if (pillText) {
+    pillText.textContent = (m === 'morph') ? 'Ganti 1 Huruf' : 'Sambung Huruf';
+  }
+
+  // Sync ke localSocket jika terhubung
+  if (typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
+    localSocket.emit('update-game-settings', { sambungKataSubMode: m });
+  }
+
+  renderSambungKataUI();
+  const desc = (m === 'morph') ? 'Ganti 1 Huruf (Word Morph)' : 'Sambung Huruf Akhir (Klasik)';
+  showToast(`🔄 Aturan disetel: ${desc}!`, 2000);
+}
+
+// Shortcut klik cepat toggle sub-mode Sambung Kata
+function cycleSambungKataSubMode() {
+  const nextMode = (sambungKataSubMode === 'morph') ? 'classic' : 'morph';
+  setSambungKataSubMode(nextMode);
+}
 
 // Pengaturan Jumlah Kursi (3 s/d 12 Kursi)
 function setSambungKataSeats(numSeats, event) {
@@ -18364,9 +18417,9 @@ function startSambungKataPlay() {
   sambungKataUsedWords.clear();
   sambungKataWordChain = [];
 
-  // Tentukan kata awal (menyesuaikan sambungKataWordLength jika disetel)
+  // Tentukan kata awal (menyesuaikan sambungKataWordLength jika disetel, default 4 huruf untuk mode morph agar banyak kombinasi kata ganti 1 huruf)
   let startWord = '';
-  const targetLen = (sambungKataWordLength > 0) ? sambungKataWordLength : 5;
+  const targetLen = (sambungKataWordLength > 0) ? sambungKataWordLength : (sambungKataSubMode === 'morph' ? 4 : 5);
   if (allTargetWords && allTargetWords[targetLen] && allTargetWords[targetLen].length > 0) {
     startWord = allTargetWords[targetLen][Math.floor(Math.random() * allTargetWords[targetLen].length)];
   } else if (allValidWords && allValidWords[targetLen] && allValidWords[targetLen].length > 0) {
@@ -18374,7 +18427,7 @@ function startSambungKataPlay() {
   } else {
     const candidates = (sambungKataWordLength > 0) 
       ? SAMBUNG_KATA_STARTERS.filter(w => w.length === sambungKataWordLength)
-      : SAMBUNG_KATA_STARTERS;
+      : (sambungKataSubMode === 'morph' ? SAMBUNG_KATA_STARTERS.filter(w => w.length === 4) : SAMBUNG_KATA_STARTERS);
     startWord = (candidates.length > 0) 
       ? candidates[Math.floor(Math.random() * candidates.length)] 
       : SAMBUNG_KATA_STARTERS[0];
@@ -18594,28 +18647,55 @@ function processSambungKataGuess(guessWord, userData) {
 
   if (clean.length < 2) return;
 
-  // 3. Validasi Panjang Kata (Jika disetel selain Bebas)
-  if (sambungKataWordLength > 0 && clean.length !== sambungKataWordLength) {
-    showToast(`⚠️ Kata wajib ${sambungKataWordLength} huruf! ("${clean}" = ${clean.length} huruf)`, 2500);
-    if (window.sounds && typeof window.sounds.playShake === 'function') {
-      window.sounds.playShake();
+  if (sambungKataSubMode === 'morph') {
+    // 3. Validasi Sub-Mode Morph: Panjang kata harus sama persis dengan kata saat ini di meja
+    if (clean.length !== sambungKataCurrentWord.length) {
+      showToast(`⚠️ Kata harus berpanjang ${sambungKataCurrentWord.length} huruf! ("${clean}" = ${clean.length} huruf)`, 2500);
+      if (window.sounds && typeof window.sounds.playShake === 'function') window.sounds.playShake();
+      return;
     }
-    return;
+
+    // 4. Hitung Perubahan Huruf (Hamming Distance = 1)
+    let diffCount = 0;
+    for (let i = 0; i < clean.length; i++) {
+      if (clean[i] !== sambungKataCurrentWord[i]) diffCount++;
+    }
+
+    if (diffCount === 0) {
+      showToast(`⚠️ Kata "${clean}" sama persis! Silakan ubah 1 huruf.`, 2200);
+      if (window.sounds && typeof window.sounds.playShake === 'function') window.sounds.playShake();
+      return;
+    }
+
+    if (diffCount > 1) {
+      showToast(`⚠️ Ubah tepat 1 huruf saja! ("${clean}" memiliki ${diffCount} huruf berbeda)`, 2500);
+      if (window.sounds && typeof window.sounds.playShake === 'function') window.sounds.playShake();
+      return;
+    }
+  } else {
+    // 3. Validasi Panjang Kata (Jika disetel selain Bebas)
+    if (sambungKataWordLength > 0 && clean.length !== sambungKataWordLength) {
+      showToast(`⚠️ Kata wajib ${sambungKataWordLength} huruf! ("${clean}" = ${clean.length} huruf)`, 2500);
+      if (window.sounds && typeof window.sounds.playShake === 'function') {
+        window.sounds.playShake();
+      }
+      return;
+    }
+
+    // 4. Validasi Huruf Awal: Harus berawalan target sambungan belakang (1, 2, atau 3 huruf)
+    const connLen = Math.min(sambungKataConnectorLen, sambungKataCurrentWord.length);
+    const targetConnector = sambungKataCurrentWord.slice(-connLen);
+
+    if (!clean.startsWith(targetConnector)) {
+      showToast(`⚠️ Awalan kata harus "${targetConnector}"! (${clean} diawali ${clean.slice(0, targetConnector.length)})`, 2500);
+      if (window.sounds && typeof window.sounds.playShake === 'function') {
+        window.sounds.playShake();
+      }
+      return;
+    }
   }
 
-  // 4. Validasi Huruf Awal: Harus berawalan target sambungan belakang (1, 2, atau 3 huruf)
-  const connLen = Math.min(sambungKataConnectorLen, sambungKataCurrentWord.length);
-  const targetConnector = sambungKataCurrentWord.slice(-connLen);
-
-  if (!clean.startsWith(targetConnector)) {
-    showToast(`⚠️ Awalan kata harus "${targetConnector}"! (${clean} diawali ${clean.slice(0, targetConnector.length)})`, 2500);
-    if (window.sounds && typeof window.sounds.playShake === 'function') {
-      window.sounds.playShake();
-    }
-    return;
-  }
-
-  // 4. Validasi Anti-Duplikasi: Kata tidak boleh pernah digunakan di ronde ini
+  // 5. Validasi Anti-Duplikasi: Kata tidak boleh pernah digunakan di ronde ini
   if (sambungKataUsedWords.has(clean)) {
     showToast(`⚠️ Kata "${clean}" sudah pernah dipakai di meja ini!`, 2500);
     if (window.sounds && typeof window.sounds.playShake === 'function') {
@@ -18624,7 +18704,7 @@ function processSambungKataGuess(guessWord, userData) {
     return;
   }
 
-  // 5. Validasi Kamus Kata Sah
+  // 6. Validasi Kamus Kata Sah
   if (!isSambungKataWordValid(clean)) {
     showToast(`⚠️ Kata "${clean}" tidak ditemukan di kamus!`, 2000);
     if (window.sounds && typeof window.sounds.playShake === 'function') {
@@ -18648,7 +18728,10 @@ function processSambungKataGuess(guessWord, userData) {
     addPlayerPoints(activePlayer.userId, activePlayer.userName, 5, activePlayer.userAvatar);
   }
 
-  showToast(`👏 @${activePlayer.userName} berhasil sambung: "${clean}" (+5 Pts)`, 2500);
+  const successMsg = (sambungKataSubMode === 'morph') 
+    ? `👏 @${activePlayer.userName} berhasil ganti 1 huruf: "${clean}" (+5 Pts)`
+    : `👏 @${activePlayer.userName} berhasil sambung: "${clean}" (+5 Pts)`;
+  showToast(successMsg, 2500);
   renderSambungKataUI();
 
   // Pindah ke giliran berikutnya
@@ -18743,8 +18826,12 @@ function renderSambungKataUI() {
     const activeName = activePlayer ? activePlayer.userName : 'Pemain';
     if (phaseText) phaseText.textContent = `GILIRAN: ${activeName}`;
     if (phaseIcon) phaseIcon.className = 'fa-solid fa-play';
-    const lenLabel = (sambungKataWordLength > 0) ? ` (${sambungKataWordLength} huruf)` : '';
-    if (hintText) hintText.innerHTML = `Ayo <strong>@${activeName}</strong>, ketik kata${lenLabel} di chat sebelum waktu habis!`;
+    if (sambungKataSubMode === 'morph') {
+      if (hintText) hintText.innerHTML = `Ayo <strong>@${activeName}</strong>, ubah 1 huruf dari kata [ <strong>${sambungKataCurrentWord}</strong> ]!`;
+    } else {
+      const lenLabel = (sambungKataWordLength > 0) ? ` (${sambungKataWordLength} huruf)` : '';
+      if (hintText) hintText.innerHTML = `Ayo <strong>@${activeName}</strong>, ketik kata${lenLabel} berawalan "${targetConnector}"!`;
+    }
     if (startBtn) startBtn.style.display = 'none';
   }
 
@@ -18753,8 +18840,24 @@ function renderSambungKataUI() {
   if (configBar) {
     configBar.style.display = (sambungKataPhase === 'lobby') ? 'flex' : 'none';
   }
+  const subModePillText = document.getElementById('skSubModeConfigText');
+  if (subModePillText) {
+    subModePillText.textContent = (sambungKataSubMode === 'morph') ? 'Ganti 1 Huruf' : 'Sambung Huruf';
+  }
+  const subModeLabel = document.getElementById('skSubModeLabel');
+  if (subModeLabel) {
+    subModeLabel.textContent = (sambungKataSubMode === 'morph') ? 'Ganti 1 Huruf (Morph)' : 'Sambung Huruf Akhir';
+  }
+  document.querySelectorAll('.sk-submode-btn').forEach(btn => {
+    const val = btn.getAttribute('data-submode');
+    btn.classList.toggle('active', val === sambungKataSubMode);
+  });
   const seatsPillText = document.getElementById('skSeatsConfigText');
   if (seatsPillText) seatsPillText.textContent = `${sambungKataMaxSeats} Kursi`;
+  const connPill = document.getElementById('skConnectorConfigPill');
+  if (connPill) {
+    connPill.style.display = (sambungKataSubMode === 'morph') ? 'none' : 'inline-flex';
+  }
   const connPillText = document.getElementById('skConnectorConfigText');
   if (connPillText) {
     connPillText.textContent = (sambungKataConnectorLen === 1) ? '1 Huruf Akhir' : `${sambungKataConnectorLen} Huruf Akhir`;
@@ -18860,7 +18963,7 @@ function renderSambungKataUI() {
     }
   }
 
-  // 5. Render Kata Aktif & Huruf Target di Pusat Meja (Highlight 1, 2, atau 3 Huruf Akhir)
+  // 5. Render Kata Aktif & Huruf Target di Pusat Meja (Highlight Huruf Tergantung Sub-Mode)
   const centerWordEl = document.getElementById('skCenterWord');
   const targetBadgeEl = document.getElementById('skTargetLetterBadge');
   const targetHintEl = document.querySelector('.sk-target-hint');
@@ -18869,11 +18972,30 @@ function renderSambungKataUI() {
     if (sambungKataCurrentWord) {
       const len = sambungKataCurrentWord.length;
       centerWordEl.className = 'sk-center-word len-' + Math.min(len, 8);
+      
+      // Deteksi huruf yang baru diubah pada sub-mode morph
+      let changedIndex = -1;
+      if (sambungKataSubMode === 'morph' && sambungKataWordChain.length >= 2) {
+        const prevWord = sambungKataWordChain[1].word;
+        if (prevWord && prevWord.length === len) {
+          for (let i = 0; i < len; i++) {
+            if (sambungKataCurrentWord[i] !== prevWord[i]) {
+              changedIndex = i;
+              break;
+            }
+          }
+        }
+      }
+
       const highlightStart = len - connLen;
       for (let c = 0; c < len; c++) {
         const tile = document.createElement('span');
-        const isConnector = (c >= highlightStart);
-        tile.className = `sk-tile ${isConnector ? 'last-letter' : ''}`;
+        if (sambungKataSubMode === 'morph') {
+          tile.className = `sk-tile ${c === changedIndex ? 'changed-letter' : ''}`;
+        } else {
+          const isConnector = (c >= highlightStart);
+          tile.className = `sk-tile ${isConnector ? 'last-letter' : ''}`;
+        }
         tile.textContent = sambungKataCurrentWord[c];
         centerWordEl.appendChild(tile);
       }
@@ -18888,10 +19010,18 @@ function renderSambungKataUI() {
     targetInstructionEl.style.display = (sambungKataPhase === 'playing') ? 'inline-flex' : 'none';
   }
   if (targetBadgeEl) {
-    targetBadgeEl.textContent = targetConnector;
+    if (sambungKataSubMode === 'morph') {
+      targetBadgeEl.textContent = '±1 Huruf';
+    } else {
+      targetBadgeEl.textContent = targetConnector;
+    }
   }
   if (targetHintEl) {
-    targetHintEl.textContent = (connLen > 1) ? `Sambung ${connLen} Huruf:` : 'Sambung Huruf:';
+    if (sambungKataSubMode === 'morph') {
+      targetHintEl.textContent = 'Aturan:';
+    } else {
+      targetHintEl.textContent = (connLen > 1) ? `Sambung ${connLen} Huruf:` : 'Sambung Huruf:';
+    }
   }
 
   // 6. Render Riwayat Rantai Kata
@@ -18922,6 +19052,8 @@ window.hostSeatAction = hostSeatAction;
 window.processSambungKataGuess = processSambungKataGuess;
 window.handleSambungKataWin = handleSambungKataWin;
 window.renderSambungKataUI = renderSambungKataUI;
+window.setSambungKataSubMode = setSambungKataSubMode;
+window.cycleSambungKataSubMode = cycleSambungKataSubMode;
 window.setSambungKataSeats = setSambungKataSeats;
 window.cycleSambungKataSeats = cycleSambungKataSeats;
 window.setSambungKataConnector = setSambungKataConnector;

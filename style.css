@@ -12605,6 +12605,14 @@ body.theme-sepia .tourney-mode-item span {
   box-shadow: 0 2px 6px rgba(34, 197, 94, 0.45);
 }
 
+.sk-tile.changed-letter {
+  background: var(--present, #c6aa24);
+  border-color: #eab308;
+  color: #ffffff;
+  transform: scale(1.05);
+  box-shadow: 0 2px 6px rgba(234, 179, 8, 0.45);
+}
+
 /* Ukuran ubin adaptif agar kata 5-8 huruf tetap 1 baris mendatar dan pas di dalam lingkaran */
 .sk-center-word.len-5 { gap: 2px; }
 .sk-center-word.len-5 .sk-tile {
@@ -12859,6 +12867,12 @@ body.theme-sepia .sk-seat-name {
 body.theme-sepia .sk-tile {
   background: #2c2117;
   border-color: #423428;
+  color: #ffffff;
+}
+
+body.theme-sepia .sk-tile.changed-letter {
+  background: #b45309;
+  border-color: #d97706;
   color: #ffffff;
 }
 

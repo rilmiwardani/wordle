@@ -18235,12 +18235,19 @@ function joinSambungKataSeat(userData) {
   const alreadySeated = sambungKataSeats.some(s => s && (s.userId === userId || (s.userName && userName && s.userName.toLowerCase() === userName.toLowerCase())));
   if (alreadySeated) return false;
 
-  // Cari kursi kosong pertama
-  const emptyIdx = sambungKataSeats.findIndex(s => s === null);
-  if (emptyIdx === -1) {
+  // Cari semua kursi yang masih kosong
+  const emptyIndices = [];
+  sambungKataSeats.forEach((seat, idx) => {
+    if (seat === null) emptyIndices.push(idx);
+  });
+
+  if (emptyIndices.length === 0) {
     showToast(`⚠️ Meja penuh! ${sambungKataMaxSeats} kursi sudah terisi.`, 2000);
     return false;
   }
+
+  // Pilih kursi kosong secara acak (Random Seat) agar adil bagi semua penonton
+  const emptyIdx = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
 
   // Dudukkan pemain
   sambungKataSeats[emptyIdx] = {
@@ -18361,8 +18368,8 @@ function startSambungKataPlay() {
   sambungKataUsedWords.add(sambungKataCurrentWord);
   sambungKataWordChain.unshift({ word: sambungKataCurrentWord, userName: 'Sistem' });
 
-  // Tentukan giliran pertama
-  sambungKataCurrentTurn = seatedIndices[0];
+  // Tentukan giliran pertama secara acak dari pemain yang duduk agar adil
+  sambungKataCurrentTurn = seatedIndices[Math.floor(Math.random() * seatedIndices.length)];
 
   if (window.sounds && typeof window.sounds.playGreenChime === 'function') {
     window.sounds.playGreenChime();

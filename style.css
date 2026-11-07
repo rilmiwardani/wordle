@@ -12518,8 +12518,8 @@ body.theme-sepia .tourney-mode-item span {
 /* Center Hub (Felt Center) */
 .sambungkata-center-felt {
   position: absolute;
-  width: 46%;
-  height: 46%;
+  width: 50%;
+  height: 50%;
   border-radius: 50%;
   background: #12151e;
   border: 3px solid rgba(255, 255, 255, 0.12);
@@ -12560,10 +12560,11 @@ body.theme-sepia .tourney-mode-item span {
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 4px;
+  padding: 2px 4px;
   width: 100%;
-  max-width: 96%;
+  max-width: 92%;
   z-index: 6;
+  box-sizing: border-box;
 }
 
 .sk-center-word {
@@ -12573,8 +12574,8 @@ body.theme-sepia .tourney-mode-item span {
   justify-content: center;
   flex-wrap: nowrap;
   max-width: 100%;
-  margin-bottom: 4px;
-  min-height: 28px;
+  margin-bottom: 3px;
+  min-height: 24px;
 }
 
 .sk-tile {
@@ -12582,17 +12583,18 @@ body.theme-sepia .tourney-mode-item span {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  width: 25px;
-  height: 27px;
+  width: 23px;
+  height: 26px;
   background: rgba(255, 255, 255, 0.08);
   border: 1.5px solid rgba(255, 255, 255, 0.22);
   border-radius: 4px;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 900;
   color: #ffffff;
   text-transform: uppercase;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
   transition: all 0.2s ease;
+  box-sizing: border-box;
 }
 
 .sk-tile.last-letter {
@@ -12603,56 +12605,65 @@ body.theme-sepia .tourney-mode-item span {
   box-shadow: 0 2px 6px rgba(34, 197, 94, 0.45);
 }
 
-/* Ukuran ubin adaptif agar kata 5-8 huruf tetap 1 baris mendatar rapi */
-.sk-center-word.len-5 { gap: 2.5px; }
+/* Ukuran ubin adaptif agar kata 5-8 huruf tetap 1 baris mendatar dan pas di dalam lingkaran */
+.sk-center-word.len-5 { gap: 2px; }
 .sk-center-word.len-5 .sk-tile {
-  width: 22px;
-  height: 25px;
-  font-size: 12.5px;
+  width: 20px;
+  height: 24px;
+  font-size: 11.5px;
 }
 
 .sk-center-word.len-6 { gap: 2px; }
 .sk-center-word.len-6 .sk-tile {
-  width: 19px;
-  height: 23px;
-  font-size: 11.5px;
-  border-width: 1px;
-}
-
-.sk-center-word.len-7 { gap: 2px; }
-.sk-center-word.len-7 .sk-tile {
   width: 17px;
-  height: 21px;
-  font-size: 10.5px;
+  height: 22px;
+  font-size: 10px;
   border-width: 1px;
 }
 
-.sk-center-word.len-8 { gap: 1.5px; }
-.sk-center-word.len-8 .sk-tile {
-  width: 15.5px;
+.sk-center-word.len-7 { gap: 1.5px; }
+.sk-center-word.len-7 .sk-tile {
+  width: 14.5px;
   height: 20px;
-  font-size: 9.5px;
+  font-size: 9px;
   border-width: 1px;
+}
+
+.sk-center-word.len-8 { gap: 1px; }
+.sk-center-word.len-8 .sk-tile {
+  width: 13px;
+  height: 19px;
+  font-size: 8.5px;
+  border-width: 1px;
+}
+
+@media (max-width: 400px) {
+  .sk-center-word.len-5 .sk-tile { width: 18px; height: 22px; font-size: 10.5px; }
+  .sk-center-word.len-6 .sk-tile { width: 15px; height: 20px; font-size: 9.5px; }
+  .sk-center-word.len-7 .sk-tile { width: 13px; height: 18px; font-size: 8.5px; }
+  .sk-center-word.len-8 .sk-tile { width: 11.5px; height: 17px; font-size: 7.5px; }
 }
 
 .sk-target-instruction {
   display: flex;
   align-items: center;
-  gap: 4px;
-  background: rgba(0, 0, 0, 0.35);
-  padding: 2px 8px;
+  gap: 3px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 1.5px 7px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  max-width: 92%;
+  white-space: nowrap;
 }
 
 .sk-target-hint {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.8);
 }
 
 .sk-target-letter-badge {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 900;
   color: #f59e0b;
   text-transform: uppercase;

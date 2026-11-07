@@ -29,7 +29,7 @@
     <div class="game-select-container">
       <div class="game-select-header">
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 8px;">
-          <div class="game-select-badge">TIKTOK LIVE PARTY • 17 GAMES</div>
+          <div class="game-select-badge">TIKTOK LIVE PARTY • 18 GAMES</div>
           <button id="frontThemeToggleBtn" class="front-theme-toggle-btn" title="Ganti Tema (Gelap / Sepia Cream)" onclick="toggleVisualTheme(event)">
             <i class="fa-solid fa-sun" id="frontThemeIcon"></i> <span id="frontThemeLabel">Tema: Sepia Cream</span>
           </button>
@@ -261,6 +261,18 @@
             <div class="card-body">
               <div class="card-top-row">
                 <span class="card-title">WORD PYRAMID</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 18. Sambung Kata (Meja Bundar) -->
+          <div class="game-card card-sambungkata" onclick="selectGame('sambungkata')" id="cardSambungKata">
+            <div class="card-visual" style="display: flex; align-items: center; justify-content: center; gap: 3px;">
+              <i class="fa-solid fa-users-rays" style="font-size: 20px; color: #25f4ee;"></i>
+            </div>
+            <div class="card-body">
+              <div class="card-top-row">
+                <span class="card-title">SAMBUNG KATA</span>
               </div>
             </div>
           </div>
@@ -592,6 +604,17 @@
                     <div class="game-card-text">
                       <div class="game-card-title">Word Pyramid</div>
                       <div class="game-card-desc">Susun +1 Huruf dari 2 hingga 8 Huruf</div>
+                    </div>
+                  </div>
+
+                  <!-- Sambung Kata (Meja Bundar) -->
+                  <div class="game-card" data-value="sambungkata" onclick="selectCustomGame('sambungkata', event)">
+                    <div class="game-card-icon badge-sambungkata">
+                      <i class="fa-solid fa-users-rays" style="font-size: 16px; color: #25f4ee;"></i>
+                    </div>
+                    <div class="game-card-text">
+                      <div class="game-card-title">Sambung Kata</div>
+                      <div class="game-card-desc">Meja Bundar Bergantian (Ketik JOIN di Chat)</div>
                     </div>
                   </div>
                 </div>
@@ -1183,6 +1206,76 @@
                   <button type="button" class="lang-option" onclick="previewTourneyPodium(event)" style="justify-content: center; background: rgba(255, 215, 0, 0.15); border: 1px solid rgba(255, 215, 0, 0.4); color: #ffd700; font-weight: 600; padding: 7px; border-radius: 6px; width: 100%;">
                     <i class="fa-solid fa-eye" style="margin-right: 6px;"></i> Pratinjau Tampilan Podium Juara
                   </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Group: 🪑 Pengaturan Sambung Kata (Meja Bundar) -->
+            <div class="settings-group">
+              <div class="settings-group-header" onclick="toggleSettingsGroup(this, event)">
+                <span><i class="fa-solid fa-users-rays" style="color: #25f4ee; margin-right: 8px;"></i> Sambung Kata (Meja Bundar)</span>
+                <span class="arrow">▼</span>
+              </div>
+              <div class="settings-group-content" style="padding: 10px 12px;">
+                <!-- Jumlah Kursi / Maksimal Pemain -->
+                <div style="margin-bottom: 10px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span style="font-size: 11px; color: #94a3b8;"><i class="fa-solid fa-chair" style="color: #25f4ee; margin-right: 4px;"></i> Jumlah Kursi / Maksimal Pemain:</span>
+                    <span id="skSeatsCountLabel" style="font-size: 11px; color: #25f4ee; font-weight: 700;">6 Kursi</span>
+                  </div>
+                  <div style="display: flex; gap: 4px;" onclick="event.stopPropagation()">
+                    <button type="button" class="lang-option sk-seat-btn" data-seats="3" onclick="setSambungKataSeats(3, event)" style="flex: 1; justify-content: center; padding: 4px 0; font-size: 10.5px; border-radius: 4px; margin: 0;">3</button>
+                    <button type="button" class="lang-option sk-seat-btn" data-seats="4" onclick="setSambungKataSeats(4, event)" style="flex: 1; justify-content: center; padding: 4px 0; font-size: 10.5px; border-radius: 4px; margin: 0;">4</button>
+                    <button type="button" class="lang-option sk-seat-btn" data-seats="5" onclick="setSambungKataSeats(5, event)" style="flex: 1; justify-content: center; padding: 4px 0; font-size: 10.5px; border-radius: 4px; margin: 0;">5</button>
+                    <button type="button" class="lang-option sk-seat-btn active" data-seats="6" onclick="setSambungKataSeats(6, event)" style="flex: 1; justify-content: center; padding: 4px 0; font-size: 10.5px; border-radius: 4px; margin: 0;">6</button>
+                    <button type="button" class="lang-option sk-seat-btn" data-seats="7" onclick="setSambungKataSeats(7, event)" style="flex: 1; justify-content: center; padding: 4px 0; font-size: 10.5px; border-radius: 4px; margin: 0;">7</button>
+                    <button type="button" class="lang-option sk-seat-btn" data-seats="8" onclick="setSambungKataSeats(8, event)" style="flex: 1; justify-content: center; padding: 4px 0; font-size: 10.5px; border-radius: 4px; margin: 0;">8</button>
+                  </div>
+                  <div class="settings-subtext" style="margin-top: 4px;">Pilih 3–8 pemain. Posisi kursi melingkar otomatis disesuaikan secara simetris.</div>
+                </div>
+
+                <!-- Pengambilan Huruf Sambungan dari Belakang -->
+                <div style="margin-bottom: 6px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span style="font-size: 11px; color: #94a3b8;"><i class="fa-solid fa-text-width" style="color: #ffd54f; margin-right: 4px;"></i> Huruf Sambungan Belakang:</span>
+                    <span id="skConnectorLabel" style="font-size: 11px; color: #ffd54f; font-weight: 700;">1 Huruf</span>
+                  </div>
+                  <div style="display: flex; gap: 5px;" onclick="event.stopPropagation()">
+                    <button type="button" class="lang-option sk-conn-btn active" data-conn="1" onclick="setSambungKataConnector(1, event)" style="flex: 1; justify-content: center; padding: 5px 0; font-size: 10.5px; border-radius: 5px; margin: 0;" title="Kucin[g] -> [G]ajah">1 Huruf (Standar)</button>
+                    <button type="button" class="lang-option sk-conn-btn" data-conn="2" onclick="setSambungKataConnector(2, event)" style="flex: 1; justify-content: center; padding: 5px 0; font-size: 10.5px; border-radius: 5px; margin: 0;" title="Kuc[ing] -> [Ing]in">2 Huruf (Tantangan)</button>
+                    <button type="button" class="lang-option sk-conn-btn" data-conn="3" onclick="setSambungKataConnector(3, event)" style="flex: 1; justify-content: center; padding: 5px 0; font-size: 10.5px; border-radius: 5px; margin: 0;" title="Ku[cing] -> [Cing]kau">3 Huruf (Suku Kata)</button>
+                  </div>
+                  <div class="settings-subtext" style="margin-top: 4px;">Menentukan berapa huruf terakhir kata yang harus dijadikan awalan tebakan pemain berikutnya.</div>
+                </div>
+
+                <!-- Durasi Waktu Giliran Menjawab -->
+                <div style="margin-bottom: 6px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span style="font-size: 11px; color: #94a3b8;"><i class="fa-solid fa-stopwatch" style="color: #fe2c55; margin-right: 4px;"></i> Waktu Giliran Menjawab:</span>
+                    <span id="skTurnDurationLabel" style="font-size: 11px; color: #fe2c55; font-weight: 700;">15 Detik</span>
+                  </div>
+                  <div style="display: flex; gap: 4px;" onclick="event.stopPropagation()">
+                    <button type="button" class="lang-option sk-time-btn" data-time="10" onclick="setSambungKataTurnDuration(10, event)" style="flex: 1; justify-content: center; padding: 4px 0; font-size: 10px; border-radius: 4px; margin: 0;">10s (Kilat)</button>
+                    <button type="button" class="lang-option sk-time-btn active" data-time="15" onclick="setSambungKataTurnDuration(15, event)" style="flex: 1; justify-content: center; padding: 4px 0; font-size: 10px; border-radius: 4px; margin: 0;">15s (Normal)</button>
+                    <button type="button" class="lang-option sk-time-btn" data-time="20" onclick="setSambungKataTurnDuration(20, event)" style="flex: 1; justify-content: center; padding: 4px 0; font-size: 10px; border-radius: 4px; margin: 0;">20s (Santai)</button>
+                    <button type="button" class="lang-option sk-time-btn" data-time="30" onclick="setSambungKataTurnDuration(30, event)" style="flex: 1; justify-content: center; padding: 4px 0; font-size: 10px; border-radius: 4px; margin: 0;">30s (Ekstrem)</button>
+                  </div>
+                  <div class="settings-subtext" style="margin-top: 4px;">Batas waktu berpikir tiap pemain sebelum nyawa berkurang akibat timeout.</div>
+                </div>
+
+                <!-- Panjang Huruf Kata Tebakan -->
+                <div style="margin-bottom: 6px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span style="font-size: 11px; color: #94a3b8;"><i class="fa-solid fa-ruler-horizontal" style="color: #25f4ee; margin-right: 4px;"></i> Panjang Huruf Kata:</span>
+                    <span id="skWordLengthLabel" style="font-size: 11px; color: #25f4ee; font-weight: 700;">Bebas (3–8 Huruf)</span>
+                  </div>
+                  <div style="display: flex; gap: 4px;" onclick="event.stopPropagation()">
+                    <button type="button" class="lang-option sk-len-btn active" data-len="0" onclick="setSambungKataWordLength(0, event)" style="flex: 1; justify-content: center; padding: 4px 0; font-size: 10px; border-radius: 4px; margin: 0;">Bebas</button>
+                    <button type="button" class="lang-option sk-len-btn" data-len="4" onclick="setSambungKataWordLength(4, event)" style="flex: 1; justify-content: center; padding: 4px 0; font-size: 10px; border-radius: 4px; margin: 0;">4 Huruf</button>
+                    <button type="button" class="lang-option sk-len-btn" data-len="5" onclick="setSambungKataWordLength(5, event)" style="flex: 1; justify-content: center; padding: 4px 0; font-size: 10px; border-radius: 4px; margin: 0;">5 Huruf</button>
+                    <button type="button" class="lang-option sk-len-btn" data-len="6" onclick="setSambungKataWordLength(6, event)" style="flex: 1; justify-content: center; padding: 4px 0; font-size: 10px; border-radius: 4px; margin: 0;">6 Huruf</button>
+                  </div>
+                  <div class="settings-subtext" style="margin-top: 4px;">Pilih "Bebas" untuk aturan klasik (3–8 huruf), atau kunci jumlah huruf tertentu untuk tantangan setara Wordle.</div>
                 </div>
               </div>
             </div>
@@ -1830,6 +1923,101 @@
             </button>
             <button class="wordpyramid-ctrl-btn skip-btn" onclick="skipWordPyramidRound()" title="Lewati ronde ini">
               <i class="fa-solid fa-forward-step"></i> Lewati
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sambung Kata (Round Table / Meja Bundar) Container -->
+      <div id="sambungKataContainer" class="sambungkata-container" style="display: none;">
+        <!-- Top Status Bar & Phase Badge -->
+        <div class="sambungkata-top-bar">
+          <div class="sambungkata-phase-badge" id="skPhaseBadge">
+            <i class="fa-solid fa-users-rays" id="skPhaseIcon"></i>
+            <span id="skPhaseText">LOBBY • KETIK JOIN</span>
+          </div>
+          <div class="sambungkata-round-badge" id="skRoundBadge">
+            <i class="fa-solid fa-trophy"></i>
+            <span id="skRoundText">RONDE 1</span>
+          </div>
+          <div class="sambungkata-timer-badge" id="skTimerBadge">
+            <i class="fa-solid fa-hourglass-half"></i>
+            <span id="skTimerVal">15s</span>
+          </div>
+        </div>
+
+        <!-- Quick Config Pills Bar -->
+        <div class="sambungkata-config-bar" id="skConfigBar">
+          <div class="sk-config-pill" id="skSeatsConfigPill" onclick="cycleSambungKataSeats()" title="Klik untuk ganti kapasitas kursi meja (3-8 kursi)">
+            <i class="fa-solid fa-chair" style="color: #25f4ee;"></i>
+            <span id="skSeatsConfigText">6 Kursi</span>
+          </div>
+          <div class="sk-config-pill" id="skConnectorConfigPill" onclick="cycleSambungKataConnector()" title="Klik untuk ganti jumlah huruf sambungan belakang (1, 2, atau 3 huruf)">
+            <i class="fa-solid fa-text-width" style="color: #ffd54f;"></i>
+            <span id="skConnectorConfigText">1 Huruf Akhir</span>
+          </div>
+          <div class="sk-config-pill" id="skTimeConfigPill" onclick="cycleSambungKataTurnDuration()" title="Klik untuk ganti batas waktu giliran (10s, 15s, 20s, 30s)">
+            <i class="fa-solid fa-stopwatch" style="color: #fe2c55;"></i>
+            <span id="skTimeConfigText">15s Giliran</span>
+          </div>
+          <div class="sk-config-pill" id="skLengthConfigPill" onclick="cycleSambungKataWordLength()" title="Klik untuk ganti aturan panjang kata (Bebas / 4 / 5 / 6 huruf)">
+            <i class="fa-solid fa-ruler-horizontal" style="color: #a78bfa;"></i>
+            <span id="skLengthConfigText">Panjang: Bebas</span>
+          </div>
+        </div>
+
+        <!-- Meja Bundar Visual Area -->
+        <div class="sambungkata-table-wrapper">
+          <div class="sambungkata-round-table" id="skRoundTable">
+            <!-- Dynamic Radial Seats Container -->
+            <div class="sk-seats-container" id="skSeatsContainer">
+              <!-- Rendered dynamically via renderSambungKataUI() based on sambungKataMaxSeats (3-8 kursi) -->
+            </div>
+
+            <!-- Center Hub of the Table -->
+            <div class="sambungkata-center-felt" id="skCenterFelt">
+              <!-- Turn Pointer Needle -->
+              <div class="sk-turn-pointer" id="skTurnPointer">
+                <div class="sk-pointer-head"></div>
+              </div>
+
+              <div class="sk-center-content">
+                <div class="sk-center-label" id="skCenterLabel">KATA SAAT INI</div>
+                <div class="sk-center-word" id="skCenterWord">
+                  <span class="sk-tile sk-tile-empty">?</span>
+                </div>
+                <div class="sk-target-instruction" id="skTargetInstruction">
+                  <span class="sk-target-hint">Sambung Huruf:</span>
+                  <span class="sk-target-letter-badge" id="skTargetLetterBadge">?</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Riwayat Kata Singkat (Word Chain History Chips) -->
+        <div class="sambungkata-chain-bar" id="skChainBar">
+          <div class="sk-chain-title"><i class="fa-solid fa-link"></i> Rantai Kata:</div>
+          <div class="sk-chain-scroll" id="skChainScroll">
+            <span class="sk-chain-empty">Belum ada kata terhubung...</span>
+          </div>
+        </div>
+
+        <!-- Bottom CTA & Control Bar -->
+        <div class="sambungkata-footer">
+          <div class="sambungkata-chat-hint" id="skChatHint">
+            <i class="fa-solid fa-comment-dots" style="color: #fe2c55;"></i>
+            <span id="skChatHintText">Ketik <strong>JOIN</strong> di chat TikTok untuk duduk di meja!</span>
+          </div>
+          <div class="sambungkata-ctrl-btn-group">
+            <button class="sambungkata-ctrl-btn start-btn" id="skStartBtn" onclick="forceStartSambungKata()" title="Mulai game sekarang">
+              <i class="fa-solid fa-play"></i> Mulai Game
+            </button>
+            <button class="sambungkata-ctrl-btn skip-btn" id="skSkipBtn" onclick="skipSambungKataTurn()" title="Lewati giliran saat ini">
+              <i class="fa-solid fa-forward-step"></i> Lewati
+            </button>
+            <button class="sambungkata-ctrl-btn reset-btn" id="skResetBtn" onclick="resetSambungKataTable()" title="Kosongkan meja dan kembali ke lobby">
+              <i class="fa-solid fa-rotate-left"></i> Reset Meja
             </button>
           </div>
         </div>

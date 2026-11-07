@@ -1369,7 +1369,8 @@ const ALL_SPECIAL_PTS_PREFIXES = [
   'pts_wanderwords_',
   'pts_wordcluster_',
   'pts_wmatch_',
-  'pts_wpyramid_'
+  'pts_wpyramid_',
+  'pts_sambungkata_'
 ];
 
 function isOtherGameModeKey(key) {
@@ -1391,6 +1392,7 @@ function getPtsPrefix() {
   if (currentGameMode === 'wordcluster') return 'pts_wordcluster_';
   if (currentGameMode === 'wordmatch') return 'pts_wmatch_';
   if (currentGameMode === 'wordpyramid') return 'pts_wpyramid_';
+  if (currentGameMode === 'sambungkata') return 'pts_sambungkata_';
   return 'pts_';
 }
 
@@ -4423,7 +4425,8 @@ function selectGame(mode) {
     wanderwords: 'WANDER WORDS',
     wordcluster: 'WORD CLUSTER',
     wordmatch: 'WORD MATCH',
-    wordpyramid: 'WORD PYRAMID'
+    wordpyramid: 'WORD PYRAMID',
+    sambungkata: 'SAMBUNG KATA'
   };
   const titleName = gameNames[mode] || mode.toUpperCase();
 
@@ -4481,6 +4484,7 @@ function switchGameMode(e) {
   else if (currentGameMode === 'wanderwords') currentGameMode = 'wordcluster';
   else if (currentGameMode === 'wordcluster') currentGameMode = 'wordmatch';
   else if (currentGameMode === 'wordmatch') currentGameMode = 'wordpyramid';
+  else if (currentGameMode === 'wordpyramid') currentGameMode = 'sambungkata';
   else currentGameMode = 'wordle';
   try { sessionStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
 
@@ -4557,6 +4561,8 @@ function applyGameModeUI() {
   if (wordMatchContainer) wordMatchContainer.style.display = 'none';
   const wordPyramidContainer = document.getElementById('wordPyramidContainer');
   if (wordPyramidContainer) wordPyramidContainer.style.display = 'none';
+  const sambungKataContainer = document.getElementById('sambungKataContainer');
+  if (sambungKataContainer) sambungKataContainer.style.display = 'none';
   if (currentGameMode !== 'wordmatch') {
     if (typeof stopWordMatchAutoReveal === 'function') stopWordMatchAutoReveal();
   }
@@ -4759,11 +4765,28 @@ function applyGameModeUI() {
     }
     const wordPyramidContainer = document.getElementById('wordPyramidContainer');
     if (wordPyramidContainer) wordPyramidContainer.style.display = 'flex';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Sambung Kata';
     if (!wordPyramidBaseWord) {
       startWordPyramidGame();
     } else {
       renderWordPyramidUI();
+    }
+  } else if (currentGameMode === 'sambungkata') {
+    if (headerTitle) headerTitle.textContent = 'SAMBUNG KATA';
+    if (hintContainer) hintContainer.style.display = 'none';
+    if (bestGuessContainer) bestGuessContainer.style.display = 'none';
+    if (boardObj) {
+      boardObj.style.display = 'none';
+      boardObj.innerHTML = '';
+      boardObj.className = '';
+    }
+    const sambungKataContainer = document.getElementById('sambungKataContainer');
+    if (sambungKataContainer) sambungKataContainer.style.display = 'flex';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
+    if (!sambungKataCurrentWord && sambungKataPhase === 'lobby') {
+      initSambungKataGame();
+    } else {
+      renderSambungKataUI();
     }
   } else {
     if (headerTitle) headerTitle.textContent = 'WORDLE';
@@ -7077,6 +7100,11 @@ function startNewRound() {
     startWordPyramidGame();
     return;
   }
+  if (currentGameMode === 'sambungkata') {
+    sambungKataRound = round;
+    startSambungKataGame();
+    return;
+  }
   if (currentGameMode === 'squareword') {
     WORD_LENGTH = 5;
     document.documentElement.style.setProperty('--word-length', 5);
@@ -8895,6 +8923,20 @@ function applyRemoteGameSettings(settings) {
     }
   }
 
+  // 14. Sambung Kata (Meja Bundar) Settings
+  if (typeof settings.sambungKataMaxSeats === 'number' && typeof setSambungKataSeats === 'function') {
+    setSambungKataSeats(settings.sambungKataMaxSeats);
+  }
+  if (typeof settings.sambungKataConnectorLen === 'number' && typeof setSambungKataConnector === 'function') {
+    setSambungKataConnector(settings.sambungKataConnectorLen);
+  }
+  if (typeof settings.sambungKataTurnDuration === 'number' && typeof setSambungKataTurnDuration === 'function') {
+    setSambungKataTurnDuration(settings.sambungKataTurnDuration);
+  }
+  if (typeof settings.sambungKataWordLength === 'number' && typeof setSambungKataWordLength === 'function') {
+    setSambungKataWordLength(settings.sambungKataWordLength);
+  }
+
   // Apply reloads if requested
   if (settings.restartRound || needReloadWords || needNewRound) {
     if (needReloadWords && typeof loadWordLists === 'function') {
@@ -9813,6 +9855,10 @@ function handleChatGuess(data, optionalUserData) {
       processWordPyramidGuess(msg, data);
       return;
     }
+    if (currentGameMode === 'sambungkata') {
+      processSambungKataGuess(msg, data);
+      return;
+    }
 
     // Deduplikasi dan pra-validasi cerdas untuk Betweenle agar antrean tidak tersumbat
     if (currentGameMode === 'betweenle') {
@@ -10033,6 +10079,11 @@ function processGuess(guessWord, userData, queueLen = 0) {
 
   if (currentGameMode === 'wordpyramid') {
     processWordPyramidGuess(guessWord, userData);
+    return;
+  }
+
+  if (currentGameMode === 'sambungkata') {
+    processSambungKataGuess(guessWord, userData);
     return;
   }
 
@@ -17919,6 +17970,918 @@ window.skipWordPyramidRound = skipWordPyramidRound;
 window.handleWordPyramidWin = handleWordPyramidWin;
 window.launchWordPyramidVictoryShowcase = launchWordPyramidVictoryShowcase;
 window.initWordPyramidExtendableSets = initWordPyramidExtendableSets;
+
+// ═══════════════════════════════════════════════════════════════════
+// MODE 18: SAMBUNG KATA (ROUND TABLE / MEJA BUNDAR) GAME ENGINE
+// Sesuai Panduan AGENTS.md (Pilar 1 s.d. Pilar 5, Mobile-First 9:16)
+// ═══════════════════════════════════════════════════════════════════
+let sambungKataRound = 1;
+let sambungKataPhase = 'lobby'; // 'lobby' | 'playing' | 'gameover'
+let sambungKataMaxSeats = 6; // Default 6 kursi (dapat disetting 3-8)
+try {
+  const savedSeats = parseInt(localStorage.getItem('sambungkata_max_seats'));
+  if (savedSeats >= 3 && savedSeats <= 8) sambungKataMaxSeats = savedSeats;
+} catch(e) {}
+
+let sambungKataConnectorLen = 1; // Default 1 huruf (dapat disetting 1, 2, atau 3)
+try {
+  const savedConn = parseInt(localStorage.getItem('sambungkata_connector_len'));
+  if (savedConn >= 1 && savedConn <= 3) sambungKataConnectorLen = savedConn;
+} catch(e) {}
+
+let sambungKataTurnDuration = 15; // Default 15 detik (dapat disetting 10, 15, 20, 30)
+try {
+  const savedDur = parseInt(localStorage.getItem('sambungkata_turn_duration'));
+  if (savedDur >= 5 && savedDur <= 60) sambungKataTurnDuration = savedDur;
+} catch(e) {}
+
+let sambungKataWordLength = 0; // Default 0 = Bebas (3-8 huruf), atau 4, 5, 6
+try {
+  const savedLen = parseInt(localStorage.getItem('sambungkata_word_length'));
+  if (!isNaN(savedLen) && [0, 4, 5, 6].includes(savedLen)) sambungKataWordLength = savedLen;
+} catch(e) {}
+
+let sambungKataSeats = Array(sambungKataMaxSeats).fill(null);
+let sambungKataCurrentTurn = 0; // index kursi 0..(maxSeats - 1)
+let sambungKataCurrentWord = '';
+let sambungKataUsedWords = new Set();
+let sambungKataWordChain = []; // [{ word, userName }]
+let sambungKataTimer = 15;
+let sambungKataTimerInterval = null;
+let sambungKataLobbyInterval = null;
+let sambungKataLobbyTime = 10;
+
+// Daftar kata awal acak untuk pembuka ronde Sambung Kata (variasi 4, 5, 6, 7 huruf)
+const SAMBUNG_KATA_STARTERS = [
+  'BOLA', 'BUKU', 'MEJA', 'KURA', 'GULA', 'ROTI', 'SAPI', 'KERA', 'KOTA', 'PADI',
+  'MAKAN', 'PINTU', 'LAMPU', 'RUMAH', 'TAMAN', 'HUJAN', 'ANGIN', 'KAPAL', 'MERDU',
+  'KUCING', 'GARUDA', 'BURUNG', 'KERTAS', 'PISANG', 'KELAPA', 'LAUTAN', 'PANTAI', 'KERETA',
+  'BINTANG', 'PESAWAT'
+];
+
+// Pengaturan Jumlah Kursi (3 s/d 8 Kursi)
+function setSambungKataSeats(numSeats, event) {
+  if (event) event.stopPropagation();
+  const n = parseInt(numSeats);
+  if (isNaN(n) || n < 3 || n > 8) return;
+
+  sambungKataMaxSeats = n;
+  try { localStorage.setItem('sambungkata_max_seats', n); } catch(e) {}
+
+  // Sesuaikan panjang array kursi meja
+  if (sambungKataSeats.length > n) {
+    sambungKataSeats = sambungKataSeats.slice(0, n);
+  } else while (sambungKataSeats.length < n) {
+    sambungKataSeats.push(null);
+  }
+
+  // Update button states di settings modal
+  document.querySelectorAll('.sk-seat-btn').forEach(btn => {
+    const s = parseInt(btn.getAttribute('data-seats'));
+    btn.classList.toggle('active', s === n);
+  });
+  const countLabel = document.getElementById('skSeatsCountLabel');
+  if (countLabel) countLabel.textContent = n + ' Kursi';
+
+  // Update quick config pill
+  const pillText = document.getElementById('skSeatsConfigText');
+  if (pillText) pillText.textContent = n + ' Kursi';
+
+  // Sync ke localSocket jika terhubung
+  if (typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
+    localSocket.emit('update-game-settings', { sambungKataMaxSeats: n });
+  }
+
+  if (sambungKataCurrentTurn >= n) {
+    sambungKataCurrentTurn = 0;
+  }
+
+  renderSambungKataUI();
+  showToast(`🪑 Meja Bundar disetel ke ${n} Kursi!`, 1800);
+}
+
+// Shortcut klik cepat ganti kapasitas kursi
+function cycleSambungKataSeats() {
+  const nextSeats = (sambungKataMaxSeats >= 8) ? 3 : (sambungKataMaxSeats + 1);
+  setSambungKataSeats(nextSeats);
+}
+
+// Pengaturan Huruf Sambungan dari Belakang (1, 2, atau 3 Huruf)
+function setSambungKataConnector(connLen, event) {
+  if (event) event.stopPropagation();
+  const c = parseInt(connLen);
+  if (isNaN(c) || c < 1 || c > 3) return;
+
+  sambungKataConnectorLen = c;
+  try { localStorage.setItem('sambungkata_connector_len', c); } catch(e) {}
+
+  // Update button states di settings modal
+  document.querySelectorAll('.sk-conn-btn').forEach(btn => {
+    const val = parseInt(btn.getAttribute('data-conn'));
+    btn.classList.toggle('active', val === c);
+  });
+  const connLabel = document.getElementById('skConnectorLabel');
+  if (connLabel) connLabel.textContent = c + ' Huruf';
+
+  // Update quick config pill
+  const pillText = document.getElementById('skConnectorConfigText');
+  if (pillText) pillText.textContent = (c === 1) ? '1 Huruf Akhir' : `${c} Huruf Akhir`;
+
+  // Sync ke localSocket jika terhubung
+  if (typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
+    localSocket.emit('update-game-settings', { sambungKataConnectorLen: c });
+  }
+
+  renderSambungKataUI();
+  const desc = (c === 1) ? '1 Huruf (Standar)' : (c === 2) ? '2 Huruf (Tantangan)' : '3 Huruf (Suku Kata)';
+  showToast(`🔤 Sambungan disetel: ${desc}`, 2000);
+}
+
+// Shortcut klik cepat ganti jumlah huruf sambungan
+function cycleSambungKataConnector() {
+  const nextConn = (sambungKataConnectorLen >= 3) ? 1 : (sambungKataConnectorLen + 1);
+  setSambungKataConnector(nextConn);
+}
+
+// Pengaturan Batas Waktu Giliran Menjawab (10s, 15s, 20s, 30s)
+function setSambungKataTurnDuration(sec, event) {
+  if (event) event.stopPropagation();
+  const s = parseInt(sec);
+  if (isNaN(s) || s < 5 || s > 60) return;
+
+  sambungKataTurnDuration = s;
+  try { localStorage.setItem('sambungkata_turn_duration', s); } catch(e) {}
+
+  // Update button states di settings modal
+  document.querySelectorAll('.sk-time-btn').forEach(btn => {
+    const val = parseInt(btn.getAttribute('data-time'));
+    btn.classList.toggle('active', val === s);
+  });
+  const durLabel = document.getElementById('skTurnDurationLabel');
+  if (durLabel) durLabel.textContent = s + ' Detik';
+
+  // Update quick config pill
+  const pillText = document.getElementById('skTimeConfigText');
+  if (pillText) pillText.textContent = `${s}s Giliran`;
+
+  // Sync ke localSocket jika terhubung
+  if (typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
+    localSocket.emit('update-game-settings', { sambungKataTurnDuration: s });
+  }
+
+  // Jika di fase lobby atau giliran berjalan tapi sisa timer melebihi batas baru
+  if (sambungKataPhase === 'lobby' || sambungKataTimer > s) {
+    sambungKataTimer = s;
+    updateSambungKataTimerUI();
+  }
+
+  renderSambungKataUI();
+  showToast(`⏱️ Waktu giliran disetel: ${s} Detik!`, 1800);
+}
+
+// Shortcut klik cepat ganti waktu giliran
+function cycleSambungKataTurnDuration() {
+  const presets = [10, 15, 20, 30];
+  const idx = presets.indexOf(sambungKataTurnDuration);
+  const nextVal = (idx === -1 || idx === presets.length - 1) ? presets[0] : presets[idx + 1];
+  setSambungKataTurnDuration(nextVal);
+}
+
+// Pengaturan Panjang Huruf Kata Tebakan (0 = Bebas 3-8, atau 4, 5, 6)
+function setSambungKataWordLength(len, event) {
+  if (event) event.stopPropagation();
+  const l = parseInt(len);
+  if (isNaN(l) || ![0, 4, 5, 6].includes(l)) return;
+
+  sambungKataWordLength = l;
+  try { localStorage.setItem('sambungkata_word_length', l); } catch(e) {}
+
+  // Update button states di settings modal
+  document.querySelectorAll('.sk-len-btn').forEach(btn => {
+    const val = parseInt(btn.getAttribute('data-len'));
+    btn.classList.toggle('active', val === l);
+  });
+  const lbl = document.getElementById('skWordLengthLabel');
+  if (lbl) lbl.textContent = (l === 0) ? 'Bebas (3–8 Huruf)' : `Wajib ${l} Huruf`;
+
+  // Update quick config pill di bar atas
+  const pillText = document.getElementById('skLengthConfigText');
+  if (pillText) {
+    pillText.textContent = (l === 0) ? 'Panjang: Bebas' : `Wajib ${l}H`;
+  }
+
+  // Sync ke localSocket jika terhubung
+  if (typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
+    localSocket.emit('update-game-settings', { sambungKataWordLength: l });
+  }
+
+  renderSambungKataUI();
+  const toastMsg = (l === 0) ? '🔤 Panjang kata disetel: Bebas (3–8 huruf)!' : `🔤 Panjang kata dikunci: Wajib ${l} Huruf!`;
+  showToast(toastMsg, 1800);
+}
+
+// Shortcut klik cepat ganti panjang kata di bar pill lobby
+function cycleSambungKataWordLength() {
+  const presets = [0, 4, 5, 6];
+  const idx = presets.indexOf(sambungKataWordLength);
+  const nextVal = (idx === -1 || idx === presets.length - 1) ? presets[0] : presets[idx + 1];
+  setSambungKataWordLength(nextVal);
+}
+
+// Inisialisasi Game Sambung Kata
+function initSambungKataGame() {
+  sambungKataPhase = 'lobby';
+  sambungKataCurrentWord = '';
+  sambungKataUsedWords.clear();
+  sambungKataWordChain = [];
+  sambungKataTimer = sambungKataTurnDuration;
+  if (sambungKataTimerInterval) {
+    clearInterval(sambungKataTimerInterval);
+    sambungKataTimerInterval = null;
+  }
+  if (sambungKataLobbyInterval) {
+    clearInterval(sambungKataLobbyInterval);
+    sambungKataLobbyInterval = null;
+  }
+  updateSambungKataTimerUI();
+  renderSambungKataUI();
+}
+
+// Mulai Ronde Baru Sambung Kata
+function startSambungKataGame() {
+  initSambungKataGame();
+  showToast(`🎮 Mode Sambung Kata • Ronde ${sambungKataRound}`, 2500);
+}
+
+// Bergabung ke Kursi Meja Bundar (Chat: JOIN / IKUT / DUDUK)
+function joinSambungKataSeat(userData) {
+  if (!userData) return false;
+  const userId = userData.userId || userData.uniqueId || 'player_' + Date.now();
+  const userName = (userData.nickname || userData.uniqueId || 'Pemain').replace(/^@+/, '');
+  const userAvatar = (userData.profilePictureUrl && userData.profilePictureUrl !== 'assets/bg_nature.png') 
+    ? userData.profilePictureUrl 
+    : DEFAULT_HOST_AVATAR;
+
+  // Cek apakah pemain sudah duduk di kursi manapun
+  const alreadySeated = sambungKataSeats.some(s => s && s.userId === userId);
+  if (alreadySeated) return false;
+
+  // Cari kursi kosong pertama
+  const emptyIdx = sambungKataSeats.findIndex(s => s === null);
+  if (emptyIdx === -1) {
+    showToast(`⚠️ Meja penuh! ${sambungKataMaxSeats} kursi sudah terisi.`, 2000);
+    return false;
+  }
+
+  // Dudukkan pemain
+  sambungKataSeats[emptyIdx] = {
+    userId,
+    userName,
+    userAvatar,
+    lives: 3,
+    isDead: false,
+    score: 0
+  };
+
+  if (window.sounds) {
+    if (typeof window.sounds.playCorrect === 'function') window.sounds.playCorrect();
+    else if (typeof window.sounds.playLetter === 'function') window.sounds.playLetter();
+  }
+
+  showToast(`🪑 @${userName} duduk di Kursi ${emptyIdx + 1}!`, 2000);
+  renderSambungKataUI();
+
+  // Jika di fase lobby dan kursi terisi >= 2, jalankan countdown otomatis
+  const seatedCount = sambungKataSeats.filter(s => s !== null).length;
+  if (sambungKataPhase === 'lobby' && seatedCount >= 2 && !sambungKataLobbyInterval) {
+    startSambungKataLobbyCountdown();
+  }
+
+  return true;
+}
+
+// Hitung Mundur Mulai di Lobby
+function startSambungKataLobbyCountdown() {
+  if (sambungKataLobbyInterval) clearInterval(sambungKataLobbyInterval);
+  sambungKataLobbyTime = 10;
+  
+  const badgeText = document.getElementById('skPhaseText');
+  if (badgeText) badgeText.textContent = `MULAI DALAM ${sambungKataLobbyTime}S`;
+
+  sambungKataLobbyInterval = setInterval(() => {
+    sambungKataLobbyTime--;
+    const seatedCount = sambungKataSeats.filter(s => s !== null).length;
+    if (seatedCount < 2) {
+      clearInterval(sambungKataLobbyInterval);
+      sambungKataLobbyInterval = null;
+      if (badgeText) badgeText.textContent = 'LOBBY • KETIK JOIN';
+      return;
+    }
+
+    if (badgeText) badgeText.textContent = `MULAI DALAM ${sambungKataLobbyTime}S`;
+    if (window.sounds && typeof window.sounds.playTick === 'function') {
+      window.sounds.playTick();
+    }
+
+    if (sambungKataLobbyTime <= 0) {
+      clearInterval(sambungKataLobbyInterval);
+      sambungKataLobbyInterval = null;
+      startSambungKataPlay();
+    }
+  }, 1000);
+}
+
+// Host Memaksa Mulai Game
+function forceStartSambungKata() {
+  if (sambungKataPhase === 'playing') return;
+  const seatedCount = sambungKataSeats.filter(s => s !== null).length;
+  if (seatedCount === 0) {
+    // Dudukkan host otomatis jika meja masih kosong
+    joinSambungKataSeat({
+      userId: 'host',
+      uniqueId: 'Host',
+      nickname: 'Host Live',
+      profilePictureUrl: getHostAvatar()
+    });
+  }
+  startSambungKataPlay();
+}
+
+// Memulai Sesi Bermain Sambung Kata
+function startSambungKataPlay() {
+  if (sambungKataLobbyInterval) {
+    clearInterval(sambungKataLobbyInterval);
+    sambungKataLobbyInterval = null;
+  }
+
+  // Pastikan ada pemain duduk
+  const seatedIndices = [];
+  sambungKataSeats.forEach((s, idx) => {
+    if (s !== null) {
+      s.lives = 3;
+      s.isDead = false;
+      seatedIndices.push(idx);
+    }
+  });
+
+  if (seatedIndices.length === 0) {
+    showToast('⚠️ Belum ada pemain yang duduk di meja!', 2000);
+    return;
+  }
+
+  sambungKataPhase = 'playing';
+  sambungKataUsedWords.clear();
+  sambungKataWordChain = [];
+
+  // Tentukan kata awal (menyesuaikan sambungKataWordLength jika disetel)
+  let startWord = '';
+  const targetLen = (sambungKataWordLength > 0) ? sambungKataWordLength : 5;
+  if (allTargetWords && allTargetWords[targetLen] && allTargetWords[targetLen].length > 0) {
+    startWord = allTargetWords[targetLen][Math.floor(Math.random() * allTargetWords[targetLen].length)];
+  } else if (allValidWords && allValidWords[targetLen] && allValidWords[targetLen].length > 0) {
+    startWord = allValidWords[targetLen][Math.floor(Math.random() * allValidWords[targetLen].length)];
+  } else {
+    const candidates = (sambungKataWordLength > 0) 
+      ? SAMBUNG_KATA_STARTERS.filter(w => w.length === sambungKataWordLength)
+      : SAMBUNG_KATA_STARTERS;
+    startWord = (candidates.length > 0) 
+      ? candidates[Math.floor(Math.random() * candidates.length)] 
+      : SAMBUNG_KATA_STARTERS[0];
+  }
+  sambungKataCurrentWord = startWord.toUpperCase().trim();
+  sambungKataUsedWords.add(sambungKataCurrentWord);
+  sambungKataWordChain.unshift({ word: sambungKataCurrentWord, userName: 'Sistem' });
+
+  // Tentukan giliran pertama
+  sambungKataCurrentTurn = seatedIndices[0];
+
+  if (window.sounds && typeof window.sounds.playGreenChime === 'function') {
+    window.sounds.playGreenChime();
+  }
+
+  showToast(`🎯 Game Dimulai! Kata awal: "${sambungKataCurrentWord}"`, 3000);
+  startSambungKataTurnTimer();
+  renderSambungKataUI();
+}
+
+// Mulai Timer Giliran (Sesuai sambungKataTurnDuration)
+function startSambungKataTurnTimer() {
+  if (sambungKataTimerInterval) {
+    clearInterval(sambungKataTimerInterval);
+    sambungKataTimerInterval = null;
+  }
+
+  sambungKataTimer = sambungKataTurnDuration;
+  updateSambungKataTimerUI();
+
+  sambungKataTimerInterval = setInterval(() => {
+    sambungKataTimer--;
+    updateSambungKataTimerUI();
+
+    if (sambungKataTimer <= 3 && sambungKataTimer > 0) {
+      if (window.sounds && typeof window.sounds.playTick === 'function') {
+        window.sounds.playTick();
+      }
+    }
+
+    if (sambungKataTimer <= 0) {
+      clearInterval(sambungKataTimerInterval);
+      sambungKataTimerInterval = null;
+      handleSambungKataTimeout();
+    }
+  }, 1000);
+}
+
+function updateSambungKataTimerUI() {
+  const timerVal = document.getElementById('skTimerVal');
+  const timerBadge = document.getElementById('skTimerBadge');
+  if (timerVal) {
+    if (sambungKataPhase === 'lobby') {
+      timerVal.textContent = sambungKataTurnDuration + 's';
+    } else {
+      timerVal.textContent = sambungKataTimer + 's';
+    }
+  }
+  if (timerBadge) {
+    if (sambungKataPhase === 'playing' && sambungKataTimer <= 4) timerBadge.classList.add('warning');
+    else timerBadge.classList.remove('warning');
+  }
+}
+
+// Penanganan Waktu Habis (Timeout)
+function handleSambungKataTimeout() {
+  const activePlayer = sambungKataSeats[sambungKataCurrentTurn];
+  if (!activePlayer || activePlayer.isDead) {
+    nextSambungKataTurn();
+    return;
+  }
+
+  activePlayer.lives--;
+  if (window.sounds && typeof window.sounds.playShake === 'function') {
+    window.sounds.playShake();
+  }
+
+  if (activePlayer.lives <= 0) {
+    activePlayer.isDead = true;
+    showToast(`💀 Waktu habis! @${activePlayer.userName} tereliminasi!`, 3000);
+  } else {
+    showToast(`⏳ Waktu habis! @${activePlayer.userName} kehilangan 1 nyawa (${activePlayer.lives} tersisa)`, 2500);
+  }
+
+  renderSambungKataUI();
+
+  // Periksa apakah ronde selesai (hanya tersisa 1 pemain hidup)
+  const alivePlayers = sambungKataSeats.filter(s => s && !s.isDead);
+  if (alivePlayers.length <= 1 && sambungKataSeats.filter(s => s !== null).length >= 2) {
+    handleSambungKataWin(alivePlayers[0] || activePlayer);
+    return;
+  }
+
+  nextSambungKataTurn();
+}
+
+// Pindah Giliran ke Pemain Hidup Berikutnya
+function nextSambungKataTurn() {
+  if (sambungKataPhase !== 'playing') return;
+
+  const totalSeats = sambungKataMaxSeats;
+  let nextIdx = (sambungKataCurrentTurn + 1) % totalSeats;
+  let found = false;
+
+  for (let i = 0; i < totalSeats; i++) {
+    const candidate = sambungKataSeats[nextIdx];
+    if (candidate && !candidate.isDead) {
+      sambungKataCurrentTurn = nextIdx;
+      found = true;
+      break;
+    }
+    nextIdx = (nextIdx + 1) % totalSeats;
+  }
+
+  if (!found) {
+    showToast('Ronde berakhir! Semua pemain gugur.', 3000);
+    initSambungKataGame();
+    return;
+  }
+
+  renderSambungKataUI();
+  startSambungKataTurnTimer();
+}
+
+// Host Skip Giliran
+function skipSambungKataTurn() {
+  if (sambungKataPhase !== 'playing') return;
+  showToast('⏭️ Giliran dilewati host!', 1500);
+  nextSambungKataTurn();
+}
+
+// Reset Meja Kembali ke Lobby
+function resetSambungKataTable() {
+  sambungKataSeats = Array(sambungKataMaxSeats).fill(null);
+  initSambungKataGame();
+  showToast('🔄 Meja Sambung Kata telah dikosongkan!', 2000);
+}
+
+// Host Mengklik Kursi (Isi / Keluarkan Pemain)
+function hostSeatAction(seatIdx) {
+  if (seatIdx < 0 || seatIdx >= sambungKataMaxSeats) return;
+  const currentSeat = sambungKataSeats[seatIdx];
+
+  if (currentSeat === null) {
+    // Isi kursi dengan host / guest
+    sambungKataSeats[seatIdx] = {
+      userId: 'host_' + Date.now(),
+      userName: 'Tamu ' + (seatIdx + 1),
+      userAvatar: getHostAvatar(),
+      lives: 3,
+      isDead: false,
+      score: 0
+    };
+    showToast(`🪑 Kursi ${seatIdx + 1} diisi tamu!`, 1500);
+  } else {
+    // Kick pemain
+    showToast(`🚪 @${currentSeat.userName} dikeluarkan dari Kursi ${seatIdx + 1}.`, 1500);
+    sambungKataSeats[seatIdx] = null;
+    if (sambungKataCurrentTurn === seatIdx && sambungKataPhase === 'playing') {
+      nextSambungKataTurn();
+    }
+  }
+  renderSambungKataUI();
+}
+
+// Verifikasi Kamus Kata untuk Sambung Kata
+function isSambungKataWordValid(word) {
+  if (!word || word.length < 2) return false;
+  const len = word.length;
+  if (sambungKataWordLength > 0 && len !== sambungKataWordLength) return false;
+  if (allValidWordsSets && allValidWordsSets[len] && allValidWordsSets[len].has(word)) return true;
+  if (allValidWords && allValidWords[len] && allValidWords[len].includes(word)) return true;
+  if (allTargetWords && allTargetWords[len] && allTargetWords[len].includes(word)) return true;
+  // Fallback kelonggaran kata jika kamus Set belum selesai load
+  return (sambungKataWordLength > 0) ? (len === sambungKataWordLength) : (len >= 3 && len <= 8);
+}
+
+// Memproses Tebakan Kata Masuk dari Chat TikTok
+function processSambungKataGuess(guessWord, userData) {
+  if (currentGameMode !== 'sambungkata') return;
+  if (!guessWord || !userData) return;
+
+  const raw = guessWord.trim().toUpperCase();
+  const clean = raw.replace(/[^A-Z]/g, '');
+
+  // 1. Tangani Pemicu Masuk Meja (JOIN / IKUT / DUDUK)
+  if (raw === 'JOIN' || raw === 'IKUT' || raw === 'DUDUK' || raw === '!JOIN') {
+    joinSambungKataSeat(userData);
+    return;
+  }
+
+  // Jika game belum mulai atau sudah selesai, abaikan tebakan kata
+  if (sambungKataPhase !== 'playing') return;
+
+  const activePlayer = sambungKataSeats[sambungKataCurrentTurn];
+  if (!activePlayer || activePlayer.isDead) return;
+
+  // 2. Filter Pemain: Hanya pemain yang SEDANG GILIRANNYA yang boleh menebak
+  const userId = userData.userId || userData.uniqueId || '';
+  const userName = (userData.nickname || userData.uniqueId || '').replace(/^@+/, '');
+  const isHost = (userId === 'host' || userId === 'host_offline' || (typeof userId === 'string' && userId.toLowerCase().includes('host')));
+
+  const isCurrentGuesser = (userId === activePlayer.userId) || 
+                          (userName.toLowerCase() === activePlayer.userName.toLowerCase()) || 
+                          (isHost && activePlayer.userId.startsWith('host'));
+
+  if (!isCurrentGuesser) {
+    return;
+  }
+
+  if (clean.length < 2) return;
+
+  // 3. Validasi Panjang Kata (Jika disetel selain Bebas)
+  if (sambungKataWordLength > 0 && clean.length !== sambungKataWordLength) {
+    showToast(`⚠️ Kata wajib ${sambungKataWordLength} huruf! ("${clean}" = ${clean.length} huruf)`, 2500);
+    if (window.sounds && typeof window.sounds.playShake === 'function') {
+      window.sounds.playShake();
+    }
+    return;
+  }
+
+  // 4. Validasi Huruf Awal: Harus berawalan target sambungan belakang (1, 2, atau 3 huruf)
+  const connLen = Math.min(sambungKataConnectorLen, sambungKataCurrentWord.length);
+  const targetConnector = sambungKataCurrentWord.slice(-connLen);
+
+  if (!clean.startsWith(targetConnector)) {
+    showToast(`⚠️ Awalan kata harus "${targetConnector}"! (${clean} diawali ${clean.slice(0, targetConnector.length)})`, 2500);
+    if (window.sounds && typeof window.sounds.playShake === 'function') {
+      window.sounds.playShake();
+    }
+    return;
+  }
+
+  // 4. Validasi Anti-Duplikasi: Kata tidak boleh pernah digunakan di ronde ini
+  if (sambungKataUsedWords.has(clean)) {
+    showToast(`⚠️ Kata "${clean}" sudah pernah dipakai di meja ini!`, 2500);
+    if (window.sounds && typeof window.sounds.playShake === 'function') {
+      window.sounds.playShake();
+    }
+    return;
+  }
+
+  // 5. Validasi Kamus Kata Sah
+  if (!isSambungKataWordValid(clean)) {
+    showToast(`⚠️ Kata "${clean}" tidak ditemukan di kamus!`, 2000);
+    if (window.sounds && typeof window.sounds.playShake === 'function') {
+      window.sounds.playShake();
+    }
+    return;
+  }
+
+  // TEBAKAN SAH & BENAR!
+  if (window.sounds) {
+    if (typeof window.sounds.playGreenChime === 'function') window.sounds.playGreenChime();
+    if (typeof window.sounds.playFlip === 'function') window.sounds.playFlip(0);
+  }
+
+  sambungKataUsedWords.add(clean);
+  sambungKataCurrentWord = clean;
+  sambungKataWordChain.unshift({ word: clean, userName: activePlayer.userName });
+  activePlayer.score += 5;
+
+  if (typeof addPlayerPoints === 'function') {
+    addPlayerPoints(activePlayer.userId, activePlayer.userName, 5, activePlayer.userAvatar);
+  }
+
+  showToast(`👏 @${activePlayer.userName} berhasil sambung: "${clean}" (+5 Pts)`, 2500);
+  renderSambungKataUI();
+
+  // Pindah ke giliran berikutnya
+  nextSambungKataTurn();
+}
+
+// Menangani Kemenangan Sambung Kata (Last Man Standing)
+function handleSambungKataWin(winnerData) {
+  sambungKataPhase = 'gameover';
+  if (sambungKataTimerInterval) {
+    clearInterval(sambungKataTimerInterval);
+    sambungKataTimerInterval = null;
+  }
+
+  const winnerName = (winnerData && winnerData.userName) || 'Juara Meja';
+  const avatarUrl = (winnerData && winnerData.userAvatar) || DEFAULT_HOST_AVATAR;
+  const winPts = 25;
+
+  if (winnerData && typeof addPlayerPoints === 'function') {
+    addPlayerPoints(winnerData.userId, winnerName, winPts, avatarUrl);
+  }
+
+  lastRoundWinner = winnerData;
+  lastRoundTargetWord = sambungKataCurrentWord;
+
+  const winAvatar = document.getElementById('winAvatar');
+  if (winAvatar) {
+    winAvatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
+    winAvatar.src = avatarUrl;
+  }
+
+  const winNameEl = document.getElementById('winName');
+  if (winNameEl) winNameEl.textContent = winnerName;
+
+  const winPtsEl = document.getElementById('winPts');
+  if (winPtsEl) {
+    winPtsEl.innerHTML = `<i class="fa-solid fa-crown" style="color: #ffd54f;"></i> JUARA MEJA BUNDAR (+${winPts} PTS)`;
+  }
+
+  const winWordEl = document.getElementById('winWord');
+  if (winWordEl) {
+    winWordEl.innerHTML = `Terhubung <strong>${sambungKataWordChain.length}</strong> Kata Rantai!`;
+    winWordEl.style.display = 'block';
+  }
+
+  if (window.sounds) {
+    if (typeof window.sounds.playWin === 'function') window.sounds.playWin();
+  }
+  if (typeof triggerConfetti === 'function') {
+    triggerConfetti();
+  }
+
+  sambungKataRound++;
+
+  setTimeout(() => {
+    if (typeof triggerWinTransition === 'function') {
+      triggerWinTransition(5000, false);
+    }
+  }, 1000);
+}
+
+// Render Seluruh Antarmuka Meja Bundar (UI)
+function renderSambungKataUI() {
+  const container = document.getElementById('sambungKataContainer');
+  if (!container) return;
+
+  // 1. Status Phase & Round
+  const phaseBadge = document.getElementById('skPhaseBadge');
+  const phaseText = document.getElementById('skPhaseText');
+  const phaseIcon = document.getElementById('skPhaseIcon');
+  const roundText = document.getElementById('skRoundText');
+  const hintText = document.getElementById('skChatHintText');
+  const startBtn = document.getElementById('skStartBtn');
+
+  if (roundText) roundText.textContent = `RONDE ${sambungKataRound}`;
+
+  const connLen = Math.min(sambungKataConnectorLen, sambungKataCurrentWord ? sambungKataCurrentWord.length : 1);
+  const targetConnector = sambungKataCurrentWord ? sambungKataCurrentWord.slice(-connLen) : '?';
+
+  if (sambungKataPhase === 'lobby') {
+    if (phaseBadge) phaseBadge.className = 'sambungkata-phase-badge';
+    if (phaseText) phaseText.textContent = (sambungKataLobbyInterval) ? `MULAI DALAM ${sambungKataLobbyTime}S` : 'LOBBY • KETIK JOIN';
+    if (phaseIcon) phaseIcon.className = 'fa-solid fa-users-rays';
+    if (hintText) hintText.innerHTML = 'Ketik <strong>JOIN</strong> di chat TikTok untuk duduk di meja!';
+    if (startBtn) startBtn.style.display = 'flex';
+
+    // Sinkronisasi badge timer saat di lobby agar sesuai durasi settingan
+    const timerValEl = document.getElementById('skTimerVal');
+    if (timerValEl) timerValEl.textContent = sambungKataTurnDuration + 's';
+    const timerBadgeEl = document.getElementById('skTimerBadge');
+    if (timerBadgeEl) timerBadgeEl.classList.remove('warning');
+  } else if (sambungKataPhase === 'playing') {
+    if (phaseBadge) phaseBadge.className = 'sambungkata-phase-badge playing';
+    const activePlayer = sambungKataSeats[sambungKataCurrentTurn];
+    if (phaseText) phaseText.textContent = `GILIRAN: ${activePlayer ? activePlayer.userName : 'Pemain'}`;
+    if (phaseIcon) phaseIcon.className = 'fa-solid fa-play';
+    const connLabel = (connLen > 1) ? `${connLen} huruf` : 'huruf';
+    const lenLabel = (sambungKataWordLength > 0) ? ` (${sambungKataWordLength} huruf)` : '';
+    if (hintText) hintText.innerHTML = `Giliran <strong>@${activePlayer ? activePlayer.userName : ''}</strong>: Ketik kata${lenLabel} berawalan ${connLabel} [ <strong>${targetConnector}</strong> ]!`;
+    if (startBtn) startBtn.style.display = 'none';
+  }
+
+  // 2. Update Quick Config Pills Text & Active States (Auto-hide saat bermain agar layar bersih)
+  const configBar = document.getElementById('skConfigBar');
+  if (configBar) {
+    configBar.style.display = (sambungKataPhase === 'lobby') ? 'flex' : 'none';
+  }
+  const seatsPillText = document.getElementById('skSeatsConfigText');
+  if (seatsPillText) seatsPillText.textContent = `${sambungKataMaxSeats} Kursi`;
+  const connPillText = document.getElementById('skConnectorConfigText');
+  if (connPillText) {
+    connPillText.textContent = (sambungKataConnectorLen === 1) ? '1 Huruf Akhir' : `${sambungKataConnectorLen} Huruf Akhir`;
+  }
+  const timePillText = document.getElementById('skTimeConfigText');
+  if (timePillText) timePillText.textContent = `${sambungKataTurnDuration}s Giliran`;
+  const lenPillText = document.getElementById('skLengthConfigText');
+  if (lenPillText) {
+    lenPillText.textContent = (sambungKataWordLength === 0) ? 'Panjang: Bebas' : `Wajib ${sambungKataWordLength}H`;
+  }
+  const durLabel = document.getElementById('skTurnDurationLabel');
+  if (durLabel) durLabel.textContent = `${sambungKataTurnDuration} Detik`;
+  const lenModalLabel = document.getElementById('skWordLengthLabel');
+  if (lenModalLabel) {
+    lenModalLabel.textContent = (sambungKataWordLength === 0) ? 'Bebas (3–8 Huruf)' : `Wajib ${sambungKataWordLength} Huruf`;
+  }
+  document.querySelectorAll('.sk-len-btn').forEach(btn => {
+    const val = parseInt(btn.getAttribute('data-len'));
+    btn.classList.toggle('active', val === sambungKataWordLength);
+  });
+
+  // 3. Render Dinamis Kursi Melingkar (3 s.d. 8 Kursi)
+  const seatsContainer = document.getElementById('skSeatsContainer');
+  if (seatsContainer) {
+    seatsContainer.innerHTML = '';
+    const maxSeats = sambungKataMaxSeats;
+    const radius = (maxSeats >= 7) ? 42 : 41; // % dari tengah
+    const ringStyle = (maxSeats >= 7) ? 'width: 40px; height: 40px;' : '';
+
+    for (let i = 0; i < maxSeats; i++) {
+      const angle = -90 + (360 / maxSeats) * i;
+      const rad = angle * (Math.PI / 180);
+      const x = 50 + radius * Math.cos(rad);
+      const y = 50 + radius * Math.sin(rad);
+
+      const seatEl = document.createElement('div');
+      seatEl.id = `skSeat${i}`;
+      seatEl.onclick = () => hostSeatAction(i);
+      seatEl.title = `Kursi ${i + 1}`;
+      seatEl.style.left = `${x}%`;
+      seatEl.style.top = `${y}%`;
+
+      const player = sambungKataSeats[i];
+      if (!player) {
+        seatEl.className = 'sk-seat empty';
+        seatEl.innerHTML = `
+          <div class="sk-avatar-ring" style="${ringStyle}">
+            <div class="sk-empty-placeholder"><i class="fa-solid fa-chair"></i><span class="sk-join-tag">JOIN</span></div>
+          </div>
+          <div class="sk-seat-badge">
+            <span class="sk-seat-name">Kursi ${i + 1}</span>
+            <div class="sk-seat-hearts">
+              <i class="fa-solid fa-heart"></i><i class="fa-solid fa-heart"></i><i class="fa-solid fa-heart"></i>
+            </div>
+          </div>
+        `;
+      } else {
+        let classes = 'sk-seat';
+        if (player.isDead) classes += ' eliminated';
+        else if (sambungKataPhase === 'playing' && sambungKataCurrentTurn === i) classes += ' active-turn';
+        seatEl.className = classes;
+
+        let heartHtml = '';
+        for (let h = 0; h < 3; h++) {
+          heartHtml += `<i class="fa-solid fa-heart ${h < player.lives ? 'active' : ''}"></i>`;
+        }
+
+        seatEl.innerHTML = `
+          <div class="sk-avatar-ring" style="${ringStyle}">
+            <img class="sk-avatar-img" src="${player.userAvatar || DEFAULT_HOST_AVATAR}" alt="${player.userName}">
+            <div class="sk-dead-overlay"><i class="fa-solid fa-skull"></i></div>
+          </div>
+          <div class="sk-seat-badge">
+            <span class="sk-seat-name" title="${player.userName}">${player.userName}</span>
+            <div class="sk-seat-hearts">${heartHtml}</div>
+          </div>
+        `;
+      }
+      seatsContainer.appendChild(seatEl);
+    }
+  }
+
+  // 4. Render Jarum Penunjuk Giliran (Pointer Needle)
+  const pointerEl = document.getElementById('skTurnPointer');
+  if (pointerEl) {
+    if (sambungKataPhase === 'playing') {
+      const targetDegree = (360 / sambungKataMaxSeats) * sambungKataCurrentTurn;
+      pointerEl.style.transform = `rotate(${targetDegree}deg)`;
+      pointerEl.style.display = 'block';
+    } else {
+      pointerEl.style.display = 'none';
+    }
+  }
+
+  // 5. Render Kata Aktif & Huruf Target di Pusat Meja (Highlight 1, 2, atau 3 Huruf Akhir)
+  const centerWordEl = document.getElementById('skCenterWord');
+  const targetBadgeEl = document.getElementById('skTargetLetterBadge');
+  const targetHintEl = document.querySelector('.sk-target-hint');
+  if (centerWordEl) {
+    centerWordEl.innerHTML = '';
+    if (sambungKataCurrentWord) {
+      const len = sambungKataCurrentWord.length;
+      centerWordEl.className = 'sk-center-word len-' + Math.min(len, 8);
+      const highlightStart = len - connLen;
+      for (let c = 0; c < len; c++) {
+        const tile = document.createElement('span');
+        const isConnector = (c >= highlightStart);
+        tile.className = `sk-tile ${isConnector ? 'last-letter' : ''}`;
+        tile.textContent = sambungKataCurrentWord[c];
+        centerWordEl.appendChild(tile);
+      }
+    } else {
+      centerWordEl.className = 'sk-center-word';
+      centerWordEl.innerHTML = '<span class="sk-tile sk-tile-empty">?</span>';
+    }
+  }
+
+  if (targetBadgeEl) {
+    targetBadgeEl.textContent = targetConnector;
+  }
+  if (targetHintEl) {
+    targetHintEl.textContent = (connLen > 1) ? `Sambung ${connLen} Huruf:` : 'Sambung Huruf:';
+  }
+
+  // 6. Render Riwayat Rantai Kata
+  const chainScrollEl = document.getElementById('skChainScroll');
+  if (chainScrollEl) {
+    if (sambungKataWordChain.length === 0) {
+      chainScrollEl.innerHTML = '<span class="sk-chain-empty">Belum ada kata terhubung...</span>';
+    } else {
+      chainScrollEl.innerHTML = '';
+      sambungKataWordChain.slice(0, 10).forEach(item => {
+        const chip = document.createElement('span');
+        chip.className = 'sk-chain-chip';
+        chip.textContent = `${item.word} (${item.userName})`;
+        chainScrollEl.appendChild(chip);
+      });
+    }
+  }
+}
+
+// Window Global Exports
+window.initSambungKataGame = initSambungKataGame;
+window.startSambungKataGame = startSambungKataGame;
+window.joinSambungKataSeat = joinSambungKataSeat;
+window.forceStartSambungKata = forceStartSambungKata;
+window.skipSambungKataTurn = skipSambungKataTurn;
+window.resetSambungKataTable = resetSambungKataTable;
+window.hostSeatAction = hostSeatAction;
+window.processSambungKataGuess = processSambungKataGuess;
+window.handleSambungKataWin = handleSambungKataWin;
+window.renderSambungKataUI = renderSambungKataUI;
+window.setSambungKataSeats = setSambungKataSeats;
+window.cycleSambungKataSeats = cycleSambungKataSeats;
+window.setSambungKataConnector = setSambungKataConnector;
+window.cycleSambungKataConnector = cycleSambungKataConnector;
+window.setSambungKataTurnDuration = setSambungKataTurnDuration;
+window.cycleSambungKataTurnDuration = cycleSambungKataTurnDuration;
+window.setSambungKataWordLength = setSambungKataWordLength;
+window.cycleSambungKataWordLength = cycleSambungKataWordLength;
+
+
 
 
 

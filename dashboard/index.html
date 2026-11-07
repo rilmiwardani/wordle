@@ -1360,6 +1360,7 @@
                 <option value="wordcluster">Word Cluster</option>
                 <option value="wordmatch">Word Match</option>
                 <option value="wordpyramid">Word Pyramid</option>
+                <option value="sambungkata">Sambung Kata</option>
               </select>
             </div>
           </div>
@@ -1486,6 +1487,7 @@
           <button class="game-btn" data-game="wordcluster" onclick="remoteChangeGame('wordcluster')">Word Cluster</button>
           <button class="game-btn" data-game="wordmatch" onclick="remoteChangeGame('wordmatch')">Word Match</button>
           <button class="game-btn" data-game="wordpyramid" onclick="remoteChangeGame('wordpyramid')">Word Pyramid</button>
+          <button class="game-btn" data-game="sambungkata" onclick="remoteChangeGame('sambungkata')">Sambung Kata</button>
         </div>
 
         <!-- HOST INLINE ACTION BAR (KIRIM TEBAKAN & CLUE LANGSUNG KE OBS) -->
@@ -1663,6 +1665,7 @@
               <option value="wordcluster">Word Cluster</option>
               <option value="wordmatch">Word Match</option>
               <option value="wordpyramid">Word Pyramid</option>
+              <option value="sambungkata">Sambung Kata</option>
             </select>
           </div>
         </div>
@@ -2021,6 +2024,71 @@
 
             <div class="info-note-box" style="margin-top: 14px;">
               💡 <strong>Tips Streaming:</strong> Semua sakelar ukuran dan skala di atas langsung tersinkron ke layar <strong>OBS Studio</strong> secara real-time!
+            </div>
+          </div>
+
+          <!-- Pengaturan Sambung Kata (Meja Bundar) -->
+          <div class="settings-box">
+            <div class="settings-box-title">
+              <span><i class="fa-solid fa-users-rays" style="color: var(--accent2); margin-right: 6px;"></i> Sambung Kata (Meja Bundar)</span>
+              <span class="subtext">Kapasitas kursi & panjang huruf sambungan belakang</span>
+            </div>
+
+            <!-- Jumlah Kursi -->
+            <div style="margin-bottom: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 12px; color: var(--text2); font-weight: 600;">Jumlah Kursi / Maksimal Pemain:</span>
+                <span id="dashSkSeatsVal" style="font-size: 12px; font-weight: 800; color: #25f4ee;">6 Kursi</span>
+              </div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" class="preset-pill-badge" id="dashSkSeat3" onclick="setDashSambungKataSeats(3)">3</button>
+                <button type="button" class="preset-pill-badge" id="dashSkSeat4" onclick="setDashSambungKataSeats(4)">4</button>
+                <button type="button" class="preset-pill-badge" id="dashSkSeat5" onclick="setDashSambungKataSeats(5)">5</button>
+                <button type="button" class="preset-pill-badge active" id="dashSkSeat6" onclick="setDashSambungKataSeats(6)">6 Kursi</button>
+                <button type="button" class="preset-pill-badge" id="dashSkSeat7" onclick="setDashSambungKataSeats(7)">7</button>
+                <button type="button" class="preset-pill-badge" id="dashSkSeat8" onclick="setDashSambungKataSeats(8)">8 Kursi</button>
+              </div>
+            </div>
+
+            <!-- Huruf Sambung -->
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 12px; color: var(--text2); font-weight: 600;">Huruf Sambungan dari Belakang:</span>
+                <span id="dashSkConnVal" style="font-size: 12px; font-weight: 800; color: #ffd54f;">1 Huruf</span>
+              </div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" class="preset-pill-badge active" id="dashSkConn1" onclick="setDashSambungKataConnector(1)">1 Huruf (Standar)</button>
+                <button type="button" class="preset-pill-badge" id="dashSkConn2" onclick="setDashSambungKataConnector(2)">2 Huruf (Tantangan)</button>
+                <button type="button" class="preset-pill-badge" id="dashSkConn3" onclick="setDashSambungKataConnector(3)">3 Huruf (Suku Kata)</button>
+              </div>
+            </div>
+
+            <!-- Batas Waktu Giliran Menjawab -->
+            <div style="margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 12px; color: var(--text2); font-weight: 600;">Waktu Giliran Menjawab:</span>
+                <span id="dashSkTimeVal" style="font-size: 12px; font-weight: 800; color: #fe2c55;">15 Detik</span>
+              </div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" class="preset-pill-badge" id="dashSkTime10" onclick="setDashSambungKataTurnDuration(10)">10s Kilat</button>
+                <button type="button" class="preset-pill-badge active" id="dashSkTime15" onclick="setDashSambungKataTurnDuration(15)">15s Normal</button>
+                <button type="button" class="preset-pill-badge" id="dashSkTime20" onclick="setDashSambungKataTurnDuration(20)">20s Santai</button>
+                <button type="button" class="preset-pill-badge" id="dashSkTime30" onclick="setDashSambungKataTurnDuration(30)">30s Ekstrem</button>
+              </div>
+            </div>
+
+            <!-- Panjang Huruf Kata Tebakan -->
+            <div style="margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 12px; color: var(--text2); font-weight: 600;">Panjang Huruf Kata Tebakan:</span>
+                <span id="dashSkLenVal" style="font-size: 12px; font-weight: 800; color: #25f4ee;">Bebas (3–8)</span>
+              </div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" class="preset-pill-badge active" id="dashSkLen0" onclick="setDashSambungKataWordLength(0)">Bebas (3–8)</button>
+                <button type="button" class="preset-pill-badge" id="dashSkLen4" onclick="setDashSambungKataWordLength(4)">4 Huruf</button>
+                <button type="button" class="preset-pill-badge" id="dashSkLen5" onclick="setDashSambungKataWordLength(5)">5 Huruf</button>
+                <button type="button" class="preset-pill-badge" id="dashSkLen6" onclick="setDashSambungKataWordLength(6)">6 Huruf</button>
+              </div>
             </div>
           </div>
 
@@ -2643,6 +2711,9 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       updateObsUrlGenerated();
       socket.emit("get-obs-config");
       socket.emit("get-game-settings");
+      if (typeof initDashSambungKataSettings === "function") {
+        initDashSambungKataSettings();
+      }
     });
 
     // ═══ GAME SETTINGS LOGIC ═══
@@ -2904,6 +2975,12 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       currentGameSettings.displayRows = parseInt(document.getElementById("dashDisplayRowsVal")?.textContent) || 6;
       currentGameSettings.boardScale = parseInt(document.getElementById("dashBoardScaleVal")?.textContent) || 100;
 
+      // Sambung Kata settings
+      currentGameSettings.sambungKataMaxSeats = parseInt(localStorage.getItem('sambungkata_max_seats')) || 6;
+      currentGameSettings.sambungKataConnectorLen = parseInt(localStorage.getItem('sambungkata_connector_len')) || 1;
+      currentGameSettings.sambungKataTurnDuration = parseInt(localStorage.getItem('sambungkata_turn_duration')) || 15;
+      currentGameSettings.sambungKataWordLength = parseInt(localStorage.getItem('sambungkata_word_length')) || 0;
+
       currentGameSettings.restartRound = restartRound;
 
       socket.emit("update-game-settings", currentGameSettings);
@@ -2914,6 +2991,61 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
         btn.innerHTML = "✅ Tersinkron ke OBS!";
         setTimeout(() => { btn.innerHTML = old; }, 1800);
       }
+    }
+
+    function setDashSambungKataSeats(n, noSave) {
+      localStorage.setItem('sambungkata_max_seats', n);
+      [3, 4, 5, 6, 7, 8].forEach(i => {
+        const btn = document.getElementById(`dashSkSeat${i}`);
+        if (btn) btn.classList.toggle('active', i === n);
+      });
+      const lbl = document.getElementById('dashSkSeatsVal');
+      if (lbl) lbl.textContent = n + ' Kursi';
+      if (!noSave) autoSaveSettings();
+    }
+
+    function setDashSambungKataConnector(c, noSave) {
+      localStorage.setItem('sambungkata_connector_len', c);
+      [1, 2, 3].forEach(i => {
+        const btn = document.getElementById(`dashSkConn${i}`);
+        if (btn) btn.classList.toggle('active', i === c);
+      });
+      const lbl = document.getElementById('dashSkConnVal');
+      if (lbl) lbl.textContent = c + ' Huruf';
+      if (!noSave) autoSaveSettings();
+    }
+
+    function setDashSambungKataTurnDuration(sec, noSave) {
+      localStorage.setItem('sambungkata_turn_duration', sec);
+      [10, 15, 20, 30].forEach(i => {
+        const btn = document.getElementById(`dashSkTime${i}`);
+        if (btn) btn.classList.toggle('active', i === sec);
+      });
+      const lbl = document.getElementById('dashSkTimeVal');
+      if (lbl) lbl.textContent = sec + ' Detik';
+      if (!noSave) autoSaveSettings();
+    }
+
+    function setDashSambungKataWordLength(l, noSave) {
+      localStorage.setItem('sambungkata_word_length', l);
+      [0, 4, 5, 6].forEach(i => {
+        const btn = document.getElementById(`dashSkLen${i}`);
+        if (btn) btn.classList.toggle('active', i === l);
+      });
+      const lbl = document.getElementById('dashSkLenVal');
+      if (lbl) lbl.textContent = (l === 0) ? 'Bebas (3–8)' : (l + ' Huruf');
+      if (!noSave) autoSaveSettings();
+    }
+
+    function initDashSambungKataSettings() {
+      const seats = parseInt(localStorage.getItem('sambungkata_max_seats')) || 6;
+      setDashSambungKataSeats(seats, true);
+      const conn = parseInt(localStorage.getItem('sambungkata_connector_len')) || 1;
+      setDashSambungKataConnector(conn, true);
+      const time = parseInt(localStorage.getItem('sambungkata_turn_duration')) || 15;
+      setDashSambungKataTurnDuration(time, true);
+      const len = parseInt(localStorage.getItem('sambungkata_word_length')) || 0;
+      setDashSambungKataWordLength(len, true);
     }
 
     // ═════════════════════════════════════════════════════════════════════════

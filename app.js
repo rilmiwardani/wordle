@@ -18706,15 +18706,12 @@ function renderSambungKataUI() {
   const container = document.getElementById('sambungKataContainer');
   if (!container) return;
 
-  // 1. Status Phase & Round
+  // 1. Status Phase & Badges
   const phaseBadge = document.getElementById('skPhaseBadge');
   const phaseText = document.getElementById('skPhaseText');
   const phaseIcon = document.getElementById('skPhaseIcon');
-  const roundText = document.getElementById('skRoundText');
   const hintText = document.getElementById('skChatHintText');
   const startBtn = document.getElementById('skStartBtn');
-
-  if (roundText) roundText.textContent = `RONDE ${sambungKataRound}`;
 
   const connLen = Math.min(sambungKataConnectorLen, sambungKataCurrentWord ? sambungKataCurrentWord.length : 1);
   const targetConnector = sambungKataCurrentWord ? sambungKataCurrentWord.slice(-connLen) : '?';
@@ -18734,11 +18731,11 @@ function renderSambungKataUI() {
   } else if (sambungKataPhase === 'playing') {
     if (phaseBadge) phaseBadge.className = 'sambungkata-phase-badge playing';
     const activePlayer = sambungKataSeats[sambungKataCurrentTurn];
-    if (phaseText) phaseText.textContent = `GILIRAN: ${activePlayer ? activePlayer.userName : 'Pemain'}`;
+    const activeName = activePlayer ? activePlayer.userName : 'Pemain';
+    if (phaseText) phaseText.textContent = `GILIRAN: ${activeName}`;
     if (phaseIcon) phaseIcon.className = 'fa-solid fa-play';
-    const connLabel = (connLen > 1) ? `${connLen} huruf` : 'huruf';
     const lenLabel = (sambungKataWordLength > 0) ? ` (${sambungKataWordLength} huruf)` : '';
-    if (hintText) hintText.innerHTML = `Giliran <strong>@${activePlayer ? activePlayer.userName : ''}</strong>: Ketik kata${lenLabel} berawalan ${connLabel} [ <strong>${targetConnector}</strong> ]!`;
+    if (hintText) hintText.innerHTML = `Ayo <strong>@${activeName}</strong>, ketik kata${lenLabel} di chat sebelum waktu habis!`;
     if (startBtn) startBtn.style.display = 'none';
   }
 
@@ -18866,6 +18863,10 @@ function renderSambungKataUI() {
     }
   }
 
+  const targetInstructionEl = document.getElementById('skTargetInstruction');
+  if (targetInstructionEl) {
+    targetInstructionEl.style.display = (sambungKataPhase === 'playing') ? 'inline-flex' : 'none';
+  }
   if (targetBadgeEl) {
     targetBadgeEl.textContent = targetConnector;
   }

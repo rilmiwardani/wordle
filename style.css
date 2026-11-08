@@ -10618,14 +10618,18 @@ body.theme-sepia #tourneyBadge {
   height: 100%;
   z-index: 9999;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  background: rgba(10, 15, 29, 0.85);
+  padding-top: max(20px, 3.5vh);
+  padding-bottom: 24px;
+  background: rgba(10, 15, 29, 0.88);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .tourney-podium-overlay.show {
@@ -10634,22 +10638,22 @@ body.theme-sepia #tourneyBadge {
 }
 
 .tourney-podium-card {
-  width: 92%;
-  max-width: 360px;
-  max-height: 88vh;
-  background: linear-gradient(165deg, rgba(30, 41, 59, 0.96), rgba(15, 23, 42, 0.98));
+  width: 94%;
+  max-width: 370px;
+  max-height: 94vh;
+  background: linear-gradient(165deg, rgba(30, 41, 59, 0.97), rgba(15, 23, 42, 0.99));
   border: 1px solid rgba(245, 158, 11, 0.35);
-  border-radius: 24px;
-  padding: 18px 16px 14px;
-  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.75), 0 0 25px rgba(245, 158, 11, 0.18);
+  border-radius: 20px;
+  padding: 12px 14px 10px;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.8), 0 0 20px rgba(245, 158, 11, 0.15);
   display: flex;
   flex-direction: column;
   align-items: center;
-  overflow: hidden;
+  overflow: visible;
   box-sizing: border-box;
-  transform: translateY(30px) scale(0.92);
+  transform: translateY(20px) scale(0.94);
   opacity: 0;
-  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.25), opacity 0.35s ease;
+  transition: transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.25), opacity 0.35s ease;
 }
 
 .tourney-podium-overlay.show .tourney-podium-card {
@@ -10660,7 +10664,7 @@ body.theme-sepia #tourneyBadge {
 /* Header */
 .tourney-header {
   text-align: center;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   width: 100%;
 }
 
@@ -10668,19 +10672,19 @@ body.theme-sepia #tourneyBadge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   background: radial-gradient(circle, rgba(245, 158, 11, 0.35) 0%, rgba(245, 158, 11, 0.05) 70%);
   border-radius: 50%;
-  margin-bottom: 5px;
+  margin-bottom: 3px;
   border: 1px solid rgba(245, 158, 11, 0.45);
-  box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);
 }
 
 .tourney-trophy-icon {
-  font-size: 24px;
+  font-size: 20px;
   color: #ffd700;
-  filter: drop-shadow(0 2px 8px rgba(255, 215, 0, 0.6));
+  filter: drop-shadow(0 2px 6px rgba(255, 215, 0, 0.6));
   animation: tourneyTrophyPulse 2s ease-in-out infinite;
 }
 
@@ -10691,20 +10695,20 @@ body.theme-sepia #tourneyBadge {
 
 .tourney-title {
   font-family: 'Outfit', sans-serif;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 900;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.6px;
   color: #ffffff;
   text-transform: uppercase;
   margin: 0;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
 }
 
 .tourney-subtitle {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   color: #fbbf24;
-  margin-top: 2px;
+  margin-top: 1px;
   letter-spacing: 0.3px;
 }
 
@@ -10715,7 +10719,7 @@ body.theme-sepia #tourneyBadge {
   justify-content: center;
   width: 100%;
   gap: 8px;
-  margin: 14px 0 10px;
+  margin: 8px 0 6px;
 }
 
 .podium-col {
@@ -10730,7 +10734,7 @@ body.theme-sepia #tourneyBadge {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 9px;
+  margin-bottom: 5px;
   position: relative;
   width: 100%;
 }
@@ -10739,27 +10743,30 @@ body.theme-sepia #tourneyBadge {
   border-radius: 50%;
   object-fit: cover;
   background: #1e293b;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
 }
 
 .podium-name {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   color: #cbd5e1;
-  margin-top: 5px;
+  margin-top: 3px;
   max-width: 90px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   letter-spacing: 0.2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .podium-pts {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 800;
   border-radius: 999px;
-  padding: 2.5px 8px;
-  margin-top: 3px;
+  padding: 1.5px 7px;
+  margin-top: 2px;
   line-height: 1.2;
   display: inline-flex;
   align-items: center;
@@ -10769,18 +10776,18 @@ body.theme-sepia #tourneyBadge {
 
 /* Rank 1 (Gold / Champion) */
 .podium-col.rank-1 .podium-avatar {
-  width: 58px;
-  height: 58px;
-  border: 3px solid #f59e0b;
-  box-shadow: 0 0 16px rgba(245, 158, 11, 0.5), 0 4px 12px rgba(0, 0, 0, 0.6);
+  width: 50px;
+  height: 50px;
+  border: 2.5px solid #f59e0b;
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.5), 0 4px 10px rgba(0, 0, 0, 0.6);
 }
 
 .podium-crown {
   position: absolute;
-  top: -16px;
-  font-size: 22px;
+  top: -14px;
+  font-size: 19px;
   color: #ffd700;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.8));
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.8));
   animation: crownBob 2s ease-in-out infinite;
 }
 
@@ -10791,7 +10798,7 @@ body.theme-sepia #tourneyBadge {
 
 .podium-name.name-gold {
   color: #ffffff;
-  font-size: 12.5px;
+  font-size: 11.5px;
   font-weight: 800;
 }
 
@@ -10803,18 +10810,18 @@ body.theme-sepia #tourneyBadge {
 
 .podium-block.block-gold {
   width: 100%;
-  height: 64px;
+  height: 52px;
   background: linear-gradient(180deg, #f59e0b 0%, #b45309 100%);
   border-radius: 8px 8px 2px 2px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 6px 18px rgba(245, 158, 11, 0.35);
-  border-top: 2.5px solid #fde68a;
+  box-shadow: 0 5px 14px rgba(245, 158, 11, 0.35);
+  border-top: 2px solid #fde68a;
 }
 
 .block-gold .podium-step-num {
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 900;
   color: #ffffff;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
@@ -10824,9 +10831,9 @@ body.theme-sepia #tourneyBadge {
 
 /* Rank 2 (Silver) */
 .podium-col.rank-2 .podium-avatar {
-  width: 46px;
-  height: 46px;
-  border: 2.5px solid #94a3b8;
+  width: 40px;
+  height: 40px;
+  border: 2px solid #94a3b8;
 }
 
 .podium-pts {
@@ -10837,18 +10844,18 @@ body.theme-sepia #tourneyBadge {
 
 .podium-block.block-silver {
   width: 100%;
-  height: 46px;
+  height: 38px;
   background: linear-gradient(180deg, #94a3b8 0%, #475569 100%);
   border-radius: 8px 8px 2px 2px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-top: 2px solid #e2e8f0;
-  box-shadow: 0 4px 14px rgba(148, 163, 184, 0.25);
+  box-shadow: 0 3px 10px rgba(148, 163, 184, 0.25);
 }
 
 .block-silver .podium-step-num {
-  font-size: 22px;
+  font-size: 19px;
   font-weight: 900;
   color: #ffffff;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
@@ -10858,9 +10865,9 @@ body.theme-sepia #tourneyBadge {
 
 /* Rank 3 (Bronze) */
 .podium-col.rank-3 .podium-avatar {
-  width: 42px;
-  height: 42px;
-  border: 2.5px solid #d97706;
+  width: 36px;
+  height: 36px;
+  border: 2px solid #d97706;
 }
 
 .podium-pts {
@@ -10871,18 +10878,18 @@ body.theme-sepia #tourneyBadge {
 
 .podium-block.block-bronze {
   width: 100%;
-  height: 34px;
+  height: 28px;
   background: linear-gradient(180deg, #d97706 0%, #78350f 100%);
   border-radius: 8px 8px 2px 2px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-top: 2px solid #fed7aa;
-  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.25);
+  border-top: 1.5px solid #fed7aa;
+  box-shadow: 0 3px 10px rgba(217, 119, 6, 0.25);
 }
 
 .block-bronze .podium-step-num {
-  font-size: 19px;
+  font-size: 16px;
   font-weight: 900;
   color: #ffffff;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
@@ -10890,13 +10897,13 @@ body.theme-sepia #tourneyBadge {
   letter-spacing: -0.5px;
 }
 
-/* Standings Section (Ranks 4 - 8) */
+/* Standings Section (Ranks 4 - 10) */
 .tourney-standings-section {
   width: 100%;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.32);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  padding: 6px 10px;
+  padding: 5px 8px 4px;
   box-sizing: border-box;
 }
 
@@ -10904,11 +10911,11 @@ body.theme-sepia #tourneyBadge {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 800;
   color: #94a3b8;
   letter-spacing: 0.5px;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
 }
 
 .tourney-standings-mode-chip {
@@ -10921,22 +10928,23 @@ body.theme-sepia #tourneyBadge {
 }
 
 .tourney-standings-list {
-  max-height: 82px;
-  overflow-y: auto;
+  max-height: none;
+  overflow: visible;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding-right: 2px;
+  gap: 2px;
 }
 
 .tourney-standings-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 3px 6px;
+  padding: 2.5px 6px;
   background: rgba(255, 255, 255, 0.04);
-  border-radius: 6px;
-  font-size: 11px;
+  border-radius: 5px;
+  font-size: 10px;
+  min-height: 22px;
+  box-sizing: border-box;
 }
 
 .tourney-row-left {
@@ -10947,16 +10955,17 @@ body.theme-sepia #tourneyBadge {
 }
 
 .tourney-rank-pill {
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 800;
   color: #94a3b8;
-  width: 18px;
+  width: 20px;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .tourney-row-avatar {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
@@ -10968,30 +10977,48 @@ body.theme-sepia #tourneyBadge {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 130px;
+  max-width: 140px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .tourney-row-pts {
   color: #fbbf24;
   font-weight: 800;
-  font-size: 10.5px;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.tourney-trophy-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: #ffd54f;
+  font-size: 8.5px;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 4px;
+  margin-left: 4px;
+  line-height: 1;
   flex-shrink: 0;
 }
 
 .tourney-standings-empty {
   text-align: center;
-  font-size: 10.5px;
+  font-size: 10px;
   color: rgba(255, 255, 255, 0.4);
-  padding: 6px 0;
+  padding: 4px 0;
 }
 
 /* Transition Footer & Countdown */
 .tourney-transition-footer {
   width: 100%;
-  margin-top: 10px;
+  margin-top: 6px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
 }
 
 .tourney-next-info {
@@ -10999,7 +11026,7 @@ body.theme-sepia #tourneyBadge {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  font-size: 11.5px;
+  font-size: 11px;
 }
 
 .tourney-next-label {
@@ -11020,12 +11047,12 @@ body.theme-sepia #tourneyBadge {
 
 .tourney-countdown-bar {
   width: 100%;
-  height: 4px;
+  height: 3.5px;
   background: rgba(255, 255, 255, 0.12);
   border-radius: 999px;
   overflow: hidden;
   margin-top: 2px;
-  margin-bottom: 8px;
+  margin-bottom: 5px;
 }
 
 .tourney-countdown-fill {

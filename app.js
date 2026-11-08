@@ -1834,7 +1834,12 @@ function triggerTourneyPodiumFinale(isManualPreview = false) {
       { nickname: 'Siti_Gamer', avatar: 'assets/bg_nature.png', pts: 38 },
       { nickname: 'Rian_Pro', avatar: 'assets/bg_nature.png', pts: 25 },
       { nickname: 'Dina_Lover', avatar: 'assets/bg_nature.png', pts: 18 },
-      { nickname: 'Arief_99', avatar: 'assets/bg_nature.png', pts: 12 }
+      { nickname: 'Arief_99', avatar: 'assets/bg_nature.png', pts: 14 },
+      { nickname: 'Wahyu_ID', avatar: 'assets/bg_nature.png', pts: 11 },
+      { nickname: 'Lina_Chan', avatar: 'assets/bg_nature.png', pts: 9 },
+      { nickname: 'Kurnia_88', avatar: 'assets/bg_nature.png', pts: 7 },
+      { nickname: 'Fajar_G', avatar: 'assets/bg_nature.png', pts: 5 },
+      { nickname: 'Dewi_S', avatar: 'assets/bg_nature.png', pts: 3 }
     ];
   }
 
@@ -1870,41 +1875,54 @@ function triggerTourneyPodiumFinale(isManualPreview = false) {
   const p2 = sortedPlayers[1] || { nickname: '—', avatar: 'assets/bg_nature.png', pts: 0 };
   const p3 = sortedPlayers[2] || { nickname: '—', avatar: 'assets/bg_nature.png', pts: 0 };
 
+  function formatPodiumNameHtml(nickname, defaultText) {
+    const cleanNick = nickname || defaultText || '—';
+    const trophies = (typeof getPlayerTrophies === 'function') ? getPlayerTrophies(cleanNick) : 0;
+    const trophyHtml = (trophies > 0)
+      ? `<span class="tourney-trophy-tag" title="${trophies} Trofi"><i class="fa-solid fa-trophy"></i> ${trophies}</span>`
+      : '';
+    return `${escapeHTML(cleanNick)}${trophyHtml}`;
+  }
+
   const avatar1 = document.getElementById('podiumAvatar1');
   const name1 = document.getElementById('podiumName1');
   const pts1 = document.getElementById('podiumPts1');
   if (avatar1) avatar1.src = p1.avatar || 'assets/bg_nature.png';
-  if (name1) name1.textContent = p1.nickname || 'Champion';
+  if (name1) name1.innerHTML = formatPodiumNameHtml(p1.nickname, 'Champion');
   if (pts1) pts1.textContent = `${p1.pts} Poin`;
 
   const avatar2 = document.getElementById('podiumAvatar2');
   const name2 = document.getElementById('podiumName2');
   const pts2 = document.getElementById('podiumPts2');
   if (avatar2) avatar2.src = p2.avatar || 'assets/bg_nature.png';
-  if (name2) name2.textContent = p2.nickname || '—';
+  if (name2) name2.innerHTML = formatPodiumNameHtml(p2.nickname, '—');
   if (pts2) pts2.textContent = `${p2.pts} Poin`;
 
   const avatar3 = document.getElementById('podiumAvatar3');
   const name3 = document.getElementById('podiumName3');
   const pts3 = document.getElementById('podiumPts3');
   if (avatar3) avatar3.src = p3.avatar || 'assets/bg_nature.png';
-  if (name3) name3.textContent = p3.nickname || '—';
+  if (name3) name3.innerHTML = formatPodiumNameHtml(p3.nickname, '—');
   if (pts3) pts3.textContent = `${p3.pts} Poin`;
 
   const standingsList = document.getElementById('tourneyStandingsList');
   if (standingsList) {
-    const runnersUp = sortedPlayers.slice(3, 8);
+    const runnersUp = sortedPlayers.slice(3, 10);
     if (runnersUp.length === 0) {
       standingsList.innerHTML = `<div class="tourney-standings-empty">Semua penonton lainnya siap menyusul di game berikutnya!</div>`;
     } else {
       standingsList.innerHTML = runnersUp.map((p, idx) => {
         const rankNum = idx + 4;
+        const trophies = (typeof getPlayerTrophies === 'function') ? getPlayerTrophies(p.nickname) : 0;
+        const trophyHtml = (trophies > 0)
+          ? `<span class="tourney-trophy-tag" title="${trophies} Trofi"><i class="fa-solid fa-trophy"></i> ${trophies}</span>`
+          : '';
         return `
           <div class="tourney-standings-row">
             <div class="tourney-row-left">
               <span class="tourney-rank-pill">#${rankNum}</span>
               <img class="tourney-row-avatar" src="${p.avatar || 'assets/bg_nature.png'}" onerror="this.src='assets/bg_nature.png'" alt="${escapeHTML(p.nickname)}">
-              <span class="tourney-row-name">${escapeHTML(p.nickname)}</span>
+              <span class="tourney-row-name">${escapeHTML(p.nickname)}${trophyHtml}</span>
             </div>
             <span class="tourney-row-pts">${p.pts} Poin</span>
           </div>

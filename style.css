@@ -12984,4 +12984,420 @@ body.theme-sepia .sambungkata-ctrl-btn.reset-btn {
   color: #b91c1c;
 }
 
+/* ═════════════════════════════════════════════════════════════════════════════
+   19. ANTIWORDLE (RANJAU KATA) STYLES - TACTICAL ARCADE ANTI-AI SLOP
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+.antiwordle-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 410px;
+  margin: 0 auto;
+  gap: 8px;
+  box-sizing: border-box;
+  transform: scale(var(--board-scale, 1));
+  transform-origin: top center;
+  user-select: none;
+}
+
+.antiwordle-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.antiwordle-status-badge {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.antiwordle-stats-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.antiwordle-danger-badge {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10.5px;
+  font-weight: 800;
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: #4ade80;
+  padding: 3px 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.antiwordle-danger-badge.danger-warn {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+}
+
+.antiwordle-danger-badge.danger-critical {
+  background: rgba(239, 68, 68, 0.22);
+  border-color: rgba(239, 68, 68, 0.45);
+  color: #f87171;
+}
+
+.antiwordle-survivor-badge {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10.5px;
+  font-weight: 800;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+  padding: 3px 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Board Wrapper */
+.antiwordle-board-wrapper {
+  width: 100%;
+  min-height: 215px;
+  max-height: 255px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 6px 4px;
+  box-sizing: border-box;
+}
+
+.antiwordle-board-wrapper::-webkit-scrollbar {
+  display: none;
+}
+
+.antiwordle-board {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  align-items: center;
+}
+
+.antiwordle-empty-hint {
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  padding: 85px 0;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.antiwordle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  max-width: 380px;
+  padding: 2px 4px;
+  box-sizing: border-box;
+  animation: antiwordleRowSlide 0.25s ease-out;
+}
+
+@keyframes antiwordleRowSlide {
+  0% { transform: translateY(-8px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.antiwordle-row-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  object-fit: cover;
+  background: #1e293b;
+  flex-shrink: 0;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+}
+
+.antiwordle-row.is-detonated .antiwordle-row-avatar {
+  border-color: #ef4444;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+  animation: singedAvatarPop 0.4s ease-out;
+}
+
+@keyframes singedAvatarPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.18) rotate(-6deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+.antiwordle-tiles-group {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.antiwordle-tile {
+  width: 38px;
+  height: 38px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  font-weight: 900;
+  text-transform: uppercase;
+  font-family: 'Outfit', sans-serif;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.antiwordle-tile.tile-locked {
+  background: #dc2626;
+  border: 2px solid #b91c1c;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.4);
+}
+
+.antiwordle-tile.tile-must-use {
+  background: #c6aa24;
+  border: 2px solid #a1881b;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(198, 170, 36, 0.4);
+}
+
+.antiwordle-tile.tile-banned {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.45);
+  text-decoration: line-through;
+}
+
+.antiwordle-tile.tile-exploded {
+  background: #991b1b !important;
+  border: 2px solid #ef4444 !important;
+  color: #ffffff !important;
+  animation: bombTileFlicker 0.3s ease-in-out infinite alternate;
+}
+
+@keyframes bombTileFlicker {
+  0% { transform: scale(1); background: #991b1b; }
+  100% { transform: scale(1.06); background: #dc2626; }
+}
+
+.antiwordle-row-badge {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  border-radius: 4px;
+  padding: 3px 5px;
+  min-width: 42px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.antiwordle-row.is-detonated .antiwordle-row-badge {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* Keyboard Tracker */
+.antiwordle-keyboard-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 5px 4px;
+  box-sizing: border-box;
+}
+
+.antiwordle-kb-legend {
+  display: flex;
+  gap: 10px;
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.antiwordle-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend-swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.legend-swatch.swatch-locked { background: #dc2626; }
+.legend-swatch.swatch-must { background: #c6aa24; }
+.legend-swatch.swatch-banned { background: rgba(255, 255, 255, 0.25); text-decoration: line-through; }
+
+.antiwordle-keyboard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  align-items: center;
+}
+
+.antiwordle-kb-row {
+  display: flex;
+  gap: 3.5px;
+  justify-content: center;
+  width: 100%;
+}
+
+.antiwordle-key {
+  width: 32px;
+  height: 34px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #f8fafc;
+  font-size: 13.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Outfit', sans-serif;
+  box-sizing: border-box;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.antiwordle-key.key-locked {
+  background: #dc2626 !important;
+  border-color: #b91c1c !important;
+  color: #ffffff !important;
+}
+
+.antiwordle-key.key-must {
+  background: #c6aa24 !important;
+  border-color: #a1881b !important;
+  color: #ffffff !important;
+}
+
+.antiwordle-key.key-banned {
+  background: rgba(0, 0, 0, 0.4) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  color: rgba(255, 255, 255, 0.25) !important;
+  text-decoration: line-through;
+}
+
+/* Footer Hint */
+.antiwordle-footer {
+  width: 100%;
+}
+
+.antiwordle-chat-hint {
+  width: 100%;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  box-sizing: border-box;
+}
+
+/* Explosion Impact Shake Animation (No Neon Glow) */
+.antiwordle-container.is-detonating {
+  animation: antiwordleShake 0.48s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes antiwordleShake {
+  0%, 100% { transform: scale(var(--board-scale, 1)) translate3d(0, 0, 0); }
+  15% { transform: scale(var(--board-scale, 1)) translate3d(-7px, 6px, 0); }
+  30% { transform: scale(var(--board-scale, 1)) translate3d(6px, -5px, 0); }
+  45% { transform: scale(var(--board-scale, 1)) translate3d(-5px, 3px, 0); }
+  60% { transform: scale(var(--board-scale, 1)) translate3d(4px, -2px, 0); }
+  75% { transform: scale(var(--board-scale, 1)) translate3d(-2px, 1px, 0); }
+}
+
+/* ═══ DAYLIGHT SEPIA THEME SUPPORT ═══ */
+body.theme-sepia .antiwordle-top-bar,
+body.theme-sepia .antiwordle-board-wrapper,
+body.theme-sepia .antiwordle-keyboard-container,
+body.theme-sepia .antiwordle-chat-hint {
+  background: #ede3d2;
+  border-color: rgba(66, 52, 40, 0.2);
+  color: #423428;
+}
+
+body.theme-sepia .antiwordle-status-badge,
+body.theme-sepia .antiwordle-kb-legend,
+body.theme-sepia .antiwordle-chat-hint {
+  color: #423428;
+}
+
+body.theme-sepia .antiwordle-empty-hint {
+  color: #786555;
+}
+
+body.theme-sepia .antiwordle-key {
+  background: #ded2bf;
+  border-color: rgba(66, 52, 40, 0.25);
+  color: #423428;
+}
+
+body.theme-sepia .antiwordle-tile.tile-banned,
+body.theme-sepia .antiwordle-key.key-banned {
+  background: rgba(66, 52, 40, 0.12) !important;
+  border-color: rgba(66, 52, 40, 0.15) !important;
+  color: rgba(66, 52, 40, 0.35) !important;
+}
+
+body.theme-sepia .antiwordle-tile.tile-locked,
+body.theme-sepia .antiwordle-key.key-locked {
+  background: #991b1b !important;
+  border-color: #7f1d1d !important;
+  color: #ffffff !important;
+}
+
+body.theme-sepia .antiwordle-tile.tile-must-use,
+body.theme-sepia .antiwordle-key.key-must {
+  background: #a1881b !important;
+  border-color: #856f14 !important;
+  color: #ffffff !important;
+}
+
 

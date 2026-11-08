@@ -899,6 +899,81 @@ class SoundEngine {
             });
         } catch(e) {}
     }
+    // Suara ledakan ranjau Antiwordle (Sub-bass rumble + punchy noise impact)
+    playAntiwordleDetonate() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        try {
+            const now = this.ctx.currentTime;
+
+            // 1. Sub-bass boom oscillator (140Hz down to 30Hz)
+            const osc = this.ctx.createOscillator();
+            const oscGain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(140, now);
+            osc.frequency.exponentialRampToValueAtTime(30, now + 0.45);
+
+            oscGain.gain.setValueAtTime(0.35, now);
+            oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+
+            osc.connect(oscGain);
+            oscGain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.55);
+
+            // 2. Filtered noise burst for explosion texture
+            const bufferSize = Math.floor(this.ctx.sampleRate * 0.35);
+            const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = (Math.random() * 2 - 1) * Math.exp(-i / (this.ctx.sampleRate * 0.08));
+            }
+
+            const whiteNoise = this.ctx.createBufferSource();
+            whiteNoise.buffer = noiseBuffer;
+
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(850, now);
+            filter.frequency.exponentialRampToValueAtTime(90, now + 0.35);
+
+            const noiseGain = this.ctx.createGain();
+            noiseGain.gain.setValueAtTime(0.30, now);
+            noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+            whiteNoise.connect(filter);
+            filter.connect(noiseGain);
+            noiseGain.connect(this.ctx.destination);
+            whiteNoise.start(now);
+        } catch(e) {}
+    }
+
+    // Suara saat tebakan aman / lolos dari ranjau (Antiwordle Safe Survival)
+    playAntiwordleSurvive() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        try {
+            const now = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(520, now);
+            osc.frequency.exponentialRampToValueAtTime(680, now + 0.08);
+
+            gain.gain.setValueAtTime(0.18, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.12);
+        } catch(e) {}
+    }
 }
 
 window.sounds = new SoundEngine();

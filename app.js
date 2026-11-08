@@ -1370,7 +1370,8 @@ const ALL_SPECIAL_PTS_PREFIXES = [
   'pts_wordcluster_',
   'pts_wmatch_',
   'pts_wpyramid_',
-  'pts_sambungkata_'
+  'pts_sambungkata_',
+  'pts_antiwordle_'
 ];
 
 function isOtherGameModeKey(key) {
@@ -1384,11 +1385,11 @@ function isOtherGameModeKey(key) {
 const ALL_ROTATION_MODES = [
   'wordle', 'word500', 'wordfit', 'colorfit',
   'fillblanks', 'wordtango', 'wordgrid', 'squareword',
-  'wordladder', 'betweenle', 'cascadle', 'wanderwords', 'wordcluster', 'wordmatch', 'wordpyramid'
+  'wordladder', 'betweenle', 'cascadle', 'wanderwords', 'wordcluster', 'wordmatch', 'wordpyramid', 'antiwordle'
 ];
 
 const FAST_PACED_MODES = [
-  'wordle', 'word500', 'squareword', 'betweenle', 'wordladder', 'fillblanks', 'wordpyramid'
+  'wordle', 'word500', 'squareword', 'betweenle', 'wordladder', 'fillblanks', 'wordpyramid', 'antiwordle'
 ];
 
 const GAME_MODE_PRETTY_NAMES = {
@@ -1406,7 +1407,8 @@ const GAME_MODE_PRETTY_NAMES = {
   wanderwords: 'Wander Words',
   wordcluster: 'Word Cluster',
   wordmatch: 'Word Match',
-  wordpyramid: 'Word Pyramid'
+  wordpyramid: 'Word Pyramid',
+  antiwordle: 'Antiwordle'
 };
 
 let tourneySettings = {
@@ -1462,6 +1464,7 @@ function getPtsPrefix() {
   if (currentGameMode === 'wordmatch') return 'pts_wmatch_';
   if (currentGameMode === 'wordpyramid') return 'pts_wpyramid_';
   if (currentGameMode === 'sambungkata') return 'pts_sambungkata_';
+  if (currentGameMode === 'antiwordle') return 'pts_antiwordle_';
   return 'pts_';
 }
 
@@ -4653,6 +4656,8 @@ function applyGameModeUI() {
   if (wordPyramidContainer) wordPyramidContainer.style.display = 'none';
   const sambungKataContainer = document.getElementById('sambungKataContainer');
   if (sambungKataContainer) sambungKataContainer.style.display = 'none';
+  const antiwordleContainer = document.getElementById('antiwordleContainer');
+  if (antiwordleContainer) antiwordleContainer.style.display = 'none';
   if (currentGameMode !== 'wordmatch') {
     if (typeof stopWordMatchAutoReveal === 'function') stopWordMatchAutoReveal();
   }
@@ -4872,11 +4877,28 @@ function applyGameModeUI() {
     }
     const sambungKataContainer = document.getElementById('sambungKataContainer');
     if (sambungKataContainer) sambungKataContainer.style.display = 'flex';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Antiwordle';
     if (!sambungKataCurrentWord && sambungKataPhase === 'lobby') {
       initSambungKataGame();
     } else {
       renderSambungKataUI();
+    }
+  } else if (currentGameMode === 'antiwordle') {
+    if (headerTitle) headerTitle.textContent = 'ANTIWORDLE';
+    if (hintContainer) hintContainer.style.display = 'none';
+    if (bestGuessContainer) bestGuessContainer.style.display = 'none';
+    if (boardObj) {
+      boardObj.style.display = 'none';
+      boardObj.innerHTML = '';
+      boardObj.className = '';
+    }
+    const antiwordleContainer = document.getElementById('antiwordleContainer');
+    if (antiwordleContainer) antiwordleContainer.style.display = 'flex';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
+    if (!antiwordleSecretWord) {
+      startAntiwordleGame();
+    } else {
+      renderAntiwordleUI();
     }
   } else {
     if (headerTitle) headerTitle.textContent = 'WORDLE';
@@ -7198,6 +7220,11 @@ function startNewRound() {
   if (currentGameMode === 'sambungkata') {
     sambungKataRound = round;
     startSambungKataGame();
+    return;
+  }
+  if (currentGameMode === 'antiwordle') {
+    antiwordleRound = round;
+    startAntiwordleGame();
     return;
   }
   if (currentGameMode === 'squareword') {
@@ -9915,6 +9942,8 @@ function handleChatGuess(data, optionalUserData) {
     isAllowedLength = (msg.length >= 2);
   } else if (currentGameMode === 'wordpyramid') {
     isAllowedLength = (msg.length === wordPyramidCurrentLevel);
+  } else if (currentGameMode === 'antiwordle') {
+    isAllowedLength = (msg.length === antiwordleLetterLength);
   }
 
   if (isAllowedLength) {
@@ -9971,6 +10000,10 @@ function handleChatGuess(data, optionalUserData) {
     }
     if (currentGameMode === 'wordpyramid') {
       processWordPyramidGuess(msg, data);
+      return;
+    }
+    if (currentGameMode === 'antiwordle') {
+      processAntiwordleGuess(msg, data);
       return;
     }
 
@@ -19285,6 +19318,490 @@ window.setSambungKataTurnDuration = setSambungKataTurnDuration;
 window.cycleSambungKataTurnDuration = cycleSambungKataTurnDuration;
 window.setSambungKataWordLength = setSambungKataWordLength;
 window.cycleSambungKataWordLength = cycleSambungKataWordLength;
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 19. ANTIWORDLE (RANJAU KATA) - AUTHENTIC SURVIVAL BOMB ENGINE
+// ═════════════════════════════════════════════════════════════════════════════
+
+let antiwordleRound = 1;
+let antiwordleLetterLength = 5;
+let antiwordleSecretWord = '';
+let antiwordleGuesses = []; // [{ word, userName, userAvatar, userData, colors, isBomb }]
+let antiwordleGreyLetters = new Set(); // huruf terlarang / tereliminasi
+let antiwordleYellowLetters = new Map(); // char -> Set of forbidden indices
+let antiwordleRedLetters = new Map(); // index -> char (posisi terkunci)
+let antiwordleSurvivalCount = 0;
+let antiwordleIsGameOver = false;
+let antiwordleGuessedWords = new Set();
+let allAvailableAntiwordleWords = {};
+let antiwordleUserCooldown = new Map();
+
+// Evaluasi aturan ketat Antiwordle terhadap tebakan baru
+function evaluateAntiwordleConstraints(guess) {
+  const g = (guess || '').toUpperCase();
+  
+  // 1. Cek Huruf Abu-abu (Banned / Tereliminasi)
+  for (let i = 0; i < g.length; i++) {
+    const ch = g[i];
+    if (antiwordleGreyLetters.has(ch)) {
+      return {
+        valid: false,
+        reason: `Huruf '${ch}' sudah tereliminasi (dilarang dipakai)!`
+      };
+    }
+  }
+
+  // 2. Cek Huruf Kuning (Must-Use / Wajib Ada & Tidak Boleh di Posisi yang Sama)
+  for (const [ch, forbiddenIndices] of antiwordleYellowLetters.entries()) {
+    if (!g.includes(ch)) {
+      return {
+        valid: false,
+        reason: `Huruf '${ch}' wajib disertakan dalam kata!`
+      };
+    }
+    for (const forbiddenIdx of forbiddenIndices) {
+      if (g[forbiddenIdx] === ch) {
+        return {
+          valid: false,
+          reason: `Huruf '${ch}' tidak boleh di posisi ke-${forbiddenIdx + 1}!`
+        };
+      }
+    }
+  }
+
+  // 3. Cek Huruf Merah (Locked / Posisi Tepat Terkunci)
+  for (const [idx, ch] of antiwordleRedLetters.entries()) {
+    if (g[idx] !== ch) {
+      return {
+        valid: false,
+        reason: `Huruf ke-${idx + 1} harus '${ch}' (posisi terkunci mati)!`
+      };
+    }
+  }
+
+  return { valid: true };
+}
+
+// Algoritma pewarnaan Wordle dua-pass untuk status ubin Antiwordle
+function evaluateAntiwordleColors(guess, target) {
+  const g = guess.toUpperCase();
+  const t = target.toUpperCase();
+  const len = g.length;
+  const result = new Array(len).fill('banned');
+  const targetFreq = {};
+
+  for (let i = 0; i < len; i++) {
+    const ch = t[i];
+    targetFreq[ch] = (targetFreq[ch] || 0) + 1;
+  }
+
+  // Pass 1: Posisi Tepat (Red / Locked)
+  for (let i = 0; i < len; i++) {
+    if (g[i] === t[i]) {
+      result[i] = 'locked';
+      targetFreq[g[i]]--;
+    }
+  }
+
+  // Pass 2: Ada di kata target tapi posisi beda (Yellow / Must-Use)
+  for (let i = 0; i < len; i++) {
+    if (result[i] !== 'locked') {
+      const ch = g[i];
+      if (targetFreq[ch] && targetFreq[ch] > 0) {
+        result[i] = 'must-use';
+        targetFreq[ch]--;
+      }
+    }
+  }
+
+  return result;
+}
+
+// Memulai atau me-reset ronde permainan Antiwordle
+function startAntiwordleGame() {
+  antiwordleIsGameOver = false;
+  antiwordleGuesses = [];
+  antiwordleGreyLetters.clear();
+  antiwordleYellowLetters.clear();
+  antiwordleRedLetters.clear();
+  antiwordleSurvivalCount = 0;
+  antiwordleGuessedWords.clear();
+  antiwordleUserCooldown.clear();
+
+  // Sinkronkan panjang kata dari pengaturan host
+  try {
+    const savedLengths = JSON.parse(localStorage.getItem('allowed_lengths') || '[5,6,7,8]');
+    const validLens = savedLengths.filter(l => [4, 5, 6, 7, 8].includes(l));
+    if (validLens.length > 0) {
+      antiwordleLetterLength = validLens[Math.floor(Math.random() * validLens.length)];
+    } else {
+      antiwordleLetterLength = 5;
+    }
+  } catch(e) {
+    antiwordleLetterLength = 5;
+  }
+
+  // Ambil kata target rahasia dengan Anti-Pengulangan (Shuffle Bag)
+  let chosenWord = '';
+  const pool = (allTargetWords && allTargetWords[antiwordleLetterLength] && allTargetWords[antiwordleLetterLength].length > 0)
+    ? allTargetWords[antiwordleLetterLength]
+    : (allValidWords && allValidWords[antiwordleLetterLength] && allValidWords[antiwordleLetterLength].length > 0
+        ? allValidWords[antiwordleLetterLength]
+        : ['LAMPU', 'PINTU', 'RUMAH', 'KERETA', 'BINTANG']);
+
+  if (!allAvailableAntiwordleWords[antiwordleLetterLength] || allAvailableAntiwordleWords[antiwordleLetterLength].length === 0) {
+    allAvailableAntiwordleWords[antiwordleLetterLength] = [...pool];
+    shuffleArray(allAvailableAntiwordleWords[antiwordleLetterLength]);
+  }
+  chosenWord = allAvailableAntiwordleWords[antiwordleLetterLength].pop();
+  antiwordleSecretWord = (chosenWord || 'LAMPU').toUpperCase().trim().replace(/[^A-Z]/g, '');
+
+  console.log(`[Antiwordle] Ronde ${antiwordleRound} dimulai. Kata Bom Rahasia: "${antiwordleSecretWord}" (${antiwordleLetterLength} huruf).`);
+
+  const roundNumEl = document.getElementById('roundNumber');
+  if (roundNumEl) roundNumEl.textContent = antiwordleRound;
+
+  const hostInput = document.getElementById('hostGuessInput');
+  if (hostInput) hostInput.placeholder = `Tebak kata aman ${antiwordleLetterLength} huruf...`;
+
+  renderAntiwordleUI();
+}
+
+// Memproses tebakan kata dari chat penonton atau input host
+function processAntiwordleGuess(guessWord, userData) {
+  if (currentGameMode !== 'antiwordle' || antiwordleIsGameOver) return;
+
+  const word = (guessWord || '').toUpperCase().trim().replace(/[^A-Z]/g, '');
+  if (word.length !== antiwordleLetterLength) return;
+
+  const userId = userData ? (userData.uniqueId || userData.nickname || 'anon') : 'anon';
+  const userName = userData ? (userData.nickname || userData.uniqueId || 'Penonton') : 'Penonton';
+  const isHost = (userId === 'host' || userId === 'host_offline' || (typeof userId === 'string' && userId.toLowerCase().includes('host')));
+
+  // Cegah spam kata duplikat dalam 1 ronde
+  if (antiwordleGuessedWords.has(word)) {
+    if (isHost) showToast(`Kata "${word}" sudah pernah ditebak di ronde ini!`, 2000);
+    return;
+  }
+
+  // Cooldown per-user (1.2 detik)
+  const now = Date.now();
+  if (!isHost) {
+    const lastTime = antiwordleUserCooldown.get(userId) || 0;
+    if (now - lastTime < 1200) return;
+    antiwordleUserCooldown.set(userId, now);
+  }
+
+  // Pra-validasi kamus kata baku (KBBI / valid wordlists)
+  const isValidWord = (allValidWordsSets && allValidWordsSets[antiwordleLetterLength] && allValidWordsSets[antiwordleLetterLength].has(word)) ||
+                      (allValidWords && allValidWords[antiwordleLetterLength] && allValidWords[antiwordleLetterLength].includes(word)) ||
+                      (VALID_WORDS_SET && VALID_WORDS_SET.has(word)) ||
+                      (fullValidDictionary && fullValidDictionary.has(word));
+
+  if (!isValidWord) {
+    if (isHost) showToast(`Kata "${word}" tidak ditemukan di kamus baku!`, 2000);
+    return; // Drop typo chat penonton
+  }
+
+  // Evaluasi Aturan Penguncian Antiwordle
+  const constraintCheck = evaluateAntiwordleConstraints(word);
+  if (!constraintCheck.valid) {
+    showToast(`⚠️ @${userName}: ${constraintCheck.reason}`, 2600);
+    if (window.sounds && typeof window.sounds.playInvalid === 'function') {
+      window.sounds.playInvalid();
+    }
+    return;
+  }
+
+  // Tebakan valid dan mematuhi seluruh aturan!
+  antiwordleGuessedWords.add(word);
+
+  const userAvatar = userData ? (userData.profilePictureUrl || (isHost ? getHostAvatar() : DEFAULT_HOST_AVATAR)) : DEFAULT_HOST_AVATAR;
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // KASUS 1: RANJAU MELEDAK! (Menebak Tepat Kata Rahasia Bom)
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (word === antiwordleSecretWord) {
+    handleAntiwordleDetonate(userData, word, userName, userAvatar);
+    return;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // KASUS 2: SELAMAT! (Tebakan Aman & Mendapatkan Poin Bertahan)
+  // ═══════════════════════════════════════════════════════════════════════════
+  const colors = evaluateAntiwordleColors(word, antiwordleSecretWord);
+
+  // Perbarui memori penguncian huruf
+  for (let i = 0; i < colors.length; i++) {
+    const ch = word[i];
+    if (colors[i] === 'locked') {
+      antiwordleRedLetters.set(i, ch);
+    } else if (colors[i] === 'must-use') {
+      if (!antiwordleYellowLetters.has(ch)) {
+        antiwordleYellowLetters.set(ch, new Set());
+      }
+      antiwordleYellowLetters.get(ch).add(i);
+    } else if (colors[i] === 'banned') {
+      if (!antiwordleSecretWord.includes(ch)) {
+        antiwordleGreyLetters.add(ch);
+      }
+    }
+  }
+
+  const survivalPts = 5;
+  if (typeof addPoints === 'function' && userData) {
+    addPoints(userData, survivalPts);
+  }
+  antiwordleSurvivalCount++;
+
+  antiwordleGuesses.push({
+    word,
+    userName,
+    userAvatar,
+    userData,
+    colors,
+    isBomb: false
+  });
+
+  if (window.sounds) {
+    if (typeof window.sounds.playFlip === 'function') window.sounds.playFlip(0);
+    if (typeof window.sounds.playAntiwordleSurvive === 'function') window.sounds.playAntiwordleSurvive();
+  }
+
+  showToast(`🛡️ @${userName} LOLOS DARI RANJAU! (+${survivalPts} Pts)`, 2400);
+  renderAntiwordleUI();
+
+  // Kemenangan Kolektif: Jika berhasil bertahan 15 kata aman tanpa meledak
+  if (antiwordleSurvivalCount >= 15) {
+    handleAntiwordleDefused();
+  }
+}
+
+// Menangani momen dramatis ketika ranjau terinjak dan meledak
+function handleAntiwordleDetonate(userData, word, userName, userAvatar) {
+  antiwordleIsGameOver = true;
+
+  const explodeColors = new Array(word.length).fill('exploded');
+  antiwordleGuesses.push({
+    word,
+    userName,
+    userAvatar,
+    userData,
+    colors: explodeColors,
+    isBomb: true
+  });
+
+  // Efek Screen Shake & Suara Ledakan WebAudio
+  const container = document.getElementById('antiwordleContainer');
+  if (container) {
+    container.classList.add('is-detonating');
+    setTimeout(() => container.classList.remove('is-detonating'), 600);
+  }
+
+  if (window.sounds && typeof window.sounds.playAntiwordleDetonate === 'function') {
+    window.sounds.playAntiwordleDetonate();
+  }
+
+  renderAntiwordleUI();
+
+  showToast(`💥 @${userName} MENGINJAK RANJAU! KATA BOM: ${word}! (0 Poin)`, 4000);
+
+  // Tampilkan Kartu Hasil Ronde (Adaptasi Win Overlay Baku)
+  setTimeout(() => {
+    const winTitle = document.getElementById('winTitleText');
+    if (winTitle) {
+      winTitle.innerHTML = '<i class="fa-solid fa-bomb" style="color: #ef4444; margin-right: 6px;"></i> RANJAU MELEDAK!';
+    }
+    const winName = document.getElementById('winName');
+    if (winName) winName.textContent = `@${userName} (Korban Bom)`;
+    const winPts = document.getElementById('winPts');
+    if (winPts) winPts.innerHTML = '💥 0 Pts (Menginjak Ranjau)';
+    const winSubtitle = document.getElementById('winSubtitleText');
+    if (winSubtitle) winSubtitle.textContent = 'Kata Bom yang Terinjak:';
+    const winWord = document.getElementById('winWord');
+    if (winWord) {
+      winWord.style.display = '';
+      winWord.textContent = word;
+    }
+    const winAvatar = document.getElementById('winAvatar');
+    if (winAvatar) {
+      winAvatar.src = userAvatar;
+      winAvatar.onerror = function() { this.onerror = null; this.src = DEFAULT_HOST_AVATAR; };
+    }
+    const winFooter = document.getElementById('winFooter');
+    if (winFooter) {
+      winFooter.textContent = `🛡️ Total ${antiwordleSurvivalCount} tebakan berhasil selamat!`;
+    }
+
+    lastRoundWinner = userData || { nickname: userName, profilePictureUrl: userAvatar };
+    lastRoundTargetWord = antiwordleSecretWord;
+
+    triggerWinTransition(4500, false);
+  }, 1200);
+}
+
+// Menangani kemenangan kolektif jika komunitas berhasil bertahan hingga 15 kata aman
+function handleAntiwordleDefused() {
+  antiwordleIsGameOver = true;
+
+  if (window.sounds && typeof window.sounds.playWin === 'function') {
+    window.sounds.playWin();
+  }
+
+  showToast(`🏆 LUAR BIASA! BOM BERHASIL DIJINAKKAN! Komunitas bertahan 15 ronde!`, 4000);
+
+  setTimeout(() => {
+    const winTitle = document.getElementById('winTitleText');
+    if (winTitle) {
+      winTitle.innerHTML = '<i class="fa-solid fa-shield-halved" style="color: #22c55e; margin-right: 6px;"></i> BOM BERHASIL DIJINAKKAN!';
+    }
+    const winName = document.getElementById('winName');
+    if (winName) winName.textContent = 'SEMUA SURVIVOR';
+    const winPts = document.getElementById('winPts');
+    if (winPts) winPts.innerHTML = '🛡️ +20 Pts Kemenangan Tim';
+    const winSubtitle = document.getElementById('winSubtitleText');
+    if (winSubtitle) winSubtitle.textContent = 'Kata Bom yang Berhasil Dihindari:';
+    const winWord = document.getElementById('winWord');
+    if (winWord) {
+      winWord.style.display = '';
+      winWord.textContent = antiwordleSecretWord;
+    }
+    const winFooter = document.getElementById('winFooter');
+    if (winFooter) winFooter.textContent = 'Ronde baru akan segera dimulai...';
+
+    triggerWinTransition(4500, false);
+  }, 1200);
+}
+
+// Merender seluruh tampilan ubin tebakan dan status keyboard A-Z
+function renderAntiwordleUI() {
+  const boardEl = document.getElementById('antiwordleBoard');
+  const emptyHintEl = document.getElementById('antiwordleEmptyHint');
+
+  // 1. Render Papan Ubin Tebakan
+  if (boardEl) {
+    if (antiwordleGuesses.length === 0) {
+      boardEl.innerHTML = `
+        <div class="antiwordle-empty-hint" id="antiwordleEmptyHint">
+          <i class="fa-solid fa-comment-dots" style="color: #ef4444; margin-right: 6px;"></i>
+          Ketik kata ${antiwordleLetterLength} huruf di chat untuk bertahan!
+        </div>
+      `;
+    } else {
+      boardEl.innerHTML = '';
+      antiwordleGuesses.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'antiwordle-row';
+        if (item.isBomb) row.classList.add('is-detonated');
+
+        const avatar = document.createElement('img');
+        avatar.className = 'antiwordle-row-avatar';
+        avatar.src = item.userAvatar || DEFAULT_HOST_AVATAR;
+        avatar.title = item.userName;
+        avatar.onerror = function() { this.onerror = null; this.src = DEFAULT_HOST_AVATAR; };
+        row.appendChild(avatar);
+
+        const tilesGroup = document.createElement('div');
+        tilesGroup.className = 'antiwordle-tiles-group';
+        for (let i = 0; i < item.word.length; i++) {
+          const tile = document.createElement('div');
+          tile.className = 'antiwordle-tile';
+          const colorClass = item.colors[i];
+          if (colorClass === 'locked') tile.classList.add('tile-locked');
+          else if (colorClass === 'must-use') tile.classList.add('tile-must-use');
+          else if (colorClass === 'banned') tile.classList.add('tile-banned');
+          else if (colorClass === 'exploded') tile.classList.add('tile-exploded');
+
+          tile.textContent = item.word[i];
+          tilesGroup.appendChild(tile);
+        }
+        row.appendChild(tilesGroup);
+
+        const badge = document.createElement('div');
+        badge.className = 'antiwordle-row-badge';
+        badge.textContent = item.isBomb ? '💥 BOM!' : '+5 Pts';
+        row.appendChild(badge);
+
+        boardEl.appendChild(row);
+      });
+
+      // Gulir otomatis ke tebakan terbaru
+      const wrapper = document.querySelector('.antiwordle-board-wrapper');
+      if (wrapper) wrapper.scrollTop = wrapper.scrollHeight;
+    }
+  }
+
+  // 2. Render Keyboard Tracker (QWERTY A-Z)
+  const kbEl = document.getElementById('antiwordleKeyboard');
+  if (kbEl) {
+    kbEl.innerHTML = '';
+    const kbRows = [
+      ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+      ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+      ['Z', 'X', 'C', 'V', 'B', 'N', 'M']
+    ];
+
+    const lockedLetters = new Set(Array.from(antiwordleRedLetters.values()));
+
+    kbRows.forEach(letters => {
+      const rowDiv = document.createElement('div');
+      rowDiv.className = 'antiwordle-kb-row';
+
+      letters.forEach(letter => {
+        const key = document.createElement('div');
+        key.className = 'antiwordle-key';
+        key.textContent = letter;
+
+        if (lockedLetters.has(letter)) {
+          key.classList.add('key-locked');
+        } else if (antiwordleYellowLetters.has(letter)) {
+          key.classList.add('key-must');
+        } else if (antiwordleGreyLetters.has(letter)) {
+          key.classList.add('key-banned');
+        }
+
+        rowDiv.appendChild(key);
+      });
+
+      kbEl.appendChild(rowDiv);
+    });
+  }
+
+  // 3. Render Badges Status & Danger Level
+  const survivalCountEl = document.getElementById('antiwordleSurvivalCount');
+  if (survivalCountEl) {
+    survivalCountEl.textContent = `${antiwordleSurvivalCount} Selamat`;
+  }
+
+  const dangerBadge = document.getElementById('antiwordleDangerBadge');
+  const dangerText = document.getElementById('antiwordleDangerText');
+  const dangerIcon = document.getElementById('antiwordleDangerIcon');
+  if (dangerBadge && dangerText) {
+    const dangerScore = antiwordleGreyLetters.size + (antiwordleRedLetters.size * 2) + antiwordleYellowLetters.size;
+    dangerBadge.classList.remove('danger-warn', 'danger-critical');
+
+    if (dangerScore >= 10 || antiwordleRedLetters.size >= 3) {
+      dangerBadge.classList.add('danger-critical');
+      dangerText.textContent = 'ZONA KRITIS!';
+      if (dangerIcon) dangerIcon.style.color = '#ef4444';
+    } else if (dangerScore >= 5 || antiwordleRedLetters.size >= 1) {
+      dangerBadge.classList.add('danger-warn');
+      dangerText.textContent = 'WASPADA';
+      if (dangerIcon) dangerIcon.style.color = '#f59e0b';
+    } else {
+      dangerText.textContent = 'ZONA AMAN';
+      if (dangerIcon) dangerIcon.style.color = '#22c55e';
+    }
+  }
+}
+
+// Window Global Exports
+window.startAntiwordleGame = startAntiwordleGame;
+window.processAntiwordleGuess = processAntiwordleGuess;
+window.renderAntiwordleUI = renderAntiwordleUI;
+window.handleAntiwordleDetonate = handleAntiwordleDetonate;
+window.handleAntiwordleDefused = handleAntiwordleDefused;
+window.evaluateAntiwordleConstraints = evaluateAntiwordleConstraints;
 
 
 

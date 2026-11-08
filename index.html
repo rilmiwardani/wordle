@@ -276,6 +276,18 @@
               </div>
             </div>
           </div>
+
+          <!-- 19. Antiwordle (Ranjau Kata) -->
+          <div class="game-card card-antiwordle" onclick="selectGame('antiwordle')" id="cardAntiwordle">
+            <div class="card-visual" style="display: flex; align-items: center; justify-content: center; gap: 3px;">
+              <i class="fa-solid fa-land-mine-on" style="font-size: 20px; color: #ef4444;"></i>
+            </div>
+            <div class="card-body">
+              <div class="card-top-row">
+                <span class="card-title">ANTIWORDLE</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -615,6 +627,17 @@
                     <div class="game-card-text">
                       <div class="game-card-title">Sambung Kata</div>
                       <div class="game-card-desc">Meja Bundar Bergantian (Ketik JOIN di Chat)</div>
+                    </div>
+                  </div>
+
+                  <!-- Antiwordle -->
+                  <div class="game-card" data-value="antiwordle" onclick="selectCustomGame('antiwordle', event)">
+                    <div class="game-card-icon badge-antiwordle">
+                      <i class="fa-solid fa-land-mine-on" style="font-size: 16px; color: #ef4444;"></i>
+                    </div>
+                    <div class="game-card-text">
+                      <div class="game-card-title">Antiwordle</div>
+                      <div class="game-card-desc">Ranjau Kata: Hindari Menebak Kata Bom!</div>
                     </div>
                   </div>
                 </div>
@@ -2048,6 +2071,55 @@
             <button class="sambungkata-ctrl-btn reset-btn" id="skResetBtn" onclick="resetSambungKataTable()" title="Kosongkan meja dan kembali ke lobby">
               <i class="fa-solid fa-rotate-left"></i> Reset Meja
             </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Antiwordle (Ranjau Kata) Container -->
+      <div id="antiwordleContainer" class="antiwordle-container" style="display: none;">
+        <!-- Top Clue & Hazard Status Header -->
+        <div class="antiwordle-top-bar">
+          <div class="antiwordle-status-badge">
+            <i class="fa-solid fa-land-mine-on" style="color: #ef4444;"></i>
+            <span id="antiwordleStatusText">HINDARI BOM!</span>
+          </div>
+          <div class="antiwordle-stats-group">
+            <div class="antiwordle-danger-badge" id="antiwordleDangerBadge">
+              <i class="fa-solid fa-triangle-exclamation" id="antiwordleDangerIcon" style="color: #22c55e;"></i>
+              <span id="antiwordleDangerText">AMAN (100%)</span>
+            </div>
+            <div class="antiwordle-survivor-badge" id="antiwordleSurvivorBadge">
+              <i class="fa-solid fa-shield-halved" style="color: #38bdf8;"></i>
+              <span id="antiwordleSurvivalCount">0 Selamat</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Board of Guess Rows -->
+        <div class="antiwordle-board-wrapper">
+          <div class="antiwordle-board" id="antiwordleBoard">
+            <div class="antiwordle-empty-hint" id="antiwordleEmptyHint">
+              <i class="fa-solid fa-comment-dots" style="color: #ef4444; margin-right: 6px;"></i>
+              Ketik kata baku di chat untuk bertahan!
+            </div>
+          </div>
+        </div>
+
+        <!-- Restricted Keyboard Tracker (A-Z) -->
+        <div class="antiwordle-keyboard-container">
+          <div class="antiwordle-kb-legend">
+            <span class="antiwordle-legend-item"><span class="legend-swatch swatch-locked"></span> Posisi Terkunci</span>
+            <span class="antiwordle-legend-item"><span class="legend-swatch swatch-must"></span> Wajib Ada</span>
+            <span class="antiwordle-legend-item"><span class="legend-swatch swatch-banned"></span> Tereliminasi</span>
+          </div>
+          <div class="antiwordle-keyboard" id="antiwordleKeyboard"></div>
+        </div>
+
+        <!-- Bottom CTA & Rules Bar -->
+        <div class="antiwordle-footer">
+          <div class="antiwordle-chat-hint" id="antiwordleChatHint">
+            <i class="fa-solid fa-circle-info" style="color: #f59e0b;"></i>
+            <span id="antiwordleChatHintText">Setiap kata lolos = <strong>+5 Pts</strong>. Hati-hati jangan kena kata bom!</span>
           </div>
         </div>
       </div>

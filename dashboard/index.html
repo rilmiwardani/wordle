@@ -3147,7 +3147,8 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
     // ═════════════════════════════════════════════════════════════════════════
     function submitDashboardHostJoin() {
       socket.emit("dashboard-host-guess", { guess: "IKUT" });
-      const btn = event?.target?.closest('button');
+      const evt = (typeof window !== 'undefined' && window.event) ? window.event : null;
+      const btn = evt?.target?.closest ? evt.target.closest('button') : null;
       if (btn) {
         const old = btn.innerHTML;
         btn.innerHTML = '<i class="fa-solid fa-check"></i> Host Duduk!';
@@ -3161,11 +3162,14 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       if (!guess) return;
       socket.emit("dashboard-host-guess", { guess });
       input.value = "";
-      const btn = event?.target?.closest('button');
-      if (btn) {
-        const old = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-check"></i> Terkirim!';
-        setTimeout(() => { btn.innerHTML = old; }, 1200);
+      
+      const evt = (typeof window !== 'undefined' && window.event) ? window.event : null;
+      const clickedBtn = evt?.target?.closest ? evt.target.closest('button') : null;
+      const submitBtn = clickedBtn || (input.nextElementSibling && input.nextElementSibling.tagName === 'BUTTON' ? input.nextElementSibling : null);
+      if (submitBtn) {
+        const old = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Terkirim!';
+        setTimeout(() => { submitBtn.innerHTML = old; }, 1200);
       }
     }
 

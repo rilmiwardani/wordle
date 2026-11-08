@@ -8573,7 +8573,9 @@ window.addEventListener('DOMContentLoaded', () => {
           nickname: 'Host',
           profilePictureUrl: (typeof getHostAvatar === 'function') ? getHostAvatar() : 'assets/bg_nature.png'
         });
-        if (typeof showToast === 'function') showToast(`Host Tebak: ${guess}`, 1800);
+        if (typeof showToast === 'function' && currentGameMode !== 'sambungkata') {
+          showToast(`Host Tebak: ${guess}`, 1800);
+        }
       }
     }
   });
@@ -18654,6 +18656,7 @@ function isSambungKataWordValid(word) {
   if (!word || word.length < 2) return false;
   const len = word.length;
   if (sambungKataWordLength > 0 && len !== sambungKataWordLength) return false;
+  if (typeof fullValidDictionary !== 'undefined' && fullValidDictionary && fullValidDictionary.has && fullValidDictionary.has(word)) return true;
   if (allValidWordsSets && allValidWordsSets[len] && allValidWordsSets[len].has(word)) return true;
   if (allValidWords && allValidWords[len] && allValidWords[len].includes(word)) return true;
   if (allTargetWords && allTargetWords[len] && allTargetWords[len].includes(word)) return true;
@@ -18682,20 +18685,29 @@ function processSambungKataGuess(guessWord, userData) {
     return;
   }
 
-  // Jika game belum mulai atau sudah selesai, abaikan tebakan kata
-  if (sambungKataPhase !== 'playing') return;
-
-  const activePlayer = sambungKataSeats[sambungKataCurrentTurn];
-  if (!activePlayer || activePlayer.isDead) return;
-
-  // 2. Filter Pemain: Hanya pemain yang SEDANG GILIRANNYA yang boleh menebak
   const userId = userData.userId || userData.uniqueId || '';
   const userName = (userData.nickname || userData.uniqueId || '').replace(/^@+/, '');
   const isHost = (userId === 'host' || userId === 'host_offline' || (typeof userId === 'string' && userId.toLowerCase().includes('host')));
 
+  // Jika game belum mulai atau sudah selesai, beri tahu host atau abaikan tebakan kata
+  if (sambungKataPhase !== 'playing') {
+    if (isHost) {
+      if (sambungKataPhase === 'lobby') {
+        showToast('⚠️ Game belum dimulai! Klik "Mulai Game" di layar atau Dashboard.', 2500);
+      } else if (sambungKataPhase === 'gameover') {
+        showToast('⚠️ Ronde telah berakhir! Silakan reset atau mulai ronde baru.', 2500);
+      }
+    }
+    return;
+  }
+
+  const activePlayer = sambungKataSeats[sambungKataCurrentTurn];
+  if (!activePlayer || activePlayer.isDead) return;
+
+  // 2. Filter Pemain: Hanya pemain yang SEDANG GILIRANNYA yang boleh menebak (Host selalu boleh menebak/membantu)
   const isCurrentGuesser = (userId === activePlayer.userId) || 
                           (userName.toLowerCase() === activePlayer.userName.toLowerCase()) || 
-                          (isHost && activePlayer.userId.startsWith('host'));
+                          isHost;
 
   if (!isCurrentGuesser) {
     return;
@@ -18779,16 +18791,27 @@ function processSambungKataGuess(guessWord, userData) {
 
   sambungKataUsedWords.add(clean);
   sambungKataCurrentWord = clean;
-  sambungKataWordChain.unshift({ word: clean, userName: activePlayer.userName });
+
+  const isHostAssist = isHost && (activePlayer.userId !== userId && !activePlayer.userId.startsWith('host') && activePlayer.userName.toLowerCase() !== 'host');
+  const guesserName = isHostAssist ? `${activePlayer.userName} (Bantuan Host)` : activePlayer.userName;
+
+  sambungKataWordChain.unshift({ word: clean, userName: guesserName });
   activePlayer.score += 5;
 
   if (typeof addPlayerPoints === 'function') {
     addPlayerPoints(activePlayer.userId, activePlayer.userName, 5, activePlayer.userAvatar);
   }
 
-  const successMsg = (sambungKataSubMode === 'morph') 
-    ? `👏 @${activePlayer.userName} berhasil ubah ${sambungKataMorphDiff} huruf: "${clean}" (+5 Pts)`
-    : `👏 @${activePlayer.userName} berhasil sambung: "${clean}" (+5 Pts)`;
+  let successMsg = '';
+  if (sambungKataSubMode === 'morph') {
+    successMsg = isHostAssist 
+      ? `👏 Host membantu @${activePlayer.userName} ubah ${sambungKataMorphDiff} huruf: "${clean}" (+5 Pts)`
+      : `👏 @${activePlayer.userName} berhasil ubah ${sambungKataMorphDiff} huruf: "${clean}" (+5 Pts)`;
+  } else {
+    successMsg = isHostAssist 
+      ? `👏 Host membantu @${activePlayer.userName} sambung: "${clean}" (+5 Pts)`
+      : `👏 @${activePlayer.userName} berhasil sambung: "${clean}" (+5 Pts)`;
+  }
   showToast(successMsg, 2500);
   renderSambungKataUI();
 

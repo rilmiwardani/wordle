@@ -4409,6 +4409,11 @@ function loadWordLists(lang) {
          const word = w.trim().replace(/"/g, '').toUpperCase();
          if (word.length >= 2) fullValidDictionary.add(word);
       });
+      lengths.forEach(len => {
+        if (allValidWordsSets[len]) {
+          allValidWordsSets[len].forEach(w => fullValidDictionary.add(w));
+        }
+      });
       console.log(`Loaded FULL dictionary: ${fullValidDictionary.size} words`);
 
       if (typeof initWordPyramidExtendableSets === 'function') {
@@ -18448,6 +18453,12 @@ function initSambungKataGame() {
     clearInterval(sambungKataLobbyInterval);
     sambungKataLobbyInterval = null;
   }
+  if (!wordsLoaded || !fullValidDictionary || fullValidDictionary.size === 0) {
+    const curLang = lastLang || localStorage.getItem('wordle_lang') || 'id';
+    if (typeof loadWordLists === 'function') {
+      loadWordLists(curLang).catch(e => console.error('[Sambung Kata] Error loadWordLists:', e));
+    }
+  }
   updateSambungKataTimerUI();
   renderSambungKataUI();
 }
@@ -18589,6 +18600,21 @@ function startSambungKataPlay() {
   if (seatedIndices.length === 0) {
     showToast('⚠️ Belum ada pemain yang duduk di meja!', 2000);
     return;
+  }
+
+  // Pastikan kamus kata sudah siap sebelum game dimulai
+  if (!wordsLoaded || !fullValidDictionary || fullValidDictionary.size === 0) {
+    console.warn('[Sambung Kata] Kamus kata belum siap, memuat ulang sebelum mulai...');
+    const curLang = lastLang || localStorage.getItem('wordle_lang') || 'id';
+    if (typeof loadWordLists === 'function') {
+      loadWordLists(curLang).then(() => {
+        startSambungKataPlay();
+      }).catch(err => {
+        console.error('[Sambung Kata] Gagal memuat kamus kata:', err);
+        showToast('⚠️ Gagal memuat kamus kata!', 3000);
+      });
+      return;
+    }
   }
 
   sambungKataPhase = 'playing';
@@ -18779,15 +18805,52 @@ function hostSeatAction(seatIdx) {
 
 // Verifikasi Kamus Kata untuk Sambung Kata
 function isSambungKataWordValid(word) {
-  if (!word || word.length < 2) return false;
-  const len = word.length;
+  if (!word || typeof word !== 'string') return false;
+  const cleanWord = word.trim().toUpperCase().replace(/[^A-Z]/g, '');
+  const len = cleanWord.length;
+  if (len < 2 || len > 15) return false;
   if (sambungKataWordLength > 0 && len !== sambungKataWordLength) return false;
-  if (typeof fullValidDictionary !== 'undefined' && fullValidDictionary && fullValidDictionary.has && fullValidDictionary.has(word)) return true;
-  if (allValidWordsSets && allValidWordsSets[len] && allValidWordsSets[len].has(word)) return true;
-  if (allValidWords && allValidWords[len] && allValidWords[len].includes(word)) return true;
-  if (allTargetWords && allTargetWords[len] && allTargetWords[len].includes(word)) return true;
-  // Fallback kelonggaran kata jika kamus Set belum selesai load
-  return (sambungKataWordLength > 0) ? (len === sambungKataWordLength) : (len >= 3 && len <= 8);
+
+  // Pastikan kamus kata sudah dimuat
+  const isDictLoaded = (typeof fullValidDictionary !== 'undefined' && fullValidDictionary && fullValidDictionary.size > 0) ||
+                       (typeof allValidWordsSets !== 'undefined' && allValidWordsSets && allValidWordsSets[5] && allValidWordsSets[5].size > 0);
+  
+  if (!isDictLoaded) {
+    console.warn('[Sambung Kata] Kamus kata belum selesai dimuat! Memuat ulang kamus...');
+    const curLang = lastLang || localStorage.getItem('wordle_lang') || 'id';
+    if (typeof loadWordLists === 'function') {
+      loadWordLists(curLang).catch(e => console.error('[Sambung Kata] Error loadWordLists:', e));
+    }
+    return false;
+  }
+
+  // 1. Cek di kamus lengkap KBBI (fullValidDictionary)
+  if (typeof fullValidDictionary !== 'undefined' && fullValidDictionary && fullValidDictionary.has(cleanWord)) {
+    return true;
+  }
+
+  // 2. Cek di Set kata per panjang huruf (allValidWordsSets: 3-8)
+  if (typeof allValidWordsSets !== 'undefined' && allValidWordsSets && allValidWordsSets[len] && allValidWordsSets[len].has && allValidWordsSets[len].has(cleanWord)) {
+    return true;
+  }
+
+  // 3. Cek di allValidWords Array per panjang huruf
+  if (typeof allValidWords !== 'undefined' && allValidWords && allValidWords[len] && allValidWords[len].includes(cleanWord)) {
+    return true;
+  }
+
+  // 4. Cek di allTargetWords Array per panjang huruf
+  if (typeof allTargetWords !== 'undefined' && allTargetWords && allTargetWords[len] && allTargetWords[len].includes(cleanWord)) {
+    return true;
+  }
+
+  // 5. Cek di daftar kata starter Sambung Kata
+  if (typeof SAMBUNG_KATA_STARTERS !== 'undefined' && SAMBUNG_KATA_STARTERS.includes(cleanWord)) {
+    return true;
+  }
+
+  // Tolak semua kata yang tidak ada di kamus resmi!
+  return false;
 }
 
 // Memproses Tebakan Kata Masuk dari Chat TikTok
@@ -18795,7 +18858,10 @@ function processSambungKataGuess(guessWord, userData) {
   if (currentGameMode !== 'sambungkata') return;
   if (!guessWord || !userData) return;
 
-  const raw = guessWord.trim().toUpperCase();
+  const rawComment = (typeof guessWord === 'string' ? guessWord : '').trim();
+  // Bersihkan mention (@username) di awal pesan jika penonton membalas chat
+  const cleanedComment = rawComment.replace(/^@\S+\s*/, '');
+  const raw = cleanedComment.trim().toUpperCase();
   const clean = raw.replace(/[^A-Z]/g, '');
   const words = raw.split(/\s+/);
   const firstWordClean = words[0] ? words[0].replace(/[^A-Z]/g, '') : '';
@@ -18845,7 +18911,10 @@ function processSambungKataGuess(guessWord, userData) {
     // 3. Validasi Sub-Mode Morph: Panjang kata harus sama persis dengan kata saat ini di meja
     if (clean.length !== sambungKataCurrentWord.length) {
       showToast(`⚠️ Kata harus berpanjang ${sambungKataCurrentWord.length} huruf! ("${clean}" = ${clean.length} huruf)`, 2500);
-      if (window.sounds && typeof window.sounds.playShake === 'function') window.sounds.playShake();
+      if (window.sounds) {
+        if (typeof window.sounds.playInvalid === 'function') window.sounds.playInvalid();
+        else if (typeof window.sounds.playShake === 'function') window.sounds.playShake();
+      }
       return;
     }
 
@@ -18859,21 +18928,28 @@ function processSambungKataGuess(guessWord, userData) {
 
     if (diffCount === 0) {
       showToast(`⚠️ Kata "${clean}" sama persis! Silakan ubah ${targetDiff} huruf.`, 2200);
-      if (window.sounds && typeof window.sounds.playShake === 'function') window.sounds.playShake();
+      if (window.sounds) {
+        if (typeof window.sounds.playInvalid === 'function') window.sounds.playInvalid();
+        else if (typeof window.sounds.playShake === 'function') window.sounds.playShake();
+      }
       return;
     }
 
     if (diffCount !== targetDiff) {
       showToast(`⚠️ Wajib ubah tepat ${targetDiff} huruf! ("${clean}" memiliki ${diffCount} huruf berbeda)`, 2500);
-      if (window.sounds && typeof window.sounds.playShake === 'function') window.sounds.playShake();
+      if (window.sounds) {
+        if (typeof window.sounds.playInvalid === 'function') window.sounds.playInvalid();
+        else if (typeof window.sounds.playShake === 'function') window.sounds.playShake();
+      }
       return;
     }
   } else {
     // 3. Validasi Panjang Kata (Jika disetel selain Bebas)
     if (sambungKataWordLength > 0 && clean.length !== sambungKataWordLength) {
       showToast(`⚠️ Kata wajib ${sambungKataWordLength} huruf! ("${clean}" = ${clean.length} huruf)`, 2500);
-      if (window.sounds && typeof window.sounds.playShake === 'function') {
-        window.sounds.playShake();
+      if (window.sounds) {
+        if (typeof window.sounds.playInvalid === 'function') window.sounds.playInvalid();
+        else if (typeof window.sounds.playShake === 'function') window.sounds.playShake();
       }
       return;
     }
@@ -18884,8 +18960,9 @@ function processSambungKataGuess(guessWord, userData) {
 
     if (!clean.startsWith(targetConnector)) {
       showToast(`⚠️ Awalan kata harus "${targetConnector}"! (${clean} diawali ${clean.slice(0, targetConnector.length)})`, 2500);
-      if (window.sounds && typeof window.sounds.playShake === 'function') {
-        window.sounds.playShake();
+      if (window.sounds) {
+        if (typeof window.sounds.playInvalid === 'function') window.sounds.playInvalid();
+        else if (typeof window.sounds.playShake === 'function') window.sounds.playShake();
       }
       return;
     }
@@ -18894,8 +18971,9 @@ function processSambungKataGuess(guessWord, userData) {
   // 5. Validasi Anti-Duplikasi: Kata tidak boleh pernah digunakan di ronde ini
   if (sambungKataUsedWords.has(clean)) {
     showToast(`⚠️ Kata "${clean}" sudah pernah dipakai di meja ini!`, 2500);
-    if (window.sounds && typeof window.sounds.playShake === 'function') {
-      window.sounds.playShake();
+    if (window.sounds) {
+      if (typeof window.sounds.playInvalid === 'function') window.sounds.playInvalid();
+      else if (typeof window.sounds.playShake === 'function') window.sounds.playShake();
     }
     return;
   }
@@ -18903,8 +18981,9 @@ function processSambungKataGuess(guessWord, userData) {
   // 6. Validasi Kamus Kata Sah
   if (!isSambungKataWordValid(clean)) {
     showToast(`⚠️ Kata "${clean}" tidak ditemukan di kamus!`, 2000);
-    if (window.sounds && typeof window.sounds.playShake === 'function') {
-      window.sounds.playShake();
+    if (window.sounds) {
+      if (typeof window.sounds.playInvalid === 'function') window.sounds.playInvalid();
+      else if (typeof window.sounds.playShake === 'function') window.sounds.playShake();
     }
     return;
   }

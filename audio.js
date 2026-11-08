@@ -231,6 +231,11 @@ class SoundEngine {
         } catch (e) {}
     }
 
+    // Alias playShake untuk kompatibilitas efek getar/input salah
+    playShake() {
+        this.playInvalid();
+    }
+
     // Suara ketika pemindaian gelombang (scan wave) melewati tiap baris
     playScanRow(index = 0) {
         if (!this.enabled) return;

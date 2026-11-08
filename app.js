@@ -18798,8 +18798,15 @@ function processSambungKataGuess(guessWord, userData) {
   sambungKataWordChain.unshift({ word: clean, userName: guesserName });
   activePlayer.score += 5;
 
-  if (typeof addPlayerPoints === 'function') {
-    addPlayerPoints(activePlayer.userId, activePlayer.userName, 5, activePlayer.userAvatar);
+  if (typeof addPoints === 'function' && activePlayer) {
+    addPoints({
+      nickname: activePlayer.userName,
+      uniqueId: activePlayer.userId,
+      profilePictureUrl: activePlayer.userAvatar
+    }, 5);
+  }
+  if (typeof showFloatingPoints === 'function') {
+    showFloatingPoints(5, `skSeat_${sambungKataCurrentTurn}`);
   }
 
   let successMsg = '';
@@ -18831,8 +18838,15 @@ function handleSambungKataWin(winnerData) {
   const avatarUrl = (winnerData && winnerData.userAvatar) || DEFAULT_HOST_AVATAR;
   const winPts = 25;
 
-  if (winnerData && typeof addPlayerPoints === 'function') {
-    addPlayerPoints(winnerData.userId, winnerName, winPts, avatarUrl);
+  if (winnerData && typeof addPoints === 'function') {
+    addPoints({
+      nickname: winnerName,
+      uniqueId: winnerData.userId,
+      profilePictureUrl: avatarUrl
+    }, winPts);
+  }
+  if (typeof showFloatingPoints === 'function') {
+    showFloatingPoints(winPts, 'winOverlay');
   }
 
   lastRoundWinner = winnerData;
@@ -19142,6 +19156,16 @@ function renderSambungKataUI() {
 }
 
 // Window Global Exports
+function addPlayerPoints(userId, userName, points, avatarUrl) {
+  if (typeof addPoints === 'function') {
+    addPoints({
+      uniqueId: userId,
+      nickname: (userName || '').replace(/^@+/, ''),
+      profilePictureUrl: avatarUrl || DEFAULT_HOST_AVATAR
+    }, points || 0);
+  }
+}
+window.addPlayerPoints = addPlayerPoints;
 window.initSambungKataGame = initSambungKataGame;
 window.startSambungKataGame = startSambungKataGame;
 window.joinSambungKataSeat = joinSambungKataSeat;

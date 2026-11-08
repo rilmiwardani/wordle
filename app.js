@@ -7151,6 +7151,7 @@ function showWordGridWinOverlay() {
 }
 // Helper universal untuk mengecek apakah ronde/puzzle saat ini sudah aktif (mencegah puzzle berganti sendiri saat koneksi terhubung)
 function hasActiveGameRound() {
+  if (currentGameMode === 'antiwordle') return !!antiwordleSecretWord;
   if (currentGameMode === 'betweenle') return !!betweenleSecretWord;
   if (currentGameMode === 'cascadle') return !!(cascadleTargets && cascadleTargets[cascadleCurrentLevel]);
   if (currentGameMode === 'wanderwords') return !!wanderWordsCurrentPuzzle;
@@ -9921,7 +9922,7 @@ function handleChatGuess(data, optionalUserData) {
     return;
   }
 
-  const isCurrentOver = (currentGameMode === 'betweenle') ? betweenleIsGameOver : ((currentGameMode === 'cascadle') ? cascadleIsGameOver : ((currentGameMode === 'wanderwords') ? wanderWordsIsGameOver : ((currentGameMode === 'wordpyramid') ? wordPyramidIsGameOver : isGameOver)));
+  const isCurrentOver = (currentGameMode === 'antiwordle') ? antiwordleIsGameOver : ((currentGameMode === 'betweenle') ? betweenleIsGameOver : ((currentGameMode === 'cascadle') ? cascadleIsGameOver : ((currentGameMode === 'wanderwords') ? wanderWordsIsGameOver : ((currentGameMode === 'wordpyramid') ? wordPyramidIsGameOver : isGameOver))));
   if (isCurrentOver) return;
 
   // Hapus semua karakter selain huruf A-Z untuk bypass filter TikTok

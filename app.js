@@ -1615,6 +1615,9 @@ function updateTourneyUIElements() {
 window.toggleTourneyAutoRotate = function(checked) {
   tourneySettings.enabled = !!checked;
   saveTourneySettings();
+  if (typeof renderLeaderboard === 'function') {
+    renderLeaderboard();
+  }
   if (typeof showToast === 'function') {
     showToast(tourneySettings.enabled ? '🏆 Mode Turnamen & Rotasi Game Aktif!' : '⏹️ Mode Turnamen Dinonaktifkan (Manual)', 2500);
   }
@@ -1752,10 +1755,13 @@ window.setTourneyModePreset = function(preset, e) {
 window.toggleTourneyResetLeaderboard = function(checked) {
   tourneySettings.resetLeaderboardOnWin = !!checked;
   saveTourneySettings();
+  if (typeof renderLeaderboard === 'function') {
+    renderLeaderboard();
+  }
   if (typeof showToast === 'function') {
     showToast(tourneySettings.resetLeaderboardOnWin 
-      ? '🔄 Reset Top Rank Otomatis Aktif saat ada Juara!' 
-      : '⏸️ Reset Top Rank Otomatis Dinonaktifkan', 2200);
+      ? '🔄 Reset Top Rank Ronde Aktif (Rekap Aman)' 
+      : '⏸️ Top Rank Akumulasi Harian Aktif', 2200);
   }
 };
 
@@ -1772,6 +1778,9 @@ function recordTourneySessionScore(userData, points) {
   tourneySessionScores[username].pts += points;
   if (userData.profilePictureUrl) tourneySessionScores[username].avatar = userData.profilePictureUrl;
   updateTourneyUIElements();
+  if (tourneySettings.resetLeaderboardOnWin && typeof renderLeaderboard === 'function') {
+    renderLeaderboard();
+  }
 }
 
 function checkTourneyConditionMet() {
@@ -1985,22 +1994,17 @@ function closeTourneyPodium() {
 
 function resetLeaderboardDataQuietly() {
   try {
-    playerPoints = {};
-    const prefix = getPtsPrefix();
-    const keysToRemove = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith(prefix)) {
-        if (key.includes('_like_') || key.includes('_share_') || key.includes('_gift_') || key.includes('_active_') || key.includes('_avatar_')) continue;
-        if (prefix === 'pts_' && isOtherGameModeKey(key)) continue;
-        keysToRemove.push(key);
-      }
-    }
-    keysToRemove.forEach(k => localStorage.removeItem(k));
+    // Reset skor balapan ronde turnamen di memori agar sesi turnamen baru mulai dari 0
+    tourneySessionScores = {};
+    tourneySessionRounds = 0;
+    
+    // CATATAN PENTING: JANGAN hapus keys localStorage (pts_daily_ dan pts_)
+    // Data localStorage tetap aman diakumulasikan sepanjang siaran live untuk Poster Rekap Harian (single_recap.html).
+    
     if (typeof renderLeaderboard === 'function') {
       renderLeaderboard();
     }
-    console.log('[Tourney] Top Rank / Leaderboard reset quietly for game:', currentGameMode);
+    console.log('[Tourney] Leaderboard visual reset for next round (daily & all-time recap data preserved)');
   } catch(e) {
     console.error('[Tourney] Error resetting leaderboard quietly:', e);
   }
@@ -2068,10 +2072,10 @@ function addPoints(userData, points) {
   if (userData.profilePictureUrl) playerPoints[username].avatar = userData.profilePictureUrl;
   saveDailyPts(username, playerPoints[username].sessionPts);
   saveWeeklyPts(username, playerPoints[username].weeklyPts);
-  renderLeaderboard();
   if (typeof recordTourneySessionScore === 'function') {
     recordTourneySessionScore(userData, points);
   }
+  renderLeaderboard();
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -2114,10 +2118,35 @@ function renderLeaderboard() {
   const lbList = document.getElementById('lbList');
   if (!lbList) return;
   
-  const sortedPlayers = Object.entries(playerPoints)
-    .filter(([_, data]) => data[currentLbTab + 'Pts'] > 0)
-    .sort((a, b) => b[1][currentLbTab + 'Pts'] - a[1][currentLbTab + 'Pts'])
-    .slice(0, 3); // Top 3
+  const dailyBadge = document.getElementById('lbDailyBadge');
+  const isTourneyRace = (typeof tourneySettings !== 'undefined' && tourneySettings && tourneySettings.enabled && tourneySettings.resetLeaderboardOnWin);
+  
+  if (dailyBadge) {
+    dailyBadge.innerHTML = isTourneyRace 
+      ? '<span class="lb-pulse-dot" style="background:#f59e0b;"></span> Ronde Turnamen'
+      : '<span class="lb-pulse-dot"></span> Sesi Hari Ini';
+  }
+
+  let sortedPlayers = [];
+  if (isTourneyRace) {
+    // Mode turnamen dengan reset visual: tampilkan klasemen ronde turnamen saat ini (mulai dari 0 setiap ronde)
+    sortedPlayers = Object.entries(tourneySessionScores)
+      .filter(([_, data]) => (data.pts || 0) > 0)
+      .sort((a, b) => b[1].pts - a[1].pts)
+      .slice(0, 3)
+      .map(([username, data]) => [username, {
+        avatar: data.avatar || 'assets/bg_nature.png',
+        sessionPts: data.pts,
+        weeklyPts: data.pts,
+        allTimePts: data.pts
+      }]);
+  } else {
+    // Mode reguler: tampilkan akumulasi sesi harian
+    sortedPlayers = Object.entries(playerPoints)
+      .filter(([_, data]) => data[currentLbTab + 'Pts'] > 0)
+      .sort((a, b) => b[1][currentLbTab + 'Pts'] - a[1][currentLbTab + 'Pts'])
+      .slice(0, 3); // Top 3
+  }
     
   if (sortedPlayers.length === 0) {
     lbList.innerHTML = '<div style="text-align:center;font-size:10.5px;color:rgba(255,255,255,0.45);padding:4px;">Belum ada tebakan benar</div>';

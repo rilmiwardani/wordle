@@ -1377,6 +1377,75 @@ function isOtherGameModeKey(key) {
   return ALL_SPECIAL_PTS_PREFIXES.some(specialPrefix => key.startsWith(specialPrefix));
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// 🏆 TOURNAMENT & AUTO-ROTATION ENGINE STATE (DECLARED EARLY)
+// ═════════════════════════════════════════════════════════════════════════════
+
+const ALL_ROTATION_MODES = [
+  'wordle', 'word500', 'wordfit', 'colorfit',
+  'fillblanks', 'wordtango', 'wordgrid', 'squareword',
+  'wordladder', 'betweenle', 'cascadle', 'wanderwords', 'wordcluster', 'wordmatch', 'wordpyramid'
+];
+
+const FAST_PACED_MODES = [
+  'wordle', 'word500', 'squareword', 'betweenle', 'wordladder', 'fillblanks', 'wordpyramid'
+];
+
+const GAME_MODE_PRETTY_NAMES = {
+  wordle: 'Wordle',
+  word500: 'Word500',
+  wordfit: 'Word Fit',
+  colorfit: 'Color Fit',
+  fillblanks: 'Word Fill',
+  wordtango: 'Word Tango',
+  wordgrid: 'Word Grid',
+  squareword: 'Kotak Kata',
+  wordladder: 'Word Ladder',
+  betweenle: 'Betweenle',
+  cascadle: 'Cascadle',
+  wanderwords: 'Wander Words',
+  wordcluster: 'Word Cluster',
+  wordmatch: 'Word Match',
+  wordpyramid: 'Word Pyramid'
+};
+
+let tourneySettings = {
+  enabled: false,
+  triggerType: 'score',     // 'score' or 'rounds'
+  targetScore: 50,
+  targetRounds: 5,
+  podiumDuration: 8,
+  allowedModes: [...ALL_ROTATION_MODES],
+  singleGameMode: false,
+  resetLeaderboardOnWin: true
+};
+
+try {
+  const savedTourney = localStorage.getItem('wordle_tourney_settings');
+  if (savedTourney) {
+    const parsed = JSON.parse(savedTourney);
+    tourneySettings = { ...tourneySettings, ...parsed };
+    if (tourneySettings.resetLeaderboardOnWin === undefined) tourneySettings.resetLeaderboardOnWin = true;
+    if (tourneySettings.singleGameMode === undefined) tourneySettings.singleGameMode = false;
+  }
+} catch(e) {}
+
+// Pastikan mode lama (seperti wordloop / word600) dibersihkan dari cache browser
+if (Array.isArray(tourneySettings.allowedModes)) {
+  tourneySettings.allowedModes = tourneySettings.allowedModes.filter(m => ALL_ROTATION_MODES.includes(m));
+  if (tourneySettings.allowedModes.length === 0) {
+    tourneySettings.allowedModes = [...ALL_ROTATION_MODES];
+  }
+} else {
+  tourneySettings.allowedModes = [...ALL_ROTATION_MODES];
+}
+
+let tourneySessionScores = {}; // { [username]: { nickname, avatar, pts } }
+let tourneySessionRounds = 0;
+let isTourneyPodiumActive = false;
+let tourneyCountdownTimer = null;
+let tourneyPendingNextMode = null;
+
 function getPtsPrefix() {
   if (currentGameMode === 'word500') return 'pts_w500_';
   if (currentGameMode === 'wordfit') return 'pts_wfit_';
@@ -1468,75 +1537,6 @@ function getDailyPts(username) {
 function saveDailyPts(username, pts) {
   localStorage.setItem(getPtsPrefix() + 'daily_' + username, pts);
 }
-
-// ═════════════════════════════════════════════════════════════════════════════
-// 🏆 TOURNAMENT & AUTO-ROTATION ENGINE (GRAND FINALE PODIUM)
-// ═════════════════════════════════════════════════════════════════════════════
-
-const ALL_ROTATION_MODES = [
-  'wordle', 'word500', 'wordfit', 'colorfit',
-  'fillblanks', 'wordtango', 'wordgrid', 'squareword',
-  'wordladder', 'betweenle', 'cascadle', 'wanderwords', 'wordcluster', 'wordmatch', 'wordpyramid'
-];
-
-const FAST_PACED_MODES = [
-  'wordle', 'word500', 'squareword', 'betweenle', 'wordladder', 'fillblanks', 'wordpyramid'
-];
-
-const GAME_MODE_PRETTY_NAMES = {
-  wordle: 'Wordle',
-  word500: 'Word500',
-  wordfit: 'Word Fit',
-  colorfit: 'Color Fit',
-  fillblanks: 'Word Fill',
-  wordtango: 'Word Tango',
-  wordgrid: 'Word Grid',
-  squareword: 'Kotak Kata',
-  wordladder: 'Word Ladder',
-  betweenle: 'Betweenle',
-  cascadle: 'Cascadle',
-  wanderwords: 'Wander Words',
-  wordcluster: 'Word Cluster',
-  wordmatch: 'Word Match',
-  wordpyramid: 'Word Pyramid'
-};
-
-let tourneySettings = {
-  enabled: false,
-  triggerType: 'score',     // 'score' or 'rounds'
-  targetScore: 50,
-  targetRounds: 5,
-  podiumDuration: 8,
-  allowedModes: [...ALL_ROTATION_MODES],
-  singleGameMode: false,
-  resetLeaderboardOnWin: true
-};
-
-try {
-  const savedTourney = localStorage.getItem('wordle_tourney_settings');
-  if (savedTourney) {
-    const parsed = JSON.parse(savedTourney);
-    tourneySettings = { ...tourneySettings, ...parsed };
-    if (tourneySettings.resetLeaderboardOnWin === undefined) tourneySettings.resetLeaderboardOnWin = true;
-    if (tourneySettings.singleGameMode === undefined) tourneySettings.singleGameMode = false;
-  }
-} catch(e) {}
-
-// Pastikan mode lama (seperti wordloop / word600) dibersihkan dari cache browser
-if (Array.isArray(tourneySettings.allowedModes)) {
-  tourneySettings.allowedModes = tourneySettings.allowedModes.filter(m => ALL_ROTATION_MODES.includes(m));
-  if (tourneySettings.allowedModes.length === 0) {
-    tourneySettings.allowedModes = [...ALL_ROTATION_MODES];
-  }
-} else {
-  tourneySettings.allowedModes = [...ALL_ROTATION_MODES];
-}
-
-let tourneySessionScores = {}; // { [username]: { nickname, avatar, pts } }
-let tourneySessionRounds = 0;
-let isTourneyPodiumActive = false;
-let tourneyCountdownTimer = null;
-let tourneyPendingNextMode = null;
 
 function saveTourneySettings() {
   try {
@@ -4542,6 +4542,7 @@ function selectGame(mode) {
   gameSelectOverlay.style.display = 'none';
   loginOverlay.style.display = 'flex';
 }
+window.selectGame = selectGame;
 
 function switchGameMode(e) {
   if (e) e.stopPropagation();

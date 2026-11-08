@@ -13072,14 +13072,13 @@ body.theme-sepia .sambungkata-ctrl-btn.reset-btn {
   gap: 4px;
 }
 
-/* Board Wrapper */
+/* Board Wrapper - 5 Structured Rows (Exact Wordle Grid Look) */
 .antiwordle-board-wrapper {
   width: 100%;
-  min-height: 215px;
-  max-height: 255px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  scrollbar-width: none;
+  height: 232px;
+  min-height: 232px;
+  max-height: 232px;
+  overflow: hidden;
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.28);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -13094,21 +13093,13 @@ body.theme-sepia .sambungkata-ctrl-btn.reset-btn {
 .antiwordle-board {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
   width: 100%;
   align-items: center;
 }
 
 .antiwordle-empty-hint {
-  font-family: 'Outfit', sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  color: #94a3b8;
-  padding: 85px 0;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: none !important;
 }
 
 .antiwordle-row {
@@ -13121,11 +13112,57 @@ body.theme-sepia .sambungkata-ctrl-btn.reset-btn {
   padding: 2px 4px;
   box-sizing: border-box;
   animation: antiwordleRowSlide 0.25s ease-out;
+  border-radius: 6px;
 }
 
 @keyframes antiwordleRowSlide {
   0% { transform: translateY(-12px) scale(0.97); opacity: 0; }
   100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.antiwordle-row.is-latest {
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+
+.antiwordle-row.row-placeholder {
+  opacity: 0.55;
+  animation: none;
+}
+
+.antiwordle-avatar-placeholder {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+}
+
+.antiwordle-tile.tile-empty {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  color: transparent;
+}
+
+.antiwordle-tile.tile-cursor {
+  border-color: rgba(239, 68, 68, 0.6);
+  animation: tileCursorPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes tileCursorPulse {
+  0%, 100% { border-color: rgba(239, 68, 68, 0.35); }
+  50% { border-color: rgba(239, 68, 68, 0.9); background: rgba(239, 68, 68, 0.08); }
+}
+
+.antiwordle-row-badge.badge-placeholder {
+  background: transparent;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.25);
 }
 
 .antiwordle-row:first-child .antiwordle-tile {
@@ -13402,6 +13439,27 @@ body.theme-sepia .antiwordle-key.key-must {
   background: #a1881b !important;
   border-color: #856f14 !important;
   color: #ffffff !important;
+}
+
+body.theme-sepia .antiwordle-tile.tile-empty {
+  background: rgba(66, 52, 40, 0.05);
+  border-color: rgba(66, 52, 40, 0.2);
+}
+
+body.theme-sepia .antiwordle-avatar-placeholder {
+  border-color: rgba(66, 52, 40, 0.25);
+  background: rgba(66, 52, 40, 0.04);
+  color: rgba(66, 52, 40, 0.35);
+}
+
+body.theme-sepia .antiwordle-row-badge.badge-placeholder {
+  border-color: rgba(66, 52, 40, 0.2);
+  color: rgba(66, 52, 40, 0.35);
+}
+
+body.theme-sepia .antiwordle-row.is-latest {
+  background: rgba(66, 52, 40, 0.05);
+  box-shadow: 0 0 0 1px rgba(66, 52, 40, 0.25);
 }
 
 

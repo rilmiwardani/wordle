@@ -17,6 +17,7 @@ function getDisplayRows() {
   if (currentGameMode === 'squareword') return 5;
   if (currentGameMode === 'fillblanks') return 6;
   if (currentGameMode === 'wordtango') return 4;
+  if (currentGameMode === 'antiwordle') return 5;
   if (currentGameMode === 'word500') return displayRowsWord500;
   if (currentGameMode === 'wordfit') return displayRowsWordfit;
   return displayRowsWordle;
@@ -19678,20 +19679,19 @@ function renderAntiwordleUI() {
   const boardEl = document.getElementById('antiwordleBoard');
   const emptyHintEl = document.getElementById('antiwordleEmptyHint');
 
-  // 1. Render Papan Ubin Tebakan
+  // 1. Render Papan Ubin Tebakan (5 Baris Rapi Presisi seperti Wordle)
   if (boardEl) {
-    if (antiwordleGuesses.length === 0) {
-      boardEl.innerHTML = `
-        <div class="antiwordle-empty-hint" id="antiwordleEmptyHint">
-          <i class="fa-solid fa-comment-dots" style="color: #ef4444; margin-right: 6px;"></i>
-          Ketik kata ${antiwordleLetterLength} huruf di chat untuk bertahan!
-        </div>
-      `;
-    } else {
-      boardEl.innerHTML = '';
-      antiwordleGuesses.forEach(item => {
+    boardEl.innerHTML = '';
+    const VISIBLE_ROWS = 5;
+
+    for (let r = 0; r < VISIBLE_ROWS; r++) {
+      const item = antiwordleGuesses[r];
+
+      if (item) {
+        // Baris Aktif yang Berisi Tebakan
         const row = document.createElement('div');
         row.className = 'antiwordle-row';
+        if (r === 0) row.classList.add('is-latest');
         if (item.isBomb) row.classList.add('is-detonated');
 
         const avatar = document.createElement('img');
@@ -19723,12 +19723,39 @@ function renderAntiwordleUI() {
         row.appendChild(badge);
 
         boardEl.appendChild(row);
-      });
+      } else {
+        // Baris Kosong / Placeholder (Persis Kotak Ubin Kosong Wordle)
+        const emptyRow = document.createElement('div');
+        emptyRow.className = 'antiwordle-row row-placeholder';
 
-      // Kata terbaru selalu di baris paling atas (seperti Wordle)
-      const wrapper = document.querySelector('.antiwordle-board-wrapper');
-      if (wrapper) wrapper.scrollTop = 0;
+        const placeholderAvatar = document.createElement('div');
+        placeholderAvatar.className = 'antiwordle-avatar-placeholder';
+        placeholderAvatar.innerHTML = '<i class="fa-solid fa-user" style="opacity: 0.25; font-size: 13px;"></i>';
+        emptyRow.appendChild(placeholderAvatar);
+
+        const tilesGroup = document.createElement('div');
+        tilesGroup.className = 'antiwordle-tiles-group';
+        for (let i = 0; i < antiwordleLetterLength; i++) {
+          const emptyTile = document.createElement('div');
+          emptyTile.className = 'antiwordle-tile tile-empty';
+          if (r === 0 && antiwordleGuesses.length === 0 && i === 0) {
+            emptyTile.classList.add('tile-cursor');
+          }
+          tilesGroup.appendChild(emptyTile);
+        }
+        emptyRow.appendChild(tilesGroup);
+
+        const placeholderBadge = document.createElement('div');
+        placeholderBadge.className = 'antiwordle-row-badge badge-placeholder';
+        placeholderBadge.textContent = '...';
+        emptyRow.appendChild(placeholderBadge);
+
+        boardEl.appendChild(emptyRow);
+      }
     }
+
+    const wrapper = document.querySelector('.antiwordle-board-wrapper');
+    if (wrapper) wrapper.scrollTop = 0;
   }
 
   // 2. Render Keyboard Tracker (QWERTY A-Z)

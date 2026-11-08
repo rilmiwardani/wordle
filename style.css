@@ -12993,9 +12993,9 @@ body.theme-sepia .sambungkata-ctrl-btn.reset-btn {
   flex-direction: column;
   align-items: center;
   width: 100%;
-  max-width: 410px;
+  max-width: 440px;
   margin: 0 auto;
-  gap: 8px;
+  gap: 10px;
   box-sizing: border-box;
   transform: scale(var(--board-scale, 1));
   transform-origin: top center;
@@ -13007,7 +13007,7 @@ body.theme-sepia .sambungkata-ctrl-btn.reset-btn {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 6px 10px;
+  padding: 8px 12px;
   background: rgba(0, 0, 0, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
@@ -13016,31 +13016,31 @@ body.theme-sepia .sambungkata-ctrl-btn.reset-btn {
 
 .antiwordle-status-badge {
   font-family: 'Outfit', sans-serif;
-  font-size: 11.5px;
+  font-size: 13px;
   font-weight: 800;
   color: #f8fafc;
   letter-spacing: 0.5px;
   text-transform: uppercase;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 
 .antiwordle-stats-group {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .antiwordle-danger-badge {
   font-family: 'Outfit', sans-serif;
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 800;
   background: rgba(34, 197, 94, 0.15);
   border: 1px solid rgba(34, 197, 94, 0.35);
   color: #4ade80;
-  padding: 3px 6px;
-  border-radius: 4px;
+  padding: 4px 8px;
+  border-radius: 5px;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -13060,13 +13060,13 @@ body.theme-sepia .sambungkata-ctrl-btn.reset-btn {
 
 .antiwordle-survivor-badge {
   font-family: 'Outfit', sans-serif;
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 800;
   background: rgba(56, 189, 248, 0.15);
   border: 1px solid rgba(56, 189, 248, 0.35);
   color: #38bdf8;
-  padding: 3px 6px;
-  border-radius: 4px;
+  padding: 4px 8px;
+  border-radius: 5px;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -13075,14 +13075,14 @@ body.theme-sepia .sambungkata-ctrl-btn.reset-btn {
 /* Board Wrapper - 5 Structured Rows (Exact Wordle Grid Look) */
 .antiwordle-board-wrapper {
   width: 100%;
-  height: 232px;
-  min-height: 232px;
-  max-height: 232px;
+  height: 290px;
+  min-height: 290px;
+  max-height: 290px;
   overflow: hidden;
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.28);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 6px 4px;
+  padding: 8px 6px;
   box-sizing: border-box;
 }
 
@@ -13093,7 +13093,7 @@ body.theme-sepia .sambungkata-ctrl-btn.reset-btn {
 .antiwordle-board {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   width: 100%;
   align-items: center;
 }
@@ -13106,13 +13106,13 @@ body.theme-sepia .sambungkata-ctrl-btn.reset-btn {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: 8px;
   width: 100%;
-  max-width: 380px;
+  max-width: 420px;
   padding: 2px 4px;
   box-sizing: border-box;
   animation: antiwordleRowSlide 0.25s ease-out;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 @keyframes antiwordleRowSlide {
@@ -13121,8 +13121,8 @@ body.theme-sepia .sambungkata-ctrl-btn.reset-btn {
 }
 
 .antiwordle-row.is-latest {
-  background: rgba(255, 255, 255, 0.04);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.22);
 }
 
 .antiwordle-row.row-placeholder {
@@ -13131,9 +13131,9 @@ body.theme-sepia .sambungkata-ctrl-btn.reset-btn {
 }
 
 .antiwordle-avatar-placeholder {
-  width: 34px;
-  height: 34px;
-  border-radius: 6px;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
   border: 1.5px dashed rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
@@ -13145,7 +13145,7 @@ body.theme-sepia .sambungkata-ctrl-btn.reset-btn {
 
 .antiwordle-tile.tile-empty {
   background: rgba(255, 255, 255, 0.04);
-  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  border: 2px solid rgba(255, 255, 255, 0.14);
   color: transparent;
 }
 
@@ -13170,10 +13170,10 @@ body.theme-sepia .sambungkata-ctrl-btn.reset-btn {
 }
 
 .antiwordle-row-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 6px;
-  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
   object-fit: cover;
   background: #1e293b;
   flex-shrink: 0;
@@ -13182,7 +13182,7 @@ body.theme-sepia .sambungkata-ctrl-btn.reset-btn {
 
 .antiwordle-row.is-detonated .antiwordle-row-avatar {
   border-color: #ef4444;
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.65);
   animation: singedAvatarPop 0.4s ease-out;
 }
 
@@ -13194,20 +13194,20 @@ body.theme-sepia .sambungkata-ctrl-btn.reset-btn {
 
 .antiwordle-tiles-group {
   display: flex;
-  gap: 5px;
+  gap: 6px;
   align-items: center;
   justify-content: center;
   flex: 1;
 }
 
 .antiwordle-tile {
-  width: 38px;
-  height: 38px;
-  border-radius: 5px;
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 19px;
+  font-size: 24px;
   font-weight: 900;
   text-transform: uppercase;
   font-family: 'Outfit', sans-serif;
@@ -13230,10 +13230,9 @@ body.theme-sepia .sambungkata-ctrl-btn.reset-btn {
 }
 
 .antiwordle-tile.tile-banned {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.45);
-  text-decoration: line-through;
+  background: rgba(255, 255, 255, 0.14);
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.65);
 }
 
 .antiwordle-tile.tile-exploded {
@@ -13250,14 +13249,18 @@ body.theme-sepia .sambungkata-ctrl-btn.reset-btn {
 
 .antiwordle-row-badge {
   font-family: 'Outfit', sans-serif;
-  font-size: 10px;
+  font-size: 11.5px;
   font-weight: 800;
   color: #22c55e;
   background: rgba(34, 197, 94, 0.15);
   border: 1px solid rgba(34, 197, 94, 0.35);
-  border-radius: 4px;
-  padding: 3px 5px;
-  min-width: 42px;
+  border-radius: 5px;
+  padding: 0 8px;
+  min-width: 48px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   flex-shrink: 0;
 }
@@ -13273,64 +13276,64 @@ body.theme-sepia .sambungkata-ctrl-btn.reset-btn {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   align-items: center;
   background: rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
-  padding: 5px 4px;
+  padding: 7px 5px;
   box-sizing: border-box;
 }
 
 .antiwordle-kb-legend {
   display: flex;
-  gap: 10px;
-  font-size: 10px;
+  gap: 12px;
+  font-size: 11px;
   color: #94a3b8;
   font-weight: 600;
-  margin-bottom: 2px;
+  margin-bottom: 3px;
 }
 
 .antiwordle-legend-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
 }
 
 .legend-swatch {
-  width: 9px;
-  height: 9px;
-  border-radius: 2px;
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
   display: inline-block;
 }
 
 .legend-swatch.swatch-locked { background: #dc2626; }
 .legend-swatch.swatch-must { background: #c6aa24; }
-.legend-swatch.swatch-banned { background: rgba(255, 255, 255, 0.25); text-decoration: line-through; }
+.legend-swatch.swatch-banned { background: rgba(255, 255, 255, 0.25); }
 
 .antiwordle-keyboard {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   width: 100%;
   align-items: center;
 }
 
 .antiwordle-kb-row {
   display: flex;
-  gap: 3.5px;
+  gap: 4px;
   justify-content: center;
   width: 100%;
 }
 
 .antiwordle-key {
-  width: 32px;
-  height: 34px;
-  border-radius: 4px;
+  width: 35px;
+  height: 42px;
+  border-radius: 5px;
   background: rgba(255, 255, 255, 0.16);
   border: 1px solid rgba(255, 255, 255, 0.22);
   color: #f8fafc;
-  font-size: 13.5px;
+  font-size: 15.5px;
   font-weight: 800;
   display: flex;
   align-items: center;
@@ -13353,10 +13356,9 @@ body.theme-sepia .sambungkata-ctrl-btn.reset-btn {
 }
 
 .antiwordle-key.key-banned {
-  background: rgba(0, 0, 0, 0.4) !important;
-  border-color: rgba(255, 255, 255, 0.06) !important;
-  color: rgba(255, 255, 255, 0.25) !important;
-  text-decoration: line-through;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.35) !important;
 }
 
 /* Footer Hint */

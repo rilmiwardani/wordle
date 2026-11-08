@@ -711,7 +711,7 @@
         <!-- Rank 2 (Silver) -->
         <div class="podium-column podium-col-2">
           <div class="podium-avatar-wrap">
-            <img id="podiumAvatar2" class="podium-avatar" src="assets/bg_nature.png" alt="Rank 2">
+            <img id="podiumAvatar2" class="podium-avatar" src="assets/bg_nature.png" alt="Rank 2" crossorigin="anonymous" onerror="this.onerror=null; this.src='assets/bg_nature.png';">
             <div class="podium-rank-badge">2</div>
           </div>
           <div class="podium-name" id="podiumName2">—</div>
@@ -725,7 +725,7 @@
         <div class="podium-column podium-col-1">
           <i class="fa-solid fa-crown crown-icon"></i>
           <div class="podium-avatar-wrap">
-            <img id="podiumAvatar1" class="podium-avatar" src="assets/bg_nature.png" alt="Rank 1">
+            <img id="podiumAvatar1" class="podium-avatar" src="assets/bg_nature.png" alt="Rank 1" crossorigin="anonymous" onerror="this.onerror=null; this.src='assets/bg_nature.png';">
             <div class="podium-rank-badge">1</div>
           </div>
           <div class="podium-name" id="podiumName1">—</div>
@@ -738,7 +738,7 @@
         <!-- Rank 3 (Bronze) -->
         <div class="podium-column podium-col-3">
           <div class="podium-avatar-wrap">
-            <img id="podiumAvatar3" class="podium-avatar" src="assets/bg_nature.png" alt="Rank 3">
+            <img id="podiumAvatar3" class="podium-avatar" src="assets/bg_nature.png" alt="Rank 3" crossorigin="anonymous" onerror="this.onerror=null; this.src='assets/bg_nature.png';">
             <div class="podium-rank-badge">3</div>
           </div>
           <div class="podium-name" id="podiumName3">—</div>
@@ -813,7 +813,8 @@
       { id: 'cascadle', name: 'Cascadle', prefix: 'pts_cascadle_', icon: 'fa-water' },
       { id: 'wanderwords', name: 'Wander Words', prefix: 'pts_wanderwords_', icon: 'fa-compass' },
       { id: 'wordcluster', name: 'Word Cluster', prefix: 'pts_wordcluster_', icon: 'fa-circle-nodes' },
-      { id: 'wordmatch', name: 'Word Match', prefix: 'pts_wmatch_', icon: 'fa-link' }
+      { id: 'wordmatch', name: 'Word Match', prefix: 'pts_wmatch_', icon: 'fa-link' },
+      { id: 'sambungkata', name: 'Sambung Kata (Word Chain)', prefix: 'pts_sambungkata_', icon: 'fa-comments' }
     ];
 
     let currentSelectedMode = 'wordle';
@@ -925,6 +926,16 @@
     // ══════════════════════════════════════════════════════════
     // RENDER RECAP CARD FOR SELECTED GAME
     // ══════════════════════════════════════════════════════════
+    function getSafeAvatarUrl(rawUrl) {
+      if (!rawUrl || rawUrl === 'assets/bg_nature.png' || rawUrl.startsWith('data:')) {
+        return rawUrl || 'assets/bg_nature.png';
+      }
+      if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
+        return `/api/avatar-proxy?url=${encodeURIComponent(rawUrl)}`;
+      }
+      return rawUrl;
+    }
+
     function renderRecap() {
       const game = SUPPORTED_GAMES.find(g => g.id === currentSelectedMode) || SUPPORTED_GAMES[0];
       
@@ -950,15 +961,15 @@
 
       document.getElementById('podiumName1').textContent = p1.username;
       document.getElementById('podiumPts1').textContent = `${p1.pts} Poin`;
-      document.getElementById('podiumAvatar1').src = p1.avatar;
+      document.getElementById('podiumAvatar1').src = getSafeAvatarUrl(p1.avatar);
 
       document.getElementById('podiumName2').textContent = p2.username;
       document.getElementById('podiumPts2').textContent = `${p2.pts} Poin`;
-      document.getElementById('podiumAvatar2').src = p2.avatar;
+      document.getElementById('podiumAvatar2').src = getSafeAvatarUrl(p2.avatar);
 
       document.getElementById('podiumName3').textContent = p3.username;
       document.getElementById('podiumPts3').textContent = `${p3.pts} Poin`;
-      document.getElementById('podiumAvatar3').src = p3.avatar;
+      document.getElementById('podiumAvatar3').src = getSafeAvatarUrl(p3.avatar);
 
       // Runner-ups (#4 - #8)
       const runnerups = players.slice(3, 8);
@@ -975,7 +986,7 @@
           row.innerHTML = `
             <div class="runner-left">
               <span class="runner-rank">#${rank}</span>
-              <img class="runner-avatar" src="${p.avatar}" onerror="this.src='assets/bg_nature.png'" alt="${p.username}">
+              <img class="runner-avatar" src="${getSafeAvatarUrl(p.avatar)}" crossorigin="anonymous" onerror="this.onerror=null; this.src='assets/bg_nature.png'" alt="${p.username}">
               <span class="runner-name">${escapeText(p.username)}</span>
             </div>
             <span class="runner-pts">${p.pts} Poin</span>
@@ -1011,28 +1022,83 @@
       document.body.classList.toggle('theme-sepia');
     }
 
-    // Download High-Resolution Poster
+    // Download High-Resolution Poster (Crisp 1080x1920 HD)
     function downloadRecapPoster() {
       const card = document.getElementById('recapCardPoster');
       const notice = document.getElementById('downloadNotice');
-      if (notice) notice.style.display = 'block';
+      if (notice) {
+        notice.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin" style="margin-right: 6px;"></i> Membuat file poster HD...';
+        notice.style.display = 'block';
+      }
+
+      const btn = document.querySelector('.action-btn.btn-download');
+      if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+      }
+
+      // Pastikan posisi scroll ke atas agar tidak ada offset potongan rendering
+      const scrollPos = window.scrollY;
+      window.scrollTo(0, 0);
 
       html2canvas(card, {
-        scale: 2.5, // Crisp 1080x1920 for mobile story
+        scale: 2.666667, // Tepat 1080x1920 untuk kartu rasio 405x720 (9:16 Story)
         useCORS: true,
-        allowTaint: true,
-        backgroundColor: null
+        allowTaint: false, // Wajib false agar toDataURL/toBlob tidak terkena SecurityError Tainted Canvas
+        backgroundColor: null,
+        scrollX: 0,
+        scrollY: 0
       }).then(canvas => {
+        window.scrollTo(0, scrollPos);
         if (notice) notice.style.display = 'none';
-        const link = document.createElement('a');
-        link.download = `Rekap_${currentSelectedMode}_${currentTimeframe}_${Date.now()}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
+        if (btn) {
+          btn.disabled = false;
+          btn.style.opacity = '';
+        }
+
+        const fileName = `Rekap_${currentSelectedMode}_${currentTimeframe}_${Date.now()}.png`;
+
+        if (canvas.toBlob) {
+          canvas.toBlob(blob => {
+            if (!blob) {
+              fallbackDataUrlDownload(canvas, fileName);
+              return;
+            }
+            const blobUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = blobUrl;
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => {
+              document.body.removeChild(link);
+              URL.revokeObjectURL(blobUrl);
+            }, 1000);
+          }, 'image/png');
+        } else {
+          fallbackDataUrlDownload(canvas, fileName);
+        }
       }).catch(err => {
+        window.scrollTo(0, scrollPos);
         if (notice) notice.style.display = 'none';
+        if (btn) {
+          btn.disabled = false;
+          btn.style.opacity = '';
+        }
         console.error('Error generating image:', err);
-        alert('Gagal membuat gambar: ' + err.message);
+        alert('Gagal membuat gambar: ' + (err && err.message ? err.message : err));
       });
+    }
+
+    function fallbackDataUrlDownload(canvas, fileName) {
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = canvas.toDataURL('image/png');
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        document.body.removeChild(link);
+      }, 1000);
     }
 
     // Initialize

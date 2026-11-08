@@ -657,6 +657,35 @@ app.get("/api/lyrics", async (req, res) => {
   }
 });
 
+// Proxy Avatar Gambar Profil untuk Ekspor Poster Bersih CORS (html2canvas)
+app.get("/api/avatar-proxy", async (req, res) => {
+  const targetUrl = req.query.url;
+  if (!targetUrl || typeof targetUrl !== "string") {
+    return res.status(400).send("Missing url parameter");
+  }
+  if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
+    return res.status(400).send("Invalid url scheme");
+  }
+  try {
+    const resp = await fetch(targetUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+      }
+    });
+    if (!resp.ok) {
+      return res.redirect("/assets/bg_nature.png");
+    }
+    const contentType = resp.headers.get("content-type") || "image/jpeg";
+    const buffer = Buffer.from(await resp.arrayBuffer());
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.send(buffer);
+  } catch (err) {
+    res.redirect("/assets/bg_nature.png");
+  }
+});
+
 httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`\n╔═══════════════════════════════════════════════════╗`);
   console.log(`║  🎮  TikTok Live Interactive Game Server          ║`);

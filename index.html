@@ -1225,9 +1225,22 @@
                   </div>
                   <div style="display: flex; gap: 5px;" onclick="event.stopPropagation()">
                     <button type="button" class="lang-option sk-submode-btn active" data-submode="classic" onclick="setSambungKataSubMode('classic', event)" style="flex: 1; justify-content: center; padding: 5px 0; font-size: 10px; border-radius: 5px; margin: 0;">Sambung Huruf (Klasik)</button>
-                    <button type="button" class="lang-option sk-submode-btn" data-submode="morph" onclick="setSambungKataSubMode('morph', event)" style="flex: 1; justify-content: center; padding: 5px 0; font-size: 10px; border-radius: 5px; margin: 0;">Ganti 1 Huruf (Morph)</button>
+                    <button type="button" class="lang-option sk-submode-btn" data-submode="morph" onclick="setSambungKataSubMode('morph', event)" style="flex: 1; justify-content: center; padding: 5px 0; font-size: 10px; border-radius: 5px; margin: 0;">Ganti Huruf (Morph)</button>
                   </div>
-                  <div class="settings-subtext" style="margin-top: 4px;">Klasik: Menyambung huruf akhir kata. Ganti 1 Huruf: Kata baru harus berpanjang sama dan hanya mengubah tepat 1 huruf.</div>
+                  <div class="settings-subtext" style="margin-top: 4px;">Klasik: Menyambung huruf akhir kata. Ganti Huruf: Mengubah 1 atau 2 huruf dari kata aktif di meja.</div>
+                </div>
+
+                <!-- Jumlah Huruf Diubah (Mode Morph) -->
+                <div style="margin-bottom: 8px;" id="skMorphDiffGroup">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span style="font-size: 11px; color: #94a3b8;"><i class="fa-solid fa-shuffle" style="color: #ffd54f; margin-right: 4px;"></i> Huruf Diubah (Mode Morph):</span>
+                    <span id="skMorphDiffLabel" style="font-size: 11px; color: #ffd54f; font-weight: 700;">1 Huruf</span>
+                  </div>
+                  <div style="display: flex; gap: 5px;" onclick="event.stopPropagation()">
+                    <button type="button" class="lang-option sk-morphdiff-btn active" data-diff="1" onclick="setSambungKataMorphDiff(1, event)" style="flex: 1; justify-content: center; padding: 4px 0; font-size: 10px; border-radius: 4px; margin: 0;">1 Huruf</button>
+                    <button type="button" class="lang-option sk-morphdiff-btn" data-diff="2" onclick="setSambungKataMorphDiff(2, event)" style="flex: 1; justify-content: center; padding: 4px 0; font-size: 10px; border-radius: 4px; margin: 0;">2 Huruf</button>
+                  </div>
+                  <div class="settings-subtext" style="margin-top: 4px;">Tentukan jumlah huruf yang wajib diubah pemain pada gilirannya (1 atau 2 huruf).</div>
                 </div>
 
                 <!-- Jumlah Kursi / Maksimal Pemain -->
@@ -1969,8 +1982,8 @@
             <i class="fa-solid fa-chair" style="color: #25f4ee;"></i>
             <span id="skSeatsConfigText">6 Kursi</span>
           </div>
-          <div class="sk-config-pill" id="skConnectorConfigPill" onclick="cycleSambungKataConnector()" title="Klik untuk ganti jumlah huruf sambungan belakang (1, 2, atau 3 huruf)">
-            <i class="fa-solid fa-text-width" style="color: #ffd54f;"></i>
+          <div class="sk-config-pill" id="skConnectorConfigPill" onclick="cycleSambungKataConnector()" title="Klik untuk ganti aturan huruf sambungan/perubahan">
+            <i class="fa-solid fa-text-width" id="skConnectorConfigIcon" style="color: #ffd54f;"></i>
             <span id="skConnectorConfigText">1 Huruf</span>
           </div>
           <div class="sk-config-pill" id="skTimeConfigPill" onclick="cycleSambungKataTurnDuration()" title="Klik untuk ganti batas waktu giliran (10s, 15s, 20s, 30s)">

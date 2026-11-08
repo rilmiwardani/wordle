@@ -8645,6 +8645,7 @@ window.addEventListener('DOMContentLoaded', () => {
         musicCooldown: (typeof musicSettings !== 'undefined' && typeof musicSettings.cooldownSeconds === 'number' ? musicSettings.cooldownSeconds : 60),
         musicPlayerStyle: (typeof musicSettings !== 'undefined' ? (musicSettings.playerStyle || 'vinyl') : 'vinyl'),
         sambungKataSubMode: localStorage.getItem('sambungkata_sub_mode') || 'classic',
+        sambungKataMorphDiff: parseInt(localStorage.getItem('sambungkata_morph_diff')) || 1,
         sambungKataMaxSeats: parseInt(localStorage.getItem('sambungkata_max_seats')) || 6,
         sambungKataConnectorLen: parseInt(localStorage.getItem('sambungkata_connector_len')) || 1,
         sambungKataTurnDuration: parseInt(localStorage.getItem('sambungkata_turn_duration')) || 15,
@@ -8940,6 +8941,9 @@ function applyRemoteGameSettings(settings) {
   // 14. Sambung Kata (Meja Bundar) Settings
   if (typeof settings.sambungKataSubMode === 'string' && typeof setSambungKataSubMode === 'function') {
     setSambungKataSubMode(settings.sambungKataSubMode);
+  }
+  if (typeof settings.sambungKataMorphDiff === 'number' && typeof setSambungKataMorphDiff === 'function') {
+    setSambungKataMorphDiff(settings.sambungKataMorphDiff);
   }
   if (typeof settings.sambungKataMaxSeats === 'number' && typeof setSambungKataSeats === 'function') {
     setSambungKataSeats(settings.sambungKataMaxSeats);
@@ -17996,10 +18000,16 @@ window.initWordPyramidExtendableSets = initWordPyramidExtendableSets;
 // ═══════════════════════════════════════════════════════════════════
 let sambungKataRound = 1;
 let sambungKataPhase = 'lobby'; // 'lobby' | 'playing' | 'gameover'
-let sambungKataSubMode = 'classic'; // 'classic' (Sambung Huruf Akhir) | 'morph' (Ganti 1 Huruf)
+let sambungKataSubMode = 'classic'; // 'classic' (Sambung Huruf Akhir) | 'morph' (Ganti Huruf)
 try {
   const savedSubMode = localStorage.getItem('sambungkata_sub_mode');
   if (savedSubMode === 'classic' || savedSubMode === 'morph') sambungKataSubMode = savedSubMode;
+} catch(e) {}
+
+let sambungKataMorphDiff = 1; // Default 1 huruf (dapat disetting 1 atau 2 huruf)
+try {
+  const savedDiff = parseInt(localStorage.getItem('sambungkata_morph_diff'));
+  if (savedDiff === 1 || savedDiff === 2) sambungKataMorphDiff = savedDiff;
 } catch(e) {}
 
 let sambungKataMaxSeats = 6; // Default 6 kursi (dapat disetting 3-12)
@@ -18045,7 +18055,7 @@ const SAMBUNG_KATA_STARTERS = [
   'MATAHARI', 'JEMBATAN', 'KERAJAAN', 'PAHLAWAN', 'SEMANGAT'
 ];
 
-// Pengaturan Sub-Mode Aturan Sambung Kata ('classic' = Sambung Huruf Akhir, 'morph' = Ganti 1 Huruf)
+// Pengaturan Sub-Mode Aturan Sambung Kata ('classic' = Sambung Huruf Akhir, 'morph' = Ganti Huruf)
 function setSambungKataSubMode(mode, event) {
   if (event) event.stopPropagation();
   const m = (mode === 'morph') ? 'morph' : 'classic';
@@ -18059,13 +18069,13 @@ function setSambungKataSubMode(mode, event) {
   });
   const subModeLabel = document.getElementById('skSubModeLabel');
   if (subModeLabel) {
-    subModeLabel.textContent = (m === 'morph') ? 'Ganti 1 Huruf (Morph)' : 'Sambung Huruf Akhir';
+    subModeLabel.textContent = (m === 'morph') ? 'Ganti Huruf (Morph)' : 'Sambung Huruf Akhir';
   }
 
   // Update quick config pill
   const pillText = document.getElementById('skSubModeConfigText');
   if (pillText) {
-    pillText.textContent = (m === 'morph') ? 'Ganti 1' : 'Sambung';
+    pillText.textContent = (m === 'morph') ? 'Ganti Huruf' : 'Sambung';
   }
 
   // Sync ke localSocket jika terhubung
@@ -18074,7 +18084,7 @@ function setSambungKataSubMode(mode, event) {
   }
 
   renderSambungKataUI();
-  const desc = (m === 'morph') ? 'Ganti 1 Huruf (Word Morph)' : 'Sambung Huruf Akhir (Klasik)';
+  const desc = (m === 'morph') ? `Ganti Huruf (Wajib ${sambungKataMorphDiff} Huruf)` : 'Sambung Huruf Akhir (Klasik)';
   showToast(`🔄 Aturan disetel: ${desc}!`, 2000);
 }
 
@@ -18082,6 +18092,42 @@ function setSambungKataSubMode(mode, event) {
 function cycleSambungKataSubMode() {
   const nextMode = (sambungKataSubMode === 'morph') ? 'classic' : 'morph';
   setSambungKataSubMode(nextMode);
+}
+
+// Pengaturan Jumlah Huruf Diubah pada Sub-Mode Morph (1 atau 2 Huruf)
+function setSambungKataMorphDiff(diff, event) {
+  if (event) event.stopPropagation();
+  const d = (parseInt(diff) === 2) ? 2 : 1;
+  sambungKataMorphDiff = d;
+  try { localStorage.setItem('sambungkata_morph_diff', d); } catch(e) {}
+
+  // Update button states di settings modal
+  document.querySelectorAll('.sk-morphdiff-btn').forEach(btn => {
+    const val = parseInt(btn.getAttribute('data-diff'));
+    btn.classList.toggle('active', val === d);
+  });
+  const lbl = document.getElementById('skMorphDiffLabel');
+  if (lbl) lbl.textContent = `${d} Huruf`;
+
+  // Update quick config pill jika sub-mode morph
+  if (sambungKataSubMode === 'morph') {
+    const pillText = document.getElementById('skConnectorConfigText');
+    if (pillText) pillText.textContent = `${d} Huruf`;
+  }
+
+  // Sync ke localSocket jika terhubung
+  if (typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
+    localSocket.emit('update-game-settings', { sambungKataMorphDiff: d });
+  }
+
+  renderSambungKataUI();
+  showToast(`🔀 Aturan diubah: Wajib Ganti ${d} Huruf!`, 2000);
+}
+
+// Shortcut klik cepat toggle jumlah huruf ubah di mode morph
+function cycleSambungKataMorphDiff() {
+  const nextDiff = (sambungKataMorphDiff === 2) ? 1 : 2;
+  setSambungKataMorphDiff(nextDiff);
 }
 
 // Pengaturan Jumlah Kursi (3 s/d 12 Kursi)
@@ -18164,8 +18210,12 @@ function setSambungKataConnector(connLen, event) {
   showToast(`🔤 Sambungan disetel: ${desc}`, 2000);
 }
 
-// Shortcut klik cepat ganti jumlah huruf sambungan
+// Shortcut klik cepat ganti jumlah huruf sambungan / huruf yang diubah
 function cycleSambungKataConnector() {
+  if (sambungKataSubMode === 'morph') {
+    cycleSambungKataMorphDiff();
+    return;
+  }
   const nextConn = (sambungKataConnectorLen >= 3) ? 1 : (sambungKataConnectorLen + 1);
   setSambungKataConnector(nextConn);
 }
@@ -18417,9 +18467,10 @@ function startSambungKataPlay() {
   sambungKataUsedWords.clear();
   sambungKataWordChain = [];
 
-  // Tentukan kata awal (menyesuaikan sambungKataWordLength jika disetel, default 4 huruf untuk mode morph agar banyak kombinasi kata ganti 1 huruf)
+  // Tentukan kata awal (menyesuaikan sambungKataWordLength jika disetel, default 4 atau 5 huruf untuk mode morph)
   let startWord = '';
-  const targetLen = (sambungKataWordLength > 0) ? sambungKataWordLength : (sambungKataSubMode === 'morph' ? 4 : 5);
+  const defaultMorphLen = (sambungKataMorphDiff === 2) ? 5 : 4;
+  const targetLen = (sambungKataWordLength > 0) ? sambungKataWordLength : (sambungKataSubMode === 'morph' ? defaultMorphLen : 5);
   if (allTargetWords && allTargetWords[targetLen] && allTargetWords[targetLen].length > 0) {
     startWord = allTargetWords[targetLen][Math.floor(Math.random() * allTargetWords[targetLen].length)];
   } else if (allValidWords && allValidWords[targetLen] && allValidWords[targetLen].length > 0) {
@@ -18427,7 +18478,7 @@ function startSambungKataPlay() {
   } else {
     const candidates = (sambungKataWordLength > 0) 
       ? SAMBUNG_KATA_STARTERS.filter(w => w.length === sambungKataWordLength)
-      : (sambungKataSubMode === 'morph' ? SAMBUNG_KATA_STARTERS.filter(w => w.length === 4) : SAMBUNG_KATA_STARTERS);
+      : (sambungKataSubMode === 'morph' ? SAMBUNG_KATA_STARTERS.filter(w => w.length === defaultMorphLen) : SAMBUNG_KATA_STARTERS);
     startWord = (candidates.length > 0) 
       ? candidates[Math.floor(Math.random() * candidates.length)] 
       : SAMBUNG_KATA_STARTERS[0];
@@ -18655,20 +18706,22 @@ function processSambungKataGuess(guessWord, userData) {
       return;
     }
 
-    // 4. Hitung Perubahan Huruf (Hamming Distance = 1)
+    // 4. Hitung Perubahan Huruf (Hamming Distance)
     let diffCount = 0;
     for (let i = 0; i < clean.length; i++) {
       if (clean[i] !== sambungKataCurrentWord[i]) diffCount++;
     }
 
+    const targetDiff = (sambungKataMorphDiff === 2) ? 2 : 1;
+
     if (diffCount === 0) {
-      showToast(`⚠️ Kata "${clean}" sama persis! Silakan ubah 1 huruf.`, 2200);
+      showToast(`⚠️ Kata "${clean}" sama persis! Silakan ubah ${targetDiff} huruf.`, 2200);
       if (window.sounds && typeof window.sounds.playShake === 'function') window.sounds.playShake();
       return;
     }
 
-    if (diffCount > 1) {
-      showToast(`⚠️ Ubah tepat 1 huruf saja! ("${clean}" memiliki ${diffCount} huruf berbeda)`, 2500);
+    if (diffCount !== targetDiff) {
+      showToast(`⚠️ Wajib ubah tepat ${targetDiff} huruf! ("${clean}" memiliki ${diffCount} huruf berbeda)`, 2500);
       if (window.sounds && typeof window.sounds.playShake === 'function') window.sounds.playShake();
       return;
     }
@@ -18729,7 +18782,7 @@ function processSambungKataGuess(guessWord, userData) {
   }
 
   const successMsg = (sambungKataSubMode === 'morph') 
-    ? `👏 @${activePlayer.userName} berhasil ganti 1 huruf: "${clean}" (+5 Pts)`
+    ? `👏 @${activePlayer.userName} berhasil ubah ${sambungKataMorphDiff} huruf: "${clean}" (+5 Pts)`
     : `👏 @${activePlayer.userName} berhasil sambung: "${clean}" (+5 Pts)`;
   showToast(successMsg, 2500);
   renderSambungKataUI();
@@ -18827,7 +18880,7 @@ function renderSambungKataUI() {
     if (phaseText) phaseText.textContent = `GILIRAN: ${activeName}`;
     if (phaseIcon) phaseIcon.className = 'fa-solid fa-play';
     if (sambungKataSubMode === 'morph') {
-      if (hintText) hintText.innerHTML = `Ayo <strong>@${activeName}</strong>, ubah 1 huruf dari kata [ <strong>${sambungKataCurrentWord}</strong> ]!`;
+      if (hintText) hintText.innerHTML = `Ayo <strong>@${activeName}</strong>, ubah ${sambungKataMorphDiff} huruf dari kata [ <strong>${sambungKataCurrentWord}</strong> ]!`;
     } else {
       const lenLabel = (sambungKataWordLength > 0) ? ` (${sambungKataWordLength} huruf)` : '';
       if (hintText) hintText.innerHTML = `Ayo <strong>@${activeName}</strong>, ketik kata${lenLabel} berawalan "${targetConnector}"!`;
@@ -18842,25 +18895,45 @@ function renderSambungKataUI() {
   }
   const subModePillText = document.getElementById('skSubModeConfigText');
   if (subModePillText) {
-    subModePillText.textContent = (sambungKataSubMode === 'morph') ? 'Ganti 1' : 'Sambung';
+    subModePillText.textContent = (sambungKataSubMode === 'morph') ? 'Ganti Huruf' : 'Sambung';
   }
   const subModeLabel = document.getElementById('skSubModeLabel');
   if (subModeLabel) {
-    subModeLabel.textContent = (sambungKataSubMode === 'morph') ? 'Ganti 1 Huruf (Morph)' : 'Sambung Huruf Akhir';
+    subModeLabel.textContent = (sambungKataSubMode === 'morph') ? 'Ganti Huruf (Morph)' : 'Sambung Huruf Akhir';
   }
   document.querySelectorAll('.sk-submode-btn').forEach(btn => {
     const val = btn.getAttribute('data-submode');
     btn.classList.toggle('active', val === sambungKataSubMode);
   });
+
+  // Update morph diff button states di settings modal
+  document.querySelectorAll('.sk-morphdiff-btn').forEach(btn => {
+    const val = parseInt(btn.getAttribute('data-diff'));
+    btn.classList.toggle('active', val === sambungKataMorphDiff);
+  });
+  const morphDiffLabel = document.getElementById('skMorphDiffLabel');
+  if (morphDiffLabel) morphDiffLabel.textContent = `${sambungKataMorphDiff} Huruf`;
+  const morphDiffGroup = document.getElementById('skMorphDiffGroup');
+  if (morphDiffGroup) {
+    morphDiffGroup.style.display = (sambungKataSubMode === 'morph') ? 'block' : 'none';
+  }
+
   const seatsPillText = document.getElementById('skSeatsConfigText');
   if (seatsPillText) seatsPillText.textContent = `${sambungKataMaxSeats} Kursi`;
   const connPill = document.getElementById('skConnectorConfigPill');
-  if (connPill) {
-    connPill.style.display = (sambungKataSubMode === 'morph') ? 'none' : 'inline-flex';
-  }
+  const connPillIcon = document.getElementById('skConnectorConfigIcon');
   const connPillText = document.getElementById('skConnectorConfigText');
-  if (connPillText) {
-    connPillText.textContent = `${sambungKataConnectorLen} Huruf`;
+  if (connPill) {
+    connPill.style.display = 'inline-flex';
+    if (sambungKataSubMode === 'morph') {
+      connPill.title = 'Klik untuk ganti jumlah huruf yang diubah (1 atau 2 huruf)';
+      if (connPillIcon) connPillIcon.className = 'fa-solid fa-shuffle';
+      if (connPillText) connPillText.textContent = `${sambungKataMorphDiff} Huruf`;
+    } else {
+      connPill.title = 'Klik untuk ganti jumlah huruf sambungan belakang (1, 2, atau 3 huruf)';
+      if (connPillIcon) connPillIcon.className = 'fa-solid fa-text-width';
+      if (connPillText) connPillText.textContent = `${sambungKataConnectorLen} Huruf`;
+    }
   }
   const timePillText = document.getElementById('skTimeConfigText');
   if (timePillText) timePillText.textContent = `${sambungKataTurnDuration}s`;
@@ -18973,15 +19046,14 @@ function renderSambungKataUI() {
       const len = sambungKataCurrentWord.length;
       centerWordEl.className = 'sk-center-word len-' + Math.min(len, 8);
       
-      // Deteksi huruf yang baru diubah pada sub-mode morph
-      let changedIndex = -1;
+      // Deteksi huruf yang baru diubah pada sub-mode morph (bisa 1 atau 2 huruf)
+      const changedIndices = new Set();
       if (sambungKataSubMode === 'morph' && sambungKataWordChain.length >= 2) {
         const prevWord = sambungKataWordChain[1].word;
         if (prevWord && prevWord.length === len) {
           for (let i = 0; i < len; i++) {
             if (sambungKataCurrentWord[i] !== prevWord[i]) {
-              changedIndex = i;
-              break;
+              changedIndices.add(i);
             }
           }
         }
@@ -18991,7 +19063,7 @@ function renderSambungKataUI() {
       for (let c = 0; c < len; c++) {
         const tile = document.createElement('span');
         if (sambungKataSubMode === 'morph') {
-          tile.className = `sk-tile ${c === changedIndex ? 'changed-letter' : ''}`;
+          tile.className = `sk-tile ${changedIndices.has(c) ? 'changed-letter' : ''}`;
         } else {
           const isConnector = (c >= highlightStart);
           tile.className = `sk-tile ${isConnector ? 'last-letter' : ''}`;
@@ -19011,7 +19083,7 @@ function renderSambungKataUI() {
   }
   if (targetBadgeEl) {
     if (sambungKataSubMode === 'morph') {
-      targetBadgeEl.textContent = '±1 Huruf';
+      targetBadgeEl.textContent = `±${sambungKataMorphDiff} Huruf`;
     } else {
       targetBadgeEl.textContent = targetConnector;
     }
@@ -19054,6 +19126,8 @@ window.handleSambungKataWin = handleSambungKataWin;
 window.renderSambungKataUI = renderSambungKataUI;
 window.setSambungKataSubMode = setSambungKataSubMode;
 window.cycleSambungKataSubMode = cycleSambungKataSubMode;
+window.setSambungKataMorphDiff = setSambungKataMorphDiff;
+window.cycleSambungKataMorphDiff = cycleSambungKataMorphDiff;
 window.setSambungKataSeats = setSambungKataSeats;
 window.cycleSambungKataSeats = cycleSambungKataSeats;
 window.setSambungKataConnector = setSambungKataConnector;

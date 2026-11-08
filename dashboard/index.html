@@ -2042,7 +2042,19 @@
               </div>
               <div style="display: flex; gap: 6px;">
                 <button type="button" class="preset-pill-badge active" id="dashSkSubModeClassic" onclick="setDashSambungKataSubMode('classic')" style="flex: 1;">Sambung Huruf</button>
-                <button type="button" class="preset-pill-badge" id="dashSkSubModeMorph" onclick="setDashSambungKataSubMode('morph')" style="flex: 1;">Ganti 1 Huruf (Morph)</button>
+                <button type="button" class="preset-pill-badge" id="dashSkSubModeMorph" onclick="setDashSambungKataSubMode('morph')" style="flex: 1;">Ganti Huruf (Morph)</button>
+              </div>
+            </div>
+
+            <!-- Jumlah Huruf Diubah (Mode Morph) -->
+            <div style="margin-bottom: 12px;" id="dashSkMorphDiffRow">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 12px; color: var(--text2); font-weight: 600;"><i class="fa-solid fa-shuffle" style="color: #ffd54f; margin-right: 4px;"></i> Huruf Diubah (Mode Morph):</span>
+                <span id="dashSkMorphDiffVal" style="font-size: 12px; font-weight: 800; color: #ffd54f;">1 Huruf</span>
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <button type="button" class="preset-pill-badge active" id="dashSkMorphDiff1" onclick="setDashSambungKataMorphDiff(1)" style="flex: 1;">1 Huruf</button>
+                <button type="button" class="preset-pill-badge" id="dashSkMorphDiff2" onclick="setDashSambungKataMorphDiff(2)" style="flex: 1;">2 Huruf</button>
               </div>
             </div>
 
@@ -2883,6 +2895,9 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       if (cfg.sambungKataSubMode) {
         setDashSambungKataSubMode(cfg.sambungKataSubMode, true);
       }
+      if (typeof cfg.sambungKataMorphDiff === 'number') {
+        setDashSambungKataMorphDiff(cfg.sambungKataMorphDiff, true);
+      }
       if (typeof cfg.sambungKataMaxSeats === 'number') {
         setDashSambungKataSeats(cfg.sambungKataMaxSeats, true);
       }
@@ -3010,6 +3025,7 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
 
       // Sambung Kata settings
       currentGameSettings.sambungKataSubMode = localStorage.getItem('sambungkata_sub_mode') || 'classic';
+      currentGameSettings.sambungKataMorphDiff = parseInt(localStorage.getItem('sambungkata_morph_diff')) || 1;
       currentGameSettings.sambungKataMaxSeats = parseInt(localStorage.getItem('sambungkata_max_seats')) || 6;
       currentGameSettings.sambungKataConnectorLen = parseInt(localStorage.getItem('sambungkata_connector_len')) || 1;
       currentGameSettings.sambungKataTurnDuration = parseInt(localStorage.getItem('sambungkata_turn_duration')) || 15;
@@ -3036,7 +3052,19 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       if (classicBtn) classicBtn.classList.toggle('active', isClassic);
       if (morphBtn) morphBtn.classList.toggle('active', !isClassic);
       const lbl = document.getElementById('dashSkSubModeVal');
-      if (lbl) lbl.textContent = isClassic ? 'Sambung Huruf' : 'Ganti 1 Huruf';
+      if (lbl) lbl.textContent = isClassic ? 'Sambung Huruf' : 'Ganti Huruf';
+      if (!noSave) autoSaveSettings();
+    }
+
+    function setDashSambungKataMorphDiff(d, noSave) {
+      const diff = (parseInt(d) === 2) ? 2 : 1;
+      localStorage.setItem('sambungkata_morph_diff', diff);
+      const btn1 = document.getElementById('dashSkMorphDiff1');
+      const btn2 = document.getElementById('dashSkMorphDiff2');
+      if (btn1) btn1.classList.toggle('active', diff === 1);
+      if (btn2) btn2.classList.toggle('active', diff === 2);
+      const lbl = document.getElementById('dashSkMorphDiffVal');
+      if (lbl) lbl.textContent = diff + ' Huruf';
       if (!noSave) autoSaveSettings();
     }
 
@@ -3087,6 +3115,8 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
     function initDashSambungKataSettings() {
       const subMode = localStorage.getItem('sambungkata_sub_mode') || 'classic';
       setDashSambungKataSubMode(subMode, true);
+      const morphDiff = parseInt(localStorage.getItem('sambungkata_morph_diff')) || 1;
+      setDashSambungKataMorphDiff(morphDiff, true);
       const seats = parseInt(localStorage.getItem('sambungkata_max_seats')) || 6;
       setDashSambungKataSeats(seats, true);
       const conn = parseInt(localStorage.getItem('sambungkata_connector_len')) || 1;

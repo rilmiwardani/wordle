@@ -367,10 +367,47 @@
       font-weight: 800;
       color: var(--text-main);
       width: 100%;
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .podium-name .name-text {
+      max-width: 82px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      margin-bottom: 2px;
+    }
+
+    /* Trophy Badge */
+    .trophy-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.28) 0%, rgba(217, 119, 6, 0.42) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.65);
+      color: #ffd54f;
+      font-size: 9px;
+      font-weight: 900;
+      padding: 1px 4.5px;
+      border-radius: 8px;
+      line-height: 1.2;
+      flex-shrink: 0;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+    }
+    .trophy-badge i {
+      color: #f59e0b;
+      font-size: 8px;
+    }
+    body.theme-sepia .trophy-badge {
+      background: #dfc8a5;
+      border-color: #bfa175;
+      color: #78350f;
+    }
+    body.theme-sepia .trophy-badge i {
+      color: #b45309;
     }
 
     .podium-pts {
@@ -556,6 +593,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      max-width: 140px;
     }
 
     .runner-pts {
@@ -917,7 +955,8 @@
       const list = Object.entries(scores).map(([username, pts]) => ({
         username,
         pts,
-        avatar: avatars[username] || 'assets/bg_nature.png'
+        avatar: avatars[username] || 'assets/bg_nature.png',
+        trophies: parseInt(localStorage.getItem('pts_trophy_' + username)) || 0
       })).sort((a, b) => b.pts - a.pts);
 
       return list;
@@ -956,19 +995,28 @@
       document.getElementById('statTotalScore').textContent = totalScore;
 
       // Podium Top 3
-      const p1 = players[0] || { username: 'Belum Ada', pts: 0, avatar: 'assets/bg_nature.png' };
-      const p2 = players[1] || { username: '—', pts: 0, avatar: 'assets/bg_nature.png' };
-      const p3 = players[2] || { username: '—', pts: 0, avatar: 'assets/bg_nature.png' };
+      const p1 = players[0] || { username: 'Belum Ada', pts: 0, avatar: 'assets/bg_nature.png', trophies: 0 };
+      const p2 = players[1] || { username: '—', pts: 0, avatar: 'assets/bg_nature.png', trophies: 0 };
+      const p3 = players[2] || { username: '—', pts: 0, avatar: 'assets/bg_nature.png', trophies: 0 };
 
-      document.getElementById('podiumName1').textContent = p1.username;
+      function renderPodiumName(elementId, player) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        const trophyHtml = (player.trophies && player.trophies > 0)
+          ? `<span class="trophy-badge" title="${player.trophies} Trofi Turnamen"><i class="fa-solid fa-trophy"></i> ${player.trophies}</span>`
+          : '';
+        el.innerHTML = `<span class="name-text">${escapeText(player.username)}</span>${trophyHtml}`;
+      }
+
+      renderPodiumName('podiumName1', p1);
       document.getElementById('podiumPts1').textContent = `${p1.pts} Poin`;
       document.getElementById('podiumAvatar1').src = getSafeAvatarUrl(p1.avatar);
 
-      document.getElementById('podiumName2').textContent = p2.username;
+      renderPodiumName('podiumName2', p2);
       document.getElementById('podiumPts2').textContent = `${p2.pts} Poin`;
       document.getElementById('podiumAvatar2').src = getSafeAvatarUrl(p2.avatar);
 
-      document.getElementById('podiumName3').textContent = p3.username;
+      renderPodiumName('podiumName3', p3);
       document.getElementById('podiumPts3').textContent = `${p3.pts} Poin`;
       document.getElementById('podiumAvatar3').src = getSafeAvatarUrl(p3.avatar);
 
@@ -982,6 +1030,9 @@
       } else {
         runnerups.forEach((p, idx) => {
           const rank = idx + 4;
+          const trophyHtml = (p.trophies && p.trophies > 0)
+            ? `<span class="trophy-badge" title="${p.trophies} Trofi Turnamen"><i class="fa-solid fa-trophy"></i> ${p.trophies}</span>`
+            : '';
           const row = document.createElement('div');
           row.className = 'runner-row';
           row.innerHTML = `
@@ -989,6 +1040,7 @@
               <span class="runner-rank">#${rank}</span>
               <img class="runner-avatar" src="${getSafeAvatarUrl(p.avatar)}" crossorigin="anonymous" onerror="this.onerror=null; this.src='assets/bg_nature.png'" alt="${p.username}">
               <span class="runner-name">${escapeText(p.username)}</span>
+              ${trophyHtml}
             </div>
             <span class="runner-pts">${p.pts} Poin</span>
           `;

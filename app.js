@@ -1905,6 +1905,11 @@ function triggerTourneyPodiumFinale(isManualPreview = false) {
     try { triggerConfetti(); } catch(e) {}
   }
 
+  // Catat Trofi Juara Turnamen untuk Juara 1
+  if (!isManualPreview && sortedPlayers.length > 0 && sortedPlayers[0].nickname && typeof addPlayerTrophy === 'function') {
+    addPlayerTrophy(sortedPlayers[0].nickname);
+  }
+
   startTourneyCountdown(tourneySettings.podiumDuration || 8, isManualPreview);
 }
 
@@ -2057,6 +2062,30 @@ function addPoints(userData, points) {
     recordTourneySessionScore(userData, points);
   }
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 🏆 TOURNAMENT TROPHY TRACKING (BADGE KOLEKSI PIALA)
+// ═════════════════════════════════════════════════════════════════════════════
+function addPlayerTrophy(username) {
+  if (!username) return 0;
+  const clean = String(username).replace(/^@+/, '').trim();
+  if (!clean || clean === 'Belum Ada' || clean === '—') return 0;
+  const key = 'pts_trophy_' + clean;
+  const cur = parseInt(localStorage.getItem(key)) || 0;
+  const next = cur + 1;
+  try {
+    localStorage.setItem(key, next);
+  } catch(e) {}
+  return next;
+}
+window.addPlayerTrophy = addPlayerTrophy;
+
+function getPlayerTrophies(username) {
+  if (!username) return 0;
+  const clean = String(username).replace(/^@+/, '').trim();
+  return parseInt(localStorage.getItem('pts_trophy_' + clean)) || 0;
+}
+window.getPlayerTrophies = getPlayerTrophies;
 
 function switchLbTab(tab) {
   if (currentLbTab === tab) return;
@@ -18847,6 +18876,11 @@ function handleSambungKataWin(winnerData) {
   }
   if (typeof showFloatingPoints === 'function') {
     showFloatingPoints(winPts, 'winOverlay');
+  }
+
+  // Catat Trofi Juara Meja Sambung Kata
+  if (winnerName && winnerName !== 'Juara Meja' && !winnerName.startsWith('Tamu') && typeof addPlayerTrophy === 'function') {
+    addPlayerTrophy(winnerName);
   }
 
   lastRoundWinner = winnerData;

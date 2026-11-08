@@ -18065,7 +18065,7 @@ function setSambungKataSubMode(mode, event) {
   // Update quick config pill
   const pillText = document.getElementById('skSubModeConfigText');
   if (pillText) {
-    pillText.textContent = (m === 'morph') ? 'Ganti 1 Huruf' : 'Sambung Huruf';
+    pillText.textContent = (m === 'morph') ? 'Ganti 1' : 'Sambung';
   }
 
   // Sync ke localSocket jika terhubung
@@ -18152,7 +18152,7 @@ function setSambungKataConnector(connLen, event) {
 
   // Update quick config pill
   const pillText = document.getElementById('skConnectorConfigText');
-  if (pillText) pillText.textContent = (c === 1) ? '1 Huruf Akhir' : `${c} Huruf Akhir`;
+  if (pillText) pillText.textContent = `${c} Huruf`;
 
   // Sync ke localSocket jika terhubung
   if (typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
@@ -18189,7 +18189,7 @@ function setSambungKataTurnDuration(sec, event) {
 
   // Update quick config pill
   const pillText = document.getElementById('skTimeConfigText');
-  if (pillText) pillText.textContent = `${s}s Giliran`;
+  if (pillText) pillText.textContent = `${s}s`;
 
   // Sync ke localSocket jika terhubung
   if (typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
@@ -18234,7 +18234,7 @@ function setSambungKataWordLength(len, event) {
   // Update quick config pill di bar atas
   const pillText = document.getElementById('skLengthConfigText');
   if (pillText) {
-    pillText.textContent = (l === 0) ? 'Panjang: Bebas' : `Wajib ${l}H`;
+    pillText.textContent = (l === 0) ? 'Bebas' : `${l} Huruf`;
   }
 
   // Sync ke localSocket jika terhubung
@@ -18842,7 +18842,7 @@ function renderSambungKataUI() {
   }
   const subModePillText = document.getElementById('skSubModeConfigText');
   if (subModePillText) {
-    subModePillText.textContent = (sambungKataSubMode === 'morph') ? 'Ganti 1 Huruf' : 'Sambung Huruf';
+    subModePillText.textContent = (sambungKataSubMode === 'morph') ? 'Ganti 1' : 'Sambung';
   }
   const subModeLabel = document.getElementById('skSubModeLabel');
   if (subModeLabel) {
@@ -18860,13 +18860,13 @@ function renderSambungKataUI() {
   }
   const connPillText = document.getElementById('skConnectorConfigText');
   if (connPillText) {
-    connPillText.textContent = (sambungKataConnectorLen === 1) ? '1 Huruf Akhir' : `${sambungKataConnectorLen} Huruf Akhir`;
+    connPillText.textContent = `${sambungKataConnectorLen} Huruf`;
   }
   const timePillText = document.getElementById('skTimeConfigText');
-  if (timePillText) timePillText.textContent = `${sambungKataTurnDuration}s Giliran`;
+  if (timePillText) timePillText.textContent = `${sambungKataTurnDuration}s`;
   const lenPillText = document.getElementById('skLengthConfigText');
   if (lenPillText) {
-    lenPillText.textContent = (sambungKataWordLength === 0) ? 'Panjang: Bebas' : `Wajib ${sambungKataWordLength}H`;
+    lenPillText.textContent = (sambungKataWordLength === 0) ? 'Bebas' : `${sambungKataWordLength} Huruf`;
   }
   const durLabel = document.getElementById('skTurnDurationLabel');
   if (durLabel) durLabel.textContent = `${sambungKataTurnDuration} Detik`;

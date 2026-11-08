@@ -12276,32 +12276,46 @@ body.theme-sepia .tourney-mode-item span {
 /* Quick Config Bar */
 .sambungkata-config-bar {
   display: flex;
-  gap: 8px;
+  gap: 5px;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
   width: 100%;
   margin-bottom: 6px;
+  padding: 0 4px;
 }
 
 .sk-config-pill {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  padding: 3px 9px;
-  font-size: 11px;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 20px;
+  padding: 3px 8px;
+  font-size: 10.5px;
   font-weight: 700;
-  color: #ffffff;
+  color: #e2e8f0;
   cursor: pointer;
-  transition: all 0.2s ease;
+  white-space: nowrap;
+  user-select: none;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
 .sk-config-pill:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.15);
   border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
   transform: translateY(-1px);
+}
+
+.sk-config-pill:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.sk-config-pill i {
+  font-size: 10px;
 }
 
 /* Meja Bundar Wrapper & Board */
@@ -12874,6 +12888,19 @@ body.theme-sepia .sk-tile.changed-letter {
   background: #b45309;
   border-color: #d97706;
   color: #ffffff;
+}
+
+body.theme-sepia .sk-config-pill {
+  background: rgba(66, 52, 40, 0.08);
+  border-color: rgba(66, 52, 40, 0.2);
+  color: #423428;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+body.theme-sepia .sk-config-pill:hover {
+  background: rgba(66, 52, 40, 0.15);
+  border-color: rgba(66, 52, 40, 0.35);
+  color: #2c2117;
 }
 
 body.theme-sepia .sambungkata-chain-bar {

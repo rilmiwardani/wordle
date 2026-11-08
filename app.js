@@ -4523,7 +4523,8 @@ function selectGame(mode) {
     wordcluster: 'WORD CLUSTER',
     wordmatch: 'WORD MATCH',
     wordpyramid: 'WORD PYRAMID',
-    sambungkata: 'SAMBUNG KATA'
+    sambungkata: 'SAMBUNG KATA',
+    antiwordle: 'ANTIWORDLE'
   };
   const titleName = gameNames[mode] || mode.toUpperCase();
 

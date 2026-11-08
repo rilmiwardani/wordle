@@ -6262,10 +6262,17 @@ body.no-animations .win-wave {
   position: relative;
 }
 
+.betweenle-main-board[data-len="4"] { --betweenle-shift: -62px; }
+.betweenle-main-board[data-len="5"] { --betweenle-shift: -54px; }
+.betweenle-main-board[data-len="6"] { --betweenle-shift: -48px; }
+.betweenle-main-board[data-len="7"] { --betweenle-shift: -43px; }
+.betweenle-main-board[data-len="8"] { --betweenle-shift: -39px; }
+
 .betweenle-main-board[data-len="4"] .betweenle-track-col { height: 180px; }
 .betweenle-main-board[data-len="5"] .betweenle-track-col { height: 156px; }
 .betweenle-main-board[data-len="6"] .betweenle-track-col { height: 138px; }
 .betweenle-main-board[data-len="7"] .betweenle-track-col { height: 123px; }
+.betweenle-main-board[data-len="8"] .betweenle-track-col { height: 111px; }
 
 .betweenle-track-pin {
   background: #0284c7;
@@ -6343,7 +6350,7 @@ body.no-animations .win-wave {
   flex-direction: column;
   gap: 6px;
   flex: 1;
-  max-width: 345px;
+  max-width: 350px;
   position: relative;
   margin: 0;
   padding: 0;
@@ -6393,7 +6400,7 @@ body.no-animations .win-wave {
   transition: all 0.2s ease;
 }
 
-/* 4-letter to 7-letter responsive tile & avatar sizes */
+/* 4-letter to 8-letter responsive tile & avatar sizes */
 .betweenle-row[data-len="4"] .betweenle-tile,
 .betweenle-row[data-len="4"] .betweenle-avatar { width: 56px; height: 56px; font-size: 28px; }
 
@@ -6405,6 +6412,10 @@ body.no-animations .win-wave {
 
 .betweenle-row[data-len="7"] .betweenle-tile,
 .betweenle-row[data-len="7"] .betweenle-avatar { width: 37px; height: 37px; font-size: 19px; }
+
+.betweenle-row[data-len="8"] { gap: 5px; }
+.betweenle-row[data-len="8"] .betweenle-tile,
+.betweenle-row[data-len="8"] .betweenle-avatar { width: 33px; height: 33px; font-size: 17px; border-radius: 5px; }
 
 /* Guesser Avatar (Right of the tiles - Wordle Style) */
 .betweenle-avatar {
@@ -6496,15 +6507,15 @@ body.no-animations .win-wave {
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* Seamless Sliding Animations matching the exact 54px distance (48px tile + 6px gap) */
+/* Seamless Sliding Animations matching the exact row shift distance */
 .middle-guess-wrapper.animating-slide-up {
   animation: slideRowUp 0.44s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
 @keyframes slideRowUp {
   0% { transform: translateY(0); opacity: 1; }
-  80% { transform: translateY(-54px); opacity: 0.95; }
-  100% { transform: translateY(-54px); opacity: 0; }
+  80% { transform: translateY(var(--betweenle-shift, -54px)); opacity: 0.95; }
+  100% { transform: translateY(var(--betweenle-shift, -54px)); opacity: 0; }
 }
 
 .middle-guess-wrapper.animating-slide-down {
@@ -6513,8 +6524,8 @@ body.no-animations .win-wave {
 
 @keyframes slideRowDown {
   0% { transform: translateY(0); opacity: 1; }
-  80% { transform: translateY(54px); opacity: 0.95; }
-  100% { transform: translateY(54px); opacity: 0; }
+  80% { transform: translateY(calc(var(--betweenle-shift, -54px) * -1)); opacity: 0.95; }
+  100% { transform: translateY(calc(var(--betweenle-shift, -54px) * -1)); opacity: 0; }
 }
 
 /* Out of bounds shake */

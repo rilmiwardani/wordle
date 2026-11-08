@@ -14081,8 +14081,8 @@ document.addEventListener('keydown', unlockMediaAutoplay, { passive: true });
 // 12. BETWEENLE (TEBAK ABJAD KAMUS A-Z) - AUTHENTIC OFFICIAL RULES ENGINE
 // ═════════════════════════════════════════════════════════════════════════════
 
-let betweenleLetterLength = 5; // Default 5 huruf (bisa 4, 5, 6, 7)
-let betweenleLengthMode = 'fixed'; // 'fixed' atau 'random'
+let betweenleLetterLength = 5; // Default 5 huruf (bisa 4, 5, 6, 7, 8)
+let betweenleLengthMode = 'auto'; // 'auto' (mengikuti allowed_lengths) atau 'fixed'
 let betweenleRound = 1;
 let betweenleSecretWord = '';
 let betweenleSecretIndex = -1;
@@ -14214,12 +14214,12 @@ function pruneBetweenleQueue() {
   betweenleGuessQueue = validQueue;
 }
 
-// Mengatur panjang huruf (4, 5, 6, 7, atau acak)
+// Mengatur panjang huruf (4, 5, 6, 7, 8, atau acak)
 function setBetweenleLength(len) {
   if (betweenleIsAnimating) return;
-  if (len === 'random') {
-    betweenleLengthMode = 'random';
-    const options = [4, 5, 6];
+  if (len === 'random' || len === 'auto') {
+    betweenleLengthMode = 'auto';
+    const options = [4, 5, 6, 7, 8];
     betweenleLetterLength = options[Math.floor(Math.random() * options.length)];
   } else {
     betweenleLengthMode = 'fixed';
@@ -14231,17 +14231,20 @@ function setBetweenleLength(len) {
   betweenleIsAnimating = false;
   startBetweenleGame();
 }
+window.setBetweenleLength = setBetweenleLength;
 
 // Memulai atau me-reset ronde permainan Betweenle sesuai aturan resmi
 function startBetweenleGame() {
-  // Ambil panjang kata yang diizinkan dari pengaturan game
-  try {
-    const savedLengths = JSON.parse(localStorage.getItem('allowed_lengths') || '[5,6,7,8]');
-    const validBetweenle = savedLengths.filter(l => [4, 5, 6, 7].includes(l));
-    if (validBetweenle.length > 0) {
-      betweenleLetterLength = validBetweenle[Math.floor(Math.random() * validBetweenle.length)];
-    }
-  } catch(e) {}
+  // Ambil panjang kata yang diizinkan dari pengaturan game jika mode auto/acak
+  if (betweenleLengthMode !== 'fixed') {
+    try {
+      const savedLengths = JSON.parse(localStorage.getItem('allowed_lengths') || '[5,6,7,8]');
+      const validBetweenle = savedLengths.filter(l => [4, 5, 6, 7, 8].includes(l));
+      if (validBetweenle.length > 0) {
+        betweenleLetterLength = validBetweenle[Math.floor(Math.random() * validBetweenle.length)];
+      }
+    } catch(e) {}
+  }
 
   const activeDict = getBetweenleSortedDict(betweenleLetterLength);
   if (!activeDict || activeDict.length < 10) {

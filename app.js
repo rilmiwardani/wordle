@@ -18623,16 +18623,21 @@ function hostSeatAction(seatIdx) {
   const currentSeat = sambungKataSeats[seatIdx];
 
   if (currentSeat === null) {
-    // Isi kursi dengan host / guest
+    // Cek apakah Host sudah duduk di salah satu kursi
+    const hasHost = sambungKataSeats.some(s => s && (s.userId === 'host' || s.userId === 'host_offline' || s.userName === 'Host'));
+    const isHostSitting = !hasHost;
+    const seatedName = isHostSitting ? 'Host' : ('Tamu ' + (seatIdx + 1));
+    const seatedId = isHostSitting ? 'host_offline' : ('guest_' + Date.now());
+
     sambungKataSeats[seatIdx] = {
-      userId: 'host_' + Date.now(),
-      userName: 'Tamu ' + (seatIdx + 1),
+      userId: seatedId,
+      userName: seatedName,
       userAvatar: getHostAvatar(),
       lives: 3,
       isDead: false,
       score: 0
     };
-    showToast(`🪑 Kursi ${seatIdx + 1} diisi tamu!`, 1500);
+    showToast(`🪑 Kursi ${seatIdx + 1} diisi ${seatedName}!`, 1500);
   } else {
     // Kick pemain
     showToast(`🚪 @${currentSeat.userName} dikeluarkan dari Kursi ${seatIdx + 1}.`, 1500);

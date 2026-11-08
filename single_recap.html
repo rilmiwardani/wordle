@@ -273,9 +273,9 @@
 
     .game-hero-header {
       text-align: center;
-      padding: 4px 0 10px;
+      padding: 2px 0 8px;
       border-bottom: 1px solid var(--border-soft);
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .game-badge-chip {
@@ -291,11 +291,11 @@
       color: var(--accent-gold-light);
       text-transform: uppercase;
       letter-spacing: 0.8px;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
 
     .game-hero-title {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 900;
       letter-spacing: 0.5px;
       color: var(--text-main);
@@ -307,7 +307,7 @@
       font-size: 11px;
       font-weight: 500;
       color: var(--text-muted);
-      margin-top: 2px;
+      margin-top: 1px;
     }
 
     /* ══════════════════════════════════════════════════════════
@@ -318,7 +318,7 @@
       justify-content: center;
       align-items: flex-end;
       gap: 8px;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
       padding: 0 4px;
     }
 
@@ -429,7 +429,7 @@
       color: var(--accent-gold-light);
     }
     .podium-col-1 .podium-pedestal {
-      height: 68px;
+      height: 56px;
       background: linear-gradient(180deg, rgba(245, 158, 11, 0.25) 0%, rgba(245, 158, 11, 0.08) 100%);
       border-color: var(--accent-gold);
       color: var(--accent-gold-light);
@@ -452,7 +452,7 @@
       color: var(--accent-silver);
     }
     .podium-col-2 .podium-pedestal {
-      height: 52px;
+      height: 44px;
       background: linear-gradient(180deg, rgba(203, 213, 225, 0.2) 0%, rgba(203, 213, 225, 0.05) 100%);
       border-color: var(--accent-silver);
       color: var(--accent-silver);
@@ -475,30 +475,30 @@
       color: #fb923c;
     }
     .podium-col-3 .podium-pedestal {
-      height: 42px;
+      height: 36px;
       background: linear-gradient(180deg, rgba(217, 119, 6, 0.2) 0%, rgba(217, 119, 6, 0.05) 100%);
       border-color: var(--accent-bronze);
       color: #fb923c;
     }
 
     /* ══════════════════════════════════════════════════════════
-       RUNNER-UPS LIST (#4 - #8)
+       RUNNER-UPS LIST (#4 - #10)
        ══════════════════════════════════════════════════════════ */
     .runnerups-card {
       background: var(--card-inner);
       border: 1px solid var(--border-soft);
       border-radius: 12px;
-      padding: 8px 10px;
-      margin-bottom: 10px;
+      padding: 6px 10px 8px;
+      margin-bottom: 8px;
       flex-grow: 1;
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
-      gap: 5px;
+      gap: 3px;
     }
 
     .runnerups-title {
-      font-size: 10px;
+      font-size: 9.5px;
       font-weight: 800;
       color: var(--text-muted);
       text-transform: uppercase;
@@ -513,7 +513,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 3.5px 6px;
+      padding: 2.5px 6px;
       background: rgba(0, 0, 0, 0.18);
       border-radius: 6px;
       border: 1px solid rgba(255, 255, 255, 0.04);
@@ -526,23 +526,23 @@
     .runner-left {
       display: flex;
       align-items: center;
-      gap: 7px;
+      gap: 6px;
       min-width: 0;
       flex: 1;
     }
 
     .runner-rank {
-      font-size: 10.5px;
+      font-size: 10px;
       font-weight: 900;
       color: var(--text-muted);
-      width: 18px;
+      width: 20px;
       text-align: center;
       flex-shrink: 0;
     }
 
     .runner-avatar {
-      width: 22px;
-      height: 22px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
       object-fit: cover;
       background: #334155;
@@ -550,7 +550,7 @@
     }
 
     .runner-name {
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 700;
       color: var(--text-main);
       white-space: nowrap;
@@ -559,7 +559,7 @@
     }
 
     .runner-pts {
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 800;
       color: var(--accent-sky);
       flex-shrink: 0;
@@ -679,6 +679,9 @@
       <button type="button" class="action-btn btn-download" onclick="downloadRecapPoster()">
         <i class="fa-solid fa-download"></i> Unduh Poster (PNG)
       </button>
+      <button type="button" class="action-btn" onclick="closeRecapModal()" style="background: rgba(254, 44, 85, 0.15); border-color: rgba(254, 44, 85, 0.4); color: #fe2c55;" title="Tutup Recap">
+        <i class="fa-solid fa-xmark"></i> Tutup
+      </button>
     </div>
   </div>
 
@@ -699,10 +702,10 @@
 
         <div class="game-hero-header">
           <div class="game-badge-chip" id="gameTypeChip">
-            <i class="fa-solid fa-trophy"></i> REKAP JUARA GAME
+            <i class="fa-solid fa-trophy"></i> SESI HARI INI
           </div>
           <h1 class="game-hero-title" id="gameHeroTitle">WORDLE</h1>
-          <p class="game-hero-subtitle" id="gameHeroSubtitle">Penebak Terbaik Sesi Live TikTok</p>
+          <p class="game-hero-subtitle" id="gameHeroSubtitle">Top 10 Penebak Kata Terbaik</p>
         </div>
       </div>
 
@@ -712,7 +715,6 @@
         <div class="podium-column podium-col-2">
           <div class="podium-avatar-wrap">
             <img id="podiumAvatar2" class="podium-avatar" src="assets/bg_nature.png" alt="Rank 2" crossorigin="anonymous" onerror="this.onerror=null; this.src='assets/bg_nature.png';">
-            <div class="podium-rank-badge">2</div>
           </div>
           <div class="podium-name" id="podiumName2">—</div>
           <div class="podium-pts" id="podiumPts2">0 Pts</div>
@@ -726,7 +728,6 @@
           <i class="fa-solid fa-crown crown-icon"></i>
           <div class="podium-avatar-wrap">
             <img id="podiumAvatar1" class="podium-avatar" src="assets/bg_nature.png" alt="Rank 1" crossorigin="anonymous" onerror="this.onerror=null; this.src='assets/bg_nature.png';">
-            <div class="podium-rank-badge">1</div>
           </div>
           <div class="podium-name" id="podiumName1">—</div>
           <div class="podium-pts" id="podiumPts1">0 Pts</div>
@@ -739,7 +740,6 @@
         <div class="podium-column podium-col-3">
           <div class="podium-avatar-wrap">
             <img id="podiumAvatar3" class="podium-avatar" src="assets/bg_nature.png" alt="Rank 3" crossorigin="anonymous" onerror="this.onerror=null; this.src='assets/bg_nature.png';">
-            <div class="podium-rank-badge">3</div>
           </div>
           <div class="podium-name" id="podiumName3">—</div>
           <div class="podium-pts" id="podiumPts3">0 Pts</div>
@@ -749,13 +749,13 @@
         </div>
       </div>
 
-      <!-- Runner-ups (#4 - #8) -->
+      <!-- Runner-ups (#4 - #10) -->
       <div class="runnerups-card">
         <div class="runnerups-title">
-          <span><i class="fa-solid fa-ranking-star" style="margin-right: 4px; color: var(--accent-gold);"></i> Peringkat #4 - #8</span>
+          <span id="runnerupsTitleText"><i class="fa-solid fa-ranking-star" style="margin-right: 4px; color: var(--accent-gold);"></i> Peringkat #4 - #10</span>
           <span style="font-size: 9px; opacity: 0.8;">Poin Tebakan</span>
         </div>
-        <div id="runnerupsListWrap" style="display: flex; flex-direction: column; gap: 4px;">
+        <div id="runnerupsListWrap" style="display: flex; flex-direction: column; gap: 3px;">
           <!-- Diisi via render -->
         </div>
       </div>
@@ -767,8 +767,8 @@
           <div class="stat-mini-label"><i class="fa-solid fa-users"></i> Penebak</div>
         </div>
         <div class="stat-mini-box">
-          <div class="stat-mini-val" id="statTopPoints" style="color: var(--accent-gold);">0</div>
-          <div class="stat-mini-label"><i class="fa-solid fa-trophy"></i> Poin Top</div>
+          <div class="stat-mini-val" id="statAvgPoints" style="color: var(--accent-gold);">0 Pts</div>
+          <div class="stat-mini-label"><i class="fa-solid fa-chart-simple"></i> Rata-rata</div>
         </div>
         <div class="stat-mini-box">
           <div class="stat-mini-val" id="statTotalScore" style="color: var(--accent-green);">0</div>
@@ -940,18 +940,19 @@
       const game = SUPPORTED_GAMES.find(g => g.id === currentSelectedMode) || SUPPORTED_GAMES[0];
       
       document.getElementById('gameHeroTitle').textContent = game.name.split('(')[0].trim().toUpperCase();
-      document.getElementById('gameTypeChip').innerHTML = `<i class="fa-solid ${game.icon}"></i> ${currentTimeframe === 'daily' ? 'SESI LIVE HARI INI' : 'REKAP MINGGUAN'}`;
-      document.getElementById('gameHeroSubtitle').textContent = `Papan Rekap Juara Resmi • ${currentTimeframe === 'daily' ? 'Live Hari Ini' : 'Akumulasi Mingguan'}`;
+      document.getElementById('gameTypeChip').innerHTML = `<i class="fa-solid ${game.icon}"></i> ${currentTimeframe === 'daily' ? 'SESI HARI INI' : 'AKUMULASI MINGGUAN'}`;
+      document.getElementById('gameHeroSubtitle').textContent = `Top 10 Penebak Kata Terbaik`;
 
       const players = getGameScores(currentSelectedMode, currentTimeframe);
 
       // Stats
       const uniqueCount = players.length;
-      const topScore = players.length > 0 ? players[0].pts : 0;
       const totalScore = players.reduce((sum, p) => sum + p.pts, 0);
+      const avgScore = uniqueCount > 0 ? Math.round(totalScore / uniqueCount) : 0;
 
       document.getElementById('statUniqueSolvers').textContent = uniqueCount;
-      document.getElementById('statTopPoints').textContent = topScore;
+      const avgEl = document.getElementById('statAvgPoints');
+      if (avgEl) avgEl.textContent = `${avgScore} Pts`;
       document.getElementById('statTotalScore').textContent = totalScore;
 
       // Podium Top 3
@@ -971,8 +972,8 @@
       document.getElementById('podiumPts3').textContent = `${p3.pts} Poin`;
       document.getElementById('podiumAvatar3').src = getSafeAvatarUrl(p3.avatar);
 
-      // Runner-ups (#4 - #8)
-      const runnerups = players.slice(3, 8);
+      // Runner-ups (#4 - #10)
+      const runnerups = players.slice(3, 10);
       const runnerWrap = document.getElementById('runnerupsListWrap');
       runnerWrap.innerHTML = '';
 
@@ -1020,6 +1021,17 @@
 
     function toggleTheme() {
       document.body.classList.toggle('theme-sepia');
+    }
+
+    function closeRecapModal() {
+      try {
+        if (window.parent && window.parent.document) {
+          const overlay = window.parent.document.getElementById('recapOverlay');
+          if (overlay) overlay.style.display = 'none';
+          const iframe = window.parent.document.getElementById('recapIframe');
+          if (iframe) iframe.src = '';
+        }
+      } catch(e) {}
     }
 
     // Download High-Resolution Poster (Crisp 1080x1920 HD)

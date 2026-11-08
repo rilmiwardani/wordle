@@ -1396,7 +1396,7 @@ function getPtsPrefix() {
   return 'pts_';
 }
 
-// Memuat data harian & mingguan ke memori saat halaman dimuat
+// Memuat data harian & all time (sepanjang waktu) ke memori saat halaman dimuat
 function initWeeklyLeaderboard() {
   playerPoints = {};
   const prefix = getPtsPrefix();
@@ -1420,7 +1420,8 @@ function initWeeklyLeaderboard() {
           playerPoints[username] = {
             avatar: savedAvatar,
             sessionPts: pts,
-            weeklyPts: 0
+            weeklyPts: 0,
+            allTimePts: 0
           };
         } else {
           playerPoints[username].sessionPts = pts;
@@ -1433,10 +1434,12 @@ function initWeeklyLeaderboard() {
           playerPoints[username] = {
             avatar: savedAvatar,
             sessionPts: 0,
-            weeklyPts: pts
+            weeklyPts: pts,
+            allTimePts: pts
           };
         } else {
           playerPoints[username].weeklyPts = pts;
+          playerPoints[username].allTimePts = pts;
         }
       }
     }
@@ -1445,13 +1448,19 @@ function initWeeklyLeaderboard() {
   initTrackers();
 }
 initWeeklyLeaderboard();
+window.initAllTimeLeaderboard = initWeeklyLeaderboard;
 
 function getWeeklyPts(username) {
   return parseInt(localStorage.getItem(getPtsPrefix() + username) || '0');
 }
+const getAllTimePts = getWeeklyPts;
+window.getAllTimePts = getAllTimePts;
+
 function saveWeeklyPts(username, pts) {
   localStorage.setItem(getPtsPrefix() + username, pts);
 }
+const saveAllTimePts = saveWeeklyPts;
+window.saveAllTimePts = saveAllTimePts;
 
 function getDailyPts(username) {
   return parseInt(localStorage.getItem(getPtsPrefix() + 'daily_' + username) || '0');
@@ -2049,11 +2058,13 @@ function addPoints(userData, points) {
     playerPoints[username] = {
       avatar: userData.profilePictureUrl || 'assets/bg_nature.png',
       sessionPts: getDailyPts(username),
-      weeklyPts: getWeeklyPts(username)
+      weeklyPts: getWeeklyPts(username),
+      allTimePts: getWeeklyPts(username)
     };
   }
   playerPoints[username].sessionPts += points;
   playerPoints[username].weeklyPts += points;
+  playerPoints[username].allTimePts = playerPoints[username].weeklyPts;
   if (userData.profilePictureUrl) playerPoints[username].avatar = userData.profilePictureUrl;
   saveDailyPts(username, playerPoints[username].sessionPts);
   saveWeeklyPts(username, playerPoints[username].weeklyPts);
@@ -2088,12 +2099,13 @@ function getPlayerTrophies(username) {
 window.getPlayerTrophies = getPlayerTrophies;
 
 function switchLbTab(tab) {
-  if (currentLbTab === tab) return;
-  currentLbTab = tab;
+  const normalizedTab = (tab === 'alltime' || tab === 'weekly') ? 'weekly' : 'session';
+  if (currentLbTab === normalizedTab) return;
+  currentLbTab = normalizedTab;
   const tabSession = document.getElementById('tab-session');
-  const tabWeekly = document.getElementById('tab-weekly');
-  if (tabSession) tabSession.classList.toggle('active', tab === 'session');
-  if (tabWeekly) tabWeekly.classList.toggle('active', tab === 'weekly');
+  const tabWeekly = document.getElementById('tab-weekly') || document.getElementById('tab-alltime');
+  if (tabSession) tabSession.classList.toggle('active', currentLbTab === 'session');
+  if (tabWeekly) tabWeekly.classList.toggle('active', currentLbTab === 'weekly');
   
   renderLeaderboard();
 }
@@ -11328,7 +11340,7 @@ window.resetDailyLeaderboard = function(e) {
 
 window.resetLeaderboard = function(e) {
   if (e) e.stopPropagation();
-  showCustomConfirm("Reset Poin Daily dan Weekly (Tebakan Game)? Tindakan ini tidak bisa dibatalkan.", () => {
+  showCustomConfirm("Reset Poin Daily dan All Time (Tebakan Game)? Tindakan ini tidak bisa dibatalkan.", () => {
     playerPoints = {};
     const keysToRemove = [];
     const prefix = getPtsPrefix();
@@ -11343,7 +11355,7 @@ window.resetLeaderboard = function(e) {
     keysToRemove.forEach(k => localStorage.removeItem(k));
     
     renderLeaderboard();
-    showToast("Peringkat Game (Daily/Weekly) telah di-reset!");
+    showToast("Peringkat Game (Daily / All Time) telah di-reset!");
     
     const dropdown = document.getElementById('settingsDropdown');
     if (dropdown) dropdown.classList.remove('show');

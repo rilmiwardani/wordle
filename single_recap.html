@@ -706,7 +706,7 @@
 
       <div class="timeframe-pill-wrap">
         <button type="button" class="timeframe-btn active" id="btnDaily" onclick="setTimeframe('daily')">Sesi Ini (Daily)</button>
-        <button type="button" class="timeframe-btn" id="btnWeekly" onclick="setTimeframe('weekly')">Mingguan</button>
+        <button type="button" class="timeframe-btn" id="btnAllTime" onclick="setTimeframe('alltime')">All Time</button>
       </div>
     </div>
 
@@ -979,8 +979,10 @@
       const game = SUPPORTED_GAMES.find(g => g.id === currentSelectedMode) || SUPPORTED_GAMES[0];
       
       document.getElementById('gameHeroTitle').textContent = game.name.split('(')[0].trim().toUpperCase();
-      document.getElementById('gameTypeChip').innerHTML = `<i class="fa-solid ${game.icon}"></i> ${currentTimeframe === 'daily' ? 'SESI HARI INI' : 'AKUMULASI MINGGUAN'}`;
-      document.getElementById('gameHeroSubtitle').textContent = `Top 10 Penebak Kata Terbaik`;
+      document.getElementById('gameTypeChip').innerHTML = `<i class="fa-solid ${game.icon}"></i> ${currentTimeframe === 'daily' ? 'SESI HARI INI' : 'JUARA ALL TIME'}`;
+      document.getElementById('gameHeroSubtitle').textContent = (currentTimeframe === 'daily')
+        ? 'Top 10 Penebak Kata Sesi Ini'
+        : 'Top 10 Penebak Kata Sepanjang Waktu';
 
       const players = getGameScores(currentSelectedMode, currentTimeframe);
 
@@ -1065,9 +1067,11 @@
     }
 
     function setTimeframe(tf) {
-      currentTimeframe = tf;
-      document.getElementById('btnDaily').classList.toggle('active', tf === 'daily');
-      document.getElementById('btnWeekly').classList.toggle('active', tf === 'weekly');
+      currentTimeframe = (tf === 'daily') ? 'daily' : 'alltime';
+      const btnDaily = document.getElementById('btnDaily');
+      const btnAllTime = document.getElementById('btnAllTime') || document.getElementById('btnWeekly');
+      if (btnDaily) btnDaily.classList.toggle('active', currentTimeframe === 'daily');
+      if (btnAllTime) btnAllTime.classList.toggle('active', currentTimeframe === 'alltime');
       renderRecap();
     }
 

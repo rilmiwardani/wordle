@@ -13124,8 +13124,12 @@ body.theme-sepia .sambungkata-ctrl-btn.reset-btn {
 }
 
 @keyframes antiwordleRowSlide {
-  0% { transform: translateY(-8px); opacity: 0; }
-  100% { transform: translateY(0); opacity: 1; }
+  0% { transform: translateY(-12px) scale(0.97); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.antiwordle-row:first-child .antiwordle-tile {
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
 }
 
 .antiwordle-row-avatar {

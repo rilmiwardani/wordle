@@ -19554,7 +19554,7 @@ function processAntiwordleGuess(guessWord, userData) {
   }
   antiwordleSurvivalCount++;
 
-  antiwordleGuesses.push({
+  antiwordleGuesses.unshift({
     word,
     userName,
     userAvatar,
@@ -19582,7 +19582,7 @@ function handleAntiwordleDetonate(userData, word, userName, userAvatar) {
   antiwordleIsGameOver = true;
 
   const explodeColors = new Array(word.length).fill('exploded');
-  antiwordleGuesses.push({
+  antiwordleGuesses.unshift({
     word,
     userName,
     userAvatar,
@@ -19725,9 +19725,9 @@ function renderAntiwordleUI() {
         boardEl.appendChild(row);
       });
 
-      // Gulir otomatis ke tebakan terbaru
+      // Kata terbaru selalu di baris paling atas (seperti Wordle)
       const wrapper = document.querySelector('.antiwordle-board-wrapper');
-      if (wrapper) wrapper.scrollTop = wrapper.scrollHeight;
+      if (wrapper) wrapper.scrollTop = 0;
     }
   }
 

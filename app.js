@@ -179,6 +179,16 @@ if (typeof window !== 'undefined') {
   window.currentFloatingLbTab = currentFloatingLbTab;
 }
 
+// ─── Word500 & Word Fit Gift Peek Clue State ───
+var isW500GiftPeekEnabled = (typeof localStorage !== 'undefined' && localStorage.getItem('wordle_w500_gift_peek') !== 'false');
+var isGiftPeekActive = false;
+var giftPeekTimer = null;
+var giftPeekDurationMs = 5000;
+if (typeof window !== 'undefined') {
+  window.isW500GiftPeekEnabled = isW500GiftPeekEnabled;
+  window.isGiftPeekActive = isGiftPeekActive;
+}
+
 function getMaxGuesses() {
   return (currentGameMode === 'word500' || currentGameMode === 'wordfit') ? Infinity : 6;
 }
@@ -1413,6 +1423,7 @@ let availableWords = [];
 let discoveredLetters = [];
 let bestGuess = null;
 let word500History = []; // { word, c, p, a, score, userData }
+if (typeof window !== 'undefined') window.word500History = word500History;
 let word500PendingInvalidRow = null; // baris invalid yang sedang tampil di board (Word500/600)
 let fillBlanksTargets = [];
 let wordTangoTargets = []; // { word, length, missingIndices, solved, solver, points }
@@ -5852,6 +5863,94 @@ function renderWordFitBoard(revealAllColors = false) {
   for (let i = toShow.length; i < DISPLAY_ROWS - 1; i++) board.appendChild(createEmptyWordFitRow(i));
 }
 
+// ─── Word500 & Word Fit Gift Peek Clue Handler ───
+function triggerGiftPeekClue(senderName, giftName, durationMs) {
+  if (!isW500GiftPeekEnabled) return;
+  if (currentGameMode !== 'word500' && currentGameMode !== 'wordfit' && currentGameMode !== 'colorfit') return;
+  if (isGameOver) return;
+
+  if (!word500History || word500History.length === 0) {
+    const displayName = senderName ? `@${senderName}` : 'Penonton';
+    showToast(`🎁 Gift dari ${displayName}! Buat tebakan dulu untuk membuka warna ubin!`, 3000);
+    return;
+  }
+
+  const duration = (typeof durationMs === 'number' && durationMs > 0) ? durationMs : giftPeekDurationMs;
+  const durSeconds = Math.round(duration / 1000);
+
+  // Jika gift datang beruntun, batalkan timer sebelumnya dan perpanjang waktu intip
+  if (giftPeekTimer) {
+    clearTimeout(giftPeekTimer);
+    giftPeekTimer = null;
+  }
+
+  isGiftPeekActive = true;
+  if (typeof window !== 'undefined') window.isGiftPeekActive = true;
+
+  // Buka seluruh warna ubin di board Word500 / Word Fit
+  if (currentGameMode === 'wordfit') {
+    renderWordFitBoard(true);
+  } else {
+    renderWord500Board(true);
+  }
+
+  const boardEl = document.getElementById('board');
+  if (boardEl) boardEl.classList.add('is-gift-peek');
+
+  // Efek suara sintesis lembut
+  if (window.sounds && typeof window.sounds.playGreenChime === 'function') {
+    window.sounds.playGreenChime();
+  }
+
+  const displayName = senderName ? `@${senderName}` : 'Penonton';
+  const giftLabel = giftName ? ` [${giftName}]` : '';
+  showToast(`🎁 Gift${giftLabel} dari ${displayName}! Clue warna terbuka ${durSeconds} detik!`, 3500);
+
+  // Kembalikan ubin ke blind mode setelah durasi selesai
+  giftPeekTimer = setTimeout(() => {
+    isGiftPeekActive = false;
+    if (typeof window !== 'undefined') window.isGiftPeekActive = false;
+    giftPeekTimer = null;
+
+    const bEl = document.getElementById('board');
+    if (bEl) bEl.classList.remove('is-gift-peek');
+
+    // Hanya kembalikan ke blind jika ronde masih berjalan
+    if (!isGameOver) {
+      if (currentGameMode === 'wordfit') {
+        renderWordFitBoard(false);
+      } else if (currentGameMode === 'word500' || currentGameMode === 'colorfit') {
+        renderWord500Board(false);
+      }
+    }
+  }, duration);
+}
+window.triggerGiftPeekClue = triggerGiftPeekClue;
+
+function toggleW500GiftPeek(val) {
+  isW500GiftPeekEnabled = !!val;
+  try { localStorage.setItem('wordle_w500_gift_peek', isW500GiftPeekEnabled); } catch(e) {}
+  const toggle = document.getElementById('w500GiftPeekToggle');
+  if (toggle) toggle.checked = isW500GiftPeekEnabled;
+
+  if (!isW500GiftPeekEnabled && isGiftPeekActive) {
+    if (giftPeekTimer) { clearTimeout(giftPeekTimer); giftPeekTimer = null; }
+    isGiftPeekActive = false;
+    if (typeof window !== 'undefined') window.isGiftPeekActive = false;
+    const bEl = document.getElementById('board');
+    if (bEl) bEl.classList.remove('is-gift-peek');
+    if (!isGameOver) {
+      if (currentGameMode === 'wordfit') renderWordFitBoard(false);
+      else if (currentGameMode === 'word500' || currentGameMode === 'colorfit') renderWord500Board(false);
+    }
+  }
+
+  if (typeof localSocket !== 'undefined' && localSocket && localSocket.emit) {
+    localSocket.emit('update-game-settings', { w500GiftPeek: isW500GiftPeekEnabled });
+  }
+}
+window.toggleW500GiftPeek = toggleW500GiftPeek;
+
 // Render Word Tango Letter Pool in a 2-row pyramid, hiding used letters
 function renderTangoPool() {
   const chipsDiv = document.getElementById('tangoPoolChips');
@@ -7961,6 +8060,14 @@ function startNewRound() {
   bestGuess = null;
   word500History = [];
   word500PendingInvalidRow = null;
+  if (giftPeekTimer) {
+    clearTimeout(giftPeekTimer);
+    giftPeekTimer = null;
+  }
+  isGiftPeekActive = false;
+  if (typeof window !== 'undefined') window.isGiftPeekActive = false;
+  const peekBoard = document.getElementById('board');
+  if (peekBoard) peekBoard.classList.remove('is-gift-peek');
   userGuessDedup = new Set(); // reset per ronde
   isGameOver = false;
   isProcessing = false;
@@ -8247,6 +8354,14 @@ function switchAccount() {
   
   // Reset Leaderboard Sesi
   playerPoints = {};
+  if (giftPeekTimer) {
+    clearTimeout(giftPeekTimer);
+    giftPeekTimer = null;
+  }
+  isGiftPeekActive = false;
+  if (typeof window !== 'undefined') window.isGiftPeekActive = false;
+  const peekBoard = document.getElementById('board');
+  if (peekBoard) peekBoard.classList.remove('is-gift-peek');
   initWeeklyLeaderboard();
 
   // Switch UI back to login
@@ -8283,6 +8398,14 @@ function backToGameList(e) {
   guesses = [];
   round = 1;
   playerPoints = {};
+  if (giftPeekTimer) {
+    clearTimeout(giftPeekTimer);
+    giftPeekTimer = null;
+  }
+  isGiftPeekActive = false;
+  if (typeof window !== 'undefined') window.isGiftPeekActive = false;
+  const peekBoard = document.getElementById('board');
+  if (peekBoard) peekBoard.classList.remove('is-gift-peek');
 
   const skContainer = document.getElementById('sambungKataContainer');
   if (skContainer) skContainer.style.display = 'none';
@@ -9574,6 +9697,13 @@ function applyRemoteGameSettings(settings) {
     }
   }
 
+  // 6.9. Word500 & Word Fit Gift Peek Clue
+  if (settings.w500GiftPeek !== undefined && settings.w500GiftPeek !== isW500GiftPeekEnabled) {
+    if (typeof toggleW500GiftPeek === 'function') {
+      toggleW500GiftPeek(settings.w500GiftPeek);
+    }
+  }
+
   // 7. Display Rows
   const currentModeRows = getDisplayRows();
   if (typeof settings.displayRows === 'number' && settings.displayRows >= 3 && settings.displayRows <= 12 && settings.displayRows !== currentModeRows) {
@@ -10517,6 +10647,10 @@ function setupSocketListeners() {
     if (shouldAlert) {
       showSocialAlert(data, 'gift');
       spawnFloatingGift(data);
+      if (typeof triggerGiftPeekClue === 'function') {
+        const gName = data.giftName || (data.giftDetails && data.giftDetails.giftName) || '';
+        triggerGiftPeekClue(data.nickname || data.uniqueId, gName);
+      }
     }
 
     const username = data.nickname || data.uniqueId;
@@ -11403,8 +11537,8 @@ function processGuess(guessWord, userData, queueLen = 0) {
 
   // Hapus baris invalid sebelumnya dari layar (saat ada tebakan baru masuk)
   if (isAnySortedMode && word500PendingInvalidRow) {
-    if (isWordFit) renderWordFitBoard();
-    else renderWord500Board();
+    if (isWordFit) renderWordFitBoard(isGiftPeekActive);
+    else renderWord500Board(isGiftPeekActive);
   } else {
     if (word500PendingInvalidRow) {
       if (word500PendingInvalidRow.parentNode) word500PendingInvalidRow.remove();
@@ -11682,8 +11816,8 @@ function processGuess(guessWord, userData, queueLen = 0) {
     // Word500/WordFit valid: tambah ke history lalu render ulang terurut
     word500History.push({ word: guessWord, c: correctCount, p: presentCount, a: absentCount, score: (correctCount * 2) + presentCount, userData });
     guesses.push(guessWord);
-    if (isWordFit) renderWordFitBoard();
-    else renderWord500Board();
+    if (isWordFit) renderWordFitBoard(isGiftPeekActive);
+    else renderWord500Board(isGiftPeekActive);
   } else if (isAnySortedMode && !isValidWord) {
     // Word500/WordFit invalid: masukkan ke dalam board di posisi terbaru (atas) menggantikan tebakan terbaru,
     // tetap terlihat sampai digantikan oleh tebakan berikutnya.
@@ -12600,6 +12734,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const floatingLbSettingToggle = document.getElementById('floatingLbSettingToggle');
   if (floatingLbSettingToggle) floatingLbSettingToggle.checked = isFloatingLbVisible;
+
+  const w500GiftPeekToggle = document.getElementById('w500GiftPeekToggle');
+  if (w500GiftPeekToggle) w500GiftPeekToggle.checked = isW500GiftPeekEnabled;
   const floatingLbToggleBtn = document.getElementById('floatingLbToggleBtn');
   if (floatingLbToggleBtn) floatingLbToggleBtn.classList.toggle('active', isFloatingLbVisible);
 

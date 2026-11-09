@@ -1831,6 +1831,18 @@
                 </label>
               </div>
 
+              <!-- Gift Peek Clue (Word500/Fit) -->
+              <div class="dash-toggle-row">
+                <div>
+                  <div class="dash-toggle-title"><i class="fa-solid fa-gift" style="color: #fe2c55; margin-right: 6px;"></i> Gift Peek Clue (Word500 / Fit)</div>
+                  <div class="dash-toggle-sub">Buka warna kotak ubin sementara (5 detik) saat penonton kirim gift</div>
+                </div>
+                <label class="switch-ui">
+                  <input type="checkbox" id="dashW500GiftPeekToggle" checked onchange="autoSaveSettings()">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
               <!-- Hanya Follower Bisa Tebak -->
               <div class="dash-toggle-row">
                 <div>
@@ -2891,6 +2903,9 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       const flb = document.getElementById("dashFloatingLeaderboardToggle");
       if (flb && cfg.floatingLeaderboard !== undefined) flb.checked = !!cfg.floatingLeaderboard;
 
+      const gpk = document.getElementById("dashW500GiftPeekToggle");
+      if (gpk && cfg.w500GiftPeek !== undefined) gpk.checked = !!cfg.w500GiftPeek;
+
       // 8. Follower Only Guess
       const fog = document.getElementById("dashFollowerOnlyGuessToggle");
       if (fog) fog.checked = !!cfg.followerOnlyGuess;
@@ -3085,6 +3100,7 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       currentGameSettings.autoStarterPreviousTarget = document.getElementById("dashAutoStarterToggle")?.checked ?? false;
       currentGameSettings.winStreakCooldown = document.getElementById("dashWinStreakCooldownToggle")?.checked ?? true;
       currentGameSettings.floatingLeaderboard = document.getElementById("dashFloatingLeaderboardToggle")?.checked ?? true;
+      currentGameSettings.w500GiftPeek = document.getElementById("dashW500GiftPeekToggle")?.checked ?? true;
       currentGameSettings.followerOnlyGuess = document.getElementById("dashFollowerOnlyGuessToggle")?.checked ?? false;
       currentGameSettings.followerOnlyMusic = document.getElementById("dashFollowerOnlyMusicToggle")?.checked ?? false;
       currentGameSettings.musicRequestsEnabled = document.getElementById("dashMusicRequestsEnabledToggle")?.checked ?? true;

@@ -4452,14 +4452,15 @@ function syncValidWordsSet() {
 function loadWordLists(lang) {
   return new Promise((resolve, reject) => {
     let fetches = [];
-    if (lang === 'mixed') {
+    const isMixed = (lang === 'mixed' || lang === 'mix');
+    if (isMixed) {
       fetches = [
         Promise.all([fetch(`wordlist/target_words_3.txt`).then(r => r.text()).catch(()=>""), fetch(`wordlist/target_words_id_3.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
         Promise.all([fetch(`wordlist/valid_words_3.txt`).then(r => r.text()).catch(()=>""), fetch(`wordlist/valid_words_id_3.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
         Promise.all([fetch(`wordlist/target_words_4.txt`).then(r => r.text()).catch(()=>""), fetch(`wordlist/target_words_id_4.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
         Promise.all([fetch(`wordlist/valid_words_4.txt`).then(r => r.text()).catch(()=>""), fetch(`wordlist/valid_words_id_4.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
-        Promise.all([fetch(`wordlist/target_words.txt`).then(r => r.text()), fetch(`wordlist/target_words_id.txt`).then(r => r.text())]).then(r => r[0] + '\n' + r[1]),
-        Promise.all([fetch(`wordlist/valid_words.txt`).then(r => r.text()), fetch(`wordlist/valid_words_id.txt`).then(r => r.text())]).then(r => r[0] + '\n' + r[1]),
+        Promise.all([fetch(`wordlist/target_words.txt`).then(r => r.text()).catch(()=>""), fetch(`wordlist/target_words_id.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
+        Promise.all([fetch(`wordlist/valid_words.txt`).then(r => r.text()).catch(()=>""), fetch(`wordlist/valid_words_id.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
         Promise.all([fetch(`wordlist/target_words_6.txt`).then(r => r.text()).catch(()=>""), fetch(`wordlist/target_words_id_6.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
         Promise.all([fetch(`wordlist/valid_words_6.txt`).then(r => r.text()).catch(()=>""), fetch(`wordlist/valid_words_id_6.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
         Promise.all([fetch(`wordlist/target_words_7.txt`).then(r => r.text()).catch(()=>""), fetch(`wordlist/target_words_id_7.txt`).then(r => r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]),
@@ -4474,8 +4475,8 @@ function loadWordLists(lang) {
         fetch(`wordlist/valid_words${suffix}_3.txt`).then(r => r.text()).catch(() => ""),
         fetch(`wordlist/target_words${suffix}_4.txt`).then(r => r.text()).catch(() => ""),
         fetch(`wordlist/valid_words${suffix}_4.txt`).then(r => r.text()).catch(() => ""),
-        fetch(`wordlist/target_words${suffix}.txt`).then(r => r.text()),
-        fetch(`wordlist/valid_words${suffix}.txt`).then(r => r.text()),
+        fetch(`wordlist/target_words${suffix}.txt`).then(r => r.text()).catch(() => ""),
+        fetch(`wordlist/valid_words${suffix}.txt`).then(r => r.text()).catch(() => ""),
         fetch(`wordlist/target_words${suffix}_6.txt`).then(r => r.text()).catch(() => ""),
         fetch(`wordlist/valid_words${suffix}_6.txt`).then(r => r.text()).catch(() => ""),
         fetch(`wordlist/target_words${suffix}_7.txt`).then(r => r.text()).catch(() => ""),
@@ -4485,8 +4486,8 @@ function loadWordLists(lang) {
       ];
     }
     
-    // FETCH FULL DICTIONARY FOR UNLIMITED LENGTH IN WORD GRID
-    if (lang === 'mixed') {
+    // FETCH FULL DICTIONARY FOR UNLIMITED LENGTH IN WORD GRID & SAMBUNG KATA
+    if (isMixed) {
       fetches.push(Promise.all([fetch('wordlist/dictionary.txt').then(r=>r.text()).catch(()=>""), fetch('wordlist/kamus.txt').then(r=>r.text()).catch(()=>"")]).then(r => r[0] + '\n' + r[1]));
     } else if (lang === 'id') {
       fetches.push(fetch('wordlist/kamus.txt').then(r=>r.text()).catch(()=>""));
@@ -5598,6 +5599,17 @@ function getInstructionText() {
       if (lastLang === 'id') return `Susun kata ${wordPyramidCurrentLevel} huruf dari "${prevWord}" + 1 huruf baru!`;
       if (lastLang === 'mixed') return `Susun ${wordPyramidCurrentLevel} huruf dari "${prevWord}" + 1 huruf!`;
       return `Form a ${wordPyramidCurrentLevel}-letter word from "${prevWord}" + 1 new letter!`;
+    }
+    if (currentGameMode === 'sambungkata') {
+      if (sambungKataPhase === 'lobby') {
+        if (lastLang === 'mixed') return `Ketik JOIN untuk duduk di meja! / Type JOIN to sit at table!`;
+        if (lastLang === 'en') return `Type JOIN in chat to take a seat at the round table!`;
+        return `Ketik JOIN di komentar untuk duduk di Meja Bundar!`;
+      } else {
+        if (lastLang === 'mixed') return `Sambung kata sesuai giliranmu! / Chain words on your turn!`;
+        if (lastLang === 'en') return `Chain words when it's your turn at the round table!`;
+        return `Sambung kata sesuai giliran di Meja Bundar!`;
+      }
     }
     if (lastLang === 'id') return `Ketik kata ${WORD_LENGTH} huruf di komentar untuk menebak!`;
     if (lastLang === 'mixed') return `Ketik kata ${WORD_LENGTH} huruf di komentar! / Type a ${WORD_LENGTH}-letter word!`;
@@ -7809,7 +7821,7 @@ function updateLangBadgeUI(lang) {
   const target = lang || lastLang || localStorage.getItem('wordle_lang') || 'id';
   if (target === 'en') {
     badge.innerHTML = '<i class="fa-solid fa-language" style="margin-right: 4px;"></i>EN';
-  } else if (target === 'mixed') {
+  } else if (target === 'mixed' || target === 'mix') {
     badge.innerHTML = '<i class="fa-solid fa-globe" style="margin-right: 4px;"></i>MIX';
   } else {
     badge.innerHTML = '<i class="fa-solid fa-language" style="margin-right: 4px;"></i>ID';
@@ -8932,11 +8944,14 @@ function applyRemoteGameSettings(settings) {
   }
 
   // 2. Language
-  if (settings.language && settings.language !== lastLang) {
-    lastLang = settings.language;
-    try { localStorage.setItem('wordle_lang', settings.language); } catch(e) {}
-    if (typeof updateLangBadgeUI === 'function') updateLangBadgeUI(settings.language);
-    needReloadWords = true;
+  if (settings.language) {
+    const normLang = (settings.language === 'mix') ? 'mixed' : settings.language;
+    if (normLang !== lastLang) {
+      lastLang = normLang;
+      try { localStorage.setItem('wordle_lang', normLang); } catch(e) {}
+      if (typeof updateLangBadgeUI === 'function') updateLangBadgeUI(normLang);
+      needReloadWords = true;
+    }
   }
 
   // 3. Hard Mode
@@ -9306,7 +9321,8 @@ function initObsMode() {
   const targetBackend = urlBackend || localStorage.getItem('wordle_backend') || 'indofinity';
   const targetIp = urlIndofinityIp || localStorage.getItem('wordle_indofinity_ip') || (window.location.hostname && window.location.hostname !== '0.0.0.0' ? window.location.hostname : 'localhost');
   const targetUser = urlUsername || localStorage.getItem('wordle_username') || '';
-  const targetLang = urlLang || localStorage.getItem('wordle_lang') || 'id';
+  const rawLang = urlLang || localStorage.getItem('wordle_lang') || 'id';
+  const targetLang = (rawLang === 'mix') ? 'mixed' : rawLang;
   lastLang = targetLang;
   if (typeof updateLangBadgeUI === 'function') updateLangBadgeUI(targetLang);
 
@@ -18331,13 +18347,19 @@ let sambungKataTimerInterval = null;
 let sambungKataLobbyInterval = null;
 let sambungKataLobbyTime = 10;
 
-// Daftar kata awal acak untuk pembuka ronde Sambung Kata (variasi 4, 5, 6, 7, 8 huruf)
+// Daftar kata awal acak untuk pembuka ronde Sambung Kata (variasi 4, 5, 6, 7, 8 huruf, ID & EN)
 const SAMBUNG_KATA_STARTERS = [
+  // Bahasa Indonesia
   'BOLA', 'BUKU', 'MEJA', 'KURA', 'GULA', 'ROTI', 'SAPI', 'KERA', 'KOTA', 'PADI',
   'MAKAN', 'PINTU', 'LAMPU', 'RUMAH', 'TAMAN', 'HUJAN', 'ANGIN', 'KAPAL', 'MERDU',
   'KUCING', 'GARUDA', 'BURUNG', 'KERTAS', 'PISANG', 'KELAPA', 'LAUTAN', 'PANTAI', 'KERETA',
   'BINTANG', 'PESAWAT', 'PELANGI', 'SEKOLAH', 'KEMBANG',
-  'MATAHARI', 'JEMBATAN', 'KERAJAAN', 'PAHLAWAN', 'SEMANGAT'
+  'MATAHARI', 'JEMBATAN', 'KERAJAAN', 'PAHLAWAN', 'SEMANGAT',
+  // English / Universal (Cocok untuk Mode Mixed & English)
+  'BOOK', 'GAME', 'MOON', 'STAR', 'BLUE', 'ROSE', 'WIND', 'FIRE', 'GOLD', 'TREE',
+  'APPLE', 'WATER', 'LIGHT', 'DREAM', 'CLOUD', 'OCEAN', 'MUSIC', 'MAGIC', 'RIVER',
+  'PLANET', 'FLOWER', 'SPRING', 'SILVER', 'FOREST', 'GARDEN', 'CASTLE', 'WINTER',
+  'CRYSTAL', 'MORNING', 'SUNSHINE', 'RAINBOW', 'DIAMOND', 'MOUNTAIN'
 ];
 
 // Pengaturan Sub-Mode Aturan Sambung Kata ('classic' = Sambung Huruf Akhir, 'morph' = Ganti Huruf)
@@ -19497,9 +19519,13 @@ function renderSambungKataUI() {
     if (phaseIcon) phaseIcon.className = 'fa-solid fa-users-rays';
     if (hintText) {
       if (seatedCount >= sambungKataMaxSeats) {
-        hintText.innerHTML = 'Meja penuh! Bersiap memulai permainan...';
+        hintText.innerHTML = (lastLang === 'mixed')
+          ? 'Meja penuh! Bersiap memulai permainan... / Table full!'
+          : (lastLang === 'en' ? 'Table full! Getting ready...' : 'Meja penuh! Bersiap memulai permainan...');
       } else {
-        hintText.innerHTML = `Ketik <strong>JOIN</strong> di chat TikTok untuk duduk di meja! (${seatedCount}/${sambungKataMaxSeats} Kursi)`;
+        hintText.innerHTML = (lastLang === 'mixed')
+          ? `Ketik <strong>JOIN</strong> untuk duduk! / Type <strong>JOIN</strong> to sit! (${seatedCount}/${sambungKataMaxSeats} Kursi)`
+          : (lastLang === 'en' ? `Type <strong>JOIN</strong> in chat to sit! (${seatedCount}/${sambungKataMaxSeats} Seats)` : `Ketik <strong>JOIN</strong> di chat TikTok untuk duduk di meja! (${seatedCount}/${sambungKataMaxSeats} Kursi)`);
       }
     }
     if (startBtn) startBtn.style.display = 'flex';
@@ -19519,10 +19545,27 @@ function renderSambungKataUI() {
     }
     if (phaseIcon) phaseIcon.className = 'fa-solid fa-play';
     if (sambungKataSubMode === 'morph') {
-      if (hintText) hintText.innerHTML = `Ayo <strong>@${activeName}</strong>, ubah ${sambungKataMorphDiff} huruf dari kata [ <strong>${sambungKataCurrentWord}</strong> ]!`;
+      if (hintText) {
+        if (lastLang === 'mixed') {
+          hintText.innerHTML = `Ayo <strong>@${activeName}</strong>, ubah ${sambungKataMorphDiff} huruf dari [ <strong>${sambungKataCurrentWord}</strong> ]! / Change ${sambungKataMorphDiff} letter(s)!`;
+        } else if (lastLang === 'en') {
+          hintText.innerHTML = `Come on <strong>@${activeName}</strong>, change ${sambungKataMorphDiff} letter(s) from [ <strong>${sambungKataCurrentWord}</strong> ]!`;
+        } else {
+          hintText.innerHTML = `Ayo <strong>@${activeName}</strong>, ubah ${sambungKataMorphDiff} huruf dari kata [ <strong>${sambungKataCurrentWord}</strong> ]!`;
+        }
+      }
     } else {
       const lenLabel = (sambungKataWordLength > 0) ? ` (${sambungKataWordLength} huruf)` : '';
-      if (hintText) hintText.innerHTML = `Ayo <strong>@${activeName}</strong>, ketik kata${lenLabel} berawalan "${targetConnector}"!`;
+      if (hintText) {
+        if (lastLang === 'mixed') {
+          hintText.innerHTML = `Ayo <strong>@${activeName}</strong>, ketik kata${lenLabel} berawalan "${targetConnector}"! / Start with "${targetConnector}"!`;
+        } else if (lastLang === 'en') {
+          const enLenLabel = (sambungKataWordLength > 0) ? ` (${sambungKataWordLength} letters)` : '';
+          hintText.innerHTML = `Come on <strong>@${activeName}</strong>, type a word${enLenLabel} starting with "${targetConnector}"!`;
+        } else {
+          hintText.innerHTML = `Ayo <strong>@${activeName}</strong>, ketik kata${lenLabel} berawalan "${targetConnector}"!`;
+        }
+      }
     }
     if (startBtn) startBtn.style.display = 'none';
   }

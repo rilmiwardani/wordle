@@ -18689,16 +18689,7 @@ function updateSambungKataTimerUI() {
     : (sambungKataTimer + 's');
   const isWarning = (sambungKataPhase === 'playing' && sambungKataTimer <= 4);
 
-  // 1. Timer badge di bar atas
-  const timerVal = document.getElementById('skTimerVal');
-  const timerBadge = document.getElementById('skTimerBadge');
-  if (timerVal) timerVal.textContent = currentValText;
-  if (timerBadge) {
-    if (isWarning) timerBadge.classList.add('warning');
-    else timerBadge.classList.remove('warning');
-  }
-
-  // 2. Timer mengambang tepat di atas avatar pemain yang sedang giliran
+  // Timer mengambang tepat di atas avatar pemain yang sedang giliran
   const seatTimerVal = document.getElementById('skSeatTimerVal');
   const seatTimerBadge = document.getElementById('skActiveSeatTimer');
   if (seatTimerVal) seatTimerVal.textContent = currentValText;
@@ -19130,12 +19121,6 @@ function renderSambungKataUI() {
     if (phaseIcon) phaseIcon.className = 'fa-solid fa-users-rays';
     if (hintText) hintText.innerHTML = 'Ketik <strong>JOIN</strong> di chat TikTok untuk duduk di meja!';
     if (startBtn) startBtn.style.display = 'flex';
-
-    // Sinkronisasi badge timer saat di lobby agar sesuai durasi settingan
-    const timerValEl = document.getElementById('skTimerVal');
-    if (timerValEl) timerValEl.textContent = sambungKataTurnDuration + 's';
-    const timerBadgeEl = document.getElementById('skTimerBadge');
-    if (timerBadgeEl) timerBadgeEl.classList.remove('warning');
   } else if (sambungKataPhase === 'playing') {
     if (phaseBadge) phaseBadge.className = 'sambungkata-phase-badge playing';
     const activePlayer = sambungKataSeats[sambungKataCurrentTurn];

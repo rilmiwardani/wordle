@@ -18526,34 +18526,35 @@ function joinSambungKataSeat(userData) {
   showToast(`🪑 @${userName} duduk di Kursi ${emptyIdx + 1}!`, 2000);
   renderSambungKataUI();
 
-  // Jika di fase lobby dan kursi terisi >= 2, jalankan countdown otomatis
+  // Jika di fase lobby dan SELURUH kursi sudah terisi penuh (100%), jalankan countdown otomatis
   const seatedCount = sambungKataSeats.filter(s => s !== null).length;
-  if (sambungKataPhase === 'lobby' && seatedCount >= 2 && !sambungKataLobbyInterval) {
-    startSambungKataLobbyCountdown();
+  if (sambungKataPhase === 'lobby' && seatedCount >= sambungKataMaxSeats && !sambungKataLobbyInterval) {
+    startSambungKataLobbyCountdown(5);
   }
 
   return true;
 }
 
-// Hitung Mundur Mulai di Lobby
-function startSambungKataLobbyCountdown() {
+// Hitung Mundur Mulai di Lobby (Dipicu saat meja terisi penuh 100%)
+function startSambungKataLobbyCountdown(duration = 5) {
   if (sambungKataLobbyInterval) clearInterval(sambungKataLobbyInterval);
-  sambungKataLobbyTime = 10;
+  sambungKataLobbyTime = (typeof duration === 'number' && duration > 0) ? duration : 5;
   
   const badgeText = document.getElementById('skPhaseText');
-  if (badgeText) badgeText.textContent = `MULAI DALAM ${sambungKataLobbyTime}S`;
+  if (badgeText) badgeText.textContent = `MEJA PENUH! MULAI ${sambungKataLobbyTime}S`;
 
   sambungKataLobbyInterval = setInterval(() => {
     sambungKataLobbyTime--;
     const seatedCount = sambungKataSeats.filter(s => s !== null).length;
-    if (seatedCount < 2) {
+    // Jika ada pemain yang keluar / di-kick sehingga meja tidak penuh lagi
+    if (seatedCount < sambungKataMaxSeats) {
       clearInterval(sambungKataLobbyInterval);
       sambungKataLobbyInterval = null;
-      if (badgeText) badgeText.textContent = 'LOBBY • KETIK JOIN';
+      renderSambungKataUI();
       return;
     }
 
-    if (badgeText) badgeText.textContent = `MULAI DALAM ${sambungKataLobbyTime}S`;
+    if (badgeText) badgeText.textContent = `MEJA PENUH! MULAI ${sambungKataLobbyTime}S`;
     if (window.sounds && typeof window.sounds.playTick === 'function') {
       window.sounds.playTick();
     }
@@ -18569,15 +18570,30 @@ function startSambungKataLobbyCountdown() {
 // Host Memaksa Mulai Game
 function forceStartSambungKata() {
   if (sambungKataPhase === 'playing') return;
-  const seatedCount = sambungKataSeats.filter(s => s !== null).length;
+  let seatedCount = sambungKataSeats.filter(s => s !== null).length;
   if (seatedCount === 0) {
-    // Dudukkan host otomatis jika meja masih kosong
+    // Dudukkan Host & Tamu 1 otomatis jika meja masih kosong (untuk pengujian/offline)
     joinSambungKataSeat({
       userId: 'host',
       uniqueId: 'Host',
       nickname: 'Host Live',
       profilePictureUrl: getHostAvatar()
     });
+    joinSambungKataSeat({
+      userId: 'guest_test',
+      uniqueId: 'Tamu 1',
+      nickname: 'Tamu 1',
+      profilePictureUrl: DEFAULT_HOST_AVATAR
+    });
+    seatedCount = sambungKataSeats.filter(s => s !== null).length;
+  } else if (seatedCount === 1) {
+    showToast('⚠️ Butuh minimal 2 pemain untuk memulai! Tunggu penonton ketik JOIN atau klik kursi untuk tambah pemain.', 3000);
+    return;
+  }
+
+  if (sambungKataLobbyInterval) {
+    clearInterval(sambungKataLobbyInterval);
+    sambungKataLobbyInterval = null;
   }
   startSambungKataPlay();
 }
@@ -18794,10 +18810,19 @@ function hostSeatAction(seatIdx) {
       score: 0
     };
     showToast(`🪑 Kursi ${seatIdx + 1} diisi ${seatedName}!`, 1500);
+
+    const seatedCount = sambungKataSeats.filter(s => s !== null).length;
+    if (sambungKataPhase === 'lobby' && seatedCount >= sambungKataMaxSeats && !sambungKataLobbyInterval) {
+      startSambungKataLobbyCountdown(5);
+    }
   } else {
     // Kick pemain
     showToast(`🚪 @${currentSeat.userName} dikeluarkan dari Kursi ${seatIdx + 1}.`, 1500);
     sambungKataSeats[seatIdx] = null;
+    if (sambungKataLobbyInterval) {
+      clearInterval(sambungKataLobbyInterval);
+      sambungKataLobbyInterval = null;
+    }
     if (sambungKataCurrentTurn === seatIdx && sambungKataPhase === 'playing') {
       nextSambungKataTurn();
     }
@@ -19116,10 +19141,23 @@ function renderSambungKataUI() {
   const targetConnector = sambungKataCurrentWord ? sambungKataCurrentWord.slice(-connLen) : '?';
 
   if (sambungKataPhase === 'lobby') {
+    const seatedCount = sambungKataSeats.filter(s => s !== null).length;
     if (phaseBadge) phaseBadge.className = 'sambungkata-phase-badge';
-    if (phaseText) phaseText.textContent = (sambungKataLobbyInterval) ? `MULAI DALAM ${sambungKataLobbyTime}S` : 'LOBBY • KETIK JOIN';
+    if (phaseText) {
+      if (sambungKataLobbyInterval) {
+        phaseText.textContent = `MEJA PENUH! MULAI ${sambungKataLobbyTime}S`;
+      } else {
+        phaseText.textContent = `LOBBY • ${seatedCount}/${sambungKataMaxSeats} KURSI`;
+      }
+    }
     if (phaseIcon) phaseIcon.className = 'fa-solid fa-users-rays';
-    if (hintText) hintText.innerHTML = 'Ketik <strong>JOIN</strong> di chat TikTok untuk duduk di meja!';
+    if (hintText) {
+      if (seatedCount >= sambungKataMaxSeats) {
+        hintText.innerHTML = 'Meja penuh! Bersiap memulai permainan...';
+      } else {
+        hintText.innerHTML = `Ketik <strong>JOIN</strong> di chat TikTok untuk duduk di meja! (${seatedCount}/${sambungKataMaxSeats} Kursi)`;
+      }
+    }
     if (startBtn) startBtn.style.display = 'flex';
   } else if (sambungKataPhase === 'playing') {
     if (phaseBadge) phaseBadge.className = 'sambungkata-phase-badge playing';

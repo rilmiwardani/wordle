@@ -166,6 +166,19 @@ let wgHintDelay = parseInt(localStorage.getItem('wordle_wgHintDelay')) || 45; //
 let wgDifficulty = localStorage.getItem('wordle_wgDifficulty') || 'easy'; // 'easy', 'medium', 'hard'
 let wgHintInterval = null;
 
+// ─── Floating Leaderboard State (Early hoisted declaration to prevent TDZ ReferenceError on startup) ───
+var isFloatingLbVisible = (typeof localStorage !== 'undefined' && localStorage.getItem('wordle_floating_lb_visible') !== 'false');
+var currentFloatingLbTab = (typeof localStorage !== 'undefined' && localStorage.getItem('wordle_floating_lb_tab')) || 'daily';
+var isFloatingLbAutoRotate = (typeof localStorage !== 'undefined' && localStorage.getItem('wordle_floating_lb_autorotate') !== 'false');
+var isFloatingLbCollapsed = (typeof localStorage !== 'undefined' && localStorage.getItem('wordle_floating_lb_collapsed') === 'true');
+var isFloatingLbDragInitialized = false;
+var floatingLbProgressInterval = null;
+var floatingLbProgressVal = 0;
+if (typeof window !== 'undefined') {
+  window.isFloatingLbVisible = isFloatingLbVisible;
+  window.currentFloatingLbTab = currentFloatingLbTab;
+}
+
 function getMaxGuesses() {
   return (currentGameMode === 'word500' || currentGameMode === 'wordfit') ? Infinity : 6;
 }
@@ -2209,7 +2222,7 @@ function addPoints(userData, points) {
     recordTourneySessionScore(userData, points);
   }
   renderLeaderboard();
-  if (typeof renderFloatingLeaderboard === 'function' && typeof isFloatingLbVisible !== 'undefined' && isFloatingLbVisible) {
+  if (typeof renderFloatingLeaderboard === 'function' && (typeof window !== 'undefined' ? window.isFloatingLbVisible : isFloatingLbVisible)) {
     renderFloatingLeaderboard();
   }
 }
@@ -2286,7 +2299,7 @@ function renderLeaderboard() {
     
   if (sortedPlayers.length === 0) {
     lbList.innerHTML = '<div style="text-align:center;font-size:10.5px;color:rgba(255,255,255,0.45);padding:4px;">Belum ada tebakan benar</div>';
-    if (typeof renderFloatingLeaderboard === 'function' && typeof isFloatingLbVisible !== 'undefined' && isFloatingLbVisible) {
+    if (typeof renderFloatingLeaderboard === 'function' && (typeof window !== 'undefined' ? window.isFloatingLbVisible : isFloatingLbVisible)) {
       renderFloatingLeaderboard();
     }
     return;
@@ -2313,7 +2326,7 @@ function renderLeaderboard() {
         </div>
       </div>
     `).join('');
-    if (typeof renderFloatingLeaderboard === 'function' && typeof isFloatingLbVisible !== 'undefined' && isFloatingLbVisible) {
+    if (typeof renderFloatingLeaderboard === 'function' && (typeof window !== 'undefined' ? window.isFloatingLbVisible : isFloatingLbVisible)) {
       renderFloatingLeaderboard();
     }
     return;
@@ -2351,7 +2364,7 @@ function renderLeaderboard() {
     }
   });
 
-  if (typeof renderFloatingLeaderboard === 'function' && typeof isFloatingLbVisible !== 'undefined' && isFloatingLbVisible) {
+  if (typeof renderFloatingLeaderboard === 'function' && (typeof window !== 'undefined' ? window.isFloatingLbVisible : isFloatingLbVisible)) {
     renderFloatingLeaderboard();
   }
 }
@@ -3961,13 +3974,7 @@ window.resetMusicWidgetPos = function() {
 // ═════════════════════════════════════════════════════════════════════════════
 // 🏅 FLOATING DRAGGABLE LEADERBOARD WIDGET (TOP 5 TICK / HUD)
 // ═════════════════════════════════════════════════════════════════════════════
-let isFloatingLbVisible = localStorage.getItem('wordle_floating_lb_visible') !== 'false';
-let currentFloatingLbTab = localStorage.getItem('wordle_floating_lb_tab') || 'daily';
-let isFloatingLbAutoRotate = localStorage.getItem('wordle_floating_lb_autorotate') !== 'false';
-let isFloatingLbCollapsed = localStorage.getItem('wordle_floating_lb_collapsed') === 'true';
-let isFloatingLbDragInitialized = false;
-let floatingLbProgressInterval = null;
-let floatingLbProgressVal = 0;
+// State variables already hoisted at top of file with var
 
 function getFloatingLbDailyData() {
   const isTourneyRace = (typeof tourneySettings !== 'undefined' && tourneySettings && tourneySettings.enabled && tourneySettings.resetLeaderboardOnWin);
@@ -4256,6 +4263,7 @@ function toggleFloatingLeaderboard(forceState, e, skipSync) {
   } else {
     isFloatingLbVisible = !isFloatingLbVisible;
   }
+  if (typeof window !== 'undefined') window.isFloatingLbVisible = isFloatingLbVisible;
 
   try { localStorage.setItem('wordle_floating_lb_visible', isFloatingLbVisible); } catch(err) {}
 
@@ -5522,7 +5530,7 @@ function applyGameModeUI() {
   if (typeof startInstructionRotation === 'function') {
     startInstructionRotation();
   }
-  if (typeof renderFloatingLeaderboard === 'function' && typeof isFloatingLbVisible !== 'undefined' && isFloatingLbVisible) {
+  if (typeof renderFloatingLeaderboard === 'function' && (typeof window !== 'undefined' ? window.isFloatingLbVisible : isFloatingLbVisible)) {
     renderFloatingLeaderboard();
   }
 }

@@ -3007,11 +3007,12 @@ header {
 
 /* TikTok Win Streak Flame Badge (Minimalist Pure Flame & Number di Bawah Nama) */
 .win-streak-container {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  margin-bottom: 12px;
+  width: 100%;
+  margin: 2px auto 10px auto;
   user-select: none;
   animation: winStreakPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }

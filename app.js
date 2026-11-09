@@ -1191,7 +1191,7 @@ function updateWinStreakFlame(winnerData) {
 
     streakContainer.className = `win-streak-container ${tierClass}`;
     streakNumEl.textContent = streak;
-    streakContainer.style.display = 'inline-flex';
+    streakContainer.style.display = 'flex';
   } else {
     streakContainer.style.display = 'none';
   }

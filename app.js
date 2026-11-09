@@ -4219,10 +4219,11 @@ function toggleFloatingLbCollapse(e) {
   }
 }
 
-function toggleFloatingLeaderboard(forceState, e) {
+function toggleFloatingLeaderboard(forceState, e, skipSync) {
   if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
 
   if (forceState !== undefined) {
+    if (isFloatingLbVisible === !!forceState) return;
     isFloatingLbVisible = !!forceState;
   } else {
     isFloatingLbVisible = !isFloatingLbVisible;
@@ -4244,8 +4245,8 @@ function toggleFloatingLeaderboard(forceState, e) {
     settingCheck.checked = isFloatingLbVisible;
   }
 
-  // Socket sync to server & dashboard
-  if (typeof localSocket !== 'undefined' && localSocket && localSocket.emit) {
+  // Socket sync to server & dashboard (hanya jika aksi lokal, bukan dari sync remote)
+  if (!skipSync && typeof localSocket !== 'undefined' && localSocket && localSocket.emit) {
     localSocket.emit('update-game-settings', { floatingLeaderboard: isFloatingLbVisible });
   }
 
@@ -9533,7 +9534,7 @@ function applyRemoteGameSettings(settings) {
   // 6.8. Floating Leaderboard (Top 5 Draggable Ticker)
   if (settings.floatingLeaderboard !== undefined && settings.floatingLeaderboard !== isFloatingLbVisible) {
     if (typeof toggleFloatingLeaderboard === 'function') {
-      toggleFloatingLeaderboard(settings.floatingLeaderboard);
+      toggleFloatingLeaderboard(settings.floatingLeaderboard, null, true);
     }
   }
 
@@ -9722,28 +9723,44 @@ function applyRemoteGameSettings(settings) {
 
   // 14. Sambung Kata (Meja Bundar) Settings
   if (typeof settings.sambungKataSubMode === 'string' && typeof setSambungKataSubMode === 'function') {
-    setSambungKataSubMode(settings.sambungKataSubMode);
+    if (settings.sambungKataSubMode !== sambungKataSubMode) {
+      setSambungKataSubMode(settings.sambungKataSubMode, null, true);
+    }
   }
   if (typeof settings.sambungKataMorphDiff === 'number' && typeof setSambungKataMorphDiff === 'function') {
-    setSambungKataMorphDiff(settings.sambungKataMorphDiff);
+    if (settings.sambungKataMorphDiff !== sambungKataMorphDiff) {
+      setSambungKataMorphDiff(settings.sambungKataMorphDiff, null, true);
+    }
   }
   if (typeof settings.sambungKataMaxSeats === 'number' && typeof setSambungKataSeats === 'function') {
-    setSambungKataSeats(settings.sambungKataMaxSeats);
+    if (settings.sambungKataMaxSeats !== sambungKataMaxSeats) {
+      setSambungKataSeats(settings.sambungKataMaxSeats, null, true);
+    }
   }
   if (typeof settings.sambungKataConnectorLen === 'number' && typeof setSambungKataConnector === 'function') {
-    setSambungKataConnector(settings.sambungKataConnectorLen);
+    if (settings.sambungKataConnectorLen !== sambungKataConnectorLen) {
+      setSambungKataConnector(settings.sambungKataConnectorLen, null, true);
+    }
   }
   if (typeof settings.sambungKataTurnDuration === 'number' && typeof setSambungKataTurnDuration === 'function') {
-    setSambungKataTurnDuration(settings.sambungKataTurnDuration);
+    if (settings.sambungKataTurnDuration !== sambungKataTurnDuration) {
+      setSambungKataTurnDuration(settings.sambungKataTurnDuration, null, true);
+    }
   }
   if (typeof settings.sambungKataWordLength === 'number' && typeof setSambungKataWordLength === 'function') {
-    setSambungKataWordLength(settings.sambungKataWordLength);
+    if (settings.sambungKataWordLength !== sambungKataWordLength) {
+      setSambungKataWordLength(settings.sambungKataWordLength, null, true);
+    }
   }
   if (typeof settings.sambungKataMaxLives === 'number' && typeof setSambungKataMaxLives === 'function') {
-    setSambungKataMaxLives(settings.sambungKataMaxLives);
+    if (settings.sambungKataMaxLives !== sambungKataMaxLives) {
+      setSambungKataMaxLives(settings.sambungKataMaxLives, null, true);
+    }
   }
   if (typeof settings.sambungKataMaxRounds === 'number' && typeof setSambungKataMaxRounds === 'function') {
-    setSambungKataMaxRounds(settings.sambungKataMaxRounds);
+    if (settings.sambungKataMaxRounds !== sambungKataMaxRounds) {
+      setSambungKataMaxRounds(settings.sambungKataMaxRounds, null, true);
+    }
   }
 
   // Apply reloads if requested
@@ -9757,8 +9774,6 @@ function applyRemoteGameSettings(settings) {
       startNewRound();
       if (typeof showToast === 'function') showToast('⚙️ Aturan baru diterapkan & Ronde di-reset!', 2500);
     }
-  } else {
-    if (typeof showToast === 'function') showToast('⚙️ Pengaturan game diperbarui!', 1800);
   }
 }
 
@@ -18919,9 +18934,10 @@ const SAMBUNG_KATA_STARTERS = [
 ];
 
 // Pengaturan Sub-Mode Aturan Sambung Kata ('classic' = Sambung Huruf Akhir, 'morph' = Ganti Huruf)
-function setSambungKataSubMode(mode, event) {
+function setSambungKataSubMode(mode, event, skipSync) {
   if (event) event.stopPropagation();
   const m = (mode === 'morph') ? 'morph' : 'classic';
+  const changed = sambungKataSubMode !== m;
   sambungKataSubMode = m;
   try { localStorage.setItem('sambungkata_sub_mode', m); } catch(e) {}
 
@@ -18941,26 +18957,29 @@ function setSambungKataSubMode(mode, event) {
     pillText.textContent = (m === 'morph') ? 'Ganti Huruf' : 'Sambung';
   }
 
-  // Sync ke localSocket jika terhubung
-  if (typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
+  // Sync ke localSocket jika terhubung (hanya jika aksi lokal)
+  if (!skipSync && typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
     localSocket.emit('update-game-settings', { sambungKataSubMode: m });
   }
 
   renderSambungKataUI();
-  const desc = (m === 'morph') ? `Ganti Huruf (Wajib ${sambungKataMorphDiff} Huruf)` : 'Sambung Huruf Akhir (Klasik)';
-  showToast(`🔄 Aturan disetel: ${desc}!`, 2000);
+  if (event && changed && typeof showToast === 'function') {
+    const desc = (m === 'morph') ? `Ganti Huruf (Wajib ${sambungKataMorphDiff} Huruf)` : 'Sambung Huruf Akhir (Klasik)';
+    showToast(`🔄 Aturan disetel: ${desc}!`, 2000);
+  }
 }
 
 // Shortcut klik cepat toggle sub-mode Sambung Kata
 function cycleSambungKataSubMode() {
   const nextMode = (sambungKataSubMode === 'morph') ? 'classic' : 'morph';
-  setSambungKataSubMode(nextMode);
+  setSambungKataSubMode(nextMode, true);
 }
 
 // Pengaturan Jumlah Huruf Diubah pada Sub-Mode Morph (1 atau 2 Huruf)
-function setSambungKataMorphDiff(diff, event) {
+function setSambungKataMorphDiff(diff, event, skipSync) {
   if (event) event.stopPropagation();
   const d = (parseInt(diff) === 2) ? 2 : 1;
+  const changed = sambungKataMorphDiff !== d;
   sambungKataMorphDiff = d;
   try { localStorage.setItem('sambungkata_morph_diff', d); } catch(e) {}
 
@@ -18978,27 +18997,29 @@ function setSambungKataMorphDiff(diff, event) {
     if (pillText) pillText.textContent = `${d} Huruf`;
   }
 
-  // Sync ke localSocket jika terhubung
-  if (typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
+  // Sync ke localSocket jika terhubung (hanya jika aksi lokal)
+  if (!skipSync && typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
     localSocket.emit('update-game-settings', { sambungKataMorphDiff: d });
   }
 
   renderSambungKataUI();
-  showToast(`🔀 Aturan diubah: Wajib Ganti ${d} Huruf!`, 2000);
+  if (event && changed && typeof showToast === 'function') {
+    showToast(`🔀 Aturan diubah: Wajib Ganti ${d} Huruf!`, 2000);
+  }
 }
 
 // Shortcut klik cepat toggle jumlah huruf ubah di mode morph
 function cycleSambungKataMorphDiff() {
   const nextDiff = (sambungKataMorphDiff === 2) ? 1 : 2;
-  setSambungKataMorphDiff(nextDiff);
+  setSambungKataMorphDiff(nextDiff, true);
 }
 
 // Pengaturan Jumlah Kursi (3 s/d 12 Kursi)
-function setSambungKataSeats(numSeats, event) {
+function setSambungKataSeats(numSeats, event, skipSync) {
   if (event) event.stopPropagation();
   const n = parseInt(numSeats);
   if (isNaN(n) || n < 3 || n > 12) return;
-
+  const changed = sambungKataMaxSeats !== n;
   sambungKataMaxSeats = n;
   try { localStorage.setItem('sambungkata_max_seats', n); } catch(e) {}
 
@@ -19021,8 +19042,8 @@ function setSambungKataSeats(numSeats, event) {
   const pillText = document.getElementById('skSeatsConfigText');
   if (pillText) pillText.textContent = n + ' Kursi';
 
-  // Sync ke localSocket jika terhubung
-  if (typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
+  // Sync ke localSocket jika terhubung (hanya jika aksi lokal)
+  if (!skipSync && typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
     localSocket.emit('update-game-settings', { sambungKataMaxSeats: n });
   }
 
@@ -19031,7 +19052,9 @@ function setSambungKataSeats(numSeats, event) {
   }
 
   renderSambungKataUI();
-  showToast(`🪑 Meja Bundar disetel ke ${n} Kursi!`, 1800);
+  if (event && changed && typeof showToast === 'function') {
+    showToast(`🪑 Meja Bundar disetel ke ${n} Kursi!`, 1800);
+  }
 }
 
 // Shortcut klik cepat ganti kapasitas kursi (3, 4, 5, 6, 7, 8, 10, 12 kursi)
@@ -19039,15 +19062,15 @@ function cycleSambungKataSeats() {
   const presets = [3, 4, 5, 6, 7, 8, 10, 12];
   const idx = presets.indexOf(sambungKataMaxSeats);
   const nextSeats = (idx === -1 || idx === presets.length - 1) ? presets[0] : presets[idx + 1];
-  setSambungKataSeats(nextSeats);
+  setSambungKataSeats(nextSeats, true);
 }
 
 // Pengaturan Huruf Sambungan dari Belakang (1, 2, atau 3 Huruf)
-function setSambungKataConnector(connLen, event) {
+function setSambungKataConnector(connLen, event, skipSync) {
   if (event) event.stopPropagation();
   const c = parseInt(connLen);
   if (isNaN(c) || c < 1 || c > 3) return;
-
+  const changed = sambungKataConnectorLen !== c;
   sambungKataConnectorLen = c;
   try { localStorage.setItem('sambungkata_connector_len', c); } catch(e) {}
 
@@ -19063,14 +19086,16 @@ function setSambungKataConnector(connLen, event) {
   const pillText = document.getElementById('skConnectorConfigText');
   if (pillText) pillText.textContent = `${c} Huruf`;
 
-  // Sync ke localSocket jika terhubung
-  if (typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
+  // Sync ke localSocket jika terhubung (hanya jika aksi lokal)
+  if (!skipSync && typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
     localSocket.emit('update-game-settings', { sambungKataConnectorLen: c });
   }
 
   renderSambungKataUI();
-  const desc = (c === 1) ? '1 Huruf (Standar)' : (c === 2) ? '2 Huruf (Tantangan)' : '3 Huruf (Suku Kata)';
-  showToast(`🔤 Sambungan disetel: ${desc}`, 2000);
+  if (event && changed && typeof showToast === 'function') {
+    const desc = (c === 1) ? '1 Huruf (Standar)' : (c === 2) ? '2 Huruf (Tantangan)' : '3 Huruf (Suku Kata)';
+    showToast(`🔤 Sambungan disetel: ${desc}`, 2000);
+  }
 }
 
 // Shortcut klik cepat ganti jumlah huruf sambungan / huruf yang diubah
@@ -19080,15 +19105,15 @@ function cycleSambungKataConnector() {
     return;
   }
   const nextConn = (sambungKataConnectorLen >= 3) ? 1 : (sambungKataConnectorLen + 1);
-  setSambungKataConnector(nextConn);
+  setSambungKataConnector(nextConn, true);
 }
 
 // Pengaturan Batas Waktu Giliran Menjawab (10s, 15s, 20s, 30s)
-function setSambungKataTurnDuration(sec, event) {
+function setSambungKataTurnDuration(sec, event, skipSync) {
   if (event) event.stopPropagation();
   const s = parseInt(sec);
   if (isNaN(s) || s < 5 || s > 60) return;
-
+  const changed = sambungKataTurnDuration !== s;
   sambungKataTurnDuration = s;
   try { localStorage.setItem('sambungkata_turn_duration', s); } catch(e) {}
 
@@ -19104,8 +19129,8 @@ function setSambungKataTurnDuration(sec, event) {
   const pillText = document.getElementById('skTimeConfigText');
   if (pillText) pillText.textContent = `${s}s`;
 
-  // Sync ke localSocket jika terhubung
-  if (typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
+  // Sync ke localSocket jika terhubung (hanya jika aksi lokal)
+  if (!skipSync && typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
     localSocket.emit('update-game-settings', { sambungKataTurnDuration: s });
   }
 
@@ -19116,7 +19141,9 @@ function setSambungKataTurnDuration(sec, event) {
   }
 
   renderSambungKataUI();
-  showToast(`⏱️ Waktu giliran disetel: ${s} Detik!`, 1800);
+  if (event && changed && typeof showToast === 'function') {
+    showToast(`⏱️ Waktu giliran disetel: ${s} Detik!`, 1800);
+  }
 }
 
 // Shortcut klik cepat ganti waktu giliran
@@ -19124,15 +19151,15 @@ function cycleSambungKataTurnDuration() {
   const presets = [10, 15, 20, 30];
   const idx = presets.indexOf(sambungKataTurnDuration);
   const nextVal = (idx === -1 || idx === presets.length - 1) ? presets[0] : presets[idx + 1];
-  setSambungKataTurnDuration(nextVal);
+  setSambungKataTurnDuration(nextVal, true);
 }
 
 // Pengaturan Panjang Huruf Kata Tebakan (0 = Bebas 3-8, atau 4, 5, 6, 7, 8)
-function setSambungKataWordLength(len, event) {
+function setSambungKataWordLength(len, event, skipSync) {
   if (event) event.stopPropagation();
   const l = parseInt(len);
   if (isNaN(l) || ![0, 4, 5, 6, 7, 8].includes(l)) return;
-
+  const changed = sambungKataWordLength !== l;
   sambungKataWordLength = l;
   try { localStorage.setItem('sambungkata_word_length', l); } catch(e) {}
 
@@ -19150,14 +19177,16 @@ function setSambungKataWordLength(len, event) {
     pillText.textContent = (l === 0) ? 'Bebas' : `${l} Huruf`;
   }
 
-  // Sync ke localSocket jika terhubung
-  if (typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
+  // Sync ke localSocket jika terhubung (hanya jika aksi lokal)
+  if (!skipSync && typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
     localSocket.emit('update-game-settings', { sambungKataWordLength: l });
   }
 
   renderSambungKataUI();
-  const toastMsg = (l === 0) ? '🔤 Panjang kata disetel: Bebas (3–8 huruf)!' : `🔤 Panjang kata dikunci: Wajib ${l} Huruf!`;
-  showToast(toastMsg, 1800);
+  if (event && changed && typeof showToast === 'function') {
+    const toastMsg = (l === 0) ? '🔤 Panjang kata disetel: Bebas (3–8 huruf)!' : `🔤 Panjang kata dikunci: Wajib ${l} Huruf!`;
+    showToast(toastMsg, 1800);
+  }
 }
 
 // Shortcut klik cepat ganti panjang kata di bar pill lobby
@@ -19165,15 +19194,15 @@ function cycleSambungKataWordLength() {
   const presets = [0, 4, 5, 6, 7, 8];
   const idx = presets.indexOf(sambungKataWordLength);
   const nextVal = (idx === -1 || idx === presets.length - 1) ? presets[0] : presets[idx + 1];
-  setSambungKataWordLength(nextVal);
+  setSambungKataWordLength(nextVal, true);
 }
 
 // Pengaturan Jumlah Nyawa (Hati) Pemain (1, 2, 3, 5)
-function setSambungKataMaxLives(lives, event) {
+function setSambungKataMaxLives(lives, event, skipSync) {
   if (event) event.stopPropagation();
   const n = parseInt(lives);
   if (isNaN(n) || ![1, 2, 3, 5].includes(n)) return;
-
+  const changed = sambungKataMaxLives !== n;
   sambungKataMaxLives = n;
   try { localStorage.setItem('sambungkata_max_lives', n); } catch(e) {}
 
@@ -19202,14 +19231,16 @@ function setSambungKataMaxLives(lives, event) {
     });
   }
 
-  // Sync ke localSocket jika terhubung
-  if (typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
+  // Sync ke localSocket jika terhubung (hanya jika aksi lokal)
+  if (!skipSync && typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
     localSocket.emit('update-game-settings', { sambungKataMaxLives: n });
   }
 
   renderSambungKataUI();
-  const toastMsg = (n === 1) ? '❤️ Mode Sudden Death: 1 Kesempatan Nyawa!' : `❤️ Jumlah nyawa disetel: ${n} Nyawa per pemain!`;
-  showToast(toastMsg, 1800);
+  if (event && changed && typeof showToast === 'function') {
+    const toastMsg = (n === 1) ? '❤️ Mode Sudden Death: 1 Kesempatan Nyawa!' : `❤️ Jumlah nyawa disetel: ${n} Nyawa per pemain!`;
+    showToast(toastMsg, 1800);
+  }
 }
 
 // Shortcut klik cepat ganti jumlah nyawa di bar pill lobby
@@ -19217,15 +19248,15 @@ function cycleSambungKataMaxLives() {
   const presets = [1, 2, 3, 5];
   const idx = presets.indexOf(sambungKataMaxLives);
   const nextVal = (idx === -1 || idx === presets.length - 1) ? presets[0] : presets[idx + 1];
-  setSambungKataMaxLives(nextVal);
+  setSambungKataMaxLives(nextVal, true);
 }
 
 // Pengaturan Batas Putaran Meja (3, 5 Putaran atau 0 = Survival Tanpa Batas)
-function setSambungKataMaxRounds(rounds, event) {
+function setSambungKataMaxRounds(rounds, event, skipSync) {
   if (event) event.stopPropagation();
   const n = parseInt(rounds);
   if (isNaN(n) || ![0, 3, 5, 10].includes(n)) return;
-
+  const changed = sambungKataMaxRounds !== n;
   sambungKataMaxRounds = n;
   try { localStorage.setItem('sambungkata_max_rounds', n); } catch(e) {}
 
@@ -19248,14 +19279,16 @@ function setSambungKataMaxRounds(rounds, event) {
     pillText.textContent = (n === 0) ? 'Survival' : `${n} Putaran`;
   }
 
-  // Sync ke localSocket jika terhubung
-  if (typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
+  // Sync ke localSocket jika terhubung (hanya jika aksi lokal)
+  if (!skipSync && typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
     localSocket.emit('update-game-settings', { sambungKataMaxRounds: n });
   }
 
   renderSambungKataUI();
-  const toastMsg = (n === 0) ? '♾️ Sistem Putaran: Survival Tanpa Batas!' : `🏁 Sistem Putaran: ${n} Putaran Meja (Point Scoring)!`;
-  showToast(toastMsg, 1800);
+  if (event && changed && typeof showToast === 'function') {
+    const toastMsg = (n === 0) ? '♾️ Sistem Putaran: Survival Tanpa Batas!' : `🏁 Sistem Putaran: ${n} Putaran Meja (Point Scoring)!`;
+    showToast(toastMsg, 1800);
+  }
 }
 
 // Shortcut klik cepat ganti sistem putaran di bar pill lobby

@@ -13806,12 +13806,6 @@ body.theme-sepia .antiwordle-row.is-latest {
 /* ═══════════════════════════════════════════════════════════════════
    FLOATING DRAGGABLE LEADERBOARD WIDGET (TOP 5 TICK / HUD)
    ═══════════════════════════════════════════════════════════════════ */
-#floatingLbToggleBtn.active {
-  background: rgba(245, 158, 11, 0.25) !important;
-  border-color: rgba(245, 158, 11, 0.6) !important;
-  color: #ffd54f !important;
-}
-
 .floating-lb-widget {
   position: fixed;
   top: 95px;
@@ -14139,12 +14133,6 @@ body.theme-sepia .antiwordle-row.is-latest {
 }
 
 /* Sepia Theme Support */
-body.theme-sepia #floatingLbToggleBtn.active {
-  background: rgba(180, 83, 9, 0.2) !important;
-  border-color: rgba(180, 83, 9, 0.5) !important;
-  color: #b45309 !important;
-}
-
 body.theme-sepia .floating-lb-widget {
   background: #f4ecdf !important;
   border: 1px solid #c8b9a6 !important;

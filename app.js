@@ -2209,6 +2209,9 @@ function addPoints(userData, points) {
     recordTourneySessionScore(userData, points);
   }
   renderLeaderboard();
+  if (typeof renderFloatingLeaderboard === 'function' && typeof isFloatingLbVisible !== 'undefined' && isFloatingLbVisible) {
+    renderFloatingLeaderboard();
+  }
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -3945,6 +3948,465 @@ window.resetMusicWidgetPos = function() {
   }
 };
 
+// ═════════════════════════════════════════════════════════════════════════════
+// 🏅 FLOATING DRAGGABLE LEADERBOARD WIDGET (TOP 5 TICK / HUD)
+// ═════════════════════════════════════════════════════════════════════════════
+let isFloatingLbVisible = localStorage.getItem('wordle_floating_lb_visible') !== 'false';
+let currentFloatingLbTab = localStorage.getItem('wordle_floating_lb_tab') || 'daily';
+let isFloatingLbAutoRotate = localStorage.getItem('wordle_floating_lb_autorotate') !== 'false';
+let isFloatingLbCollapsed = localStorage.getItem('wordle_floating_lb_collapsed') === 'true';
+let isFloatingLbDragInitialized = false;
+let floatingLbProgressInterval = null;
+let floatingLbProgressVal = 0;
+
+function getFloatingLbDailyData() {
+  const isTourneyRace = (typeof tourneySettings !== 'undefined' && tourneySettings && tourneySettings.enabled && tourneySettings.resetLeaderboardOnWin);
+  
+  if (isTourneyRace && typeof tourneySessionScores !== 'undefined') {
+    return Object.entries(tourneySessionScores)
+      .filter(([_, data]) => (data.pts || 0) > 0)
+      .sort((a, b) => b[1].pts - a[1].pts)
+      .slice(0, 5)
+      .map(([username, data]) => ({
+        username,
+        pts: data.pts,
+        avatar: data.avatar || (typeof getUserAvatar === 'function' ? getUserAvatar(username) : null) || 'assets/bg_nature.png'
+      }));
+  }
+
+  const prefix = typeof getPtsPrefix === 'function' ? getPtsPrefix() : 'pts_';
+  const dailyPrefix = prefix + 'daily_';
+  const list = [];
+  
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith(dailyPrefix)) continue;
+    
+    const username = key.substring(dailyPrefix.length);
+    if (!username) continue;
+    
+    const pts = parseInt(localStorage.getItem(key)) || 0;
+    if (pts > 0) {
+      const avatar = (typeof getUserAvatar === 'function' ? getUserAvatar(username) : null) || localStorage.getItem('pts_avatar_' + username) || 'assets/bg_nature.png';
+      list.push({ username, pts, avatar });
+    }
+  }
+  
+  return list.sort((a, b) => b.pts - a.pts).slice(0, 5);
+}
+
+function getFloatingLbGlobalData() {
+  const totals = {};
+  
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith('pts_')) continue;
+    
+    // Skip auxiliary non-points keys
+    if (key.startsWith('pts_daily_') ||
+        key.includes('_daily_') ||
+        key.startsWith('pts_avatar_') ||
+        key.startsWith('pts_trophy_') ||
+        key.startsWith('pts_like_') ||
+        key.startsWith('pts_share_') ||
+        key.startsWith('pts_gift_') ||
+        key.startsWith('pts_active_') ||
+        key.startsWith('pts_streak_') ||
+        key.startsWith('pts_ws_') ||
+        key.startsWith('pts_wsmax_')) {
+      continue;
+    }
+    
+    let matchedSpecial = null;
+    let username = '';
+    
+    if (typeof ALL_SPECIAL_PTS_PREFIXES !== 'undefined' && Array.isArray(ALL_SPECIAL_PTS_PREFIXES)) {
+      for (const special of ALL_SPECIAL_PTS_PREFIXES) {
+        if (key.startsWith(special)) {
+          matchedSpecial = special;
+          username = key.substring(special.length);
+          break;
+        }
+      }
+    }
+    
+    if (!matchedSpecial) {
+      if (typeof isOtherGameModeKey === 'function' && isOtherGameModeKey(key)) continue;
+      username = key.substring(4);
+    }
+    
+    if (!username) continue;
+    
+    const pts = parseInt(localStorage.getItem(key)) || 0;
+    if (pts > 0) {
+      if (!totals[username]) {
+        const avatar = (typeof getUserAvatar === 'function' ? getUserAvatar(username) : null) || localStorage.getItem('pts_avatar_' + username) || 'assets/bg_nature.png';
+        totals[username] = { username, pts: 0, avatar };
+      }
+      totals[username].pts += pts;
+    }
+  }
+  
+  return Object.values(totals).sort((a, b) => b.pts - a.pts).slice(0, 5);
+}
+
+function renderFloatingLeaderboard(forceTab) {
+  const widget = document.getElementById('floatingLeaderboardWidget');
+  if (!widget) return;
+
+  if (forceTab) currentFloatingLbTab = forceTab;
+
+  // Sync tabs UI
+  const tabDaily = document.getElementById('flbTabDaily');
+  const tabGlobal = document.getElementById('flbTabGlobal');
+  if (tabDaily) tabDaily.classList.toggle('active', currentFloatingLbTab === 'daily');
+  if (tabGlobal) tabGlobal.classList.toggle('active', currentFloatingLbTab === 'global');
+
+  // Sync badge and subtitle
+  const modeBadge = document.getElementById('flbModeBadge');
+  const modeDesc = document.getElementById('flbModeDesc');
+  const activeGameTitle = (typeof GAME_MODE_PRETTY_NAMES !== 'undefined' && GAME_MODE_PRETTY_NAMES[currentGameMode])
+    ? GAME_MODE_PRETTY_NAMES[currentGameMode]
+    : (currentGameMode ? currentGameMode.toUpperCase() : 'WORDLE');
+
+  if (currentFloatingLbTab === 'daily') {
+    if (modeBadge) {
+      modeBadge.textContent = activeGameTitle;
+      modeBadge.classList.remove('flb-global-badge');
+    }
+    if (modeDesc) {
+      modeDesc.textContent = 'Sesi Hari Ini';
+    }
+  } else {
+    if (modeBadge) {
+      modeBadge.textContent = 'GLOBAL';
+      modeBadge.classList.add('flb-global-badge');
+    }
+    if (modeDesc) {
+      modeDesc.textContent = 'Sepanjang Waktu';
+    }
+  }
+
+  // Populate list
+  const listEl = document.getElementById('flbList');
+  if (!listEl) return;
+
+  const data = currentFloatingLbTab === 'daily' ? getFloatingLbDailyData() : getFloatingLbGlobalData();
+
+  if (!data || data.length === 0) {
+    listEl.innerHTML = `
+      <div class="flb-empty">
+        <i class="fa-solid fa-chart-simple"></i> Belum ada skor ${currentFloatingLbTab === 'daily' ? 'hari ini' : 'tercatat'}
+      </div>
+    `;
+    return;
+  }
+
+  listEl.innerHTML = data.map((player, idx) => {
+    const rankNum = idx + 1;
+    let rankBadge = `${rankNum}`;
+    if (rankNum === 1) rankBadge = '<i class="fa-solid fa-crown"></i>';
+
+    const safeName = typeof escapeHTML === 'function' ? escapeHTML(player.username) : player.username;
+    const avatarUrl = player.avatar || 'assets/bg_nature.png';
+
+    return `
+      <div class="flb-row rank-${rankNum}">
+        <div class="flb-badge-rank">${rankBadge}</div>
+        <img class="flb-avatar" src="${avatarUrl}" onerror="this.onerror=null;this.src='assets/bg_nature.png';">
+        <div class="flb-user" title="@${safeName}">${safeName}</div>
+        <div class="flb-score">${player.pts} <small>PTS</small></div>
+      </div>
+    `;
+  }).join('');
+}
+
+function setFloatingLbTab(tab, e) {
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+  currentFloatingLbTab = tab === 'global' ? 'global' : 'daily';
+  try { localStorage.setItem('wordle_floating_lb_tab', currentFloatingLbTab); } catch(err) {}
+
+  const listEl = document.getElementById('flbList');
+  if (listEl) {
+    listEl.classList.add('fade-out');
+    setTimeout(() => {
+      renderFloatingLeaderboard();
+      listEl.classList.remove('fade-out');
+      listEl.classList.add('fade-in');
+      setTimeout(() => listEl.classList.remove('fade-in'), 200);
+    }, 150);
+  } else {
+    renderFloatingLeaderboard();
+  }
+
+  resetFloatingLbProgress();
+}
+
+function resetFloatingLbProgress() {
+  floatingLbProgressVal = 0;
+  const fill = document.getElementById('flbProgressFill');
+  if (fill) fill.style.width = '0%';
+}
+
+function startFloatingLbAutoRotate() {
+  stopFloatingLbAutoRotate();
+  if (!isFloatingLbAutoRotate || !isFloatingLbVisible) return;
+
+  const track = document.getElementById('flbProgressTrack');
+  if (track) track.style.opacity = '1';
+
+  floatingLbProgressVal = 0;
+  const stepMs = 100;
+  const totalDurationMs = 10000;
+  const stepIncrement = (stepMs / totalDurationMs) * 100;
+
+  floatingLbProgressInterval = setInterval(() => {
+    floatingLbProgressVal += stepIncrement;
+    const fill = document.getElementById('flbProgressFill');
+    if (fill) fill.style.width = `${Math.min(100, floatingLbProgressVal)}%`;
+
+    if (floatingLbProgressVal >= 100) {
+      floatingLbProgressVal = 0;
+      if (fill) fill.style.width = '0%';
+      const nextTab = currentFloatingLbTab === 'daily' ? 'global' : 'daily';
+      setFloatingLbTab(nextTab);
+    }
+  }, stepMs);
+}
+
+function stopFloatingLbAutoRotate() {
+  if (floatingLbProgressInterval) {
+    clearInterval(floatingLbProgressInterval);
+    floatingLbProgressInterval = null;
+  }
+  const fill = document.getElementById('flbProgressFill');
+  if (fill) fill.style.width = '0%';
+  const track = document.getElementById('flbProgressTrack');
+  if (track && !isFloatingLbAutoRotate) track.style.opacity = '0';
+}
+
+function toggleFloatingLbAutoRotate(e) {
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+  isFloatingLbAutoRotate = !isFloatingLbAutoRotate;
+  try { localStorage.setItem('wordle_floating_lb_autorotate', isFloatingLbAutoRotate); } catch(err) {}
+
+  const btn = document.getElementById('flbAutoRotateBtn');
+  if (btn) {
+    btn.classList.toggle('active', isFloatingLbAutoRotate);
+    btn.title = isFloatingLbAutoRotate ? 'Auto-Rotasi Tab Aktif (10s)' : 'Auto-Rotasi Tab Dijeda';
+  }
+
+  if (isFloatingLbAutoRotate) {
+    startFloatingLbAutoRotate();
+    if (typeof showToast === 'function') showToast('Auto-rotasi klasemen aktif (ganti tiap 10 detik)', 2000);
+  } else {
+    stopFloatingLbAutoRotate();
+    if (typeof showToast === 'function') showToast('Auto-rotasi klasemen dijeda', 2000);
+  }
+}
+
+function toggleFloatingLbCollapse(e) {
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+  isFloatingLbCollapsed = !isFloatingLbCollapsed;
+  try { localStorage.setItem('wordle_floating_lb_collapsed', isFloatingLbCollapsed); } catch(err) {}
+
+  const widget = document.getElementById('floatingLeaderboardWidget');
+  const icon = document.getElementById('flbCollapseIcon');
+
+  if (widget) widget.classList.toggle('is-collapsed', isFloatingLbCollapsed);
+  if (icon) {
+    icon.className = isFloatingLbCollapsed ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up';
+  }
+}
+
+function toggleFloatingLeaderboard(forceState, e) {
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+
+  if (forceState !== undefined) {
+    isFloatingLbVisible = !!forceState;
+  } else {
+    isFloatingLbVisible = !isFloatingLbVisible;
+  }
+
+  try { localStorage.setItem('wordle_floating_lb_visible', isFloatingLbVisible); } catch(err) {}
+
+  const widget = document.getElementById('floatingLeaderboardWidget');
+  const toggleBtn = document.getElementById('floatingLbToggleBtn');
+  const settingCheck = document.getElementById('floatingLbSettingToggle');
+
+  if (widget) {
+    widget.style.display = isFloatingLbVisible ? 'flex' : 'none';
+  }
+  if (toggleBtn) {
+    toggleBtn.classList.toggle('active', isFloatingLbVisible);
+  }
+  if (settingCheck) {
+    settingCheck.checked = isFloatingLbVisible;
+  }
+
+  // Socket sync to server & dashboard
+  if (typeof localSocket !== 'undefined' && localSocket && localSocket.emit) {
+    localSocket.emit('update-game-settings', { floatingLeaderboard: isFloatingLbVisible });
+  }
+
+  if (isFloatingLbVisible) {
+    initDraggableFloatingLeaderboard();
+    renderFloatingLeaderboard();
+    startFloatingLbAutoRotate();
+  } else {
+    stopFloatingLbAutoRotate();
+  }
+}
+
+function initDraggableFloatingLeaderboard() {
+  const widget = document.getElementById('floatingLeaderboardWidget');
+  if (!widget) return;
+
+  if (!isFloatingLbDragInitialized) {
+    isFloatingLbDragInitialized = true;
+
+    let isPointerDown = false;
+    let hasDragged = false;
+    let startX = 0;
+    let startY = 0;
+    let elemLeft = 0;
+    let elemTop = 0;
+
+    applySavedFloatingLbPos();
+
+    widget.addEventListener('pointerdown', (e) => {
+      // Ignore click on interactive buttons/tabs/inputs
+      if (e.target.closest('button, input, select, a, textarea')) return;
+      if (e.button !== undefined && e.button !== 0) return;
+
+      isPointerDown = true;
+      hasDragged = false;
+      startX = e.clientX;
+      startY = e.clientY;
+
+      const rect = widget.getBoundingClientRect();
+      elemLeft = rect.left;
+      elemTop = rect.top;
+
+      try { widget.setPointerCapture(e.pointerId); } catch(err) {}
+    });
+
+    widget.addEventListener('pointermove', (e) => {
+      if (!isPointerDown) return;
+
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+
+      if (!hasDragged) {
+        if (Math.hypot(dx, dy) < 5) return;
+        hasDragged = true;
+        widget.classList.add('is-dragging');
+      }
+
+      const margin = 8;
+      const rect = widget.getBoundingClientRect();
+      const widgetW = Math.round(rect.width) || widget.offsetWidth || 224;
+      const widgetH = Math.round(rect.height) || widget.offsetHeight || 180;
+      const maxLeft = Math.max(margin, window.innerWidth - widgetW - margin);
+      const maxTop = Math.max(margin, window.innerHeight - widgetH - margin);
+
+      const clampedX = Math.max(margin, Math.min(elemLeft + dx, maxLeft));
+      const clampedY = Math.max(margin, Math.min(elemTop + dy, maxTop));
+
+      widget.style.left = `${Math.round(clampedX)}px`;
+      widget.style.top = `${Math.round(clampedY)}px`;
+      widget.style.right = 'auto';
+      widget.style.bottom = 'auto';
+    });
+
+    const onPointerUp = (e) => {
+      if (!isPointerDown) return;
+      isPointerDown = false;
+
+      try { widget.releasePointerCapture(e.pointerId); } catch(err) {}
+      widget.classList.remove('is-dragging');
+
+      if (hasDragged) {
+        const pos = { left: widget.style.left, top: widget.style.top };
+        try { localStorage.setItem('floating_lb_custom_pos', JSON.stringify(pos)); } catch(err) {}
+      }
+      hasDragged = false;
+    };
+
+    widget.addEventListener('pointerup', onPointerUp);
+    widget.addEventListener('pointercancel', onPointerUp);
+
+    window.addEventListener('resize', () => {
+      applySavedFloatingLbPos();
+    });
+  }
+
+  if (isFloatingLbCollapsed) {
+    widget.classList.add('is-collapsed');
+    const icon = document.getElementById('flbCollapseIcon');
+    if (icon) icon.className = 'fa-solid fa-chevron-down';
+  }
+}
+
+function applySavedFloatingLbPos() {
+  const widget = document.getElementById('floatingLeaderboardWidget');
+  if (!widget) return;
+
+  try {
+    const saved = localStorage.getItem('floating_lb_custom_pos');
+    if (saved) {
+      const pos = JSON.parse(saved);
+      if (pos && pos.left && pos.top) {
+        const pLeft = parseFloat(pos.left);
+        const pTop = parseFloat(pos.top);
+        if (!isNaN(pLeft) && !isNaN(pTop)) {
+          const margin = 8;
+          const rect = widget.getBoundingClientRect();
+          const widgetW = Math.round(rect.width) || widget.offsetWidth || 224;
+          const widgetH = Math.round(rect.height) || widget.offsetHeight || 180;
+          const maxLeft = Math.max(margin, window.innerWidth - widgetW - margin);
+          const maxTop = Math.max(margin, window.innerHeight - widgetH - margin);
+
+          const clampedX = Math.max(margin, Math.min(pLeft, maxLeft));
+          const clampedY = Math.max(margin, Math.min(pTop, maxTop));
+
+          widget.style.left = `${Math.round(clampedX)}px`;
+          widget.style.top = `${Math.round(clampedY)}px`;
+          widget.style.right = 'auto';
+          widget.style.bottom = 'auto';
+          return;
+        }
+      }
+    }
+  } catch(e) {}
+
+  // Default positioning
+  widget.style.left = 'auto';
+  widget.style.top = '95px';
+  widget.style.right = '14px';
+  widget.style.bottom = 'auto';
+}
+
+window.resetFloatingLbPosition = function() {
+  try { localStorage.removeItem('floating_lb_custom_pos'); } catch(e) {}
+  const widget = document.getElementById('floatingLeaderboardWidget');
+  if (widget) {
+    widget.style.left = 'auto';
+    widget.style.top = '95px';
+    widget.style.right = '14px';
+    widget.style.bottom = 'auto';
+  }
+  if (typeof showToast === 'function') {
+    showToast('Posisi klasemen melayang direset ke default!', 2000);
+  }
+};
+
+window.toggleFloatingLeaderboard = toggleFloatingLeaderboard;
+window.setFloatingLbTab = setFloatingLbTab;
+window.toggleFloatingLbAutoRotate = toggleFloatingLbAutoRotate;
+window.toggleFloatingLbCollapse = toggleFloatingLbCollapse;
+window.renderFloatingLeaderboard = renderFloatingLeaderboard;
+
 function showMusicNotif(requesterName, title) {
   const container = document.getElementById('musicNotifContainer');
   const widget = document.getElementById('musicWidget');
@@ -5030,6 +5492,9 @@ function applyGameModeUI() {
   updateNoRepeatBadgeUI();
   if (typeof startInstructionRotation === 'function') {
     startInstructionRotation();
+  }
+  if (typeof renderFloatingLeaderboard === 'function' && typeof isFloatingLbVisible !== 'undefined' && isFloatingLbVisible) {
+    renderFloatingLeaderboard();
   }
 }
 
@@ -9065,6 +9530,13 @@ function applyRemoteGameSettings(settings) {
     if (wscToggle) wscToggle.checked = isWinStreakCooldownEnabled;
   }
 
+  // 6.8. Floating Leaderboard (Top 5 Draggable Ticker)
+  if (settings.floatingLeaderboard !== undefined && settings.floatingLeaderboard !== isFloatingLbVisible) {
+    if (typeof toggleFloatingLeaderboard === 'function') {
+      toggleFloatingLeaderboard(settings.floatingLeaderboard);
+    }
+  }
+
   // 7. Display Rows
   const currentModeRows = getDisplayRows();
   if (typeof settings.displayRows === 'number' && settings.displayRows >= 3 && settings.displayRows <= 12 && settings.displayRows !== currentModeRows) {
@@ -12075,6 +12547,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const winStreakCooldownToggle = document.getElementById('winStreakCooldownToggle');
   if (winStreakCooldownToggle) winStreakCooldownToggle.checked = isWinStreakCooldownEnabled;
 
+  const floatingLbSettingToggle = document.getElementById('floatingLbSettingToggle');
+  if (floatingLbSettingToggle) floatingLbSettingToggle.checked = isFloatingLbVisible;
+  const floatingLbToggleBtn = document.getElementById('floatingLbToggleBtn');
+  if (floatingLbToggleBtn) floatingLbToggleBtn.classList.toggle('active', isFloatingLbVisible);
+
   const showHintsDiscoveredToggle = document.getElementById('showHintsDiscoveredToggle');
   if (showHintsDiscoveredToggle) showHintsDiscoveredToggle.checked = isShowHintsDiscovered;
 
@@ -12151,11 +12628,29 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof initDraggableMusicWidget === 'function') {
     initDraggableMusicWidget();
   }
+
+  if (typeof initDraggableFloatingLeaderboard === 'function') {
+    initDraggableFloatingLeaderboard();
+  }
+  if (isFloatingLbVisible) {
+    const flbWidget = document.getElementById('floatingLeaderboardWidget');
+    if (flbWidget) flbWidget.style.display = 'flex';
+    if (typeof renderFloatingLeaderboard === 'function') renderFloatingLeaderboard();
+    if (isFloatingLbAutoRotate && typeof startFloatingLbAutoRotate === 'function') {
+      startFloatingLbAutoRotate();
+    }
+  }
 });
 
 setTimeout(() => {
   if (typeof initDraggableMusicWidget === 'function') {
     initDraggableMusicWidget();
+  }
+  if (typeof initDraggableFloatingLeaderboard === 'function') {
+    initDraggableFloatingLeaderboard();
+  }
+  if (isFloatingLbVisible && typeof renderFloatingLeaderboard === 'function') {
+    renderFloatingLeaderboard();
   }
 }, 200);
 

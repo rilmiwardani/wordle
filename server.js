@@ -64,6 +64,7 @@ let gameSettings = {
   autoStarterWinner: true,
   autoStarterPreviousTarget: false,
   winStreakCooldown: true,
+  floatingLeaderboard: true,
   followerOnlyMusic: false,
   musicRequestsEnabled: true,
   musicVolume: 50,

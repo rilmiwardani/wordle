@@ -382,6 +382,7 @@
         </div>
         <div class="header-title" id="headerTitle">WORDLE</div>
         <div class="header-right">
+          <button id="floatingLbToggleBtn" class="settings-btn" title="Tampilkan/Sembunyikan Klasemen Melayang (Top 5)" onclick="toggleFloatingLeaderboard(undefined, event)"><i class="fa-solid fa-ranking-star"></i></button>
           <button id="themeToggleBtn" class="settings-btn" title="Ganti Tema (Gelap / Sepia Cream)" onclick="toggleVisualTheme(event)"><i class="fa-solid fa-palette" id="headerThemeIcon"></i></button>
           <div class="settings-wrapper">
             <button id="settingsBtn" class="settings-btn" onclick="toggleSettings(event)"><i class="fa-solid fa-gear"></i></button>
@@ -745,6 +746,16 @@
                   </div>
                   <div class="toggle-switch">
                     <input type="checkbox" id="winStreakCooldownToggle" checked onchange="toggleWinStreakCooldown(this.checked)">
+                    <div class="toggle-track"></div>
+                  </div>
+                </label>
+                <label class="settings-toggle-row" onclick="event.stopPropagation()">
+                  <div style="display: flex; flex-direction: column; text-align: left;">
+                    <span class="settings-toggle-label"><i class="fa-solid fa-ranking-star" style="color: #ffd700; margin-right: 6px;"></i> Klasemen Melayang Top 5 (Draggable)</span>
+                    <span class="settings-subtext">Tampilkan widget Top 5 (Hari Ini &amp; Global All-Time) yang dapat digeser bebas di layar</span>
+                  </div>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="floatingLbSettingToggle" checked onchange="toggleFloatingLeaderboard(this.checked)">
                     <div class="toggle-track"></div>
                   </div>
                 </label>
@@ -1561,6 +1572,62 @@
         <div class="music-active-slot" id="musicActiveSlot"></div>
         <!-- Queued Tracks Items (Scrollable / Auto-scrollable) -->
         <div class="music-queue-items" id="musicQueueItems"></div>
+      </div>
+    </div>
+
+    <!-- Floating Draggable Leaderboard Widget (Top 5 Ticker / HUD) -->
+    <div id="floatingLeaderboardWidget" class="floating-lb-widget" style="display: none;" title="Geser (drag) untuk memindahkan posisi widget">
+      <!-- Drag Handle & Controls -->
+      <div class="flb-header" id="flbHeader">
+        <div class="flb-header-left">
+          <i class="fa-solid fa-grip-vertical flb-drag-icon"></i>
+          <span class="flb-header-title"><i class="fa-solid fa-trophy flb-trophy-gold"></i> TOP 5</span>
+        </div>
+        <div class="flb-header-actions">
+          <button type="button" class="flb-ctrl-btn active" id="flbAutoRotateBtn" onclick="toggleFloatingLbAutoRotate(event)" title="Auto-Rotasi Tab (10s)">
+            <i class="fa-solid fa-arrows-rotate"></i>
+          </button>
+          <button type="button" class="flb-ctrl-btn" id="flbCollapseBtn" onclick="toggleFloatingLbCollapse(event)" title="Ciutkan / Perluas">
+            <i class="fa-solid fa-chevron-up" id="flbCollapseIcon"></i>
+          </button>
+          <button type="button" class="flb-ctrl-btn" id="flbCloseBtn" onclick="toggleFloatingLeaderboard(false, event)" title="Sembunyikan">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Collapsible Body Area -->
+      <div class="flb-body" id="flbBody">
+        <!-- Interactive Tabs -->
+        <div class="flb-tabs">
+          <button type="button" class="flb-tab active" id="flbTabDaily" onclick="setFloatingLbTab('daily', event)">
+            <i class="fa-solid fa-calendar-day"></i> <span>Hari Ini</span>
+          </button>
+          <button type="button" class="flb-tab" id="flbTabGlobal" onclick="setFloatingLbTab('global', event)">
+            <i class="fa-solid fa-earth-americas"></i> <span>Global All</span>
+          </button>
+        </div>
+
+        <!-- Scope & Progress Tracker Bar -->
+        <div class="flb-context-bar">
+          <div class="flb-context-info">
+            <span class="flb-mode-badge" id="flbModeBadge">WORDLE</span>
+            <span class="flb-mode-desc" id="flbModeDesc">Sesi Hari Ini</span>
+          </div>
+          <div class="flb-progress-track" id="flbProgressTrack" title="Auto-rotasi aktif">
+            <div class="flb-progress-fill" id="flbProgressFill"></div>
+          </div>
+        </div>
+
+        <!-- Leaderboard List (Top 1 - 5) -->
+        <div class="flb-list" id="flbList">
+          <!-- Populated dynamically via app.js -->
+        </div>
+
+        <!-- Footer Drag Hint -->
+        <div class="flb-footer">
+          <i class="fa-solid fa-up-down-left-right"></i> Tahan &amp; geser untuk posisi
+        </div>
       </div>
     </div>
 

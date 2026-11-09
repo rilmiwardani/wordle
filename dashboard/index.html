@@ -1819,6 +1819,18 @@
                 </label>
               </div>
 
+              <!-- Widget Klasemen Melayang (Top 5) -->
+              <div class="dash-toggle-row">
+                <div>
+                  <div class="dash-toggle-title"><i class="fa-solid fa-ranking-star" style="color: #ffd700; margin-right: 6px;"></i> Widget Klasemen Melayang (Top 5)</div>
+                  <div class="dash-toggle-sub">Tampilkan kartu klasemen Top 5 (Hari Ini &amp; Global) yang bisa digeser di layar depan</div>
+                </div>
+                <label class="switch-ui">
+                  <input type="checkbox" id="dashFloatingLeaderboardToggle" checked onchange="autoSaveSettings()">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
               <!-- Hanya Follower Bisa Tebak -->
               <div class="dash-toggle-row">
                 <div>
@@ -2811,6 +2823,7 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       autoStarterWinner: true,
       autoStarterPreviousTarget: false,
       winStreakCooldown: true,
+      floatingLeaderboard: true,
       displayRows: 6,
       boardScale: 100,
       theme: "dark",
@@ -2874,6 +2887,9 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
 
       const wsc = document.getElementById("dashWinStreakCooldownToggle");
       if (wsc && cfg.winStreakCooldown !== undefined) wsc.checked = !!cfg.winStreakCooldown;
+
+      const flb = document.getElementById("dashFloatingLeaderboardToggle");
+      if (flb && cfg.floatingLeaderboard !== undefined) flb.checked = !!cfg.floatingLeaderboard;
 
       // 8. Follower Only Guess
       const fog = document.getElementById("dashFollowerOnlyGuessToggle");
@@ -3068,6 +3084,7 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       currentGameSettings.autoStarterWinner = document.getElementById("dashAutoStarterWinnerToggle")?.checked ?? true;
       currentGameSettings.autoStarterPreviousTarget = document.getElementById("dashAutoStarterToggle")?.checked ?? false;
       currentGameSettings.winStreakCooldown = document.getElementById("dashWinStreakCooldownToggle")?.checked ?? true;
+      currentGameSettings.floatingLeaderboard = document.getElementById("dashFloatingLeaderboardToggle")?.checked ?? true;
       currentGameSettings.followerOnlyGuess = document.getElementById("dashFollowerOnlyGuessToggle")?.checked ?? false;
       currentGameSettings.followerOnlyMusic = document.getElementById("dashFollowerOnlyMusicToggle")?.checked ?? false;
       currentGameSettings.musicRequestsEnabled = document.getElementById("dashMusicRequestsEnabledToggle")?.checked ?? true;

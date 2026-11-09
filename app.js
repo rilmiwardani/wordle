@@ -9124,6 +9124,9 @@ function applyRemoteGameSettings(settings) {
   if (typeof settings.sambungKataWordLength === 'number' && typeof setSambungKataWordLength === 'function') {
     setSambungKataWordLength(settings.sambungKataWordLength);
   }
+  if (typeof settings.sambungKataMaxLives === 'number' && typeof setSambungKataMaxLives === 'function') {
+    setSambungKataMaxLives(settings.sambungKataMaxLives);
+  }
 
   // Apply reloads if requested
   if (settings.restartRound || needReloadWords || needNewRound) {
@@ -18230,6 +18233,12 @@ try {
   if (!isNaN(savedLen) && [0, 4, 5, 6, 7, 8].includes(savedLen)) sambungKataWordLength = savedLen;
 } catch(e) {}
 
+let sambungKataMaxLives = 3; // Default 3 nyawa (dapat disetting 1, 2, 3, 5)
+try {
+  const savedLives = parseInt(localStorage.getItem('sambungkata_max_lives'));
+  if (!isNaN(savedLives) && [1, 2, 3, 5].includes(savedLives)) sambungKataMaxLives = savedLives;
+} catch(e) {}
+
 let sambungKataSeats = Array(sambungKataMaxSeats).fill(null);
 let sambungKataCurrentTurn = 0; // index kursi 0..(maxSeats - 1)
 let sambungKataCurrentWord = '';
@@ -18499,6 +18508,58 @@ function cycleSambungKataWordLength() {
   setSambungKataWordLength(nextVal);
 }
 
+// Pengaturan Jumlah Nyawa (Hati) Pemain (1, 2, 3, 5)
+function setSambungKataMaxLives(lives, event) {
+  if (event) event.stopPropagation();
+  const n = parseInt(lives);
+  if (isNaN(n) || ![1, 2, 3, 5].includes(n)) return;
+
+  sambungKataMaxLives = n;
+  try { localStorage.setItem('sambungkata_max_lives', n); } catch(e) {}
+
+  // Update button states di settings modal
+  document.querySelectorAll('.sk-lives-btn').forEach(btn => {
+    const l = parseInt(btn.getAttribute('data-lives'));
+    btn.classList.toggle('active', l === n);
+  });
+  const livesLabel = document.getElementById('skLivesLabel');
+  if (livesLabel) {
+    livesLabel.textContent = (n === 1) ? '1 Nyawa (Sudden Death)' : (n === 5 ? '5 Nyawa (Battle)' : n + ' Nyawa');
+  }
+
+  // Update quick config pill di bar atas
+  const pillText = document.getElementById('skLivesConfigText');
+  if (pillText) {
+    pillText.textContent = (n === 1) ? '1 Nyawa' : `${n} Nyawa`;
+  }
+
+  // Jika di fase lobby, sesuaikan nyawa pemain yang sudah duduk
+  if (sambungKataPhase === 'lobby') {
+    sambungKataSeats.forEach(s => {
+      if (s !== null) {
+        s.lives = n;
+      }
+    });
+  }
+
+  // Sync ke localSocket jika terhubung
+  if (typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
+    localSocket.emit('update-game-settings', { sambungKataMaxLives: n });
+  }
+
+  renderSambungKataUI();
+  const toastMsg = (n === 1) ? '❤️ Mode Sudden Death: 1 Kesempatan Nyawa!' : `❤️ Jumlah nyawa disetel: ${n} Nyawa per pemain!`;
+  showToast(toastMsg, 1800);
+}
+
+// Shortcut klik cepat ganti jumlah nyawa di bar pill lobby
+function cycleSambungKataMaxLives() {
+  const presets = [1, 2, 3, 5];
+  const idx = presets.indexOf(sambungKataMaxLives);
+  const nextVal = (idx === -1 || idx === presets.length - 1) ? presets[0] : presets[idx + 1];
+  setSambungKataMaxLives(nextVal);
+}
+
 // Inisialisasi Game Sambung Kata
 function initSambungKataGame() {
   sambungKataPhase = 'lobby';
@@ -18572,7 +18633,7 @@ function joinSambungKataSeat(userData) {
     userId,
     userName,
     userAvatar,
-    lives: 3,
+    lives: sambungKataMaxLives,
     isDead: false,
     score: 0
   };
@@ -18668,7 +18729,7 @@ function startSambungKataPlay() {
   const seatedIndices = [];
   sambungKataSeats.forEach((s, idx) => {
     if (s !== null) {
-      s.lives = 3;
+      s.lives = sambungKataMaxLives;
       s.isDead = false;
       seatedIndices.push(idx);
     }
@@ -18864,7 +18925,7 @@ function hostSeatAction(seatIdx) {
       userId: seatedId,
       userName: seatedName,
       userAvatar: getHostAvatar(),
-      lives: 3,
+      lives: sambungKataMaxLives,
       isDead: false,
       score: 0
     };
@@ -19297,6 +19358,19 @@ function renderSambungKataUI() {
     btn.classList.toggle('active', val === sambungKataWordLength);
   });
 
+  const livesPillText = document.getElementById('skLivesConfigText');
+  if (livesPillText) {
+    livesPillText.textContent = (sambungKataMaxLives === 1) ? '1 Nyawa' : `${sambungKataMaxLives} Nyawa`;
+  }
+  const livesModalLabel = document.getElementById('skLivesLabel');
+  if (livesModalLabel) {
+    livesModalLabel.textContent = (sambungKataMaxLives === 1) ? '1 Nyawa (Sudden Death)' : (sambungKataMaxLives === 5 ? '5 Nyawa (Battle)' : `${sambungKataMaxLives} Nyawa`);
+  }
+  document.querySelectorAll('.sk-lives-btn').forEach(btn => {
+    const val = parseInt(btn.getAttribute('data-lives'));
+    btn.classList.toggle('active', val === sambungKataMaxLives);
+  });
+
   // 3. Render Dinamis Kursi Melingkar (3 s.d. 12 Kursi)
   const seatsContainer = document.getElementById('skSeatsContainer');
   if (seatsContainer) {
@@ -19331,6 +19405,10 @@ function renderSambungKataUI() {
 
       const player = sambungKataSeats[i];
       if (!player) {
+        let emptyHearts = '';
+        for (let h = 0; h < sambungKataMaxLives; h++) {
+          emptyHearts += '<i class="fa-solid fa-heart"></i>';
+        }
         seatEl.className = 'sk-seat empty';
         seatEl.innerHTML = `
           <div class="sk-avatar-ring" style="${ringStyle}">
@@ -19339,7 +19417,7 @@ function renderSambungKataUI() {
           <div class="sk-seat-badge">
             <span class="sk-seat-name">Kursi ${i + 1}</span>
             <div class="sk-seat-hearts">
-              <i class="fa-solid fa-heart"></i><i class="fa-solid fa-heart"></i><i class="fa-solid fa-heart"></i>
+              ${emptyHearts}
             </div>
           </div>
         `;
@@ -19351,7 +19429,7 @@ function renderSambungKataUI() {
         seatEl.className = classes;
 
         let heartHtml = '';
-        for (let h = 0; h < 3; h++) {
+        for (let h = 0; h < sambungKataMaxLives; h++) {
           heartHtml += `<i class="fa-solid fa-heart ${h < player.lives ? 'active' : ''}"></i>`;
         }
 
@@ -19505,6 +19583,8 @@ window.setSambungKataTurnDuration = setSambungKataTurnDuration;
 window.cycleSambungKataTurnDuration = cycleSambungKataTurnDuration;
 window.setSambungKataWordLength = setSambungKataWordLength;
 window.cycleSambungKataWordLength = cycleSambungKataWordLength;
+window.setSambungKataMaxLives = setSambungKataMaxLives;
+window.cycleSambungKataMaxLives = cycleSambungKataMaxLives;
 
 // ═════════════════════════════════════════════════════════════════════════════
 // 19. ANTIWORDLE (RANJAU KATA) - AUTHENTIC SURVIVAL BOMB ENGINE

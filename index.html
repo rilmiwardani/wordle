@@ -1330,6 +1330,21 @@
                   </div>
                   <div class="settings-subtext" style="margin-top: 4px;">Pilih "Bebas" untuk aturan klasik (3–8 huruf), atau kunci jumlah huruf tertentu untuk tantangan setara Wordle.</div>
                 </div>
+
+                <!-- Jumlah Nyawa / Hati Pemain -->
+                <div style="margin-bottom: 6px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span style="font-size: 11px; color: #94a3b8;"><i class="fa-solid fa-heart" style="color: #ef4444; margin-right: 4px;"></i> Jumlah Nyawa (Hati):</span>
+                    <span id="skLivesLabel" style="font-size: 11px; color: #ef4444; font-weight: 700;">3 Nyawa</span>
+                  </div>
+                  <div style="display: flex; gap: 4px;" onclick="event.stopPropagation()">
+                    <button type="button" class="lang-option sk-lives-btn" data-lives="1" onclick="setSambungKataMaxLives(1, event)" style="flex: 1; justify-content: center; padding: 4px 0; font-size: 10px; border-radius: 4px; margin: 0;">1 (Sudden Death)</button>
+                    <button type="button" class="lang-option sk-lives-btn" data-lives="2" onclick="setSambungKataMaxLives(2, event)" style="flex: 1; justify-content: center; padding: 4px 0; font-size: 10px; border-radius: 4px; margin: 0;">2</button>
+                    <button type="button" class="lang-option sk-lives-btn active" data-lives="3" onclick="setSambungKataMaxLives(3, event)" style="flex: 1; justify-content: center; padding: 4px 0; font-size: 10px; border-radius: 4px; margin: 0;">3 (Normal)</button>
+                    <button type="button" class="lang-option sk-lives-btn" data-lives="5" onclick="setSambungKataMaxLives(5, event)" style="flex: 1; justify-content: center; padding: 4px 0; font-size: 10px; border-radius: 4px; margin: 0;">5 (Battle)</button>
+                  </div>
+                  <div class="settings-subtext" style="margin-top: 4px;">Jumlah kesempatan salah/kehabisan waktu sebelum pemain tereliminasi dari meja.</div>
+                </div>
               </div>
             </div>
 
@@ -2015,6 +2030,10 @@
           <div class="sk-config-pill" id="skLengthConfigPill" onclick="cycleSambungKataWordLength()" title="Klik untuk ganti aturan panjang kata (Bebas / 4 / 5 / 6 huruf)">
             <i class="fa-solid fa-ruler-horizontal" style="color: #a78bfa;"></i>
             <span id="skLengthConfigText">Bebas</span>
+          </div>
+          <div class="sk-config-pill" id="skLivesConfigPill" onclick="cycleSambungKataMaxLives()" title="Klik untuk ganti jumlah nyawa/hati pemain (1, 2, 3, 5 nyawa)">
+            <i class="fa-solid fa-heart" style="color: #ef4444;"></i>
+            <span id="skLivesConfigText">3 Nyawa</span>
           </div>
         </div>
 

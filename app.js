@@ -1120,7 +1120,9 @@ window.executeRestartTransition = function() {
     if (winTitle) winTitle.textContent = 'WE HAVE A WINNER!';
     const winSubtitle = document.getElementById('winSubtitleText');
     if (winSubtitle) winSubtitle.textContent = 'Guessed the word:';
-    if (currentGameMode === 'wordcluster') {
+    if (currentGameMode === 'sambungkata') {
+      initSambungKataGame();
+    } else if (currentGameMode === 'wordcluster') {
       isGameOver = false;
       wordClusterRound++;
       startWordClusterGame();
@@ -19339,6 +19341,13 @@ function handleSambungKataWin(winnerData, reason = 'knockout') {
   lastRoundWinner = winnerData;
   lastRoundTargetWord = sambungKataCurrentWord;
 
+  const winTitleEl = document.getElementById('winTitleText');
+  if (winTitleEl) {
+    winTitleEl.innerHTML = (reason === 'round_limit')
+      ? `<i class="fa-solid fa-flag-checkered" style="color: #ffd54f; margin-right: 5px;"></i> JUARA ${sambungKataMaxRounds} PUTARAN`
+      : `<i class="fa-solid fa-crown" style="color: #ffd54f; margin-right: 5px;"></i> JUARA MEJA BUNDAR`;
+  }
+
   const winAvatar = document.getElementById('winAvatar');
   if (winAvatar) {
     winAvatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
@@ -19348,23 +19357,31 @@ function handleSambungKataWin(winnerData, reason = 'knockout') {
   const winNameEl = document.getElementById('winName');
   if (winNameEl) winNameEl.textContent = winnerName;
 
+  const finalScore = winnerData ? (winnerData.score || 0) : 0;
   const winPtsEl = document.getElementById('winPts');
   if (winPtsEl) {
-    if (reason === 'round_limit') {
-      winPtsEl.innerHTML = `<i class="fa-solid fa-flag-checkered" style="color: #ffd54f;"></i> JUARA ${sambungKataMaxRounds} PUTARAN! (+${winPts} PTS)`;
+    if (reason === 'round_limit' && finalScore > 0) {
+      winPtsEl.innerHTML = `<i class="fa-solid fa-star" style="color: #ffd54f; margin-right: 4px;"></i> Total: ${finalScore} Pts (+${winPts} Menang)`;
     } else {
-      winPtsEl.innerHTML = `<i class="fa-solid fa-crown" style="color: #ffd54f;"></i> JUARA MEJA BUNDAR (+${winPts} PTS)`;
+      winPtsEl.innerHTML = `<i class="fa-solid fa-trophy" style="color: #ffd54f; margin-right: 4px;"></i> +${winPts} PTS`;
     }
   }
 
+  const winSubtitleEl = document.getElementById('winSubtitleText');
+  if (winSubtitleEl) {
+    winSubtitleEl.textContent = 'Kata Penutup:';
+  }
+
+  const lastWord = sambungKataCurrentWord || (sambungKataWordChain[0] && sambungKataWordChain[0].word) || 'SELESAI';
+  const chainCount = sambungKataWordChain.length;
   const winWordEl = document.getElementById('winWord');
   if (winWordEl) {
-    const finalScore = winnerData ? (winnerData.score || 0) : 0;
-    if (reason === 'round_limit') {
-      winWordEl.innerHTML = `Mengumpulkan <strong>${finalScore} Pts</strong> (${sambungKataWordChain.length} Kata Rantai)`;
-    } else {
-      winWordEl.innerHTML = `Terhubung <strong>${sambungKataWordChain.length}</strong> Kata Rantai! (${finalScore} Pts)`;
-    }
+    winWordEl.innerHTML = `
+      <div class="sk-win-word-wrapper">
+        <span class="sk-win-word-text">${lastWord}</span>
+        <span class="sk-win-chain-badge"><i class="fa-solid fa-link"></i> ${chainCount} Kata</span>
+      </div>
+    `;
     winWordEl.style.display = 'block';
   }
 

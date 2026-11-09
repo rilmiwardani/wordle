@@ -1807,6 +1807,18 @@
                 </label>
               </div>
 
+              <!-- Cooldown Win Streak (Anti-Dominasi) -->
+              <div class="dash-toggle-row">
+                <div>
+                  <div class="dash-toggle-title"><i class="fa-solid fa-fire" style="color: #f97316; margin-right: 6px;"></i> Cooldown Win Streak (Anti-Dominasi)</div>
+                  <div class="dash-toggle-sub">Beri jeda submit 4s-15s di ronde baru bagi pemenang beruntun agar penonton lain sempat menebak</div>
+                </div>
+                <label class="switch-ui">
+                  <input type="checkbox" id="dashWinStreakCooldownToggle" checked onchange="autoSaveSettings()">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
               <!-- Hanya Follower Bisa Tebak -->
               <div class="dash-toggle-row">
                 <div>
@@ -2798,6 +2810,7 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       showHints: true,
       autoStarterWinner: true,
       autoStarterPreviousTarget: false,
+      winStreakCooldown: true,
       displayRows: 6,
       boardScale: 100,
       theme: "dark",
@@ -2858,6 +2871,9 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
 
       const ast = document.getElementById("dashAutoStarterToggle");
       if (ast && cfg.autoStarterPreviousTarget !== undefined) ast.checked = !!cfg.autoStarterPreviousTarget;
+
+      const wsc = document.getElementById("dashWinStreakCooldownToggle");
+      if (wsc && cfg.winStreakCooldown !== undefined) wsc.checked = !!cfg.winStreakCooldown;
 
       // 8. Follower Only Guess
       const fog = document.getElementById("dashFollowerOnlyGuessToggle");
@@ -3051,6 +3067,7 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       currentGameSettings.showHints = document.getElementById("dashShowHintsToggle")?.checked ?? true;
       currentGameSettings.autoStarterWinner = document.getElementById("dashAutoStarterWinnerToggle")?.checked ?? true;
       currentGameSettings.autoStarterPreviousTarget = document.getElementById("dashAutoStarterToggle")?.checked ?? false;
+      currentGameSettings.winStreakCooldown = document.getElementById("dashWinStreakCooldownToggle")?.checked ?? true;
       currentGameSettings.followerOnlyGuess = document.getElementById("dashFollowerOnlyGuessToggle")?.checked ?? false;
       currentGameSettings.followerOnlyMusic = document.getElementById("dashFollowerOnlyMusicToggle")?.checked ?? false;
       currentGameSettings.musicRequestsEnabled = document.getElementById("dashMusicRequestsEnabledToggle")?.checked ?? true;

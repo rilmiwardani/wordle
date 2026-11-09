@@ -63,6 +63,7 @@ let gameSettings = {
   boardScale: 100,
   autoStarterWinner: true,
   autoStarterPreviousTarget: false,
+  winStreakCooldown: true,
   followerOnlyMusic: false,
   musicRequestsEnabled: true,
   musicVolume: 50,

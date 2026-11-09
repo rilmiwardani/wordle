@@ -252,6 +252,7 @@ let lastRoundTargetWord = "";
 let lastRoundWinner = null;
 let isAutoStarterWinnerNickname = localStorage.getItem('wordle_autoStarterWinner') !== 'false';
 let isAutoStarterPreviousTarget = localStorage.getItem('wordle_autoStarter') === 'true';
+let isWinStreakCooldownEnabled = localStorage.getItem('wordle_winStreakCooldown') !== 'false';
 let isShowHintsDiscovered = localStorage.getItem('wordle_showHintsDiscovered') !== 'false';
 let guesses = [];
 let knownAbsentLetters = new Set();
@@ -414,9 +415,9 @@ function recordWin(userId) {
   entry.wins = isStreak ? entry.wins + 1 : 1;
   entry.lastWinTime = now;
 
-  // Cooldown berikutnya:
+  // Cooldown berikutnya jika saklar cooldown aktif:
   // menang 1x → 0s, 2x → 4s, 3x → 8s, 4x+ → 15s
-  const cooldownMs = entry.wins <= 1 ? 0
+  const cooldownMs = (!isWinStreakCooldownEnabled || entry.wins <= 1) ? 0
     : entry.wins === 2 ? 4000
     : entry.wins === 3 ? 8000
     : 15000;
@@ -438,6 +439,7 @@ function recordWin(userId) {
  * @returns {number}
  */
 function getWinCooldownRemaining(userId) {
+  if (!isWinStreakCooldownEnabled) return 0;
   if (!userId || userId === 'host' || userId === 'host_offline') return 0;
   const entry = playerWinStreaks.get(userId);
   if (!entry || !entry.cooldownUntil) return 0;
@@ -7938,6 +7940,17 @@ window.toggleAutoStarter = function(checked) {
   }
 };
 
+window.toggleWinStreakCooldown = function(checked) {
+  isWinStreakCooldownEnabled = checked;
+  try { localStorage.setItem('wordle_winStreakCooldown', checked); } catch(e) {}
+  showToast(checked ? '🔥 Cooldown Win Streak: AKTIF' : '🔥 Cooldown Win Streak: NONAKTIF', 2000);
+  const wscToggle = document.getElementById('winStreakCooldownToggle');
+  if (wscToggle) wscToggle.checked = checked;
+  if (typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
+    localSocket.emit('update-game-settings', { winStreakCooldown: checked });
+  }
+};
+
 window.toggleShowHintsDiscovered = function(checked) {
   isShowHintsDiscovered = checked;
   try { localStorage.setItem('wordle_showHintsDiscovered', checked); } catch(e) {}
@@ -9042,6 +9055,14 @@ function applyRemoteGameSettings(settings) {
     try { localStorage.setItem('wordle_autoStarter', isAutoStarterPreviousTarget); } catch(e) {}
     const astToggle = document.getElementById('autoStarterToggle');
     if (astToggle) astToggle.checked = isAutoStarterPreviousTarget;
+  }
+
+  // 6.7. Win Streak Cooldown (Anti-Dominasi)
+  if (settings.winStreakCooldown !== undefined && settings.winStreakCooldown !== isWinStreakCooldownEnabled) {
+    isWinStreakCooldownEnabled = !!settings.winStreakCooldown;
+    try { localStorage.setItem('wordle_winStreakCooldown', isWinStreakCooldownEnabled); } catch(e) {}
+    const wscToggle = document.getElementById('winStreakCooldownToggle');
+    if (wscToggle) wscToggle.checked = isWinStreakCooldownEnabled;
   }
 
   // 7. Display Rows
@@ -12050,6 +12071,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const autoStarterToggle = document.getElementById('autoStarterToggle');
   if (autoStarterToggle) autoStarterToggle.checked = isAutoStarterPreviousTarget;
+
+  const winStreakCooldownToggle = document.getElementById('winStreakCooldownToggle');
+  if (winStreakCooldownToggle) winStreakCooldownToggle.checked = isWinStreakCooldownEnabled;
 
   const showHintsDiscoveredToggle = document.getElementById('showHintsDiscoveredToggle');
   if (showHintsDiscoveredToggle) showHintsDiscoveredToggle.checked = isShowHintsDiscovered;

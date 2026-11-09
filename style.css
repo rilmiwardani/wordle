@@ -12666,7 +12666,7 @@ body.theme-sepia .tourney-mode-item span {
   z-index: 5;
 }
 
-/* Needle / Pointer - Panah Petunjuk Giliran Menonjol & Jelas */
+/* Needle / Pointer - Panah Petunjuk Giliran Ramping, Presisi & Pas di Mobile */
 .sk-turn-pointer {
   position: absolute;
   width: 100%;
@@ -12679,44 +12679,44 @@ body.theme-sepia .tourney-mode-item span {
 
 .sk-pointer-head {
   position: absolute;
-  top: -30px;
+  top: -16px;
   left: 50%;
   transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-left: 16px solid transparent;
-  border-right: 16px solid transparent;
-  border-bottom: 28px solid #f59e0b;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 10px rgba(245, 158, 11, 0.7));
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-bottom: 16px solid #f59e0b;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 8px rgba(245, 158, 11, 0.6));
   animation: skPointerBob 1s ease-in-out infinite alternate;
 }
 
 .sk-pointer-head::before {
   content: '';
   position: absolute;
-  top: 8px;
-  left: -2px;
-  width: 4px;
-  height: 12px;
+  top: 5px;
+  left: -1.5px;
+  width: 3px;
+  height: 7px;
   background: rgba(255, 255, 255, 0.65);
-  border-radius: 2px;
+  border-radius: 1.5px;
 }
 
 .sk-pointer-head::after {
   content: '';
   position: absolute;
-  top: 27px;
-  left: -5px;
-  width: 10px;
-  height: 14px;
+  top: 15px;
+  left: -3px;
+  width: 6px;
+  height: 8px;
   background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
-  border-radius: 0 0 3px 3px;
+  border-radius: 0 0 2px 2px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 @keyframes skPointerBob {
   0% { transform: translateX(-50%) translateY(0); }
-  100% { transform: translateX(-50%) translateY(-6px); }
+  100% { transform: translateX(-50%) translateY(-3px); }
 }
 
 /* Center Content */
@@ -12816,6 +12816,18 @@ body.theme-sepia .tourney-mode-item span {
   .sk-center-word.len-6 .sk-tile { width: 15px; height: 20px; font-size: 9.5px; }
   .sk-center-word.len-7 .sk-tile { width: 13px; height: 18px; font-size: 8.5px; }
   .sk-center-word.len-8 .sk-tile { width: 11.5px; height: 17px; font-size: 7.5px; }
+  .sk-pointer-head {
+    top: -13px;
+    border-left: 7.5px solid transparent;
+    border-right: 7.5px solid transparent;
+    border-bottom: 13px solid #f59e0b;
+  }
+  .sk-pointer-head::after {
+    top: 12px;
+    left: -2.5px;
+    width: 5px;
+    height: 6px;
+  }
 }
 
 .sk-target-instruction {

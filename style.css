@@ -14120,18 +14120,6 @@ body.theme-sepia .antiwordle-row.is-latest {
   gap: 5px;
 }
 
-.flb-footer {
-  padding: 4px 10px;
-  font-size: 9px;
-  color: rgba(255, 255, 255, 0.35);
-  text-align: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-}
-
 /* Sepia Theme Support */
 body.theme-sepia .floating-lb-widget {
   background: #f4ecdf !important;
@@ -14222,11 +14210,6 @@ body.theme-sepia .flb-score small {
 
 body.theme-sepia .flb-empty {
   color: #8d6e63 !important;
-}
-
-body.theme-sepia .flb-footer {
-  color: #8d6e63 !important;
-  border-top: 1px solid rgba(66, 52, 40, 0.1) !important;
 }
 
 

@@ -9127,6 +9127,9 @@ function applyRemoteGameSettings(settings) {
   if (typeof settings.sambungKataMaxLives === 'number' && typeof setSambungKataMaxLives === 'function') {
     setSambungKataMaxLives(settings.sambungKataMaxLives);
   }
+  if (typeof settings.sambungKataMaxRounds === 'number' && typeof setSambungKataMaxRounds === 'function') {
+    setSambungKataMaxRounds(settings.sambungKataMaxRounds);
+  }
 
   // Apply reloads if requested
   if (settings.restartRound || needReloadWords || needNewRound) {
@@ -18239,6 +18242,15 @@ try {
   if (!isNaN(savedLives) && [1, 2, 3, 5].includes(savedLives)) sambungKataMaxLives = savedLives;
 } catch(e) {}
 
+let sambungKataMaxRounds = 3; // Default 3 putaran meja (3, 5, atau 0 = Survival tanpa batas)
+try {
+  const savedRounds = parseInt(localStorage.getItem('sambungkata_max_rounds'));
+  if (!isNaN(savedRounds) && [0, 3, 5, 10].includes(savedRounds)) sambungKataMaxRounds = savedRounds;
+} catch(e) {}
+
+let sambungKataCurrentLap = 1; // Putaran meja saat ini (1, 2, 3...)
+let sambungKataLapTurnsCount = 0; // Jumlah giliran pemain hidup yang selesai di putaran ini
+
 let sambungKataSeats = Array(sambungKataMaxSeats).fill(null);
 let sambungKataCurrentTurn = 0; // index kursi 0..(maxSeats - 1)
 let sambungKataCurrentWord = '';
@@ -18560,9 +18572,57 @@ function cycleSambungKataMaxLives() {
   setSambungKataMaxLives(nextVal);
 }
 
+// Pengaturan Batas Putaran Meja (3, 5 Putaran atau 0 = Survival Tanpa Batas)
+function setSambungKataMaxRounds(rounds, event) {
+  if (event) event.stopPropagation();
+  const n = parseInt(rounds);
+  if (isNaN(n) || ![0, 3, 5, 10].includes(n)) return;
+
+  sambungKataMaxRounds = n;
+  try { localStorage.setItem('sambungkata_max_rounds', n); } catch(e) {}
+
+  // Update button states di settings modal
+  document.querySelectorAll('.sk-roundlimit-btn').forEach(btn => {
+    const r = parseInt(btn.getAttribute('data-rounds'));
+    btn.classList.toggle('active', r === n);
+  });
+  const roundLimitLabel = document.getElementById('skRoundLimitLabel');
+  if (roundLimitLabel) {
+    if (n === 0) roundLimitLabel.textContent = 'Survival (Tanpa Batas)';
+    else if (n === 3) roundLimitLabel.textContent = '3 Putaran (Kilat)';
+    else if (n === 5) roundLimitLabel.textContent = '5 Putaran (Normal)';
+    else roundLimitLabel.textContent = `${n} Putaran`;
+  }
+
+  // Update quick config pill di bar atas
+  const pillText = document.getElementById('skRoundsConfigText');
+  if (pillText) {
+    pillText.textContent = (n === 0) ? 'Survival' : `${n} Putaran`;
+  }
+
+  // Sync ke localSocket jika terhubung
+  if (typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
+    localSocket.emit('update-game-settings', { sambungKataMaxRounds: n });
+  }
+
+  renderSambungKataUI();
+  const toastMsg = (n === 0) ? '♾️ Sistem Putaran: Survival Tanpa Batas!' : `🏁 Sistem Putaran: ${n} Putaran Meja (Point Scoring)!`;
+  showToast(toastMsg, 1800);
+}
+
+// Shortcut klik cepat ganti sistem putaran di bar pill lobby
+function cycleSambungKataMaxRounds() {
+  const presets = [3, 5, 0];
+  const idx = presets.indexOf(sambungKataMaxRounds);
+  const nextVal = (idx === -1 || idx === presets.length - 1) ? presets[0] : presets[idx + 1];
+  setSambungKataMaxRounds(nextVal);
+}
+
 // Inisialisasi Game Sambung Kata
 function initSambungKataGame() {
   sambungKataPhase = 'lobby';
+  sambungKataCurrentLap = 1;
+  sambungKataLapTurnsCount = 0;
   sambungKataCurrentWord = '';
   sambungKataUsedWords.clear();
   sambungKataWordChain = [];
@@ -18727,9 +18787,12 @@ function startSambungKataPlay() {
 
   // Pastikan ada pemain duduk
   const seatedIndices = [];
+  sambungKataCurrentLap = 1;
+  sambungKataLapTurnsCount = 0;
   sambungKataSeats.forEach((s, idx) => {
     if (s !== null) {
       s.lives = sambungKataMaxLives;
+      s.score = 0;
       s.isDead = false;
       seatedIndices.push(idx);
     }
@@ -18870,6 +18933,37 @@ function handleSambungKataTimeout() {
 // Pindah Giliran ke Pemain Hidup Berikutnya
 function nextSambungKataTurn() {
   if (sambungKataPhase !== 'playing') return;
+
+  const alivePlayers = sambungKataSeats.filter(s => s && !s.isDead);
+  if (alivePlayers.length <= 1 && sambungKataSeats.filter(s => s !== null).length >= 2) {
+    handleSambungKataWin(alivePlayers[0] || sambungKataSeats[sambungKataCurrentTurn], 'knockout');
+    return;
+  }
+
+  // Akumulasi giliran putaran meja
+  sambungKataLapTurnsCount++;
+  if (alivePlayers.length > 0 && sambungKataLapTurnsCount >= alivePlayers.length) {
+    sambungKataLapTurnsCount = 0;
+    sambungKataCurrentLap++;
+
+    // Jika melebihi batas putaran (mode round limit)
+    if (sambungKataMaxRounds > 0 && sambungKataCurrentLap > sambungKataMaxRounds) {
+      const candidates = [...alivePlayers];
+      candidates.sort((a, b) => {
+        if ((b.score || 0) !== (a.score || 0)) return (b.score || 0) - (a.score || 0);
+        return (b.lives || 0) - (a.lives || 0);
+      });
+      showToast(`🏁 ${sambungKataMaxRounds} Putaran selesai! Juara: @${candidates[0].userName}`, 2500);
+      handleSambungKataWin(candidates[0], 'round_limit');
+      return;
+    } else if (sambungKataMaxRounds > 0) {
+      const isFinal = (sambungKataCurrentLap === sambungKataMaxRounds);
+      const lapToast = isFinal 
+        ? `🔥 PUTARAN FINAL! Giliran penentuan juara meja!`
+        : `🔄 Masuk Putaran ke-${sambungKataCurrentLap} dari ${sambungKataMaxRounds}!`;
+      showToast(lapToast, 2000);
+    }
+  }
 
   const totalSeats = sambungKataMaxSeats;
   let nextIdx = (sambungKataCurrentTurn + 1) % totalSeats;
@@ -19148,28 +19242,64 @@ function processSambungKataGuess(guessWord, userData) {
   const guesserName = isHostAssist ? `${activePlayer.userName} (Bantuan Host)` : activePlayer.userName;
 
   sambungKataWordChain.unshift({ word: clean, userName: guesserName });
-  activePlayer.score += 5;
+
+  // Kalkulasi Skor Dinamis: Poin Dasar Huruf + Bonus Kecepatan Refleks
+  const isLockedLen = (sambungKataWordLength > 0) || (sambungKataSubMode === 'morph');
+  const basePts = isLockedLen ? (sambungKataWordLength || clean.length) : clean.length;
+
+  const timeRatio = (sambungKataTurnDuration > 0) ? (sambungKataTimer / sambungKataTurnDuration) : 0;
+  let speedBonus = 0;
+  let speedLabel = '';
+
+  if (isLockedLen) {
+    if (timeRatio >= 0.7) {
+      speedBonus = 5;
+      speedLabel = '⚡ KILAT';
+    } else if (timeRatio >= 0.35) {
+      speedBonus = 3;
+      speedLabel = '🏃 CEPAT';
+    } else {
+      speedBonus = 1;
+      speedLabel = '🛡️ TEPAT';
+    }
+  } else {
+    if (timeRatio >= 0.7) {
+      speedBonus = 3;
+      speedLabel = '⚡ KILAT';
+    } else if (timeRatio >= 0.35) {
+      speedBonus = 1;
+      speedLabel = '🏃 CEPAT';
+    } else {
+      speedBonus = 0;
+      speedLabel = '🛡️ TEPAT';
+    }
+  }
+
+  const earnedPts = basePts + speedBonus;
+  activePlayer.score = (activePlayer.score || 0) + earnedPts;
 
   if (typeof addPoints === 'function' && activePlayer) {
     addPoints({
       nickname: activePlayer.userName,
       uniqueId: activePlayer.userId,
       profilePictureUrl: activePlayer.userAvatar
-    }, 5);
+    }, earnedPts);
   }
   if (typeof showFloatingPoints === 'function') {
-    showFloatingPoints(5, `skSeat_${sambungKataCurrentTurn}`);
+    showFloatingPoints(earnedPts, `skSeat${sambungKataCurrentTurn}`);
   }
+
+  const bonusTag = speedLabel ? ` (+${earnedPts} Pts • ${speedLabel})` : ` (+${earnedPts} Pts)`;
 
   let successMsg = '';
   if (sambungKataSubMode === 'morph') {
     successMsg = isHostAssist 
-      ? `👏 Host membantu @${activePlayer.userName} ubah ${sambungKataMorphDiff} huruf: "${clean}" (+5 Pts)`
-      : `👏 @${activePlayer.userName} berhasil ubah ${sambungKataMorphDiff} huruf: "${clean}" (+5 Pts)`;
+      ? `👏 Host membantu @${activePlayer.userName} ubah ${sambungKataMorphDiff} huruf: "${clean}"${bonusTag}`
+      : `👏 @${activePlayer.userName} berhasil ubah ${sambungKataMorphDiff} huruf: "${clean}"${bonusTag}`;
   } else {
     successMsg = isHostAssist 
-      ? `👏 Host membantu @${activePlayer.userName} sambung: "${clean}" (+5 Pts)`
-      : `👏 @${activePlayer.userName} berhasil sambung: "${clean}" (+5 Pts)`;
+      ? `👏 Host membantu @${activePlayer.userName} sambung: "${clean}"${bonusTag}`
+      : `👏 @${activePlayer.userName} berhasil sambung: "${clean}"${bonusTag}`;
   }
   showToast(successMsg, 2500);
   renderSambungKataUI();
@@ -19178,8 +19308,8 @@ function processSambungKataGuess(guessWord, userData) {
   nextSambungKataTurn();
 }
 
-// Menangani Kemenangan Sambung Kata (Last Man Standing)
-function handleSambungKataWin(winnerData) {
+// Menangani Kemenangan Sambung Kata (Last Man Standing atau Round Limit)
+function handleSambungKataWin(winnerData, reason = 'knockout') {
   sambungKataPhase = 'gameover';
   if (sambungKataTimerInterval) {
     clearInterval(sambungKataTimerInterval);
@@ -19220,12 +19350,21 @@ function handleSambungKataWin(winnerData) {
 
   const winPtsEl = document.getElementById('winPts');
   if (winPtsEl) {
-    winPtsEl.innerHTML = `<i class="fa-solid fa-crown" style="color: #ffd54f;"></i> JUARA MEJA BUNDAR (+${winPts} PTS)`;
+    if (reason === 'round_limit') {
+      winPtsEl.innerHTML = `<i class="fa-solid fa-flag-checkered" style="color: #ffd54f;"></i> JUARA ${sambungKataMaxRounds} PUTARAN! (+${winPts} PTS)`;
+    } else {
+      winPtsEl.innerHTML = `<i class="fa-solid fa-crown" style="color: #ffd54f;"></i> JUARA MEJA BUNDAR (+${winPts} PTS)`;
+    }
   }
 
   const winWordEl = document.getElementById('winWord');
   if (winWordEl) {
-    winWordEl.innerHTML = `Terhubung <strong>${sambungKataWordChain.length}</strong> Kata Rantai!`;
+    const finalScore = winnerData ? (winnerData.score || 0) : 0;
+    if (reason === 'round_limit') {
+      winWordEl.innerHTML = `Mengumpulkan <strong>${finalScore} Pts</strong> (${sambungKataWordChain.length} Kata Rantai)`;
+    } else {
+      winWordEl.innerHTML = `Terhubung <strong>${sambungKataWordChain.length}</strong> Kata Rantai! (${finalScore} Pts)`;
+    }
     winWordEl.style.display = 'block';
   }
 
@@ -19283,7 +19422,16 @@ function renderSambungKataUI() {
     if (phaseBadge) phaseBadge.className = 'sambungkata-phase-badge playing';
     const activePlayer = sambungKataSeats[sambungKataCurrentTurn];
     const activeName = activePlayer ? activePlayer.userName : 'Pemain';
-    if (phaseText) phaseText.textContent = `GILIRAN: ${activeName}`;
+    if (phaseText) {
+      if (sambungKataMaxRounds > 0) {
+        const isFinalLap = (sambungKataCurrentLap >= sambungKataMaxRounds);
+        phaseText.textContent = isFinalLap 
+          ? `PUTARAN FINAL • GILIRAN: ${activeName}`
+          : `PUTARAN ${sambungKataCurrentLap}/${sambungKataMaxRounds} • GILIRAN: ${activeName}`;
+      } else {
+        phaseText.textContent = `SURVIVAL • GILIRAN: ${activeName}`;
+      }
+    }
     if (phaseIcon) phaseIcon.className = 'fa-solid fa-play';
     if (sambungKataSubMode === 'morph') {
       if (hintText) hintText.innerHTML = `Ayo <strong>@${activeName}</strong>, ubah ${sambungKataMorphDiff} huruf dari kata [ <strong>${sambungKataCurrentWord}</strong> ]!`;
@@ -19371,6 +19519,22 @@ function renderSambungKataUI() {
     btn.classList.toggle('active', val === sambungKataMaxLives);
   });
 
+  const roundsPillText = document.getElementById('skRoundsConfigText');
+  if (roundsPillText) {
+    roundsPillText.textContent = (sambungKataMaxRounds === 0) ? 'Survival' : `${sambungKataMaxRounds} Putaran`;
+  }
+  const roundLimitModalLabel = document.getElementById('skRoundLimitLabel');
+  if (roundLimitModalLabel) {
+    if (sambungKataMaxRounds === 0) roundLimitModalLabel.textContent = 'Survival (Tanpa Batas)';
+    else if (sambungKataMaxRounds === 3) roundLimitModalLabel.textContent = '3 Putaran (Kilat)';
+    else if (sambungKataMaxRounds === 5) roundLimitModalLabel.textContent = '5 Putaran (Normal)';
+    else roundLimitModalLabel.textContent = `${sambungKataMaxRounds} Putaran`;
+  }
+  document.querySelectorAll('.sk-roundlimit-btn').forEach(btn => {
+    const val = parseInt(btn.getAttribute('data-rounds'));
+    btn.classList.toggle('active', val === sambungKataMaxRounds);
+  });
+
   // 3. Render Dinamis Kursi Melingkar (3 s.d. 12 Kursi)
   const seatsContainer = document.getElementById('skSeatsContainer');
   if (seatsContainer) {
@@ -19419,6 +19583,7 @@ function renderSambungKataUI() {
             <div class="sk-seat-hearts">
               ${emptyHearts}
             </div>
+            <div class="sk-seat-score"><i class="fa-solid fa-star"></i> 0 pts</div>
           </div>
         `;
       } else {
@@ -19454,6 +19619,7 @@ function renderSambungKataUI() {
           <div class="sk-seat-badge">
             <span class="sk-seat-name" title="${player.userName}">${player.userName}</span>
             <div class="sk-seat-hearts">${heartHtml}</div>
+            <div class="sk-seat-score"><i class="fa-solid fa-star"></i> ${player.score || 0} pts</div>
           </div>
         `;
       }
@@ -19585,6 +19751,8 @@ window.setSambungKataWordLength = setSambungKataWordLength;
 window.cycleSambungKataWordLength = cycleSambungKataWordLength;
 window.setSambungKataMaxLives = setSambungKataMaxLives;
 window.cycleSambungKataMaxLives = cycleSambungKataMaxLives;
+window.setSambungKataMaxRounds = setSambungKataMaxRounds;
+window.cycleSambungKataMaxRounds = cycleSambungKataMaxRounds;
 
 // ═════════════════════════════════════════════════════════════════════════════
 // 19. ANTIWORDLE (RANJAU KATA) - AUTHENTIC SURVIVAL BOMB ENGINE

@@ -2135,6 +2135,18 @@
               </div>
             </div>
 
+            <!-- Sistem Putaran Meja (Round System) -->
+            <div style="margin-top: 10px;">
+              <div style="font-size: 12px; color: var(--text2); font-weight: 600; margin-bottom: 6px;">
+                <i class="fa-solid fa-flag-checkered" style="color: #ffd54f; margin-right: 4px;"></i> Sistem Putaran Meja:
+              </div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" class="preset-pill-badge active" id="dashSkRounds3" onclick="setDashSambungKataMaxRounds(3)">3 Putaran (Kilat)</button>
+                <button type="button" class="preset-pill-badge" id="dashSkRounds5" onclick="setDashSambungKataMaxRounds(5)">5 Putaran (Normal)</button>
+                <button type="button" class="preset-pill-badge" id="dashSkRounds0" onclick="setDashSambungKataMaxRounds(0)">Survival (Tanpa Batas)</button>
+              </div>
+            </div>
+
             <!-- Host Quick Actions untuk Meja Bundar -->
             <div style="margin-top: 14px; border-top: 1px solid var(--border); padding-top: 10px;">
               <div style="font-size: 12px; color: var(--text2); font-weight: 600; margin-bottom: 6px;">
@@ -2945,6 +2957,9 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       if (typeof cfg.sambungKataMaxLives === 'number') {
         setDashSambungKataMaxLives(cfg.sambungKataMaxLives, true);
       }
+      if (typeof cfg.sambungKataMaxRounds === 'number') {
+        setDashSambungKataMaxRounds(cfg.sambungKataMaxRounds, true);
+      }
     }
 
     function setLengthPreset(lengths) {
@@ -3066,6 +3081,7 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       currentGameSettings.sambungKataTurnDuration = parseInt(localStorage.getItem('sambungkata_turn_duration')) || 15;
       currentGameSettings.sambungKataWordLength = parseInt(localStorage.getItem('sambungkata_word_length')) || 0;
       currentGameSettings.sambungKataMaxLives = parseInt(localStorage.getItem('sambungkata_max_lives')) || 3;
+      currentGameSettings.sambungKataMaxRounds = parseInt(localStorage.getItem('sambungkata_max_rounds')) || 3;
 
       currentGameSettings.restartRound = restartRound;
 
@@ -3157,6 +3173,15 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       if (!noSave) autoSaveSettings();
     }
 
+    function setDashSambungKataMaxRounds(n, noSave) {
+      localStorage.setItem('sambungkata_max_rounds', n);
+      [0, 3, 5].forEach(i => {
+        const btn = document.getElementById(`dashSkRounds${i}`);
+        if (btn) btn.classList.toggle('active', i === n);
+      });
+      if (!noSave) autoSaveSettings();
+    }
+
     function initDashSambungKataSettings() {
       const subMode = localStorage.getItem('sambungkata_sub_mode') || 'classic';
       setDashSambungKataSubMode(subMode, true);
@@ -3172,6 +3197,8 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
       setDashSambungKataWordLength(len, true);
       const lives = parseInt(localStorage.getItem('sambungkata_max_lives')) || 3;
       setDashSambungKataMaxLives(lives, true);
+      const rounds = parseInt(localStorage.getItem('sambungkata_max_rounds'));
+      setDashSambungKataMaxRounds(isNaN(rounds) ? 3 : rounds, true);
     }
 
     // ═════════════════════════════════════════════════════════════════════════

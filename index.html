@@ -1345,6 +1345,20 @@
                   </div>
                   <div class="settings-subtext" style="margin-top: 4px;">Jumlah kesempatan salah/kehabisan waktu sebelum pemain tereliminasi dari meja.</div>
                 </div>
+
+                <!-- Batas Putaran Meja (Round System) -->
+                <div style="margin-bottom: 6px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span style="font-size: 11px; color: #94a3b8;"><i class="fa-solid fa-flag-checkered" style="color: #ffd54f; margin-right: 4px;"></i> Sistem Putaran Meja:</span>
+                    <span id="skRoundLimitLabel" style="font-size: 11px; color: #ffd54f; font-weight: 700;">3 Putaran (Kilat)</span>
+                  </div>
+                  <div style="display: flex; gap: 4px;" onclick="event.stopPropagation()">
+                    <button type="button" class="lang-option sk-roundlimit-btn active" data-rounds="3" onclick="setSambungKataMaxRounds(3, event)" style="flex: 1; justify-content: center; padding: 4px 0; font-size: 10px; border-radius: 4px; margin: 0;">3 Putaran</button>
+                    <button type="button" class="lang-option sk-roundlimit-btn" data-rounds="5" onclick="setSambungKataMaxRounds(5, event)" style="flex: 1; justify-content: center; padding: 4px 0; font-size: 10px; border-radius: 4px; margin: 0;">5 Putaran</button>
+                    <button type="button" class="lang-option sk-roundlimit-btn" data-rounds="0" onclick="setSambungKataMaxRounds(0, event)" style="flex: 1; justify-content: center; padding: 4px 0; font-size: 10px; border-radius: 4px; margin: 0;">Survival</button>
+                  </div>
+                  <div class="settings-subtext" style="margin-top: 4px;">Semua pemain mendapat jumlah giliran yang sama. Pemenang ditentukan oleh akumulasi poin (panjang kata + kecepatan refleks). Knockout langsung menang jika tersisa 1 orang.</div>
+                </div>
               </div>
             </div>
 
@@ -2034,6 +2048,10 @@
           <div class="sk-config-pill" id="skLivesConfigPill" onclick="cycleSambungKataMaxLives()" title="Klik untuk ganti jumlah nyawa/hati pemain (1, 2, 3, 5 nyawa)">
             <i class="fa-solid fa-heart" style="color: #ef4444;"></i>
             <span id="skLivesConfigText">3 Nyawa</span>
+          </div>
+          <div class="sk-config-pill" id="skRoundsConfigPill" onclick="cycleSambungKataMaxRounds()" title="Klik untuk ganti sistem putaran meja (3, 5 Putaran atau Survival)">
+            <i class="fa-solid fa-flag-checkered" style="color: #ffd54f;"></i>
+            <span id="skRoundsConfigText">3 Putaran</span>
           </div>
         </div>
 

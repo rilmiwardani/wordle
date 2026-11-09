@@ -446,10 +446,13 @@ function getWinCooldownRemaining(userId) {
 }
 
 /**
- * Reset semua streak kemenangan (dipanggil saat ganti ronde/mode).
+ * Reset semua streak kemenangan (dipanggil saat ganti sesi turnamen).
  */
 function resetWinStreaks() {
   playerWinStreaks.clear();
+  activeChampionStreak = { userId: null, userName: '', count: 0 };
+  const streakContainer = document.getElementById('winStreakContainer');
+  if (streakContainer) streakContainer.style.display = 'none';
 }
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -1120,6 +1123,9 @@ window.executeRestartTransition = function() {
     if (winTitle) winTitle.textContent = 'WE HAVE A WINNER!';
     const winSubtitle = document.getElementById('winSubtitleText');
     if (winSubtitle) winSubtitle.textContent = 'Guessed the word:';
+    const streakContainer = document.getElementById('winStreakContainer');
+    if (streakContainer) streakContainer.style.display = 'none';
+
     if (currentGameMode === 'sambungkata') {
       initSambungKataGame();
     } else if (currentGameMode === 'wordcluster') {
@@ -1136,6 +1142,61 @@ window.executeRestartTransition = function() {
   }, 600);
 };
 
+// ═════════════════════════════════════════════════════════════════════════════
+// 🔥 TIKTOK WIN STREAK FLAME TRACKER (SINGLE-WINNER MODES)
+// ═════════════════════════════════════════════════════════════════════════════
+let activeChampionStreak = {
+  userId: null,
+  userName: '',
+  count: 0
+};
+
+function updateWinStreakFlame(winnerData) {
+  const streakContainer = document.getElementById('winStreakContainer');
+  const streakNumEl = document.getElementById('winStreakCount');
+  if (!streakContainer || !streakNumEl) return;
+
+  if (!winnerData) {
+    streakContainer.style.display = 'none';
+    return;
+  }
+
+  const rawId = winnerData.uniqueId || winnerData.userId || winnerData.id || winnerData.nickname || winnerData.userName || '';
+  const currentWinnerId = String(rawId).trim();
+  const currentWinnerName = String(winnerData.nickname || winnerData.userName || currentWinnerId).trim();
+
+  // Jika pemenang tidak valid atau host / bot testing, sembunyikan streak
+  if (!currentWinnerId || currentWinnerId.toLowerCase() === 'host' || currentWinnerId.toLowerCase() === 'host_offline' || currentWinnerName.toLowerCase() === 'host') {
+    streakContainer.style.display = 'none';
+    return;
+  }
+
+  // Cek apakah pemenang ini mempertahankan gelarnya dari ronde sebelumnya
+  if (activeChampionStreak.userId && activeChampionStreak.userId.toLowerCase() === currentWinnerId.toLowerCase()) {
+    activeChampionStreak.count++;
+  } else {
+    activeChampionStreak.userId = currentWinnerId;
+    activeChampionStreak.userName = currentWinnerName;
+    activeChampionStreak.count = 1;
+  }
+
+  const streak = activeChampionStreak.count;
+  if (streak >= 2) {
+    // Tentukan tingkatan 5 warna api (5 Tiered Flame Spectrum)
+    let tierClass = 'tier-orange';
+    if (streak >= 10) tierClass = 'tier-mythic';
+    else if (streak >= 8) tierClass = 'tier-gold';
+    else if (streak >= 5) tierClass = 'tier-violet';
+    else if (streak >= 3) tierClass = 'tier-cyan';
+
+    streakContainer.className = `win-streak-container ${tierClass}`;
+    streakNumEl.textContent = streak;
+    streakContainer.style.display = 'inline-flex';
+  } else {
+    streakContainer.style.display = 'none';
+  }
+}
+
 function triggerWinTransition(winDuration, isMultiWinner = false) {
   const overlayId = isMultiWinner ? 'multiWinOverlay' : 'winOverlay';
   const footerId = isMultiWinner ? 'multiWinFooter' : 'winFooter';
@@ -1144,6 +1205,14 @@ function triggerWinTransition(winDuration, isMultiWinner = false) {
   const activeOverlay = document.getElementById(overlayId);
   const activeFooter = document.getElementById(footerId);
   const activeProgress = document.getElementById(progressId);
+
+  // Update visual api win streak untuk seluruh mode single-winner (kecuali multi-winner)
+  if (!isMultiWinner) {
+    updateWinStreakFlame(lastRoundWinner);
+  } else {
+    const streakContainer = document.getElementById('winStreakContainer');
+    if (streakContainer) streakContainer.style.display = 'none';
+  }
   
   if (isMultiWinner) {
     const multiWinTitle = document.getElementById('multiWinTitle');
@@ -7233,7 +7302,6 @@ function startNewRound() {
   applyGameModeUI();
   if (typeof updateLangBadgeUI === 'function') updateLangBadgeUI(lastLang);
   hasPlayedCloseAudio = false;
-  resetWinStreaks(); // Reset cooldown anti-dominasi setiap ronde baru
 
   if (currentGameMode === 'betweenle') {
     betweenleRound = round;

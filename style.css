@@ -2998,11 +2998,110 @@ header {
   font-size: 24px;
   font-weight: 800;
   color: white;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
   text-shadow: 0 2px 4px rgba(0,0,0,0.5);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* TikTok Win Streak Flame Badge (Minimalist Pure Flame & Number di Bawah Nama) */
+.win-streak-container {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  user-select: none;
+  animation: winStreakPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes winStreakPop {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.win-streak-flame {
+  display: inline-block;
+  font-size: 24px;
+  animation: tiktokFlameDance 0.85s ease-in-out infinite alternate;
+  transform-origin: 50% 90%;
+}
+
+.win-streak-num {
+  font-family: 'Outfit', sans-serif;
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+@keyframes tiktokFlameDance {
+  0% { transform: scale(1) rotate(-2deg); }
+  35% { transform: scale(1.14, 0.92) rotate(2.5deg); }
+  70% { transform: scale(0.94, 1.1) rotate(-2.5deg); }
+  100% { transform: scale(1.06, 0.97) rotate(1.5deg); }
+}
+
+/* 5 Tier Gradient Textures (Tanpa Kotak, Murni Ikon & Angka) */
+/* Tier 1: Classic Orange (Streak 2x) */
+.win-streak-container.tier-orange .win-streak-flame i {
+  background: linear-gradient(180deg, #fff176 0%, #ff9800 40%, #ef4444 85%, #b91c1c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 6px rgba(239, 68, 68, 0.75));
+}
+.win-streak-container.tier-orange .win-streak-num {
+  color: #ff9800;
+  text-shadow: 0 2px 8px rgba(239, 68, 68, 0.6);
+}
+
+/* Tier 2: Cyan Plasma (Streak 3x - 4x) */
+.win-streak-container.tier-cyan .win-streak-flame i {
+  background: linear-gradient(180deg, #ffffff 0%, #38bdf8 35%, #0284c7 75%, #0369a1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 8px rgba(56, 189, 248, 0.8));
+}
+.win-streak-container.tier-cyan .win-streak-num {
+  color: #38bdf8;
+  text-shadow: 0 2px 8px rgba(56, 189, 248, 0.6);
+}
+
+/* Tier 3: Violet Nebula (Streak 5x - 7x) */
+.win-streak-container.tier-violet .win-streak-flame i {
+  background: linear-gradient(180deg, #ffffff 0%, #f472b6 30%, #c084fc 70%, #6b21a8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 8px rgba(192, 132, 252, 0.8));
+}
+.win-streak-container.tier-violet .win-streak-num {
+  color: #c084fc;
+  text-shadow: 0 2px 8px rgba(168, 85, 247, 0.6);
+}
+
+/* Tier 4: Golden Divine (Streak 8x - 9x) */
+.win-streak-container.tier-gold .win-streak-flame i {
+  background: linear-gradient(180deg, #ffffff 0%, #fde047 30%, #eab308 70%, #a16207 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 8px rgba(234, 179, 8, 0.85));
+}
+.win-streak-container.tier-gold .win-streak-num {
+  color: #facc15;
+  text-shadow: 0 2px 8px rgba(234, 179, 8, 0.6);
+}
+
+/* Tier 5: Mythic Crimson Obsidian (Streak 10x+) */
+.win-streak-container.tier-mythic .win-streak-flame i {
+  background: linear-gradient(180deg, #ffffff 0%, #fb7185 25%, #e11d48 65%, #1e1b4b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 10px rgba(225, 29, 72, 0.95));
+}
+.win-streak-container.tier-mythic .win-streak-num {
+  color: #fb7185;
+  text-shadow: 0 2px 10px rgba(225, 29, 72, 0.7);
 }
 
 .win-pts {
@@ -8319,6 +8418,12 @@ body.theme-sepia .win-name {
   color: #2d2016 !important;
   text-shadow: none !important;
 }
+
+body.theme-sepia .win-streak-container.tier-orange .win-streak-num { color: #c2410c !important; text-shadow: none !important; }
+body.theme-sepia .win-streak-container.tier-cyan .win-streak-num { color: #0369a1 !important; text-shadow: none !important; }
+body.theme-sepia .win-streak-container.tier-violet .win-streak-num { color: #7e22ce !important; text-shadow: none !important; }
+body.theme-sepia .win-streak-container.tier-gold .win-streak-num { color: #a16207 !important; text-shadow: none !important; }
+body.theme-sepia .win-streak-container.tier-mythic .win-streak-num { color: #be123c !important; text-shadow: none !important; }
 
 body.theme-sepia .win-pts {
   background: #edf5ee !important;

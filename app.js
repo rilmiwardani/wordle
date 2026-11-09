@@ -7382,21 +7382,25 @@ function startNewRound() {
 
   // Word500 uses lengths selected by host from allowed_lengths (Panjang Kata checkboxes)
   if (currentGameMode === 'word500') {
-    let allowedLengths = [5];
-    try {
-      const saved = JSON.parse(localStorage.getItem('allowed_lengths') || '[5]');
-      // Ambil panjang kata yang dipilih host (cocok untuk Word500: 4, 5, 6 huruf)
-      const validForW500 = saved.filter(l => l >= 4 && l <= 6);
-      if (validForW500.length > 0) {
-        allowedLengths = validForW500;
-      } else if (saved.some(l => l > 6)) {
-        allowedLengths = [6];
-      } else if (saved.includes(3)) {
-        allowedLengths = [4];
-      }
-    } catch(e) {}
-    const rIdx = Math.floor(Math.random() * allowedLengths.length);
-    WORD_LENGTH = allowedLengths[rIdx];
+    if (isAutoStarterPreviousTarget && lastRoundTargetWord && lastRoundTargetWord.length >= 4 && lastRoundTargetWord.length <= 6) {
+      WORD_LENGTH = lastRoundTargetWord.length;
+    } else {
+      let allowedLengths = [5];
+      try {
+        const saved = JSON.parse(localStorage.getItem('allowed_lengths') || '[5]');
+        // Ambil panjang kata yang dipilih host (cocok untuk Word500: 4, 5, 6 huruf)
+        const validForW500 = saved.filter(l => l >= 4 && l <= 6);
+        if (validForW500.length > 0) {
+          allowedLengths = validForW500;
+        } else if (saved.some(l => l > 6)) {
+          allowedLengths = [6];
+        } else if (saved.includes(3)) {
+          allowedLengths = [4];
+        }
+      } catch(e) {}
+      const rIdx = Math.floor(Math.random() * allowedLengths.length);
+      WORD_LENGTH = allowedLengths[rIdx];
+    }
   } else if (isAutoStarterWinnerNickname && isGuessMode && parsedWinnerWord) {
     // Jumlah huruf yang dimainkan mengikuti jumlah huruf nickname pemenang (maks 8 huruf)
     WORD_LENGTH = parsedWinnerWord.length;
@@ -7404,8 +7408,9 @@ function startNewRound() {
       WORD_LENGTH = 6;
       parsedWinnerWord = parsedWinnerWord.slice(0, 6);
     }
-  } else if (isAutoStarterWinnerNickname && isGuessMode && lastRoundTargetWord && lastRoundTargetWord.length >= 3 && lastRoundTargetWord.length <= 8) {
-    // Jika nickname bukan huruf valid / tidak bisa diparsing, jumlah huruf mengikuti kata target sebelumnya
+  } else if ((isAutoStarterWinnerNickname || isAutoStarterPreviousTarget) && isGuessMode && lastRoundTargetWord && lastRoundTargetWord.length >= 3 && lastRoundTargetWord.length <= 8) {
+    // Jika auto-starter target sebelumnya aktif, atau fallback dari nickname pemenang:
+    // jumlah huruf ronde baru mengikuti kata target sebelumnya agar bisa langsung disambung
     WORD_LENGTH = lastRoundTargetWord.length;
     if (currentGameMode === 'colorfit' && WORD_LENGTH > 6) {
       WORD_LENGTH = 6;
@@ -7617,36 +7622,68 @@ function startNewRound() {
     let starterUserData = null;
     let starterToastMsg = null;
 
+    // Helper untuk mengambil avatar pemenang ronde sebelumnya dari berbagai sumber
+    const getWinnerEffectiveAvatar = (winner) => {
+      if (!winner) return 'assets/bg_nature.png';
+      const direct = winner.profilePictureUrl || winner.userAvatar || winner.avatar;
+      if (direct && direct !== 'assets/bg_nature.png') return direct;
+      const name = (winner.nickname || winner.userName || winner.uniqueId || winner.userId || '').replace(/^@+/, '');
+      if (name && typeof getUserAvatar === 'function') {
+        const cached = getUserAvatar(name);
+        if (cached && cached !== 'assets/bg_nature.png') return cached;
+      }
+      return direct || 'assets/bg_nature.png';
+    };
+
+    const winnerDispName = (lastRoundWinner && (lastRoundWinner.nickname || lastRoundWinner.userName || lastRoundWinner.uniqueId || 'Juara Sblm')).replace(/^@+/, '');
+    const winnerAvatar = getWinnerEffectiveAvatar(lastRoundWinner);
+    const winnerUid = (lastRoundWinner && (lastRoundWinner.uniqueId || lastRoundWinner.userId)) || 'winner';
+
     if (isAutoStarterWinnerNickname) {
       const winnerWord = parseWinnerNicknameForStarter(lastRoundWinner);
       if (winnerWord && winnerWord.length === WORD_LENGTH) {
         starterWord = winnerWord;
-        const dispName = (lastRoundWinner && (lastRoundWinner.nickname || lastRoundWinner.uniqueId)) || winnerWord;
         starterUserData = {
-          nickname: dispName,
-          uniqueId: (lastRoundWinner && lastRoundWinner.uniqueId) || 'winner',
-          profilePictureUrl: (lastRoundWinner && lastRoundWinner.profilePictureUrl) || 'assets/bg_nature.png',
+          nickname: winnerDispName,
+          uniqueId: winnerUid,
+          profilePictureUrl: winnerAvatar,
           isStarter: true
         };
-        starterToastMsg = `Starting Word: "${starterWord}" (${dispName} • ${WORD_LENGTH} Huruf)`;
+        starterToastMsg = `Starting Word: "${starterWord}" (${winnerDispName} • ${WORD_LENGTH} Huruf)`;
       } else if (lastRoundTargetWord && lastRoundTargetWord.length === WORD_LENGTH && lastRoundTargetWord !== currentWord) {
         // Fallback: starting word menggunakan kata target sebelumnya jika nickname tidak ada/tidak valid
         starterWord = lastRoundTargetWord;
-        starterUserData = { nickname: 'TARGET SBLM', uniqueId: 'system', isStarter: true };
-        starterToastMsg = `Starting Word: "${starterWord}" (Target Sebelumnya • ${WORD_LENGTH} Huruf)`;
+        starterUserData = {
+          nickname: lastRoundWinner ? winnerDispName : 'TARGET SBLM',
+          uniqueId: lastRoundWinner ? winnerUid : 'system',
+          profilePictureUrl: lastRoundWinner ? winnerAvatar : 'assets/bg_nature.png',
+          isStarter: true
+        };
+        starterToastMsg = lastRoundWinner
+          ? `Starting Word: "${starterWord}" (Kata Juara @${winnerDispName} • ${WORD_LENGTH} Huruf)`
+          : `Starting Word: "${starterWord}" (Target Sebelumnya • ${WORD_LENGTH} Huruf)`;
       } else {
         // Fallback jika belum ada ronde sebelumnya (Ronde 1)
         const wordPool = (VALID_WORDS && VALID_WORDS.length > 0) ? VALID_WORDS : (TARGET_WORDS || []);
         if (wordPool.length > 0) {
           const matchingWords = wordPool.filter(w => w.length === WORD_LENGTH && w !== currentWord);
           starterWord = matchingWords.length > 0 ? matchingWords[Math.floor(Math.random() * matchingWords.length)] : wordPool[0];
-          starterUserData = { nickname: 'SISTEM', uniqueId: 'system', isStarter: true };
+          starterUserData = { nickname: 'SISTEM', uniqueId: 'system', profilePictureUrl: 'assets/bg_nature.png', isStarter: true };
         }
       }
     } else if (isAutoStarterPreviousTarget) {
       // 1. Jika kata target sebelumnya ada dan panjangnya sama persis
       if (lastRoundTargetWord && lastRoundTargetWord.length === WORD_LENGTH && lastRoundTargetWord !== currentWord) {
         starterWord = lastRoundTargetWord;
+        starterUserData = {
+          nickname: lastRoundWinner ? winnerDispName : 'TARGET SBLM',
+          uniqueId: lastRoundWinner ? winnerUid : 'system',
+          profilePictureUrl: lastRoundWinner ? winnerAvatar : 'assets/bg_nature.png',
+          isStarter: true
+        };
+        starterToastMsg = lastRoundWinner
+          ? `Starting Word: "${starterWord}" (Kata Juara @${winnerDispName} • ${WORD_LENGTH} Huruf)`
+          : `Starting Word: "${starterWord}" (Target Sebelumnya • ${WORD_LENGTH} Huruf)`;
       } else {
         // 2. Jika panjang huruf berbeda atau ronde 1, pilih kata acak yang valid
         const wordPool = (VALID_WORDS && VALID_WORDS.length > 0) ? VALID_WORDS : (TARGET_WORDS || []);
@@ -7658,9 +7695,9 @@ function startNewRound() {
             starterWord = wordPool[Math.floor(Math.random() * wordPool.length)];
           }
         }
-      }
-      if (starterWord) {
-        starterUserData = { nickname: 'SISTEM', uniqueId: 'system', isStarter: true };
+        if (starterWord) {
+          starterUserData = { nickname: 'SISTEM', uniqueId: 'system', profilePictureUrl: 'assets/bg_nature.png', isStarter: true };
+        }
       }
     }
 

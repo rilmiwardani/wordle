@@ -13827,7 +13827,8 @@ body.theme-sepia .antiwordle-row.is-latest {
   position: fixed;
   top: 95px;
   right: 14px;
-  width: 224px;
+  width: 255px;
+  max-width: 270px;
   background: rgba(18, 18, 19, 0.94);
   border: 1.5px solid rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(14px);

@@ -13828,12 +13828,12 @@ body.theme-sepia .antiwordle-row.is-latest {
   top: 95px;
   right: 14px;
   width: 224px;
-  background: rgba(15, 23, 42, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(18, 18, 19, 0.94);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
   z-index: 95;
   user-select: none;
   touch-action: none;
@@ -13846,7 +13846,7 @@ body.theme-sepia .antiwordle-row.is-latest {
 
 .floating-lb-widget.is-dragging {
   cursor: grabbing !important;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75);
   transform: scale(1.02);
   transition: none;
 }
@@ -13856,8 +13856,8 @@ body.theme-sepia .antiwordle-row.is-latest {
   align-items: center;
   justify-content: space-between;
   padding: 6px 10px;
-  background: rgba(255, 255, 255, 0.05);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   cursor: grab;
 }
 
@@ -13872,11 +13872,11 @@ body.theme-sepia .antiwordle-row.is-latest {
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.5px;
-  color: #fff;
+  color: #ffffff;
 }
 
 .flb-drag-icon {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.35);
   font-size: 11px;
 }
 
@@ -13892,7 +13892,7 @@ body.theme-sepia .antiwordle-row.is-latest {
 
 .flb-ctrl-btn {
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   color: rgba(255, 255, 255, 0.6);
   font-size: 11px;
   width: 22px;
@@ -13907,13 +13907,14 @@ body.theme-sepia .antiwordle-row.is-latest {
 }
 
 .flb-ctrl-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
 }
 
 .flb-ctrl-btn.active {
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.2);
+  color: #ffd54f;
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.4);
 }
 
 .flb-body {
@@ -13949,22 +13950,22 @@ body.theme-sepia .antiwordle-row.is-latest {
   font-weight: 700;
   font-family: 'Outfit', sans-serif;
   color: rgba(255, 255, 255, 0.65);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .flb-tab:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
 }
 
 .flb-tab.active {
-  background: rgba(56, 189, 248, 0.25);
-  border-color: rgba(56, 189, 248, 0.6);
-  color: #38bdf8;
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(245, 158, 11, 0.55);
+  color: #ffd54f;
 }
 
 /* Context info & progress */
@@ -13988,16 +13989,16 @@ body.theme-sepia .antiwordle-row.is-latest {
   letter-spacing: 0.5px;
   padding: 1px 5px;
   border-radius: 4px;
-  background: rgba(245, 158, 11, 0.2);
+  background: rgba(245, 158, 11, 0.18);
   color: #ffd54f;
   border: 1px solid rgba(245, 158, 11, 0.4);
   text-transform: uppercase;
 }
 
 .flb-mode-badge.flb-global-badge {
-  background: rgba(56, 189, 248, 0.2);
-  color: #38bdf8;
-  border-color: rgba(56, 189, 248, 0.4);
+  background: rgba(254, 44, 85, 0.18);
+  color: #ff5277;
+  border-color: rgba(254, 44, 85, 0.45);
 }
 
 .flb-mode-desc {
@@ -14008,7 +14009,7 @@ body.theme-sepia .antiwordle-row.is-latest {
 .flb-progress-track {
   width: 100%;
   height: 2px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 1px;
   overflow: hidden;
   transition: opacity 0.2s ease;
@@ -14017,7 +14018,7 @@ body.theme-sepia .antiwordle-row.is-latest {
 .flb-progress-fill {
   width: 0%;
   height: 100%;
-  background: #38bdf8;
+  background: linear-gradient(90deg, #f59e0b, #ffd54f);
   transition: width 0.1s linear;
 }
 
@@ -14025,7 +14026,7 @@ body.theme-sepia .antiwordle-row.is-latest {
 .flb-list {
   display: flex;
   flex-direction: column;
-  padding: 2px 6px 4px 6px;
+  padding: 2px 6px 6px 6px;
   gap: 3px;
   min-height: 100px;
   transition: opacity 0.2s ease, transform 0.2s ease;
@@ -14046,14 +14047,14 @@ body.theme-sepia .antiwordle-row.is-latest {
   align-items: center;
   gap: 6px;
   padding: 3px 6px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 6px;
   transition: transform 0.2s ease, background 0.2s ease;
 }
 
 .flb-row:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.07);
 }
 
 .flb-badge-rank {
@@ -14066,24 +14067,29 @@ body.theme-sepia .antiwordle-row.is-latest {
   font-size: 9.5px;
   font-weight: 800;
   flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.flb-row.rank-1 {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.45);
 }
 
 .flb-row.rank-1 .flb-badge-rank {
   background: #f59e0b;
-  color: #000;
-  box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+  color: #121213;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
 }
 
 .flb-row.rank-2 .flb-badge-rank {
   background: #94a3b8;
-  color: #000;
+  color: #0f172a;
 }
 
 .flb-row.rank-3 .flb-badge-rank {
   background: #d97706;
-  color: #fff;
+  color: #ffffff;
 }
 
 .flb-avatar {
@@ -14104,7 +14110,7 @@ body.theme-sepia .antiwordle-row.is-latest {
   flex: 1;
   font-size: 11px;
   font-weight: 700;
-  color: #f1f5f9;
+  color: #ffffff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -14114,7 +14120,7 @@ body.theme-sepia .antiwordle-row.is-latest {
 .flb-score {
   font-size: 11px;
   font-weight: 800;
-  color: #38bdf8;
+  color: #ffd54f;
   flex-shrink: 0;
   font-family: 'Outfit', sans-serif;
 }
@@ -14139,94 +14145,144 @@ body.theme-sepia .antiwordle-row.is-latest {
 
 /* Sepia Theme Support */
 body.theme-sepia .floating-lb-widget {
-  background: #f4ecdf !important;
-  border: 1px solid #c8b9a6 !important;
-  box-shadow: 0 8px 24px rgba(66, 52, 40, 0.25) !important;
-  color: #423428 !important;
+  background: #c8b7a2 !important;
+  border: 1.5px solid #a08a72 !important;
+  box-shadow: 0 10px 28px rgba(70, 50, 30, 0.25) !important;
+  color: #1a120a !important;
 }
 
 body.theme-sepia .flb-header {
-  background: rgba(66, 52, 40, 0.08) !important;
-  border-bottom: 1px solid rgba(66, 52, 40, 0.15) !important;
+  background: rgba(70, 50, 30, 0.08) !important;
+  border-bottom: 1px solid rgba(70, 50, 30, 0.15) !important;
 }
 
 body.theme-sepia .flb-header-left {
-  color: #3e2723 !important;
+  color: #1a120a !important;
 }
 
 body.theme-sepia .flb-drag-icon {
-  color: #8d6e63 !important;
+  color: #795548 !important;
+}
+
+body.theme-sepia .flb-trophy-gold {
+  color: #b45309 !important;
 }
 
 body.theme-sepia .flb-ctrl-btn {
-  color: #6d4c41 !important;
+  color: #4a3829 !important;
 }
 
 body.theme-sepia .flb-ctrl-btn:hover {
-  background: rgba(66, 52, 40, 0.15) !important;
-  color: #3e2723 !important;
+  background: #bfae9b !important;
+  color: #1a120a !important;
 }
 
 body.theme-sepia .flb-ctrl-btn.active {
-  color: #0284c7 !important;
-  background: rgba(2, 132, 199, 0.15) !important;
+  color: #8c3a1d !important;
+  background: rgba(140, 58, 29, 0.15) !important;
+  border: 1px solid rgba(140, 58, 29, 0.35) !important;
 }
 
 body.theme-sepia .flb-tab {
-  background: rgba(66, 52, 40, 0.08) !important;
-  border-color: rgba(66, 52, 40, 0.15) !important;
-  color: #5d4037 !important;
+  background: #d4bfab !important;
+  border: 1px solid #b39982 !important;
+  color: #4a3829 !important;
+}
+
+body.theme-sepia .flb-tab:hover {
+  background: #dcd0bf !important;
+  color: #1a120a !important;
 }
 
 body.theme-sepia .flb-tab.active {
   background: #423428 !important;
-  border-color: #3e2723 !important;
+  border-color: #271a0f !important;
   color: #f4ecdf !important;
+  box-shadow: 0 1px 4px rgba(66, 52, 40, 0.2) !important;
 }
 
 body.theme-sepia .flb-mode-badge {
   background: rgba(180, 83, 9, 0.15) !important;
-  color: #b45309 !important;
-  border-color: rgba(180, 83, 9, 0.35) !important;
+  color: #8c4a17 !important;
+  border: 1px solid rgba(180, 83, 9, 0.35) !important;
 }
 
 body.theme-sepia .flb-mode-badge.flb-global-badge {
-  background: rgba(2, 132, 199, 0.15) !important;
-  color: #0284c7 !important;
-  border-color: rgba(2, 132, 199, 0.35) !important;
+  background: rgba(140, 58, 29, 0.15) !important;
+  color: #8c3a1d !important;
+  border-color: rgba(140, 58, 29, 0.35) !important;
 }
 
 body.theme-sepia .flb-mode-desc {
-  color: #795548 !important;
+  color: #5c4033 !important;
 }
 
 body.theme-sepia .flb-progress-track {
-  background: rgba(66, 52, 40, 0.12) !important;
+  background: rgba(70, 50, 30, 0.15) !important;
 }
 
 body.theme-sepia .flb-progress-fill {
-  background: #b45309 !important;
+  background: #8c4a17 !important;
 }
 
 body.theme-sepia .flb-row {
-  background: rgba(255, 255, 255, 0.6) !important;
-  border-color: rgba(66, 52, 40, 0.12) !important;
+  background: #d4c4af !important;
+  border: 1px solid #b39f88 !important;
+}
+
+body.theme-sepia .flb-row:hover {
+  background: #dcd0bf !important;
+}
+
+body.theme-sepia .flb-row.rank-1 {
+  background: rgba(180, 83, 9, 0.14) !important;
+  border: 1.5px solid #b45309 !important;
+}
+
+body.theme-sepia .flb-row.rank-1 .flb-badge-rank {
+  background: #b45309 !important;
+  color: #f4ecdf !important;
+  box-shadow: none !important;
+}
+
+body.theme-sepia .flb-row.rank-1 .flb-avatar {
+  border-color: #b45309 !important;
+}
+
+body.theme-sepia .flb-row.rank-2 .flb-badge-rank {
+  background: #8c7b6c !important;
+  color: #ffffff !important;
+}
+
+body.theme-sepia .flb-row.rank-3 .flb-badge-rank {
+  background: #a3683f !important;
+  color: #ffffff !important;
+}
+
+body.theme-sepia .flb-row .flb-badge-rank {
+  background: rgba(70, 50, 30, 0.15) !important;
+  color: #3e2723 !important;
+}
+
+body.theme-sepia .flb-avatar {
+  border: 1px solid #a08a72 !important;
+  background: #c8b7a2 !important;
 }
 
 body.theme-sepia .flb-user {
-  color: #271a0f !important;
+  color: #1a120a !important;
 }
 
 body.theme-sepia .flb-score {
-  color: #b45309 !important;
+  color: #8c4a17 !important;
 }
 
 body.theme-sepia .flb-score small {
-  color: #795548 !important;
+  color: #5c4033 !important;
 }
 
 body.theme-sepia .flb-empty {
-  color: #8d6e63 !important;
+  color: #5c4033 !important;
 }
 
 body.theme-sepia #board.w500-board.is-gift-peek {

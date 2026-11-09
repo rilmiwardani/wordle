@@ -12366,7 +12366,7 @@ body.theme-sepia .tourney-mode-item span {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 4px 0 8px 0;
+  margin: 14px 0 8px 0;
 }
 
 .sambungkata-round-table {
@@ -12494,6 +12494,76 @@ body.theme-sepia .tourney-mode-item span {
   transform: scale(1.12);
 }
 
+/* Timer Mengambang Tepat di Atas Avatar Pemain Aktif */
+.sk-seat-timer {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: #0f172a;
+  border: 2px solid #f59e0b;
+  border-radius: 20px;
+  padding: 2.5px 8px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 11.5px;
+  font-weight: 900;
+  color: #fbbf24;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.85), 0 0 10px rgba(245, 158, 11, 0.5);
+  z-index: 25;
+  pointer-events: none;
+  animation: skSeatTimerPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sk-seat-timer::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid #f59e0b;
+}
+
+.sk-seat-timer i {
+  font-size: 10px;
+  color: #f59e0b;
+}
+
+.sk-seat-timer.warning {
+  background: #450a0a;
+  border-color: #ef4444;
+  color: #fca5a5;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.9), 0 0 12px rgba(239, 68, 68, 0.7);
+  animation: skSeatTimerWarning 0.5s ease-in-out infinite alternate;
+}
+
+.sk-seat-timer.warning::after {
+  border-top-color: #ef4444;
+}
+
+.sk-seat-timer.warning i {
+  color: #ef4444;
+}
+
+@keyframes skSeatTimerPop {
+  0% { transform: translateX(-50%) scale(0.6); opacity: 0; }
+  100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+
+@keyframes skSeatTimerWarning {
+  0% { transform: translateX(-50%) scale(1); }
+  100% { transform: translateX(-50%) scale(1.12); }
+}
+
 /* Player Badge (Name & Hearts) */
 .sk-seat-badge {
   display: flex;
@@ -12546,6 +12616,14 @@ body.theme-sepia .tourney-mode-item span {
 .sk-seats-container.seats-10 .sk-join-tag {
   font-size: 7.5px;
 }
+.sk-seats-container.seats-10 .sk-seat-timer {
+  font-size: 10px;
+  padding: 1.5px 6px;
+  bottom: calc(100% + 4px);
+}
+.sk-seats-container.seats-10 .sk-seat-timer i {
+  font-size: 8.5px;
+}
 
 .sk-seats-container.seats-12 .sk-seat-badge {
   max-width: 44px;
@@ -12566,6 +12644,14 @@ body.theme-sepia .tourney-mode-item span {
 .sk-seats-container.seats-12 .sk-empty-placeholder i {
   font-size: 10px;
 }
+.sk-seats-container.seats-12 .sk-seat-timer {
+  font-size: 9.5px;
+  padding: 1.5px 5px;
+  bottom: calc(100% + 4px);
+}
+.sk-seats-container.seats-12 .sk-seat-timer i {
+  font-size: 8px;
+}
 
 /* Center Hub (Felt Center) */
 .sambungkata-center-felt {
@@ -12582,7 +12668,7 @@ body.theme-sepia .tourney-mode-item span {
   z-index: 5;
 }
 
-/* Needle / Pointer */
+/* Needle / Pointer - Panah Petunjuk Giliran Menonjol & Jelas */
 .sk-turn-pointer {
   position: absolute;
   width: 100%;
@@ -12590,19 +12676,49 @@ body.theme-sepia .tourney-mode-item span {
   border-radius: 50%;
   pointer-events: none;
   transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 8;
 }
 
 .sk-pointer-head {
   position: absolute;
-  top: -11px;
+  top: -30px;
   left: 50%;
   transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-left: 7px solid transparent;
-  border-right: 7px solid transparent;
-  border-bottom: 12px solid #f59e0b;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+  border-left: 16px solid transparent;
+  border-right: 16px solid transparent;
+  border-bottom: 28px solid #f59e0b;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 10px rgba(245, 158, 11, 0.7));
+  animation: skPointerBob 1s ease-in-out infinite alternate;
+}
+
+.sk-pointer-head::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: -2px;
+  width: 4px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 2px;
+}
+
+.sk-pointer-head::after {
+  content: '';
+  position: absolute;
+  top: 27px;
+  left: -5px;
+  width: 10px;
+  height: 14px;
+  background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+  border-radius: 0 0 3px 3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes skPointerBob {
+  0% { transform: translateX(-50%) translateY(0); }
+  100% { transform: translateX(-50%) translateY(-6px); }
 }
 
 /* Center Content */
@@ -12904,6 +13020,49 @@ body.theme-sepia .sambungkata-round-table {
 body.theme-sepia .sambungkata-center-felt {
   background: #423428;
   border-color: #5c4736;
+}
+
+body.theme-sepia .sk-pointer-head {
+  border-bottom-color: #d97706;
+  filter: drop-shadow(0 3px 6px rgba(66, 52, 40, 0.45));
+}
+
+body.theme-sepia .sk-pointer-head::before {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+body.theme-sepia .sk-pointer-head::after {
+  background: linear-gradient(180deg, #d97706 0%, #b45309 100%);
+}
+
+body.theme-sepia .sk-seat-timer {
+  background: #ede3d2;
+  border-color: #d97706;
+  color: #92400e;
+  box-shadow: 0 4px 10px rgba(66, 52, 40, 0.25);
+}
+
+body.theme-sepia .sk-seat-timer::after {
+  border-top-color: #d97706;
+}
+
+body.theme-sepia .sk-seat-timer i {
+  color: #d97706;
+}
+
+body.theme-sepia .sk-seat-timer.warning {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #b91c1c;
+  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.25);
+}
+
+body.theme-sepia .sk-seat-timer.warning::after {
+  border-top-color: #ef4444;
+}
+
+body.theme-sepia .sk-seat-timer.warning i {
+  color: #ef4444;
 }
 
 body.theme-sepia .sk-avatar-ring {

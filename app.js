@@ -18684,18 +18684,27 @@ function startSambungKataTurnTimer() {
 }
 
 function updateSambungKataTimerUI() {
+  const currentValText = (sambungKataPhase === 'lobby') 
+    ? (sambungKataTurnDuration + 's') 
+    : (sambungKataTimer + 's');
+  const isWarning = (sambungKataPhase === 'playing' && sambungKataTimer <= 4);
+
+  // 1. Timer badge di bar atas
   const timerVal = document.getElementById('skTimerVal');
   const timerBadge = document.getElementById('skTimerBadge');
-  if (timerVal) {
-    if (sambungKataPhase === 'lobby') {
-      timerVal.textContent = sambungKataTurnDuration + 's';
-    } else {
-      timerVal.textContent = sambungKataTimer + 's';
-    }
-  }
+  if (timerVal) timerVal.textContent = currentValText;
   if (timerBadge) {
-    if (sambungKataPhase === 'playing' && sambungKataTimer <= 4) timerBadge.classList.add('warning');
+    if (isWarning) timerBadge.classList.add('warning');
     else timerBadge.classList.remove('warning');
+  }
+
+  // 2. Timer mengambang tepat di atas avatar pemain yang sedang giliran
+  const seatTimerVal = document.getElementById('skSeatTimerVal');
+  const seatTimerBadge = document.getElementById('skActiveSeatTimer');
+  if (seatTimerVal) seatTimerVal.textContent = currentValText;
+  if (seatTimerBadge) {
+    if (isWarning) seatTimerBadge.classList.add('warning');
+    else seatTimerBadge.classList.remove('warning');
   }
 }
 
@@ -19254,8 +19263,9 @@ function renderSambungKataUI() {
         `;
       } else {
         let classes = 'sk-seat';
+        const isActiveTurn = (sambungKataPhase === 'playing' && sambungKataCurrentTurn === i && !player.isDead);
         if (player.isDead) classes += ' eliminated';
-        else if (sambungKataPhase === 'playing' && sambungKataCurrentTurn === i) classes += ' active-turn';
+        else if (isActiveTurn) classes += ' active-turn';
         seatEl.className = classes;
 
         let heartHtml = '';
@@ -19263,7 +19273,20 @@ function renderSambungKataUI() {
           heartHtml += `<i class="fa-solid fa-heart ${h < player.lives ? 'active' : ''}"></i>`;
         }
 
+        // Timer Mengambang Tepat di Atas Avatar Pemain yang Sedang Giliran
+        let timerHtml = '';
+        if (isActiveTurn) {
+          const isWarning = (sambungKataTimer <= 4);
+          timerHtml = `
+            <div class="sk-seat-timer ${isWarning ? 'warning' : ''}" id="skActiveSeatTimer">
+              <i class="fa-solid fa-stopwatch"></i>
+              <span class="sk-seat-timer-val" id="skSeatTimerVal">${sambungKataTimer}s</span>
+            </div>
+          `;
+        }
+
         seatEl.innerHTML = `
+          ${timerHtml}
           <div class="sk-avatar-ring" style="${ringStyle}">
             <img class="sk-avatar-img" src="${player.userAvatar || DEFAULT_HOST_AVATAR}" alt="${player.userName}">
             <div class="sk-dead-overlay"><i class="fa-solid fa-skull"></i></div>

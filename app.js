@@ -2286,6 +2286,9 @@ function renderLeaderboard() {
     
   if (sortedPlayers.length === 0) {
     lbList.innerHTML = '<div style="text-align:center;font-size:10.5px;color:rgba(255,255,255,0.45);padding:4px;">Belum ada tebakan benar</div>';
+    if (typeof renderFloatingLeaderboard === 'function' && typeof isFloatingLbVisible !== 'undefined' && isFloatingLbVisible) {
+      renderFloatingLeaderboard();
+    }
     return;
   }
 
@@ -2310,6 +2313,9 @@ function renderLeaderboard() {
         </div>
       </div>
     `).join('');
+    if (typeof renderFloatingLeaderboard === 'function' && typeof isFloatingLbVisible !== 'undefined' && isFloatingLbVisible) {
+      renderFloatingLeaderboard();
+    }
     return;
   }
 
@@ -2344,6 +2350,10 @@ function renderLeaderboard() {
       rankDiv.textContent = index + 1;
     }
   });
+
+  if (typeof renderFloatingLeaderboard === 'function' && typeof isFloatingLbVisible !== 'undefined' && isFloatingLbVisible) {
+    renderFloatingLeaderboard();
+  }
 }
 
 // Leaderboard overlay is locked to Daily / Current Session for maximum live stream competition
@@ -3974,10 +3984,26 @@ function getFloatingLbDailyData() {
       }));
   }
 
+  // Gabungkan memory playerPoints dan localStorage agar data live selalu instan & akurat
+  const map = new Map();
+
+  // 1. Ambil data aktif dari memori playerPoints
+  if (typeof playerPoints !== 'undefined' && playerPoints) {
+    Object.entries(playerPoints).forEach(([username, data]) => {
+      const pts = (typeof data.sessionPts === 'number') ? data.sessionPts : (parseInt(data.sessionPts) || 0);
+      if (pts > 0 && username) {
+        map.set(username, {
+          username,
+          pts,
+          avatar: data.avatar || (typeof getUserAvatar === 'function' ? getUserAvatar(username) : null) || 'assets/bg_nature.png'
+        });
+      }
+    });
+  }
+
+  // 2. Scan localStorage untuk sinkronisasi harian lengkap
   const prefix = typeof getPtsPrefix === 'function' ? getPtsPrefix() : 'pts_';
   const dailyPrefix = prefix + 'daily_';
-  const list = [];
-  
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (!key || !key.startsWith(dailyPrefix)) continue;
@@ -3987,12 +4013,14 @@ function getFloatingLbDailyData() {
     
     const pts = parseInt(localStorage.getItem(key)) || 0;
     if (pts > 0) {
-      const avatar = (typeof getUserAvatar === 'function' ? getUserAvatar(username) : null) || localStorage.getItem('pts_avatar_' + username) || 'assets/bg_nature.png';
-      list.push({ username, pts, avatar });
+      if (!map.has(username) || map.get(username).pts < pts) {
+        const avatar = (typeof getUserAvatar === 'function' ? getUserAvatar(username) : null) || localStorage.getItem('pts_avatar_' + username) || 'assets/bg_nature.png';
+        map.set(username, { username, pts, avatar });
+      }
     }
   }
   
-  return list.sort((a, b) => b.pts - a.pts).slice(0, 5);
+  return Array.from(map.values()).sort((a, b) => b.pts - a.pts).slice(0, 5);
 }
 
 function getFloatingLbGlobalData() {

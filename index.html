@@ -1349,10 +1349,13 @@
                   </div>
                 </div>
                 <input type="text" id="hostAvatarUrlInput" class="custom-input" placeholder="Masukkan URL Foto Profil (https://...)" oninput="const p = document.getElementById('hostAvatarPreview'); if(p && this.value.trim()) p.src = this.value.trim();" onkeyup="if(event.key === 'Enter') saveHostAvatarFromInput();" style="width: 100%; margin-bottom: 8px; padding: 7px 10px; border-radius: 6px; border: 1px solid #555; background: #1a1a1a; color: #fff; font-size: 11px; box-sizing: border-box;">
-                <div style="display: flex; gap: 6px;">
+                <div style="display: flex; gap: 6px; margin-bottom: 6px;">
                   <button class="lang-option" onclick="saveHostAvatarFromInput()" style="flex: 1; justify-content: center; background: rgba(56, 189, 248, 0.2); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; font-weight: bold; padding: 6px 10px; border-radius: 6px;"><i class="fa-solid fa-check" style="margin-right: 5px;"></i> Simpan</button>
                   <button class="lang-option" onclick="resetHostAvatarDefault()" style="flex: 0 0 auto; justify-content: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #ccc; padding: 6px 10px; border-radius: 6px;" title="Kembalikan ke Default"><i class="fa-solid fa-rotate-left" style="margin-right: 4px;"></i> Default</button>
                 </div>
+                <button class="lang-option" onclick="useCurrentLiveHostAvatar()" style="width: 100%; justify-content: center; background: rgba(254, 44, 85, 0.15); border: 1px solid rgba(254, 44, 85, 0.35); color: #fe2c55; font-weight: bold; padding: 6px 10px; border-radius: 6px;" title="Ambil foto profil akun TikTok yang sedang live">
+                  <i class="fa-brands fa-tiktok" style="margin-right: 6px;"></i> Ambil dari TikTok Live
+                </button>
               </div>
             </div>
 

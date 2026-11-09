@@ -614,10 +614,17 @@ const DICT_BOTTOM_ICON = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
   <text x="70" y="78" font-size="16" font-family="sans-serif" font-weight="900" fill="#ffffff" text-anchor="middle">Z</text>
 </svg>`.trim());
 
+let liveHostAvatar = null;
+
 function getHostAvatar() {
   try {
     const saved = localStorage.getItem('host_avatar_url');
     if (saved && saved.trim()) return saved.trim();
+  } catch(e) {}
+  if (liveHostAvatar && liveHostAvatar.trim()) return liveHostAvatar.trim();
+  try {
+    const liveSaved = localStorage.getItem('tiktok_live_host_avatar');
+    if (liveSaved && liveSaved.trim()) return liveSaved.trim();
   } catch(e) {}
   return DEFAULT_HOST_AVATAR;
 }
@@ -635,9 +642,38 @@ function setHostAvatar(url) {
   }
 }
 
+function setLiveHostAvatar(url, notify = false) {
+  if (!url || typeof url !== 'string' || !url.trim()) return;
+  const clean = url.trim();
+  const prev = liveHostAvatar || localStorage.getItem('tiktok_live_host_avatar');
+  liveHostAvatar = clean;
+  try { localStorage.setItem('tiktok_live_host_avatar', clean); } catch(e) {}
+  syncHostAvatarUI();
+  if (notify && prev !== clean && typeof showToast === 'function') {
+    showToast('📸 Foto profil TikTok Live Host terdeteksi!', 2000);
+  }
+}
+
+function useCurrentLiveHostAvatar() {
+  const liveUrl = liveHostAvatar || localStorage.getItem('tiktok_live_host_avatar');
+  if (liveUrl) {
+    setHostAvatar(liveUrl);
+    const input = document.getElementById('hostAvatarUrlInput');
+    if (input) input.value = liveUrl;
+    if (typeof showToast === 'function') {
+      showToast('✅ Foto profil live TikTok berhasil dipasang sebagai Avatar Host!', 2500);
+    }
+  } else {
+    if (typeof showToast === 'function') {
+      showToast('⚠️ Belum ada foto profil live TikTok terdeteksi. Hubungkan ke Live terlebih dahulu!', 3000);
+    }
+  }
+}
+
 function syncHostAvatarUI() {
   const current = getHostAvatar();
   const isCustom = !!(localStorage.getItem('host_avatar_url') && localStorage.getItem('host_avatar_url').trim());
+  const isLive = !isCustom && !!(liveHostAvatar || localStorage.getItem('tiktok_live_host_avatar'));
   
   const preview = document.getElementById('hostAvatarPreview');
   if (preview) {
@@ -647,7 +683,7 @@ function syncHostAvatarUI() {
   
   const input = document.getElementById('hostAvatarUrlInput');
   if (input && !input.matches(':focus')) {
-    input.value = isCustom ? localStorage.getItem('host_avatar_url').trim() : '';
+    input.value = isCustom ? localStorage.getItem('host_avatar_url').trim() : (isLive ? (liveHostAvatar || localStorage.getItem('tiktok_live_host_avatar')) : '');
   }
 
   const loginInput = document.getElementById('loginHostAvatarInput');
@@ -684,6 +720,8 @@ function toggleHostAvatarQuickModal(e) {
 
 window.getHostAvatar = getHostAvatar;
 window.setHostAvatar = setHostAvatar;
+window.setLiveHostAvatar = setLiveHostAvatar;
+window.useCurrentLiveHostAvatar = useCurrentLiveHostAvatar;
 window.syncHostAvatarUI = syncHostAvatarUI;
 window.saveHostAvatarFromInput = saveHostAvatarFromInput;
 window.resetHostAvatarDefault = resetHostAvatarDefault;
@@ -9384,6 +9422,11 @@ function setupSocketListeners() {
     // Persist gameMode to sessionStorage after successful connection
     try { if (currentGameMode) sessionStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
 
+    // Deteksi dan pasang foto profil host live TikTok jika tersedia
+    if (data && data.roomInfo && data.roomInfo.hostAvatar) {
+      setLiveHostAvatar(data.roomInfo.hostAvatar, true);
+    }
+
     if (gameContainer.style.display === 'none') {
       loginOverlay.style.display = 'none';
       gameContainer.style.display = 'flex';
@@ -9393,6 +9436,14 @@ function setupSocketListeners() {
     // Cek apakah sudah ada ronde aktif agar puzzle tidak ter-reset saat event tiktokConnected masuk
     if (!hasActiveGameRound()) {
       startNewRound();
+    }
+  });
+
+  // Sinkronisasi otomatis foto profil Host dari server
+  socket.on('hostAvatarUpdated', (data) => {
+    if (data && data.hostAvatar) {
+      console.log('[TikTok] Host avatar updated from server:', data.hostAvatar);
+      setLiveHostAvatar(data.hostAvatar, true);
     }
   });
 
@@ -9425,6 +9476,11 @@ function setupSocketListeners() {
   socket.on('chat', (data) => {
     const username = data.nickname || data.uniqueId;
     if (username) recordActivity(username);
+
+    // Deteksi & sinkronisasi otomatis avatar akun Host/Streamer dari chat
+    if (data.profilePictureUrl && (data.isHost || (data.uniqueId && lastUsername && data.uniqueId.toLowerCase() === lastUsername.toLowerCase()))) {
+      setLiveHostAvatar(data.profilePictureUrl);
+    }
 
     // Cache follower if detected
     if (data.isFollower || data.isFollowerOfAnchor || data.followRole === 1 || data.followRole === 2) {

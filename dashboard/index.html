@@ -2364,6 +2364,7 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
 
     function showRoomInfo(data) {
       const info = data.roomInfo || {};
+      const hostAvatarHtml = info.hostAvatar ? `<img src="${info.hostAvatar}" alt="" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 6px; border: 1px solid rgba(255,255,255,0.2);">` : '';
       document.getElementById("roomInfo").innerHTML = `
         <div class="room-info-row">
           <span class="room-info-label">Username</span>
@@ -2379,7 +2380,7 @@ socket.<span class="fn">on</span>(<span class="str">"member"</span>, (data) => {
         </div>
         <div class="room-info-row">
           <span class="room-info-label">Host</span>
-          <span class="room-info-value">${info.hostName || info.uniqueId || "—"}</span>
+          <span class="room-info-value">${hostAvatarHtml}${info.hostName || info.uniqueId || "—"}</span>
         </div>
       `;
     }

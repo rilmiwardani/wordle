@@ -893,6 +893,7 @@ async function connectToTikTok(uniqueId, sessionId = null, isAutoReconnect = fal
   try {
     let options = {
       processInitialData: true,
+      fetchRoomInfoOnConnect: true,
       enableExtendedGiftInfo: true,
       enableWebsocketUpgrade: true,
       requestPollingIntervalMs: 2000,
@@ -928,17 +929,33 @@ async function connectToTikTok(uniqueId, sessionId = null, isAutoReconnect = fal
       reconnectTimer = null;
     }
 
+    // Ekstrak URL foto profil host dari data roomInfo TikTok
+    const rawOwner = state.roomInfo?.owner || state.roomInfo?.data?.owner || state.roomInfo?.data?.user || state.roomInfo?.data?.room?.owner;
+    let hostAvatar = null;
+    if (rawOwner) {
+      hostAvatar = 
+        rawOwner.avatar_large?.url_list?.[0] || 
+        rawOwner.avatar_medium?.url_list?.[0] || 
+        rawOwner.avatar_thumb?.url_list?.[0] || 
+        rawOwner.avatarLarge ||
+        rawOwner.avatarMedium ||
+        rawOwner.avatarThumb ||
+        rawOwner.profilePictureUrl ||
+        null;
+    }
+
     connectionState.roomInfo = {
       uniqueId,
       roomId: state.roomId,
       title: state.roomInfo?.title || "",
       description: state.roomInfo?.description || "",
-      hostName: state.roomInfo?.host_name || uniqueId,
+      hostName: state.roomInfo?.host_name || rawOwner?.nickname || uniqueId,
+      hostAvatar: hostAvatar,
       viewerCount: state.roomInfo?.viewer_count || 0,
       likeCount: state.roomInfo?.like_count || 0,
     };
 
-    console.log(`[TikTok] ✅ Connected! Room ID: ${state.roomId}`);
+    console.log(`[TikTok] ✅ Connected! Room ID: ${state.roomId}${hostAvatar ? ' (Host Avatar Detected)' : ''}`);
 
     // Emit to all Socket.IO clients
     io.emit("tiktokConnected", {
@@ -1013,6 +1030,20 @@ function registerTikTokEvents(connection) {
     const payload = formatUser(data);
     payload.comment = data.comment;
     payload.emotes = data.emotes || [];
+
+    // Deteksi & sinkronisasi otomatis avatar akun Host/Streamer yang sedang live
+    const isStreamerAccount = payload.uniqueId && connectionState.uniqueId && payload.uniqueId.toLowerCase() === connectionState.uniqueId.toLowerCase();
+    if (isStreamerAccount && payload.profilePictureUrl) {
+      if (!connectionState.roomInfo) connectionState.roomInfo = {};
+      if (connectionState.roomInfo.hostAvatar !== payload.profilePictureUrl) {
+        connectionState.roomInfo.hostAvatar = payload.profilePictureUrl;
+        console.log(`[TikTok] 📸 Host avatar updated from streamer chat: @${payload.uniqueId}`);
+        io.emit('hostAvatarUpdated', {
+          uniqueId: payload.uniqueId,
+          hostAvatar: payload.profilePictureUrl
+        });
+      }
+    }
     
     // Check for Skip Request
     if (data.comment.toLowerCase().trim() === '!skip') {

@@ -7602,12 +7602,15 @@ function switchAccount() {
     socket.emit('disconnect-tiktok');
   }
 
-  // Clear saved session
+  // Clear saved session & avatar akun live lama
   try {
     localStorage.removeItem('wordle_username');
     localStorage.removeItem('wordle_lang');
     localStorage.removeItem('wordle_sessionid');
+    localStorage.removeItem('tiktok_live_host_avatar');
   } catch (e) {}
+  liveHostAvatar = null;
+  syncHostAvatarUI();
 
   // Reset state
   lastUsername = "";

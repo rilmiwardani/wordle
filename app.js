@@ -19080,6 +19080,7 @@ try {
 
 let sambungKataCurrentLap = 1; // Putaran meja saat ini (1, 2, 3...)
 let sambungKataLapTurnsCount = 0; // Jumlah giliran pemain hidup yang selesai di putaran ini
+let sambungKataLapCompletedPlayers = new Set(); // ID pemain yang sudah selesai giliran di putaran meja saat ini
 
 let sambungKataSeats = Array(sambungKataMaxSeats).fill(null);
 let sambungKataCurrentTurn = 0; // index kursi 0..(maxSeats - 1)
@@ -19485,6 +19486,7 @@ function initSambungKataGame() {
   sambungKataPhase = 'lobby';
   sambungKataCurrentLap = 1;
   sambungKataLapTurnsCount = 0;
+  if (sambungKataLapCompletedPlayers) sambungKataLapCompletedPlayers.clear();
   sambungKataCurrentWord = '';
   sambungKataUsedWords.clear();
   sambungKataWordChain = [];
@@ -19651,6 +19653,7 @@ function startSambungKataPlay() {
   const seatedIndices = [];
   sambungKataCurrentLap = 1;
   sambungKataLapTurnsCount = 0;
+  if (sambungKataLapCompletedPlayers) sambungKataLapCompletedPlayers.clear();
   sambungKataSeats.forEach((s, idx) => {
     if (s !== null) {
       s.lives = sambungKataMaxLives;
@@ -19782,10 +19785,19 @@ function handleSambungKataTimeout() {
 
   renderSambungKataUI();
 
-  // Periksa apakah ronde selesai (hanya tersisa 1 pemain hidup)
+  // Periksa apakah ronde selesai (semua gugur atau hanya tersisa 1 pemain hidup)
   const alivePlayers = sambungKataSeats.filter(s => s && !s.isDead);
-  if (alivePlayers.length <= 1 && sambungKataSeats.filter(s => s !== null).length >= 2) {
-    handleSambungKataWin(alivePlayers[0] || activePlayer);
+  if (alivePlayers.length === 0) {
+    showToast('💀 Ronde berakhir! Semua pemain telah gugur.', 3000);
+    if (sambungKataTimerInterval) {
+      clearInterval(sambungKataTimerInterval);
+      sambungKataTimerInterval = null;
+    }
+    setTimeout(initSambungKataGame, 2000);
+    return;
+  }
+  if (alivePlayers.length === 1 && sambungKataSeats.filter(s => s !== null).length >= 2) {
+    handleSambungKataWin(alivePlayers[0], 'knockout');
     return;
   }
 
@@ -19797,15 +19809,30 @@ function nextSambungKataTurn() {
   if (sambungKataPhase !== 'playing') return;
 
   const alivePlayers = sambungKataSeats.filter(s => s && !s.isDead);
-  if (alivePlayers.length <= 1 && sambungKataSeats.filter(s => s !== null).length >= 2) {
-    handleSambungKataWin(alivePlayers[0] || sambungKataSeats[sambungKataCurrentTurn], 'knockout');
+  if (alivePlayers.length === 0) {
+    showToast('💀 Ronde berakhir! Semua pemain telah gugur.', 3000);
+    if (sambungKataTimerInterval) {
+      clearInterval(sambungKataTimerInterval);
+      sambungKataTimerInterval = null;
+    }
+    setTimeout(initSambungKataGame, 2000);
+    return;
+  }
+  if (alivePlayers.length === 1 && sambungKataSeats.filter(s => s !== null).length >= 2) {
+    handleSambungKataWin(alivePlayers[0], 'knockout');
     return;
   }
 
-  // Akumulasi giliran putaran meja
-  sambungKataLapTurnsCount++;
-  if (alivePlayers.length > 0 && sambungKataLapTurnsCount >= alivePlayers.length) {
-    sambungKataLapTurnsCount = 0;
+  // Tandai pemain aktif sebelumnya telah selesai giliran di putaran meja saat ini
+  const prevPlayer = sambungKataSeats[sambungKataCurrentTurn];
+  if (prevPlayer && prevPlayer.userId && sambungKataLapCompletedPlayers) {
+    sambungKataLapCompletedPlayers.add(prevPlayer.userId);
+  }
+
+  // Cek apakah seluruh pemain hidup di putaran meja ini telah menyelesaikan gilirannya
+  const remainingInLap = alivePlayers.filter(p => p && p.userId && !sambungKataLapCompletedPlayers.has(p.userId));
+  if (remainingInLap.length === 0) {
+    if (sambungKataLapCompletedPlayers) sambungKataLapCompletedPlayers.clear();
     sambungKataCurrentLap++;
 
     // Jika melebihi batas putaran (mode round limit)
@@ -19842,7 +19869,7 @@ function nextSambungKataTurn() {
   }
 
   if (!found) {
-    showToast('Ronde berakhir! Semua pemain gugur.', 3000);
+    showToast('Ronde berakhir! Semua pemain telah gugur.', 3000);
     initSambungKataGame();
     return;
   }

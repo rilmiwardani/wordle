@@ -20508,7 +20508,7 @@ function renderSambungKataUI() {
             <div class="sk-seat-hearts">
               ${emptyHearts}
             </div>
-            <div class="sk-seat-score"><i class="fa-solid fa-star"></i> 0 pts</div>
+            <div class="sk-seat-score">0 pts</div>
           </div>
         `;
       } else {
@@ -20544,7 +20544,7 @@ function renderSambungKataUI() {
           <div class="sk-seat-badge">
             <span class="sk-seat-name" title="${player.userName}">${player.userName}</span>
             <div class="sk-seat-hearts">${heartHtml}</div>
-            <div class="sk-seat-score"><i class="fa-solid fa-star"></i> ${player.score || 0} pts</div>
+            <div class="sk-seat-score">${player.score || 0} pts</div>
           </div>
         `;
       }

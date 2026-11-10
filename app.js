@@ -19108,7 +19108,7 @@ const SAMBUNG_KATA_STARTERS = [
 
 // Pengaturan Sub-Mode Aturan Sambung Kata ('classic' = Sambung Huruf Akhir, 'morph' = Ganti Huruf)
 function setSambungKataSubMode(mode, event, skipSync) {
-  if (event) event.stopPropagation();
+  if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
   const m = (mode === 'morph') ? 'morph' : 'classic';
   const changed = sambungKataSubMode !== m;
   sambungKataSubMode = m;
@@ -19143,14 +19143,15 @@ function setSambungKataSubMode(mode, event, skipSync) {
 }
 
 // Shortcut klik cepat toggle sub-mode Sambung Kata
-function cycleSambungKataSubMode() {
+function cycleSambungKataSubMode(e) {
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
   const nextMode = (sambungKataSubMode === 'morph') ? 'classic' : 'morph';
-  setSambungKataSubMode(nextMode, true);
+  setSambungKataSubMode(nextMode, e || true);
 }
 
 // Pengaturan Jumlah Huruf Diubah pada Sub-Mode Morph (1 atau 2 Huruf)
 function setSambungKataMorphDiff(diff, event, skipSync) {
-  if (event) event.stopPropagation();
+  if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
   const d = (parseInt(diff) === 2) ? 2 : 1;
   const changed = sambungKataMorphDiff !== d;
   sambungKataMorphDiff = d;
@@ -19182,14 +19183,15 @@ function setSambungKataMorphDiff(diff, event, skipSync) {
 }
 
 // Shortcut klik cepat toggle jumlah huruf ubah di mode morph
-function cycleSambungKataMorphDiff() {
+function cycleSambungKataMorphDiff(e) {
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
   const nextDiff = (sambungKataMorphDiff === 2) ? 1 : 2;
-  setSambungKataMorphDiff(nextDiff, true);
+  setSambungKataMorphDiff(nextDiff, e || true);
 }
 
 // Pengaturan Jumlah Kursi (3 s/d 12 Kursi)
 function setSambungKataSeats(numSeats, event, skipSync) {
-  if (event) event.stopPropagation();
+  if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
   const n = parseInt(numSeats);
   if (isNaN(n) || n < 3 || n > 12) return;
   const changed = sambungKataMaxSeats !== n;
@@ -19231,16 +19233,17 @@ function setSambungKataSeats(numSeats, event, skipSync) {
 }
 
 // Shortcut klik cepat ganti kapasitas kursi (3, 4, 5, 6, 7, 8, 10, 12 kursi)
-function cycleSambungKataSeats() {
+function cycleSambungKataSeats(e) {
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
   const presets = [3, 4, 5, 6, 7, 8, 10, 12];
   const idx = presets.indexOf(sambungKataMaxSeats);
   const nextSeats = (idx === -1 || idx === presets.length - 1) ? presets[0] : presets[idx + 1];
-  setSambungKataSeats(nextSeats, true);
+  setSambungKataSeats(nextSeats, e || true);
 }
 
 // Pengaturan Huruf Sambungan dari Belakang (1, 2, atau 3 Huruf)
 function setSambungKataConnector(connLen, event, skipSync) {
-  if (event) event.stopPropagation();
+  if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
   const c = parseInt(connLen);
   if (isNaN(c) || c < 1 || c > 3) return;
   const changed = sambungKataConnectorLen !== c;
@@ -19272,18 +19275,19 @@ function setSambungKataConnector(connLen, event, skipSync) {
 }
 
 // Shortcut klik cepat ganti jumlah huruf sambungan / huruf yang diubah
-function cycleSambungKataConnector() {
+function cycleSambungKataConnector(e) {
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
   if (sambungKataSubMode === 'morph') {
-    cycleSambungKataMorphDiff();
+    cycleSambungKataMorphDiff(e);
     return;
   }
   const nextConn = (sambungKataConnectorLen >= 3) ? 1 : (sambungKataConnectorLen + 1);
-  setSambungKataConnector(nextConn, true);
+  setSambungKataConnector(nextConn, e || true);
 }
 
 // Pengaturan Batas Waktu Giliran Menjawab (10s, 15s, 20s, 30s)
 function setSambungKataTurnDuration(sec, event, skipSync) {
-  if (event) event.stopPropagation();
+  if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
   const s = parseInt(sec);
   if (isNaN(s) || s < 5 || s > 60) return;
   const changed = sambungKataTurnDuration !== s;
@@ -19320,16 +19324,17 @@ function setSambungKataTurnDuration(sec, event, skipSync) {
 }
 
 // Shortcut klik cepat ganti waktu giliran
-function cycleSambungKataTurnDuration() {
+function cycleSambungKataTurnDuration(e) {
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
   const presets = [10, 15, 20, 30];
   const idx = presets.indexOf(sambungKataTurnDuration);
   const nextVal = (idx === -1 || idx === presets.length - 1) ? presets[0] : presets[idx + 1];
-  setSambungKataTurnDuration(nextVal, true);
+  setSambungKataTurnDuration(nextVal, e || true);
 }
 
 // Pengaturan Panjang Huruf Kata Tebakan (0 = Bebas 3-8, atau 4, 5, 6, 7, 8)
 function setSambungKataWordLength(len, event, skipSync) {
-  if (event) event.stopPropagation();
+  if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
   const l = parseInt(len);
   if (isNaN(l) || ![0, 4, 5, 6, 7, 8].includes(l)) return;
   const changed = sambungKataWordLength !== l;
@@ -19363,16 +19368,17 @@ function setSambungKataWordLength(len, event, skipSync) {
 }
 
 // Shortcut klik cepat ganti panjang kata di bar pill lobby
-function cycleSambungKataWordLength() {
+function cycleSambungKataWordLength(e) {
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
   const presets = [0, 4, 5, 6, 7, 8];
   const idx = presets.indexOf(sambungKataWordLength);
   const nextVal = (idx === -1 || idx === presets.length - 1) ? presets[0] : presets[idx + 1];
-  setSambungKataWordLength(nextVal, true);
+  setSambungKataWordLength(nextVal, e || true);
 }
 
 // Pengaturan Jumlah Nyawa (Hati) Pemain (1, 2, 3, 5)
 function setSambungKataMaxLives(lives, event, skipSync) {
-  if (event) event.stopPropagation();
+  if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
   const n = parseInt(lives);
   if (isNaN(n) || ![1, 2, 3, 5].includes(n)) return;
   const changed = sambungKataMaxLives !== n;
@@ -19417,16 +19423,17 @@ function setSambungKataMaxLives(lives, event, skipSync) {
 }
 
 // Shortcut klik cepat ganti jumlah nyawa di bar pill lobby
-function cycleSambungKataMaxLives() {
+function cycleSambungKataMaxLives(e) {
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
   const presets = [1, 2, 3, 5];
   const idx = presets.indexOf(sambungKataMaxLives);
   const nextVal = (idx === -1 || idx === presets.length - 1) ? presets[0] : presets[idx + 1];
-  setSambungKataMaxLives(nextVal, true);
+  setSambungKataMaxLives(nextVal, e || true);
 }
 
 // Pengaturan Batas Putaran Meja (3, 5 Putaran atau 0 = Survival Tanpa Batas)
 function setSambungKataMaxRounds(rounds, event, skipSync) {
-  if (event) event.stopPropagation();
+  if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
   const n = parseInt(rounds);
   if (isNaN(n) || ![0, 3, 5, 10].includes(n)) return;
   const changed = sambungKataMaxRounds !== n;
@@ -19465,11 +19472,12 @@ function setSambungKataMaxRounds(rounds, event, skipSync) {
 }
 
 // Shortcut klik cepat ganti sistem putaran di bar pill lobby
-function cycleSambungKataMaxRounds() {
+function cycleSambungKataMaxRounds(e) {
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
   const presets = [3, 5, 0];
   const idx = presets.indexOf(sambungKataMaxRounds);
   const nextVal = (idx === -1 || idx === presets.length - 1) ? presets[0] : presets[idx + 1];
-  setSambungKataMaxRounds(nextVal);
+  setSambungKataMaxRounds(nextVal, e || true);
 }
 
 // Inisialisasi Game Sambung Kata

@@ -956,7 +956,7 @@
       const list = Object.entries(scores).map(([username, pts]) => ({
         username,
         pts,
-        avatar: (avatars[username] && avatars[username] !== 'assets/bg_nature.png') ? avatars[username] : generatePlayerInitialsAvatar(username),
+        avatar: avatars[username] || 'assets/bg_nature.png',
         trophies: parseInt(localStorage.getItem('pts_trophy_' + username)) || 0
       })).sort((a, b) => b.pts - a.pts);
 
@@ -966,44 +966,9 @@
     // ══════════════════════════════════════════════════════════
     // RENDER RECAP CARD FOR SELECTED GAME
     // ══════════════════════════════════════════════════════════
-    function generatePlayerInitialsAvatar(name) {
-      const cleanName = String(name || 'User').replace(/^@+/, '').trim();
-      const initial = (cleanName.charAt(0) || 'U').toUpperCase();
-      let hash = 0;
-      for (let i = 0; i < cleanName.length; i++) {
-        hash = cleanName.charCodeAt(i) + ((hash << 5) - hash);
-      }
-      const colors = [
-        ['#fe2c55', '#ff5778'], // TikTok Red
-        ['#06b6d4', '#0284c7'], // Cyan
-        ['#8b5cf6', '#6d28d9'], // Purple
-        ['#f59e0b', '#d97706'], // Amber Gold
-        ['#10b981', '#059669'], // Emerald
-        ['#3b82f6', '#1d4ed8'], // Blue
-        ['#ec4899', '#db2777'], // Pink
-        ['#14b8a6', '#0f766e']  // Teal
-      ];
-      const colorPair = colors[Math.abs(hash) % colors.length];
-      const gradId = 'recap_init_grad_' + Math.abs(hash);
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-        <defs>
-          <linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="${colorPair[0]}"/>
-            <stop offset="100%" stop-color="${colorPair[1]}"/>
-          </linearGradient>
-        </defs>
-        <circle cx="50" cy="50" r="50" fill="url(#${gradId})"/>
-        <text x="50" y="63" font-family="'Outfit', sans-serif, Arial" font-size="44" font-weight="900" fill="#ffffff" text-anchor="middle">${initial}</text>
-      </svg>`;
-      return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg.trim());
-    }
-
-    function getSafeAvatarUrl(rawUrl, fallbackName) {
-      if (!rawUrl || rawUrl === 'assets/bg_nature.png') {
-        return fallbackName ? generatePlayerInitialsAvatar(fallbackName) : 'assets/bg_nature.png';
-      }
-      if (rawUrl.startsWith('data:')) {
-        return rawUrl;
+    function getSafeAvatarUrl(rawUrl) {
+      if (!rawUrl || rawUrl === 'assets/bg_nature.png' || rawUrl.startsWith('data:')) {
+        return rawUrl || 'assets/bg_nature.png';
       }
       if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
         return `/api/avatar-proxy?url=${encodeURIComponent(rawUrl)}`;
@@ -1048,18 +1013,15 @@
 
       renderPodiumName('podiumName1', p1);
       document.getElementById('podiumPts1').textContent = `${p1.pts} Poin`;
-      document.getElementById('podiumAvatar1').src = getSafeAvatarUrl(p1.avatar, p1.username);
-      document.getElementById('podiumAvatar1').onerror = function() { this.onerror = null; this.src = generatePlayerInitialsAvatar(p1.username); };
+      document.getElementById('podiumAvatar1').src = getSafeAvatarUrl(p1.avatar);
 
       renderPodiumName('podiumName2', p2);
       document.getElementById('podiumPts2').textContent = `${p2.pts} Poin`;
-      document.getElementById('podiumAvatar2').src = getSafeAvatarUrl(p2.avatar, p2.username);
-      document.getElementById('podiumAvatar2').onerror = function() { this.onerror = null; this.src = generatePlayerInitialsAvatar(p2.username); };
+      document.getElementById('podiumAvatar2').src = getSafeAvatarUrl(p2.avatar);
 
       renderPodiumName('podiumName3', p3);
       document.getElementById('podiumPts3').textContent = `${p3.pts} Poin`;
-      document.getElementById('podiumAvatar3').src = getSafeAvatarUrl(p3.avatar, p3.username);
-      document.getElementById('podiumAvatar3').onerror = function() { this.onerror = null; this.src = generatePlayerInitialsAvatar(p3.username); };
+      document.getElementById('podiumAvatar3').src = getSafeAvatarUrl(p3.avatar);
 
       // Runner-ups (#4 - #10)
       const runnerups = players.slice(3, 10);
@@ -1079,7 +1041,7 @@
           row.innerHTML = `
             <div class="runner-left">
               <span class="runner-rank">#${rank}</span>
-              <img class="runner-avatar" src="${getSafeAvatarUrl(p.avatar, p.username)}" crossorigin="anonymous" onerror="this.onerror=null; this.src=generatePlayerInitialsAvatar('${escapeText(p.username)}')" alt="${p.username}">
+              <img class="runner-avatar" src="${getSafeAvatarUrl(p.avatar)}" crossorigin="anonymous" onerror="this.onerror=null; this.src='assets/bg_nature.png'" alt="${p.username}">
               <span class="runner-name">${escapeText(p.username)}</span>
               ${trophyHtml}
             </div>

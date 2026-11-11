@@ -710,14 +710,12 @@ function syncHostAvatarUI() {
   }
   
   const input = document.getElementById('hostAvatarUrlInput');
-  const isInputFocused = typeof document !== 'undefined' && document.activeElement === input;
-  if (input && !isInputFocused) {
+  if (input && !input.matches(':focus')) {
     input.value = isCustom ? localStorage.getItem('host_avatar_url').trim() : (isLive ? (liveHostAvatar || localStorage.getItem('tiktok_live_host_avatar')) : '');
   }
 
   const loginInput = document.getElementById('loginHostAvatarInput');
-  const isLoginInputFocused = typeof document !== 'undefined' && document.activeElement === loginInput;
-  if (loginInput && !isLoginInputFocused) {
+  if (loginInput && !loginInput.matches(':focus')) {
     loginInput.value = isCustom ? localStorage.getItem('host_avatar_url').trim() : '';
   }
 
@@ -757,68 +755,31 @@ window.saveHostAvatarFromInput = saveHostAvatarFromInput;
 window.resetHostAvatarDefault = resetHostAvatarDefault;
 window.toggleHostAvatarQuickModal = toggleHostAvatarQuickModal;
 
-// Generator Avatar Inisial Elegan untuk Pemain (Fallback Cerdas saat Avatar TikTok Kosong / Expired)
-function generatePlayerInitialsAvatar(name) {
-  const cleanName = String(name || 'User').replace(/^@+/, '').trim();
-  const initial = (cleanName.charAt(0) || 'U').toUpperCase();
-  let hash = 0;
-  for (let i = 0; i < cleanName.length; i++) {
-    hash = cleanName.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const colors = [
-    ['#fe2c55', '#ff5778'], // TikTok Red
-    ['#06b6d4', '#0284c7'], // Cyan
-    ['#8b5cf6', '#6d28d9'], // Purple
-    ['#f59e0b', '#d97706'], // Amber Gold
-    ['#10b981', '#059669'], // Emerald
-    ['#3b82f6', '#1d4ed8'], // Blue
-    ['#ec4899', '#db2777'], // Pink
-    ['#14b8a6', '#0f766e']  // Teal
-  ];
-  const colorPair = colors[Math.abs(hash) % colors.length];
-  const gradId = 'init_grad_' + Math.abs(hash);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-    <defs>
-      <linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="${colorPair[0]}"/>
-        <stop offset="100%" stop-color="${colorPair[1]}"/>
-      </linearGradient>
-    </defs>
-    <circle cx="50" cy="50" r="50" fill="url(#${gradId})"/>
-    <text x="50" y="63" font-family="'Outfit', sans-serif, Arial" font-size="44" font-weight="900" fill="#ffffff" text-anchor="middle">${initial}</text>
-  </svg>`;
-  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg.trim());
-}
-window.generatePlayerInitialsAvatar = generatePlayerInitialsAvatar;
-
 function setUserAvatar(username, url) {
-  if (!username || !url || url === 'assets/bg_nature.png') return;
+  if (!username || !url) return;
   if (avatarMemoryCache[username] === url) return;
   avatarMemoryCache[username] = url;
   queueStorageSave('pts_avatar_' + username, url);
-  if (typeof playerPoints !== 'undefined' && playerPoints[username]) {
-    playerPoints[username].avatar = url;
-  }
 }
 
 function getUserAvatar(username) {
   if (username === 'Host' || username === 'host_offline' || username === 'host' || username === '@HostOffline') {
     return getHostAvatar();
   }
-  if (typeof playerPoints !== 'undefined' && playerPoints[username] && playerPoints[username].avatar && playerPoints[username].avatar !== 'assets/bg_nature.png' && playerPoints[username].avatar !== DEFAULT_HOST_AVATAR) {
+  if (typeof playerPoints !== 'undefined' && playerPoints[username] && playerPoints[username].avatar) {
     return playerPoints[username].avatar;
   }
-  if (avatarMemoryCache[username] && avatarMemoryCache[username] !== 'assets/bg_nature.png' && avatarMemoryCache[username] !== DEFAULT_HOST_AVATAR) {
+  if (avatarMemoryCache[username]) {
     return avatarMemoryCache[username];
   }
   try {
     const saved = localStorage.getItem('pts_avatar_' + username);
-    if (saved && saved !== 'assets/bg_nature.png' && saved !== DEFAULT_HOST_AVATAR) {
+    if (saved) {
       avatarMemoryCache[username] = saved;
       return saved;
     }
   } catch(e) {}
-  return generatePlayerInitialsAvatar(username);
+  return DEFAULT_HOST_AVATAR;
 }
 
 function recordActivity(username, profilePictureUrl = null) {
@@ -1156,42 +1117,18 @@ let isWaitingForLikes = false;
 let _winRevealPending = false;
 let _winRevealToken = 0;
 
-// Bersihkan seluruh overlay (Kemenangan, Podium, Peak, Modal) agar tidak memblokir klik UI
-function dismissAllOverlays() {
-  _winRevealToken++;
-  _winRevealPending = false;
-  isWaitingForLikes = false;
-  if (typeof isTourneyPodiumActive !== 'undefined') isTourneyPodiumActive = false;
-
-  const winOverlay = document.getElementById('winOverlay');
-  if (winOverlay) winOverlay.classList.remove('show');
-
-  const multiWinOverlay = document.getElementById('multiWinOverlay');
-  if (multiWinOverlay) multiWinOverlay.classList.remove('show');
-  if (typeof stopMultiWinAutoScroll === 'function') {
-    try { stopMultiWinAutoScroll(); } catch(e) {}
-  }
-
-  const tourneyPodiumOverlay = document.getElementById('tourneyPodiumOverlay');
-  if (tourneyPodiumOverlay) tourneyPodiumOverlay.classList.remove('show');
-
-  const wpPeakOverlay = document.getElementById('wpPeakOverlay');
-  if (wpPeakOverlay) {
-    wpPeakOverlay.classList.remove('show');
-    wpPeakOverlay.style.display = 'none';
-  }
-
-  const confirmModal = document.getElementById('confirmModal');
-  if (confirmModal) confirmModal.style.display = 'none';
-
-  const settingsDropdown = document.getElementById('settingsDropdown');
-  if (settingsDropdown) settingsDropdown.classList.remove('open', 'show');
-}
-window.dismissAllOverlays = dismissAllOverlays;
-
 window.executeRestartTransition = function() {
   if (!isWaitingForLikes) return; // Prevent double trigger
-  dismissAllOverlays();
+  isWaitingForLikes = false;
+  _winRevealToken++; // Batalkan reveal overlay yang masih tertunda
+  _winRevealPending = false;
+  
+  const winOverlay = document.getElementById('winOverlay');
+  if (winOverlay) winOverlay.classList.remove('show');
+  
+  const multiWinOverlay = document.getElementById('multiWinOverlay');
+  if (multiWinOverlay) multiWinOverlay.classList.remove('show');
+  if (typeof stopMultiWinAutoScroll === 'function') stopMultiWinAutoScroll();
   
   // Periksa apakah kondisi turnamen juara sesi / rotasi tercapai
   if (typeof checkTourneyConditionMet === 'function' && checkTourneyConditionMet()) {
@@ -1687,10 +1624,9 @@ function initWeeklyLeaderboard() {
         const username = key.substring(dailyPrefix.length);
         const pts = parseInt(localStorage.getItem(key)) || 0;
         if (!playerPoints[username]) {
-          const savedAvatar = localStorage.getItem('pts_avatar_' + username);
-          const effectiveAvatar = (savedAvatar && savedAvatar !== 'assets/bg_nature.png') ? savedAvatar : generatePlayerInitialsAvatar(username);
+          const savedAvatar = localStorage.getItem('pts_avatar_' + username) || 'assets/bg_nature.png';
           playerPoints[username] = {
-            avatar: effectiveAvatar,
+            avatar: savedAvatar,
             sessionPts: pts,
             weeklyPts: 0,
             allTimePts: 0
@@ -1702,10 +1638,9 @@ function initWeeklyLeaderboard() {
         const username = key.substring(prefix.length);
         const pts = parseInt(localStorage.getItem(key)) || 0;
         if (!playerPoints[username]) {
-          const savedAvatar = localStorage.getItem('pts_avatar_' + username);
-          const effectiveAvatar = (savedAvatar && savedAvatar !== 'assets/bg_nature.png') ? savedAvatar : generatePlayerInitialsAvatar(username);
+          const savedAvatar = localStorage.getItem('pts_avatar_' + username) || 'assets/bg_nature.png';
           playerPoints[username] = {
-            avatar: effectiveAvatar,
+            avatar: savedAvatar,
             sessionPts: 0,
             weeklyPts: pts,
             allTimePts: pts
@@ -2277,15 +2212,12 @@ function addPoints(userData, points) {
   if (!userData || !userData.nickname) return;
   if (userData.uniqueId === 'system' || userData.isStarter) return;
   const username = userData.nickname;
-  if (userData.profilePictureUrl && userData.profilePictureUrl !== 'assets/bg_nature.png') {
-    setUserAvatar(username, userData.profilePictureUrl);
+  if (userData.profilePictureUrl) {
+    try { localStorage.setItem('pts_avatar_' + username, userData.profilePictureUrl); } catch(e) {}
   }
   if (!playerPoints[username]) {
-    const initialAvatar = (userData.profilePictureUrl && userData.profilePictureUrl !== 'assets/bg_nature.png')
-      ? userData.profilePictureUrl
-      : getUserAvatar(username);
     playerPoints[username] = {
-      avatar: initialAvatar,
+      avatar: userData.profilePictureUrl || 'assets/bg_nature.png',
       sessionPts: getDailyPts(username),
       weeklyPts: getWeeklyPts(username),
       allTimePts: getWeeklyPts(username)
@@ -2294,9 +2226,7 @@ function addPoints(userData, points) {
   playerPoints[username].sessionPts += points;
   playerPoints[username].weeklyPts += points;
   playerPoints[username].allTimePts = playerPoints[username].weeklyPts;
-  if (userData.profilePictureUrl && userData.profilePictureUrl !== 'assets/bg_nature.png') {
-    playerPoints[username].avatar = userData.profilePictureUrl;
-  }
+  if (userData.profilePictureUrl) playerPoints[username].avatar = userData.profilePictureUrl;
   saveDailyPts(username, playerPoints[username].sessionPts);
   saveWeeklyPts(username, playerPoints[username].weeklyPts);
   if (typeof recordTourneySessionScore === 'function') {
@@ -2365,7 +2295,7 @@ function renderLeaderboard() {
       .sort((a, b) => b[1].pts - a[1].pts)
       .slice(0, 3)
       .map(([username, data]) => [username, {
-        avatar: (data.avatar && data.avatar !== 'assets/bg_nature.png') ? data.avatar : getUserAvatar(username),
+        avatar: data.avatar || 'assets/bg_nature.png',
         sessionPts: data.pts,
         weeklyPts: data.pts,
         allTimePts: data.pts
@@ -2395,22 +2325,18 @@ function renderLeaderboard() {
 
   // If item count changed, rebuild cleanly
   if (existingItems.length !== sortedPlayers.length) {
-    lbList.innerHTML = sortedPlayers.map(([username, data], index) => {
-      const avatarSrc = (data.avatar && data.avatar !== 'assets/bg_nature.png') ? data.avatar : getUserAvatar(username);
-      const safeUser = escapeHTML(username);
-      return `
+    lbList.innerHTML = sortedPlayers.map(([username, data], index) => `
       <div class="lb-item">
         <div class="lb-avatar-wrapper">
-          <img src="${avatarSrc}" class="lb-avatar" onerror="this.onerror=null;this.src=window.generatePlayerInitialsAvatar ? window.generatePlayerInitialsAvatar('${safeUser}') : 'assets/bg_nature.png';">
+          <img src="${data.avatar || 'assets/bg_nature.png'}" class="lb-avatar" onerror="this.onerror=null;this.src='assets/bg_nature.png';">
           <div class="lb-rank rank-${index + 1}">${index + 1}</div>
         </div>
         <div class="lb-info">
-          <span class="lb-name">${safeUser}</span>
+          <span class="lb-name">${escapeHTML(username)}</span>
           <span class="lb-pts">${data[currentLbTab + 'Pts']} pts</span>
         </div>
       </div>
-    `;
-    }).join('');
+    `).join('');
     if (typeof renderFloatingLeaderboard === 'function' && (typeof window !== 'undefined' ? window.isFloatingLbVisible : isFloatingLbVisible)) {
       renderFloatingLeaderboard();
     }
@@ -2423,14 +2349,9 @@ function renderLeaderboard() {
     if (!item) return;
 
     const avatarImg = item.querySelector('.lb-avatar');
-    const newAvatar = (data.avatar && data.avatar !== 'assets/bg_nature.png') ? data.avatar : getUserAvatar(username);
+    const newAvatar = data.avatar || 'assets/bg_nature.png';
     if (avatarImg && avatarImg.getAttribute('src') !== newAvatar) {
       avatarImg.src = newAvatar;
-      const safeUser = escapeHTML(username);
-      avatarImg.onerror = function() {
-        this.onerror = null;
-        this.src = window.generatePlayerInitialsAvatar ? window.generatePlayerInitialsAvatar(safeUser) : 'assets/bg_nature.png';
-      };
     }
 
     const nameSpan = item.querySelector('.lb-name');
@@ -4077,7 +3998,7 @@ function getFloatingLbDailyData() {
       .map(([username, data]) => ({
         username,
         pts: data.pts,
-        avatar: (data.avatar && data.avatar !== 'assets/bg_nature.png') ? data.avatar : (typeof getUserAvatar === 'function' ? getUserAvatar(username) : (window.generatePlayerInitialsAvatar ? window.generatePlayerInitialsAvatar(username) : 'assets/bg_nature.png'))
+        avatar: data.avatar || (typeof getUserAvatar === 'function' ? getUserAvatar(username) : null) || 'assets/bg_nature.png'
       }));
   }
 
@@ -4092,7 +4013,7 @@ function getFloatingLbDailyData() {
         map.set(username, {
           username,
           pts,
-          avatar: (data.avatar && data.avatar !== 'assets/bg_nature.png') ? data.avatar : (typeof getUserAvatar === 'function' ? getUserAvatar(username) : (window.generatePlayerInitialsAvatar ? window.generatePlayerInitialsAvatar(username) : 'assets/bg_nature.png'))
+          avatar: data.avatar || (typeof getUserAvatar === 'function' ? getUserAvatar(username) : null) || 'assets/bg_nature.png'
         });
       }
     });
@@ -4111,7 +4032,7 @@ function getFloatingLbDailyData() {
     const pts = parseInt(localStorage.getItem(key)) || 0;
     if (pts > 0) {
       if (!map.has(username) || map.get(username).pts < pts) {
-        const avatar = (typeof getUserAvatar === 'function' ? getUserAvatar(username) : null) || localStorage.getItem('pts_avatar_' + username) || (window.generatePlayerInitialsAvatar ? window.generatePlayerInitialsAvatar(username) : 'assets/bg_nature.png');
+        const avatar = (typeof getUserAvatar === 'function' ? getUserAvatar(username) : null) || localStorage.getItem('pts_avatar_' + username) || 'assets/bg_nature.png';
         map.set(username, { username, pts, avatar });
       }
     }
@@ -4165,7 +4086,7 @@ function getFloatingLbGlobalData() {
     const pts = parseInt(localStorage.getItem(key)) || 0;
     if (pts > 0) {
       if (!totals[username]) {
-        const avatar = (typeof getUserAvatar === 'function' ? getUserAvatar(username) : null) || localStorage.getItem('pts_avatar_' + username) || (window.generatePlayerInitialsAvatar ? window.generatePlayerInitialsAvatar(username) : 'assets/bg_nature.png');
+        const avatar = (typeof getUserAvatar === 'function' ? getUserAvatar(username) : null) || localStorage.getItem('pts_avatar_' + username) || 'assets/bg_nature.png';
         totals[username] = { username, pts: 0, avatar };
       }
       totals[username].pts += pts;
@@ -4233,12 +4154,12 @@ function renderFloatingLeaderboard(forceTab) {
     if (rankNum === 1) rankBadge = '<i class="fa-solid fa-crown"></i>';
 
     const safeName = typeof escapeHTML === 'function' ? escapeHTML(player.username) : player.username;
-    const avatarUrl = (player.avatar && player.avatar !== 'assets/bg_nature.png') ? player.avatar : (typeof getUserAvatar === 'function' ? getUserAvatar(player.username) : (window.generatePlayerInitialsAvatar ? window.generatePlayerInitialsAvatar(player.username) : 'assets/bg_nature.png'));
+    const avatarUrl = player.avatar || 'assets/bg_nature.png';
 
     return `
       <div class="flb-row rank-${rankNum}">
         <div class="flb-badge-rank">${rankBadge}</div>
-        <img class="flb-avatar" src="${avatarUrl}" onerror="this.onerror=null;this.src=window.generatePlayerInitialsAvatar ? window.generatePlayerInitialsAvatar('${safeName}') : 'assets/bg_nature.png';">
+        <img class="flb-avatar" src="${avatarUrl}" onerror="this.onerror=null;this.src='assets/bg_nature.png';">
         <div class="flb-user" title="@${safeName}">${safeName}</div>
         <div class="flb-score">${player.pts} <small>PTS</small></div>
       </div>
@@ -5198,7 +5119,6 @@ const roundNumber = document.getElementById('roundNumber');
 
 // ─── Game Selection ───
 function selectGame(mode) {
-  dismissAllOverlays();
   currentGameMode = mode;
   // NOTE: Do NOT persist gameMode to sessionStorage here.
   // It is saved after successful TikTok connection to prevent
@@ -5237,11 +5157,8 @@ function selectGame(mode) {
     loginGameChip.textContent = `MODE AKTIF: ${titleName}`;
   }
 
-  // If already connected to TikTok or playing in offline mode, skip login and go straight to game
-  const isCurrentlyInOffline = (typeof roomHost !== 'undefined' && roomHost && roomHost.textContent === '@HostOffline');
-  const isAlreadyActive = (isConnectedToTikTok && socket && socket.connected) || isCurrentlyInOffline;
-
-  if (isAlreadyActive) {
+  // If already connected to TikTok, skip login and go straight to game
+  if (isConnectedToTikTok && socket && socket.connected) {
     try { sessionStorage.setItem('wordle_gameMode', mode); } catch(e) {}
     gameSelectOverlay.style.display = 'none';
     loginOverlay.style.display = 'none';
@@ -5261,7 +5178,9 @@ window.selectGame = selectGame;
 
 function switchGameMode(e) {
   if (e) e.stopPropagation();
-  dismissAllOverlays();
+  // Close settings
+  const dropdown = document.getElementById('settingsDropdown');
+  if (dropdown) dropdown.classList.remove('open');
 
   if (!isConnectedToTikTok && gameContainer.style.display === 'none') {
     currentGameMode = '';
@@ -5298,7 +5217,8 @@ function switchGameMode(e) {
 
 function changeGameModeDirect(mode, e) {
   if (e) e.stopPropagation();
-  dismissAllOverlays();
+  const dropdown = document.getElementById('settingsDropdown');
+  if (dropdown) dropdown.classList.remove('open');
   
   if (wgHintInterval) {
     clearInterval(wgHintInterval);
@@ -7994,7 +7914,6 @@ function parseWinnerNicknameForStarter(winnerObj) {
 
 // Start Game
 function startNewRound() {
-  dismissAllOverlays();
   applyGameModeUI();
   if (typeof updateLangBadgeUI === 'function') updateLangBadgeUI(lastLang);
   hasPlayedCloseAudio = false;
@@ -8460,7 +8379,6 @@ function switchAccount() {
 // Kembali ke Daftar Game (Menu Utama)
 function backToGameList(e) {
   if (e) e.stopPropagation();
-  dismissAllOverlays();
 
   // Hentikan auto-reconnect timer
   if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
@@ -10066,7 +9984,6 @@ function updateObsShareLinkUI(config) {
 
 function remoteChangeGameMode(mode) {
   if (!mode) return;
-  dismissAllOverlays();
   currentGameMode = mode;
   try { sessionStorage.setItem('wordle_gameMode', mode); } catch(e) {}
   
@@ -12349,7 +12266,6 @@ window.resetDailyLeaderboard = function(e) {
     playerActivePresence = {};
     
     // Clear daily points, likes, shares, and gifts from localStorage
-    // CATATAN PENTING: JANGAN hapus pts_avatar_*! Avatar adalah identitas pemain untuk Top Global & Rekap.
     const keysToRemove = [];
     const prefix = getPtsPrefix();
     const dailyPrefix = prefix + 'daily_';
@@ -12357,9 +12273,10 @@ window.resetDailyLeaderboard = function(e) {
     const sharePrefix = 'pts_share_';
     const giftPrefix = 'pts_gift_';
     const activePrefix = 'pts_active_';
+    const avatarPrefix = 'pts_avatar_';
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && (key.startsWith(dailyPrefix) || key.startsWith(likePrefix) || key.startsWith(sharePrefix) || key.startsWith(giftPrefix) || key.startsWith(activePrefix))) {
+      if (key && (key.startsWith(dailyPrefix) || key.startsWith(likePrefix) || key.startsWith(sharePrefix) || key.startsWith(giftPrefix) || key.startsWith(activePrefix) || key.startsWith(avatarPrefix))) {
         keysToRemove.push(key);
       }
     }
@@ -12408,11 +12325,10 @@ window.resetTopSupporters = function(e) {
     playerGifts = {};
     playerActivePresence = {};
     
-    // CATATAN: JANGAN hapus _avatar_ agar foto profil pemain tetap awet
     const keysToRemove = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && (key.includes('_like_') || key.includes('_share_') || key.includes('_gift_') || key.includes('_active_'))) {
+      if (key && (key.includes('_like_') || key.includes('_share_') || key.includes('_gift_') || key.includes('_active_') || key.includes('_avatar_'))) {
         keysToRemove.push(key);
       }
     }

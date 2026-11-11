@@ -710,12 +710,14 @@ function syncHostAvatarUI() {
   }
   
   const input = document.getElementById('hostAvatarUrlInput');
-  if (input && !input.matches(':focus')) {
+  const isInputFocused = typeof document !== 'undefined' && document.activeElement === input;
+  if (input && !isInputFocused) {
     input.value = isCustom ? localStorage.getItem('host_avatar_url').trim() : (isLive ? (liveHostAvatar || localStorage.getItem('tiktok_live_host_avatar')) : '');
   }
 
   const loginInput = document.getElementById('loginHostAvatarInput');
-  if (loginInput && !loginInput.matches(':focus')) {
+  const isLoginInputFocused = typeof document !== 'undefined' && document.activeElement === loginInput;
+  if (loginInput && !isLoginInputFocused) {
     loginInput.value = isCustom ? localStorage.getItem('host_avatar_url').trim() : '';
   }
 
@@ -1154,18 +1156,42 @@ let isWaitingForLikes = false;
 let _winRevealPending = false;
 let _winRevealToken = 0;
 
-window.executeRestartTransition = function() {
-  if (!isWaitingForLikes) return; // Prevent double trigger
-  isWaitingForLikes = false;
-  _winRevealToken++; // Batalkan reveal overlay yang masih tertunda
+// Bersihkan seluruh overlay (Kemenangan, Podium, Peak, Modal) agar tidak memblokir klik UI
+function dismissAllOverlays() {
+  _winRevealToken++;
   _winRevealPending = false;
-  
+  isWaitingForLikes = false;
+  if (typeof isTourneyPodiumActive !== 'undefined') isTourneyPodiumActive = false;
+
   const winOverlay = document.getElementById('winOverlay');
   if (winOverlay) winOverlay.classList.remove('show');
-  
+
   const multiWinOverlay = document.getElementById('multiWinOverlay');
   if (multiWinOverlay) multiWinOverlay.classList.remove('show');
-  if (typeof stopMultiWinAutoScroll === 'function') stopMultiWinAutoScroll();
+  if (typeof stopMultiWinAutoScroll === 'function') {
+    try { stopMultiWinAutoScroll(); } catch(e) {}
+  }
+
+  const tourneyPodiumOverlay = document.getElementById('tourneyPodiumOverlay');
+  if (tourneyPodiumOverlay) tourneyPodiumOverlay.classList.remove('show');
+
+  const wpPeakOverlay = document.getElementById('wpPeakOverlay');
+  if (wpPeakOverlay) {
+    wpPeakOverlay.classList.remove('show');
+    wpPeakOverlay.style.display = 'none';
+  }
+
+  const confirmModal = document.getElementById('confirmModal');
+  if (confirmModal) confirmModal.style.display = 'none';
+
+  const settingsDropdown = document.getElementById('settingsDropdown');
+  if (settingsDropdown) settingsDropdown.classList.remove('open', 'show');
+}
+window.dismissAllOverlays = dismissAllOverlays;
+
+window.executeRestartTransition = function() {
+  if (!isWaitingForLikes) return; // Prevent double trigger
+  dismissAllOverlays();
   
   // Periksa apakah kondisi turnamen juara sesi / rotasi tercapai
   if (typeof checkTourneyConditionMet === 'function' && checkTourneyConditionMet()) {
@@ -5172,6 +5198,7 @@ const roundNumber = document.getElementById('roundNumber');
 
 // ─── Game Selection ───
 function selectGame(mode) {
+  dismissAllOverlays();
   currentGameMode = mode;
   // NOTE: Do NOT persist gameMode to sessionStorage here.
   // It is saved after successful TikTok connection to prevent
@@ -5210,8 +5237,11 @@ function selectGame(mode) {
     loginGameChip.textContent = `MODE AKTIF: ${titleName}`;
   }
 
-  // If already connected to TikTok, skip login and go straight to game
-  if (isConnectedToTikTok && socket && socket.connected) {
+  // If already connected to TikTok or playing in offline mode, skip login and go straight to game
+  const isCurrentlyInOffline = (typeof roomHost !== 'undefined' && roomHost && roomHost.textContent === '@HostOffline');
+  const isAlreadyActive = (isConnectedToTikTok && socket && socket.connected) || isCurrentlyInOffline;
+
+  if (isAlreadyActive) {
     try { sessionStorage.setItem('wordle_gameMode', mode); } catch(e) {}
     gameSelectOverlay.style.display = 'none';
     loginOverlay.style.display = 'none';
@@ -5231,9 +5261,7 @@ window.selectGame = selectGame;
 
 function switchGameMode(e) {
   if (e) e.stopPropagation();
-  // Close settings
-  const dropdown = document.getElementById('settingsDropdown');
-  if (dropdown) dropdown.classList.remove('open');
+  dismissAllOverlays();
 
   if (!isConnectedToTikTok && gameContainer.style.display === 'none') {
     currentGameMode = '';
@@ -5270,8 +5298,7 @@ function switchGameMode(e) {
 
 function changeGameModeDirect(mode, e) {
   if (e) e.stopPropagation();
-  const dropdown = document.getElementById('settingsDropdown');
-  if (dropdown) dropdown.classList.remove('open');
+  dismissAllOverlays();
   
   if (wgHintInterval) {
     clearInterval(wgHintInterval);
@@ -7967,6 +7994,7 @@ function parseWinnerNicknameForStarter(winnerObj) {
 
 // Start Game
 function startNewRound() {
+  dismissAllOverlays();
   applyGameModeUI();
   if (typeof updateLangBadgeUI === 'function') updateLangBadgeUI(lastLang);
   hasPlayedCloseAudio = false;
@@ -8432,6 +8460,7 @@ function switchAccount() {
 // Kembali ke Daftar Game (Menu Utama)
 function backToGameList(e) {
   if (e) e.stopPropagation();
+  dismissAllOverlays();
 
   // Hentikan auto-reconnect timer
   if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
@@ -10037,6 +10066,7 @@ function updateObsShareLinkUI(config) {
 
 function remoteChangeGameMode(mode) {
   if (!mode) return;
+  dismissAllOverlays();
   currentGameMode = mode;
   try { sessionStorage.setItem('wordle_gameMode', mode); } catch(e) {}
   

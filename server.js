@@ -689,6 +689,441 @@ app.get("/api/avatar-proxy", async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════
+//  KBBI & WORDLIST MANAGEMENT SERVICE
+// ═══════════════════════════════════════════════════════
+const WORDLIST_DIR = path.join(__dirname, "wordlist");
+const KBBI_FILE = path.join(WORDLIST_DIR, "kbbi.json");
+
+let kbbiLemmaMap = new Map();
+let isKbbiLoaded = false;
+let isKbbiLoading = false;
+
+const TARGET_FILES = {
+  id: {
+    3: { target: "target_words_id_3.txt", valid: "valid_words_id_3.txt" },
+    4: { target: "target_words_id_4.txt", valid: "valid_words_id_4.txt" },
+    5: { target: "target_words_id.txt", valid: "valid_words_id.txt" },
+    6: { target: "target_words_id_6.txt", valid: "valid_words_id_6.txt" },
+    7: { target: "target_words_id_7.txt", valid: "valid_words_id_7.txt" },
+    8: { target: "target_words_id_8.txt", valid: "valid_words_id_8.txt" }
+  },
+  en: {
+    3: { target: "target_words_3.txt", valid: "valid_words_3.txt" },
+    4: { target: "target_words_4.txt", valid: "valid_words_4.txt" },
+    5: { target: "target_words.txt", valid: "valid_words.txt" },
+    6: { target: "target_words_6.txt", valid: "valid_words_6.txt" },
+    7: { target: "target_words_7.txt", valid: "valid_words_7.txt" },
+    8: { target: "target_words_8.txt", valid: "valid_words_8.txt" }
+  }
+};
+
+let indonesianTargetWordsSet = new Set();
+let indonesianTargetFileMap = new Map();
+
+function readWordFile(filename) {
+  const filePath = path.join(WORDLIST_DIR, filename);
+  if (!fs.existsSync(filePath)) return [];
+  const content = fs.readFileSync(filePath, "utf8");
+  return content
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .map(w => w.trim().toLowerCase())
+    .filter(w => w.length > 0);
+}
+
+function writeWordFile(filename, words) {
+  const filePath = path.join(WORDLIST_DIR, filename);
+  const unique = Array.from(new Set(words.map(w => w.trim().toLowerCase()).filter(Boolean)));
+  unique.sort((a, b) => a.localeCompare("id"));
+  fs.writeFileSync(filePath, unique.join("\r\n") + "\r\n", "utf8");
+  return unique.length;
+}
+
+function refreshTargetWordSets() {
+  indonesianTargetWordsSet.clear();
+  indonesianTargetFileMap.clear();
+  for (const len of [3, 4, 5, 6, 7, 8]) {
+    const fn = TARGET_FILES.id[len].target;
+    const words = readWordFile(fn);
+    for (const w of words) {
+      indonesianTargetWordsSet.add(w);
+      indonesianTargetFileMap.set(w, fn);
+    }
+  }
+}
+
+function initKbbiService() {
+  if (isKbbiLoaded || isKbbiLoading) return;
+  if (!fs.existsSync(KBBI_FILE)) {
+    console.warn("[KBBI] File kbbi.json tidak ditemukan di:", KBBI_FILE);
+    return;
+  }
+  isKbbiLoading = true;
+  console.log("[KBBI] Memuat kamus KBBI di latar belakang...");
+  setImmediate(() => {
+    try {
+      const raw = fs.readFileSync(KBBI_FILE, "utf8");
+      let parsed = JSON.parse(raw);
+      for (let i = 0; i < parsed.length; i++) {
+        const item = parsed[i];
+        if (!item || !item.lemma) continue;
+        const clean = item.lemma.toLowerCase().trim();
+        if (!clean) continue;
+        if (!kbbiLemmaMap.has(clean)) {
+          kbbiLemmaMap.set(clean, item.plain || "");
+        } else {
+          kbbiLemmaMap.set(clean, kbbiLemmaMap.get(clean) + "\n\n" + (item.plain || ""));
+        }
+      }
+      parsed = null;
+      isKbbiLoaded = true;
+      isKbbiLoading = false;
+      console.log(`[KBBI] Berhasil memuat ${kbbiLemmaMap.size} entri kosakata resmi KBBI.`);
+      refreshTargetWordSets();
+    } catch (err) {
+      isKbbiLoading = false;
+      console.error("[KBBI] Gagal membaca kbbi.json:", err.message);
+    }
+  });
+}
+
+// Inisialisasi awal
+refreshTargetWordSets();
+initKbbiService();
+
+// Web route: serve wordlist manager page
+app.get(["/wordlist", "/kosakata", "/wordlist-manager", "/wordlist_manager.html"], (req, res) => {
+  res.sendFile(path.join(__dirname, "wordlist_manager.html"));
+});
+
+// 1. Status KBBI
+app.get("/api/kbbi/status", (req, res) => {
+  res.json({
+    loaded: isKbbiLoaded,
+    loading: isKbbiLoading,
+    totalEntries: kbbiLemmaMap.size,
+    targetWordsCount: indonesianTargetWordsSet.size
+  });
+});
+
+// 2. Pencarian Kosakata KBBI
+app.get("/api/kbbi/search", (req, res) => {
+  if (!isKbbiLoaded && isKbbiLoading) {
+    return res.json({ status: "loading", message: "Kamus KBBI sedang dimuat di server...", results: [] });
+  }
+
+  const query = (req.query.q || "").toLowerCase().trim();
+  const len = parseInt(req.query.length) || 0;
+  const statusFilter = (req.query.status || "all").toLowerCase(); // all | unadded | added
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 40));
+
+  const results = [];
+  const addedLemmas = new Set();
+
+  function evaluateItem(lemma, plain, isExact = false) {
+    if (addedLemmas.has(lemma)) return false;
+    // Word filtering: only clean letters a-z
+    if (!/^[a-zA-Z]+$/.test(lemma)) return false;
+    if (len > 0 && lemma.length !== len) return false;
+    
+    const isTarget = indonesianTargetWordsSet.has(lemma);
+    if (statusFilter === "added" && !isTarget) return false;
+    if (statusFilter === "unadded" && isTarget) return false;
+
+    addedLemmas.add(lemma);
+    
+    let snippet = (plain || "").split("\n")[0] || "";
+    if (snippet.length > 120) snippet = snippet.slice(0, 117) + "...";
+
+    results.push({
+      lemma,
+      plain,
+      snippet,
+      length: lemma.length,
+      isTarget,
+      targetFile: indonesianTargetFileMap.get(lemma) || (lemma.length >= 3 && lemma.length <= 8 ? TARGET_FILES.id[lemma.length].target : null),
+      isExact
+    });
+    return results.length >= limit;
+  }
+
+  if (query) {
+    // 1. Exact match
+    if (kbbiLemmaMap.has(query)) {
+      evaluateItem(query, kbbiLemmaMap.get(query), true);
+    }
+
+    // 2. StartsWith
+    if (results.length < limit) {
+      for (const [lemma, plain] of kbbiLemmaMap.entries()) {
+        if (lemma === query) continue;
+        if (lemma.startsWith(query)) {
+          if (evaluateItem(lemma, plain)) break;
+        }
+      }
+    }
+
+    // 3. Includes (if query has at least 3 chars)
+    if (results.length < limit && query.length >= 3) {
+      for (const [lemma, plain] of kbbiLemmaMap.entries()) {
+        if (lemma === query || lemma.startsWith(query)) continue;
+        if (lemma.includes(query)) {
+          if (evaluateItem(lemma, plain)) break;
+        }
+      }
+    }
+  } else {
+    // Browse mode (e.g. by letter length)
+    for (const [lemma, plain] of kbbiLemmaMap.entries()) {
+      if (evaluateItem(lemma, plain)) break;
+    }
+  }
+
+  res.json({
+    success: true,
+    query,
+    length: len,
+    statusFilter,
+    totalFound: results.length,
+    results
+  });
+});
+
+// 3. Detail Definisi Kata
+app.get("/api/kbbi/detail", (req, res) => {
+  const word = (req.query.word || "").toLowerCase().trim();
+  if (!word) return res.status(400).json({ error: "Parameter word required" });
+
+  const plain = kbbiLemmaMap.get(word) || null;
+  const isTarget = indonesianTargetWordsSet.has(word);
+  const targetFile = indonesianTargetFileMap.get(word) || (word.length >= 3 && word.length <= 8 ? TARGET_FILES.id[word.length]?.target : null);
+
+  res.json({
+    success: true,
+    word,
+    plain,
+    foundInKbbi: !!plain,
+    isTarget,
+    targetFile,
+    length: word.length
+  });
+});
+
+// 4. Daftar File Wordlist & Status
+app.get("/api/wordlist/files", (req, res) => {
+  const fileStats = [];
+  
+  for (const [lang, lengths] of Object.entries(TARGET_FILES)) {
+    for (const [len, pair] of Object.entries(lengths)) {
+      const targetWords = readWordFile(pair.target);
+      const validWords = readWordFile(pair.valid);
+      fileStats.push({
+        lang,
+        length: parseInt(len),
+        targetFile: pair.target,
+        targetCount: targetWords.length,
+        validFile: pair.valid,
+        validCount: validWords.length
+      });
+    }
+  }
+
+  res.json({
+    success: true,
+    files: fileStats,
+    totalTargetWordsId: indonesianTargetWordsSet.size
+  });
+});
+
+// 5. Ambil Daftar Kata dari File
+app.get("/api/wordlist/words", (req, res) => {
+  const filename = req.query.filename;
+  if (!filename) return res.status(400).json({ error: "Parameter filename required" });
+  
+  const safeFilename = path.basename(filename);
+  const words = readWordFile(safeFilename);
+  const search = (req.query.search || "").toLowerCase().trim();
+  
+  let filtered = words;
+  if (search) {
+    filtered = words.filter(w => w.includes(search));
+  }
+
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const pageSize = Math.min(500, Math.max(10, parseInt(req.query.pageSize) || 100));
+  const totalPages = Math.ceil(filtered.length / pageSize) || 1;
+  const startIndex = (page - 1) * pageSize;
+  const paginatedWords = filtered.slice(startIndex, startIndex + pageSize);
+
+  res.json({
+    success: true,
+    filename: safeFilename,
+    totalWords: words.length,
+    filteredCount: filtered.length,
+    page,
+    pageSize,
+    totalPages,
+    words: paginatedWords
+  });
+});
+
+// 6. Tambah Kata ke File Target
+app.post("/api/wordlist/add-word", (req, res) => {
+  const { filename, word, addToValid = true } = req.body;
+  if (!filename || !word) return res.status(400).json({ error: "Filename and word required" });
+
+  const safeFilename = path.basename(filename);
+  const cleanWord = String(word).trim().toLowerCase();
+
+  if (!/^[a-z]+$/.test(cleanWord)) {
+    return res.status(400).json({ error: "Kata hanya boleh mengandung huruf a-z tanpa spasi/simbol" });
+  }
+
+  const existingWords = readWordFile(safeFilename);
+  if (existingWords.includes(cleanWord)) {
+    return res.json({ success: true, message: `Kata "${cleanWord}" sudah ada dalam daftar.`, alreadyExists: true, totalWords: existingWords.length });
+  }
+
+  existingWords.push(cleanWord);
+  const totalWords = writeWordFile(safeFilename, existingWords);
+
+  // Jika addToValid aktif, cek apakah ada file valid_words pasangannya
+  if (addToValid) {
+    for (const lang of ["id", "en"]) {
+      for (const len of [3, 4, 5, 6, 7, 8]) {
+        if (TARGET_FILES[lang][len].target === safeFilename) {
+          const validFn = TARGET_FILES[lang][len].valid;
+          const validWords = readWordFile(validFn);
+          if (!validWords.includes(cleanWord)) {
+            validWords.push(cleanWord);
+            writeWordFile(validFn, validWords);
+          }
+        }
+      }
+    }
+  }
+
+  refreshTargetWordSets();
+  io.emit("wordlist-updated", { filename: safeFilename, word: cleanWord, action: "add" });
+
+  res.json({
+    success: true,
+    message: `Berhasil menambahkan "${cleanWord}" ke ${safeFilename}`,
+    word: cleanWord,
+    filename: safeFilename,
+    totalWords
+  });
+});
+
+// 7. Hapus Kata dari File Target
+app.post("/api/wordlist/delete-word", (req, res) => {
+  const { filename, word } = req.body;
+  if (!filename || !word) return res.status(400).json({ error: "Filename and word required" });
+
+  const safeFilename = path.basename(filename);
+  const cleanWord = String(word).trim().toLowerCase();
+
+  const existingWords = readWordFile(safeFilename);
+  const initialCount = existingWords.length;
+  const filteredWords = existingWords.filter(w => w !== cleanWord);
+
+  if (filteredWords.length === initialCount) {
+    return res.status(404).json({ error: `Kata "${cleanWord}" tidak ditemukan dalam ${safeFilename}` });
+  }
+
+  const totalWords = writeWordFile(safeFilename, filteredWords);
+  refreshTargetWordSets();
+  io.emit("wordlist-updated", { filename: safeFilename, word: cleanWord, action: "delete" });
+
+  res.json({
+    success: true,
+    message: `Berhasil menghapus "${cleanWord}" dari ${safeFilename}`,
+    word: cleanWord,
+    filename: safeFilename,
+    totalWords
+  });
+});
+
+// 8. Bulk Add Kata
+app.post("/api/wordlist/bulk-add", (req, res) => {
+  const { filename, wordsText, addToValid = true } = req.body;
+  if (!filename || !wordsText) return res.status(400).json({ error: "Filename and wordsText required" });
+
+  const safeFilename = path.basename(filename);
+  const rawList = Array.isArray(wordsText) ? wordsText : String(wordsText).split(/[\r\n,;]+/);
+  const cleanList = rawList
+    .map(w => w.trim().toLowerCase())
+    .filter(w => /^[a-z]+$/.test(w));
+
+  const existingWords = readWordFile(safeFilename);
+  const existingSet = new Set(existingWords);
+  let addedCount = 0;
+
+  for (const w of cleanList) {
+    if (!existingSet.has(w)) {
+      existingSet.add(w);
+      existingWords.push(w);
+      addedCount++;
+    }
+  }
+
+  const totalWords = writeWordFile(safeFilename, existingWords);
+
+  if (addToValid && addedCount > 0) {
+    for (const lang of ["id", "en"]) {
+      for (const len of [3, 4, 5, 6, 7, 8]) {
+        if (TARGET_FILES[lang][len].target === safeFilename) {
+          const validFn = TARGET_FILES[lang][len].valid;
+          const validWords = readWordFile(validFn);
+          const validSet = new Set(validWords);
+          for (const w of cleanList) {
+            if (!validSet.has(w)) {
+              validSet.add(w);
+              validWords.push(w);
+            }
+          }
+          writeWordFile(validFn, validWords);
+        }
+      }
+    }
+  }
+
+  refreshTargetWordSets();
+  io.emit("wordlist-updated", { filename: safeFilename, action: "bulk-add", addedCount });
+
+  res.json({
+    success: true,
+    message: `Berhasil menambahkan ${addedCount} kata baru ke ${safeFilename}`,
+    addedCount,
+    skippedCount: cleanList.length - addedCount,
+    totalWords
+  });
+});
+
+// 9. Simpan Raw Konten
+app.post("/api/wordlist/raw-save", (req, res) => {
+  const { filename, content } = req.body;
+  if (!filename || typeof content !== "string") return res.status(400).json({ error: "Filename and content required" });
+
+  const safeFilename = path.basename(filename);
+  const words = content
+    .split(/\r?\n/)
+    .map(w => w.trim().toLowerCase())
+    .filter(w => /^[a-z]+$/.test(w));
+
+  const totalWords = writeWordFile(safeFilename, words);
+  refreshTargetWordSets();
+  io.emit("wordlist-updated", { filename: safeFilename, action: "raw-save", totalWords });
+
+  res.json({
+    success: true,
+    message: `File ${safeFilename} berhasil diperbarui (${totalWords} kata)`,
+    filename: safeFilename,
+    totalWords
+  });
+});
+
 httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`\n╔═══════════════════════════════════════════════════╗`);
   console.log(`║  🎮  TikTok Live Interactive Game Server          ║`);

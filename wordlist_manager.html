@@ -1,0 +1,1962 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pusat Kosakata Game & Kamus KBBI • TikTok Wordle Live</title>
+  
+  <!-- Font Outfit & Font Awesome 6 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-base: #0a0d14;
+      --bg-surface: #111622;
+      --bg-surface-elevated: #171e2e;
+      --bg-surface-glass: rgba(17, 22, 34, 0.85);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(254, 44, 85, 0.4);
+      --border-highlight: rgba(255, 255, 255, 0.18);
+      
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      
+      --tiktok-red: #fe2c55;
+      --tiktok-cyan: #25f4ee;
+      --amber-gold: #f59e0b;
+      --green-correct: #16a34a;
+      --green-glow: rgba(22, 163, 74, 0.2);
+      
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --shadow-elevation: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+    }
+
+    body.theme-sepia {
+      --bg-base: #e5dac9;
+      --bg-surface: #f3ebd9;
+      --bg-surface-elevated: #e0d1bb;
+      --bg-surface-glass: rgba(243, 235, 217, 0.9);
+      --border-subtle: rgba(90, 68, 48, 0.14);
+      --border-accent: rgba(180, 80, 40, 0.45);
+      --border-highlight: rgba(90, 68, 48, 0.25);
+      
+      --text-main: #2b1f17;
+      --text-muted: #6e5544;
+      --text-dim: #947a67;
+      
+      --tiktok-red: #d92446;
+      --tiktok-cyan: #0b9c97;
+      --amber-gold: #c27803;
+      --green-correct: #15803d;
+      --shadow-elevation: 0 8px 24px -8px rgba(70, 48, 30, 0.25);
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       HEADER BAR
+       ═══════════════════════════════════════════════════ */
+    .top-header {
+      background: var(--bg-surface-glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .header-branding {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, var(--tiktok-red), #b91c1c);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 4px 14px rgba(254, 44, 85, 0.35);
+      flex-shrink: 0;
+    }
+
+    .brand-title {
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-badge {
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(254, 44, 85, 0.15);
+      border: 1px solid rgba(254, 44, 85, 0.35);
+      color: var(--tiktok-red);
+      padding: 2px 8px;
+      border-radius: 999px;
+      letter-spacing: 0.3px;
+    }
+
+    .brand-subtitle {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      background: var(--bg-surface);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .header-btn:hover {
+      background: var(--bg-surface-elevated);
+      border-color: var(--border-highlight);
+      transform: translateY(-1px);
+    }
+
+    .header-btn.accent {
+      background: linear-gradient(135deg, rgba(254, 44, 85, 0.2), rgba(254, 44, 85, 0.1));
+      border-color: var(--border-accent);
+      color: #ff5778;
+    }
+
+    .header-btn.accent:hover {
+      background: var(--tiktok-red);
+      color: #ffffff;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       STATS & STATUS STRIP
+       ═══════════════════════════════════════════════════ */
+    .status-strip {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-size: 12.5px;
+    }
+
+    .status-items {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+    }
+
+    .status-item strong {
+      color: var(--text-main);
+      font-weight: 700;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #94a3b8;
+    }
+
+    .status-dot.active {
+      background: var(--green-correct);
+      box-shadow: 0 0 8px rgba(22, 163, 74, 0.6);
+    }
+
+    .status-dot.loading {
+      background: var(--amber-gold);
+      animation: pulseDot 1.2s infinite;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* ═══════════════════════════════════════════════════
+       MAIN APP CONTAINER
+       ═══════════════════════════════════════════════════ */
+    .app-container {
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       NAV TABS
+       ═══════════════════════════════════════════════════ */
+    .nav-tabs {
+      display: flex;
+      background: var(--bg-surface);
+      padding: 6px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      gap: 6px;
+      width: fit-content;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+
+    .nav-tab-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .nav-tab-btn:hover {
+      color: var(--text-main);
+      background: var(--bg-surface-elevated);
+    }
+
+    .nav-tab-btn.active {
+      background: linear-gradient(135deg, var(--tiktok-red), #d91c42);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(254, 44, 85, 0.3);
+    }
+
+    /* ═══════════════════════════════════════════════════
+       SECTION VIEW CARDS
+       ═══════════════════════════════════════════════════ */
+    .view-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-elevation);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       TAB 1: KBBI EXPLORER STYLING
+       ═══════════════════════════════════════════════════ */
+    .kbbi-search-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .search-input-wrapper {
+      position: relative;
+      width: 100%;
+    }
+
+    .search-input-wrapper i.search-icon {
+      position: absolute;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      font-size: 17px;
+    }
+
+    .kbbi-search-input {
+      width: 100%;
+      background: var(--bg-surface-elevated);
+      border: 1.5px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 14px 44px 14px 48px;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-main);
+      font-family: inherit;
+      transition: all 0.2s ease;
+    }
+
+    .kbbi-search-input:focus {
+      outline: none;
+      border-color: var(--tiktok-red);
+      box-shadow: 0 0 0 3px rgba(254, 44, 85, 0.2);
+      background: var(--bg-surface);
+    }
+
+    .search-clear-btn {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 16px;
+      padding: 6px;
+      display: none;
+    }
+
+    .search-clear-btn:hover {
+      color: var(--text-main);
+    }
+
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .filter-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-right: 4px;
+      letter-spacing: 0.5px;
+    }
+
+    .filter-pill {
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .filter-pill:hover {
+      background: var(--border-highlight);
+      color: var(--text-main);
+    }
+
+    .filter-pill.active {
+      background: rgba(37, 244, 238, 0.15);
+      border-color: var(--tiktok-cyan);
+      color: var(--tiktok-cyan);
+    }
+
+    /* Results Grid */
+    .kbbi-results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 14px;
+    }
+
+    .kbbi-card {
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .kbbi-card:hover {
+      border-color: var(--border-highlight);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+    }
+
+    .kbbi-card.in-game {
+      border-left: 4px solid var(--green-correct);
+    }
+
+    .kbbi-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .kbbi-card-lemma {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .kbbi-badges {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge-tag {
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 4px;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+
+    .badge-tag.len {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+    }
+
+    .badge-tag.target-yes {
+      background: rgba(22, 163, 74, 0.18);
+      color: #4ade80;
+      border: 1px solid rgba(22, 163, 74, 0.35);
+    }
+
+    .badge-tag.target-no {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .kbbi-card-snippet {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.45;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+
+    .kbbi-card-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .card-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 11px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+      background: var(--bg-surface);
+      color: var(--text-main);
+    }
+
+    .card-btn.preview {
+      border-color: var(--border-subtle);
+      color: var(--text-muted);
+    }
+
+    .card-btn.preview:hover {
+      background: var(--border-highlight);
+      color: var(--text-main);
+    }
+
+    .card-btn.add {
+      background: linear-gradient(135deg, var(--tiktok-cyan), #0284c7);
+      color: #0f172a;
+      font-weight: 800;
+    }
+
+    .card-btn.add:hover {
+      box-shadow: 0 3px 10px rgba(37, 244, 238, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .card-btn.added-state {
+      background: rgba(22, 163, 74, 0.15);
+      border-color: rgba(22, 163, 74, 0.35);
+      color: #4ade80;
+      cursor: default;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       TAB 2: TARGET WORD MANAGER STYLING
+       ═══════════════════════════════════════════════════ */
+    .manager-control-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background: var(--bg-surface-elevated);
+      padding: 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .lang-switcher {
+      display: flex;
+      background: var(--bg-surface);
+      border-radius: var(--radius-sm);
+      padding: 4px;
+      border: 1px solid var(--border-subtle);
+      gap: 4px;
+    }
+
+    .lang-btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: none;
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+
+    .lang-btn.active {
+      background: var(--tiktok-red);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(254, 44, 85, 0.35);
+    }
+
+    .length-pills-bar {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .length-tab-pill {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 12.5px;
+      font-weight: 800;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .length-tab-pill:hover {
+      border-color: var(--border-highlight);
+      color: var(--text-main);
+    }
+
+    .length-tab-pill.active {
+      background: rgba(37, 244, 238, 0.14);
+      border-color: var(--tiktok-cyan);
+      color: var(--tiktok-cyan);
+    }
+
+    .length-tab-pill .pill-counter {
+      font-size: 10.5px;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .word-add-form {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      width: 100%;
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 14px;
+    }
+
+    .word-add-input {
+      flex: 1;
+      min-width: 200px;
+      max-width: 380px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      color: var(--text-main);
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-family: inherit;
+    }
+
+    .word-add-input:focus {
+      outline: none;
+      border-color: var(--green-correct);
+      box-shadow: 0 0 0 2px var(--green-glow);
+    }
+
+    .add-action-btn {
+      background: linear-gradient(135deg, var(--green-correct), #15803d);
+      color: #ffffff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.2s ease;
+    }
+
+    .add-action-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35);
+    }
+
+    .word-grid-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .word-tile-card {
+      background: var(--bg-surface-elevated);
+      border: 1.5px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .word-tile-card:hover {
+      border-color: var(--tiktok-cyan);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+    }
+
+    .word-tile-text {
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: var(--text-main);
+      text-transform: uppercase;
+    }
+
+    .word-tile-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      opacity: 0.85;
+      transition: opacity 0.2s;
+    }
+
+    .word-tile-card:hover .word-tile-actions {
+      opacity: 1;
+    }
+
+    .tile-mini-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 4px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tile-mini-btn:hover {
+      color: #ffffff;
+      background: var(--border-highlight);
+    }
+
+    .tile-mini-btn.del:hover {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: #ef4444;
+      color: #fca5a5;
+    }
+
+    .tile-mini-btn.def:hover {
+      background: rgba(37, 244, 238, 0.2);
+      border-color: var(--tiktok-cyan);
+      color: var(--tiktok-cyan);
+    }
+
+    /* ═══════════════════════════════════════════════════
+       PAGINATION BAR
+       ═══════════════════════════════════════════════════ */
+    .pagination-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-subtle);
+      flex-wrap: wrap;
+    }
+
+    .page-info {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .page-nav-btns {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .page-btn {
+      padding: 6px 12px;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      color: var(--text-main);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .page-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .page-btn:not(:disabled):hover {
+      background: var(--border-highlight);
+    }
+
+    /* ═══════════════════════════════════════════════════
+       TAB 3: RAW EDITOR
+       ═══════════════════════════════════════════════════ */
+    .raw-editor-box {
+      width: 100%;
+      height: 480px;
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-main);
+      resize: vertical;
+    }
+
+    .raw-editor-box:focus {
+      outline: none;
+      border-color: var(--tiktok-cyan);
+    }
+
+    /* ═══════════════════════════════════════════════════
+       MODAL DEFINISI KBBI (POP-UP MEWAH)
+       ═══════════════════════════════════════════════════ */
+    .kbbi-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .kbbi-modal-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .kbbi-modal-card {
+      background: var(--bg-surface);
+      border: 1.5px solid var(--border-highlight);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 620px;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+      animation: modalScaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+    }
+
+    @keyframes modalScaleUp {
+      from { transform: scale(0.93) translateY(10px); opacity: 0; }
+      to { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    .modal-head {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      background: var(--bg-surface-elevated);
+    }
+
+    .modal-word-title {
+      font-size: 26px;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    body.theme-sepia .modal-word-title {
+      color: #2b1f17;
+    }
+
+    .modal-syllable {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--tiktok-cyan);
+      margin-top: 3px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .modal-close-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      color: var(--text-muted);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 15px;
+      transition: all 0.2s;
+    }
+
+    .modal-close-btn:hover {
+      background: rgba(239, 68, 68, 0.3);
+      color: #ffffff;
+    }
+
+    .modal-body {
+      padding: 24px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .definition-block {
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      white-space: pre-line;
+      color: var(--text-main);
+      font-size: 14px;
+    }
+
+    .modal-foot {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border-subtle);
+      background: var(--bg-surface-elevated);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .modal-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    /* Toast Notification */
+    .toast-popup {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 12px 20px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 13.5px;
+      font-weight: 700;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+
+    .toast-popup.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP HEADER -->
+  <header class="top-header">
+    <div class="header-branding">
+      <div class="brand-icon-box">
+        <i class="fa-solid fa-book-bookmark"></i>
+      </div>
+      <div>
+        <div class="brand-title">
+          <span>Pusat Kosakata Game & KBBI</span>
+          <span class="brand-badge">PRO HOST</span>
+        </div>
+        <div class="brand-subtitle">Kelola kata target permainan (3–8 huruf) & integrasi 194.000+ definisi resmi KBBI</div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button id="themeToggleBtn" class="header-btn" onclick="toggleTheme()" title="Ganti Tema">
+        <i class="fa-solid fa-palette"></i> <span id="themeLabel">Sepia Cream</span>
+      </button>
+      <a href="/dashboard" class="header-btn" title="Buka Dashboard Server">
+        <i class="fa-solid fa-gauge-high"></i> Dashboard
+      </a>
+      <a href="/" target="_blank" class="header-btn accent" title="Buka Tampilan Game Live">
+        <i class="fa-solid fa-gamepad"></i> Buka Game
+      </a>
+    </div>
+  </header>
+
+  <!-- STATUS STRIP -->
+  <div class="status-strip">
+    <div class="status-items">
+      <div class="status-item">
+        <span class="status-dot loading" id="kbbiStatusDot"></span>
+        <span>Status KBBI: <strong id="kbbiStatusText">Memeriksa database...</strong></span>
+      </div>
+      <div class="status-item">
+        <i class="fa-solid fa-spell-check" style="color: var(--tiktok-cyan);"></i>
+        <span>Kata Target ID: <strong id="statTotalTargetId">-</strong></span>
+      </div>
+      <div class="status-item">
+        <i class="fa-solid fa-language" style="color: var(--amber-gold);"></i>
+        <span>Total File: <strong>12 File (3–8 Huruf)</strong></span>
+      </div>
+    </div>
+    <div style="font-size: 11.5px; color: var(--text-dim);">
+      Tersinkronisasi otomatis dengan gameplay TikTok Live Wordle
+    </div>
+  </div>
+
+  <!-- MAIN CONTAINER -->
+  <main class="app-container">
+    
+    <!-- NAVIGATION TABS -->
+    <nav class="nav-tabs">
+      <button class="nav-tab-btn active" id="tabBtnKbbi" onclick="switchMainTab('kbbi')">
+        <i class="fa-solid fa-book-atlas"></i> Eksplorasi & Tambah dari KBBI
+      </button>
+      <button class="nav-tab-btn" id="tabBtnManager" onclick="switchMainTab('manager')">
+        <i class="fa-solid fa-list-check"></i> Kelola Kata Target Game
+      </button>
+      <button class="nav-tab-btn" id="tabBtnRaw" onclick="switchMainTab('raw')">
+        <i class="fa-solid fa-file-pen"></i> Raw Editor / Paste Banyak Kata
+      </button>
+    </nav>
+
+    <!-- ═══════════════════════════════════════════════════
+         TAB 1: KBBI EXPLORER VIEW
+         ═══════════════════════════════════════════════════ -->
+    <section class="view-card" id="viewKbbi">
+      <div class="kbbi-search-panel">
+        <div class="search-input-wrapper">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input type="text" id="kbbiSearchInput" class="kbbi-search-input" placeholder="Cari kata di Kamus KBBI (contoh: mentari, apel, renjana, bintang)..." autocomplete="off" />
+          <button id="searchClearBtn" class="search-clear-btn" onclick="clearKbbiSearch()" title="Hapus pencarian">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="filter-bar">
+          <div class="filter-group">
+            <span class="filter-label"><i class="fa-solid fa-text-width"></i> Panjang:</span>
+            <span class="filter-pill active" onclick="setKbbiLengthFilter(0, this)">Semua</span>
+            <span class="filter-pill" onclick="setKbbiLengthFilter(3, this)">3H</span>
+            <span class="filter-pill" onclick="setKbbiLengthFilter(4, this)">4H</span>
+            <span class="filter-pill" onclick="setKbbiLengthFilter(5, this)">5H</span>
+            <span class="filter-pill" onclick="setKbbiLengthFilter(6, this)">6H</span>
+            <span class="filter-pill" onclick="setKbbiLengthFilter(7, this)">7H</span>
+            <span class="filter-pill" onclick="setKbbiLengthFilter(8, this)">8H</span>
+          </div>
+
+          <div class="filter-group">
+            <span class="filter-label"><i class="fa-solid fa-filter"></i> Status:</span>
+            <span class="filter-pill active" onclick="setKbbiStatusFilter('all', this)">Semua</span>
+            <span class="filter-pill" onclick="setKbbiStatusFilter('unadded', this)">Belum Ada di Game</span>
+            <span class="filter-pill" onclick="setKbbiStatusFilter('added', this)">Sudah di Game</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results Count Info -->
+      <div id="kbbiResultsInfo" style="font-size: 13px; color: var(--text-muted); display: none;"></div>
+
+      <!-- Results Grid -->
+      <div class="kbbi-results-grid" id="kbbiResultsGrid">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════
+         TAB 2: TARGET WORD MANAGER VIEW
+         ═══════════════════════════════════════════════════ -->
+    <section class="view-card" id="viewManager" style="display: none;">
+      <div class="manager-control-bar">
+        <div class="control-row">
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <div class="lang-switcher">
+              <button class="lang-btn active" id="langBtnId" onclick="switchManagerLang('id')">🇮🇩 Indonesia</button>
+              <button class="lang-btn" id="langBtnEn" onclick="switchManagerLang('en')">🇬🇧 English</button>
+            </div>
+            <div class="length-pills-bar" id="managerLengthPills">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <div style="min-width: 240px;">
+            <input type="text" id="targetSearchFilter" class="word-add-input" style="width: 100%; max-width: 100%;" placeholder="🔍 Cari kata dalam file ini..." oninput="onTargetSearchInput()" />
+          </div>
+        </div>
+
+        <div class="word-add-form">
+          <label style="font-size: 13px; font-weight: 700; color: var(--text-muted);">
+            <i class="fa-solid fa-plus-circle" style="color: var(--green-correct);"></i> Tambah Kata Baru:
+          </label>
+          <input type="text" id="manualWordInput" class="word-add-input" placeholder="Ketik kata baru..." />
+          <button class="add-action-btn" onclick="submitManualAddWord()">
+            <i class="fa-solid fa-check"></i> Tambahkan
+          </button>
+          <label style="font-size: 12px; color: var(--text-muted); display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="checkbox" id="addToValidCheck" checked /> Juga tambahkan ke kamus tebakan penonton (valid words)
+          </label>
+        </div>
+      </div>
+
+      <!-- File Header Info -->
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+        <div style="font-size: 14px; color: var(--text-main); font-weight: 700;" id="currentFileTitle">
+          Memuat data kata...
+        </div>
+        <div style="font-size: 12.5px; color: var(--text-dim);" id="currentFileSubtitle"></div>
+      </div>
+
+      <!-- Word Cards Grid -->
+      <div class="word-grid-container" id="wordGridContainer">
+        <!-- Rendered via JS -->
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination-bar" id="paginationBar">
+        <div class="page-info" id="pageInfo">Menampilkan 0 kata</div>
+        <div class="page-nav-btns">
+          <button class="page-btn" id="prevPageBtn" onclick="changeManagerPage(-1)"><i class="fa-solid fa-chevron-left"></i> Sebelumnya</button>
+          <span style="font-size: 12px; font-weight: 700; padding: 0 8px;" id="pageIndicator">1 / 1</span>
+          <button class="page-btn" id="nextPageBtn" onclick="changeManagerPage(1)">Berikutnya <i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════
+         TAB 3: RAW EDITOR VIEW
+         ═══════════════════════════════════════════════════ -->
+    <section class="view-card" id="viewRaw" style="display: none;">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <h3 style="font-size: 16px; font-weight: 800;">Raw Text Editor</h3>
+          <p style="font-size: 12.5px; color: var(--text-muted);">Edit file teks langsung (satu kata per baris). Cocok untuk paste ratusan kata sekaligus.</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <select id="rawFileSelect" class="kbbi-search-input" style="padding: 8px 14px; font-size: 13px; width: auto;" onchange="loadRawEditorFile()">
+            <!-- Options populated dynamically -->
+          </select>
+          <button class="add-action-btn" onclick="saveRawEditorContent()">
+            <i class="fa-solid fa-floppy-disk"></i> Simpan File
+          </button>
+        </div>
+      </div>
+
+      <textarea id="rawEditorBox" class="raw-editor-box" placeholder="Memuat isi file..."></textarea>
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; color: var(--text-dim);">
+        <span id="rawWordCount">0 kata terdeteksi</span>
+        <span>Format otomatis: huruf kecil (a-z), tanpa tanda baca/spasi ganda</span>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════
+       MODAL PREVIEW DEFINISI KBBI
+       ═══════════════════════════════════════════════════ -->
+  <div class="kbbi-modal-overlay" id="kbbiModalOverlay" onclick="if(event.target === this) closeModal()">
+    <div class="kbbi-modal-card">
+      <div class="modal-head">
+        <div>
+          <div class="modal-word-title" id="modalWordTitle">APEL</div>
+          <div class="modal-syllable" id="modalSyllable">a • pel</div>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal()" title="Tutup Modal (ESC)">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="modal-body" id="modalBody">
+        <div class="definition-block" id="modalDefinitionText">
+          Memuat arti kata...
+        </div>
+      </div>
+
+      <div class="modal-foot">
+        <div class="modal-status-badge" id="modalStatusBadge">
+          <i class="fa-solid fa-circle-question"></i> Memeriksa status...
+        </div>
+        <div id="modalActionBtnContainer">
+          <!-- Button injected dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div class="toast-popup" id="toastPopup">
+    <i class="fa-solid fa-circle-check" style="color: var(--green-correct);"></i>
+    <span id="toastMessage">Tindakan berhasil</span>
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════════════════
+    // STATE & CONFIG
+    // ═══════════════════════════════════════════════════
+    let activeMainTab = 'kbbi';
+    let currentTheme = localStorage.getItem('wordle_theme') || 'dark';
+
+    // KBBI State
+    let kbbiSearchTimeout = null;
+    let kbbiLengthFilter = 0; // 0 = all
+    let kbbiStatusFilter = 'all'; // all, unadded, added
+    let currentModalWordData = null;
+
+    // Manager State
+    let managerLang = 'id';
+    let managerLength = 5;
+    let managerFilesData = [];
+    let currentLoadedWords = [];
+    let managerPage = 1;
+    let managerPageSize = 120;
+    let managerSearchQuery = '';
+
+    // File Mapping for fast lookup
+    const TARGET_FILES = {
+      id: {
+        3: 'target_words_id_3.txt',
+        4: 'target_words_id_4.txt',
+        5: 'target_words_id.txt',
+        6: 'target_words_id_6.txt',
+        7: 'target_words_id_7.txt',
+        8: 'target_words_id_8.txt'
+      },
+      en: {
+        3: 'target_words_3.txt',
+        4: 'target_words_4.txt',
+        5: 'target_words.txt',
+        6: 'target_words_6.txt',
+        7: 'target_words_7.txt',
+        8: 'target_words_8.txt'
+      }
+    };
+
+    // ═══════════════════════════════════════════════════
+    // INITIALIZATION
+    // ═══════════════════════════════════════════════════
+    document.addEventListener('DOMContentLoaded', () => {
+      applyTheme(currentTheme);
+      checkKbbiStatus();
+      loadWordlistFilesSummary();
+      setupSearchListener();
+
+      // Keyboard shortcut ESC to close modal
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeModal();
+      });
+
+      // Default load KBBI search
+      performKbbiSearch('');
+    });
+
+    // ═══════════════════════════════════════════════════
+    // THEME HANDLING
+    // ═══════════════════════════════════════════════════
+    function toggleTheme() {
+      currentTheme = (currentTheme === 'sepia') ? 'dark' : 'sepia';
+      applyTheme(currentTheme);
+      try { localStorage.setItem('wordle_theme', currentTheme); } catch(e) {}
+    }
+
+    function applyTheme(theme) {
+      const isSepia = (theme === 'sepia');
+      document.body.classList.toggle('theme-sepia', isSepia);
+      const label = document.getElementById('themeLabel');
+      if (label) label.textContent = isSepia ? 'Mode Gelap' : 'Sepia Cream';
+    }
+
+    // ═══════════════════════════════════════════════════
+    // TOAST HELPER
+    // ═══════════════════════════════════════════════════
+    let toastTimer = null;
+    function showToast(msg, icon = 'fa-circle-check', color = 'var(--green-correct)') {
+      const toast = document.getElementById('toastPopup');
+      const text = document.getElementById('toastMessage');
+      if (!toast || !text) return;
+      text.textContent = msg;
+      toast.querySelector('i').className = `fa-solid ${icon}`;
+      toast.querySelector('i').style.color = color;
+      toast.classList.add('show');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // ═══════════════════════════════════════════════════
+    // TAB SWITCHING
+    // ═══════════════════════════════════════════════════
+    function switchMainTab(tab) {
+      activeMainTab = tab;
+      
+      document.getElementById('tabBtnKbbi').classList.toggle('active', tab === 'kbbi');
+      document.getElementById('tabBtnManager').classList.toggle('active', tab === 'manager');
+      document.getElementById('tabBtnRaw').classList.toggle('active', tab === 'raw');
+
+      document.getElementById('viewKbbi').style.display = (tab === 'kbbi') ? 'flex' : 'none';
+      document.getElementById('viewManager').style.display = (tab === 'manager') ? 'flex' : 'none';
+      document.getElementById('viewRaw').style.display = (tab === 'raw') ? 'flex' : 'none';
+
+      if (tab === 'manager') {
+        loadManagerWords();
+      } else if (tab === 'raw') {
+        populateRawFileSelect();
+        loadRawEditorFile();
+      }
+    }
+
+    // ═══════════════════════════════════════════════════
+    // KBBI STATUS & SUMMARY
+    // ═══════════════════════════════════════════════════
+    async function checkKbbiStatus() {
+      try {
+        const res = await fetch('/api/kbbi/status');
+        const data = await res.json();
+        const dot = document.getElementById('kbbiStatusDot');
+        const text = document.getElementById('kbbiStatusText');
+        const statTarget = document.getElementById('statTotalTargetId');
+
+        if (data.loaded) {
+          dot.className = 'status-dot active';
+          text.textContent = `Aktif (${data.totalEntries.toLocaleString('id-ID')} Kosakata)`;
+        } else if (data.loading) {
+          dot.className = 'status-dot loading';
+          text.textContent = 'Sedang memuat di latar belakang...';
+          setTimeout(checkKbbiStatus, 2500);
+        } else {
+          dot.className = 'status-dot';
+          text.textContent = 'File KBBI belum termuat';
+        }
+
+        if (statTarget) {
+          statTarget.textContent = `${(data.targetWordsCount || 0).toLocaleString('id-ID')} Kata`;
+        }
+      } catch (err) {
+        console.error('Error fetching KBBI status:', err);
+      }
+    }
+
+    async function loadWordlistFilesSummary() {
+      try {
+        const res = await fetch('/api/wordlist/files');
+        const data = await res.json();
+        if (data.success && data.files) {
+          managerFilesData = data.files;
+          renderManagerLengthPills();
+          const statTarget = document.getElementById('statTotalTargetId');
+          if (statTarget && data.totalTargetWordsId) {
+            statTarget.textContent = `${data.totalTargetWordsId.toLocaleString('id-ID')} Kata`;
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching wordlist files summary:', err);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════
+    // TAB 1: KBBI SEARCH & EXPLORER
+    // ═══════════════════════════════════════════════════
+    function setupSearchListener() {
+      const input = document.getElementById('kbbiSearchInput');
+      const clearBtn = document.getElementById('searchClearBtn');
+
+      input.addEventListener('input', () => {
+        const val = input.value.trim();
+        clearBtn.style.display = val ? 'block' : 'none';
+        if (kbbiSearchTimeout) clearTimeout(kbbiSearchTimeout);
+        kbbiSearchTimeout = setTimeout(() => {
+          performKbbiSearch(val);
+        }, 280);
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          if (kbbiSearchTimeout) clearTimeout(kbbiSearchTimeout);
+          performKbbiSearch(input.value.trim());
+        }
+      });
+    }
+
+    function clearKbbiSearch() {
+      const input = document.getElementById('kbbiSearchInput');
+      input.value = '';
+      document.getElementById('searchClearBtn').style.display = 'none';
+      input.focus();
+      performKbbiSearch('');
+    }
+
+    function setKbbiLengthFilter(len, el) {
+      kbbiLengthFilter = len;
+      el.parentElement.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      performKbbiSearch(document.getElementById('kbbiSearchInput').value.trim());
+    }
+
+    function setKbbiStatusFilter(status, el) {
+      kbbiStatusFilter = status;
+      el.parentElement.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      performKbbiSearch(document.getElementById('kbbiSearchInput').value.trim());
+    }
+
+    async function performKbbiSearch(query) {
+      const grid = document.getElementById('kbbiResultsGrid');
+      const info = document.getElementById('kbbiResultsInfo');
+      
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
+          <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: var(--tiktok-cyan); margin-bottom: 8px;"></i>
+          <div>Mencari di kamus resmi KBBI...</div>
+        </div>
+      `;
+
+      try {
+        const url = `/api/kbbi/search?q=${encodeURIComponent(query)}&length=${kbbiLengthFilter}&status=${kbbiStatusFilter}&limit=42`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.status === 'loading') {
+          grid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--amber-gold);">
+              <i class="fa-solid fa-hourglass-half fa-spin" style="font-size: 24px; margin-bottom: 8px;"></i>
+              <div>${data.message}</div>
+            </div>
+          `;
+          return;
+        }
+
+        if (!data.results || data.results.length === 0) {
+          info.style.display = 'none';
+          grid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-dim);">
+              <i class="fa-solid fa-book-open" style="font-size: 38px; margin-bottom: 12px; opacity: 0.5;"></i>
+              <div style="font-size: 16px; font-weight: 700; color: var(--text-muted);">Tidak ada kosakata yang cocok</div>
+              <div style="font-size: 13px; margin-top: 4px;">Coba gunakan kata kunci lain atau ubah filter panjang huruf.</div>
+            </div>
+          `;
+          return;
+        }
+
+        info.style.display = 'block';
+        info.innerHTML = `Ditemukan <strong>${data.totalFound}</strong> entri kosakata untuk "${query || 'Semua'}"`;
+
+        grid.innerHTML = data.results.map(item => {
+          const isEligibleLength = (item.length >= 3 && item.length <= 8);
+          let targetBtnHtml = '';
+
+          if (item.isTarget) {
+            targetBtnHtml = `
+              <span class="card-btn added-state" title="Kata ini sudah terdaftar sebagai kata target">
+                <i class="fa-solid fa-check"></i> Sudah di Game
+              </span>
+            `;
+          } else if (isEligibleLength) {
+            targetBtnHtml = `
+              <button class="card-btn add" onclick="addWordToGameDirect('${escapeHtml(item.lemma)}', ${item.length})" title="Tambahkan ke file target_${item.length} huruf">
+                <i class="fa-solid fa-plus"></i> Tambah (${item.length}H)
+              </button>
+            `;
+          } else {
+            targetBtnHtml = `
+              <span class="badge-tag len" style="font-size: 10px;" title="Game Wordle mendukung 3-8 huruf">
+                Panjang ${item.length}H
+              </span>
+            `;
+          }
+
+          return `
+            <div class="kbbi-card ${item.isTarget ? 'in-game' : ''}" id="kbbiCard_${escapeHtml(item.lemma)}">
+              <div class="kbbi-card-head">
+                <div class="kbbi-card-lemma">${escapeHtml(item.lemma)}</div>
+                <div class="kbbi-badges">
+                  <span class="badge-tag len">${item.length}H</span>
+                  ${item.isTarget ? '<span class="badge-tag target-yes"><i class="fa-solid fa-circle-check"></i> Game</span>' : '<span class="badge-tag target-no">Tersedia</span>'}
+                </div>
+              </div>
+              <div class="kbbi-card-snippet">
+                ${escapeHtml(item.snippet || 'Lihat preview untuk membaca definisi lengkap.')}
+              </div>
+              <div class="kbbi-card-actions">
+                <button class="card-btn preview" onclick="openKbbiPreviewModal('${escapeHtml(item.lemma)}')">
+                  <i class="fa-solid fa-eye"></i> Preview
+                </button>
+                ${targetBtnHtml}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+      } catch (err) {
+        console.error('KBBI search error:', err);
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #ef4444;">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size: 24px; margin-bottom: 8px;"></i>
+            <div>Gagal menghubungi server pencarian KBBI: ${escapeHtml(err.message)}</div>
+          </div>
+        `;
+      }
+    }
+
+    // ═══════════════════════════════════════════════════
+    // MODAL PREVIEW DEFINISI KBBI
+    // ═══════════════════════════════════════════════════
+    async function openKbbiPreviewModal(word) {
+      const modal = document.getElementById('kbbiModalOverlay');
+      const title = document.getElementById('modalWordTitle');
+      const syllable = document.getElementById('modalSyllable');
+      const defBox = document.getElementById('modalDefinitionText');
+      const statusBadge = document.getElementById('modalStatusBadge');
+      const actionBox = document.getElementById('modalActionBtnContainer');
+
+      title.textContent = word.toUpperCase();
+      syllable.textContent = 'Mencari penggalan suku kata...';
+      defBox.textContent = 'Memuat definisi dari kamus resmi KBBI...';
+      statusBadge.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memeriksa status game...';
+      actionBox.innerHTML = '';
+      modal.classList.add('show');
+
+      try {
+        const res = await fetch(`/api/kbbi/detail?word=${encodeURIComponent(word)}`);
+        const data = await res.json();
+        currentModalWordData = data;
+
+        if (!data.plain) {
+          defBox.innerHTML = `
+            <div style="color: var(--text-dim); text-align: center; padding: 20px;">
+              <i class="fa-solid fa-circle-exclamation" style="font-size: 28px; color: var(--amber-gold); margin-bottom: 8px;"></i>
+              <div>Kata <strong>${escapeHtml(word)}</strong> belum memiliki entri definisi tersendiri di KBBI.</div>
+            </div>
+          `;
+          syllable.textContent = word.split('').join(' • ');
+        } else {
+          // Parse syllable from plain first line if format is a.pel
+          const lines = data.plain.split('\n');
+          const firstLine = lines[0] || '';
+          const matchSyllable = firstLine.match(/^([a-zA-Z\.\-]+)/);
+          if (matchSyllable && matchSyllable[1].includes('.')) {
+            syllable.textContent = matchSyllable[1].replace(/\./g, ' • ');
+          } else {
+            syllable.textContent = word.split('').join(' • ');
+          }
+
+          // Format definition nicely
+          defBox.innerHTML = formatKbbiPlainDefinition(data.plain);
+        }
+
+        // Status & Action button
+        const isEligible = (data.length >= 3 && data.length <= 8);
+        if (data.isTarget) {
+          statusBadge.innerHTML = `<span style="color: #4ade80;"><i class="fa-solid fa-circle-check"></i> Aktif di file <strong>${data.targetFile || 'Target'}</strong></span>`;
+          actionBox.innerHTML = `
+            <button class="card-btn preview" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border-color: rgba(239, 68, 68, 0.4);" onclick="deleteWordFromGame('${escapeHtml(word)}', '${data.targetFile}', true)">
+              <i class="fa-solid fa-trash-can"></i> Hapus dari Game
+            </button>
+          `;
+        } else if (isEligible) {
+          const targetFile = TARGET_FILES.id[data.length];
+          statusBadge.innerHTML = `<span style="color: var(--text-muted);"><i class="fa-solid fa-circle-info"></i> Belum terdaftar (${data.length} Huruf)</span>`;
+          actionBox.innerHTML = `
+            <button class="card-btn add" style="padding: 9px 16px; font-size: 13px;" onclick="addWordToGameDirect('${escapeHtml(word)}', ${data.length}, true)">
+              <i class="fa-solid fa-circle-plus"></i> Tambahkan ke Game (${data.length} Huruf)
+            </button>
+          `;
+        } else {
+          statusBadge.innerHTML = `<span style="color: var(--amber-gold);"><i class="fa-solid fa-triangle-exclamation"></i> Panjang ${data.length}H di luar batas permainan (3-8 Huruf)</span>`;
+          actionBox.innerHTML = '';
+        }
+
+      } catch (err) {
+        defBox.textContent = 'Gagal memuat definisi: ' + err.message;
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('kbbiModalOverlay').classList.remove('show');
+    }
+
+    function formatKbbiPlainDefinition(plain) {
+      if (!plain) return 'Tidak ada data.';
+      
+      return plain
+        .split('\n')
+        .map(line => {
+          let trimmed = line.trim();
+          if (!trimmed) return '<br>';
+          
+          // Highlights class of word (n, v, a, adv, num, p)
+          trimmed = trimmed.replace(/\b(n|v|a|adv|num|p|ki|cak|kl|ark)\b/g, '<span style="color: var(--tiktok-cyan); font-weight: 800; text-transform: uppercase; font-size: 11px; padding: 1px 4px; background: rgba(37,244,238,0.1); border-radius: 3px;">$1</span>');
+          
+          // Highlights bold numbers
+          if (/^\d+\./.test(trimmed)) {
+            return `<div style="margin-top: 8px; font-weight: 600;">${trimmed}</div>`;
+          }
+          if (trimmed.startsWith('[')) {
+            return `<div style="color: var(--amber-gold); font-size: 12.5px; margin-top: 6px; font-family: 'JetBrains Mono', monospace;">${escapeHtml(trimmed)}</div>`;
+          }
+          return `<div>${trimmed}</div>`;
+        })
+        .join('');
+    }
+
+    // ═══════════════════════════════════════════════════
+    // ADD & DELETE ACTIONS (API DISPATCHERS)
+    // ═══════════════════════════════════════════════════
+    async function addWordToGameDirect(word, length, fromModal = false) {
+      const filename = TARGET_FILES.id[length];
+      if (!filename) {
+        showToast(`Panjang ${length} huruf tidak didukung file target`, 'fa-circle-exclamation', '#ef4444');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/wordlist/add-word', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename, word, addToValid: true })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast(`Berhasil menambahkan "${word.toUpperCase()}" ke game!`, 'fa-circle-check', 'var(--green-correct)');
+          
+          // Refresh views
+          checkKbbiStatus();
+          loadWordlistFilesSummary();
+          
+          // Update card in KBBI view if present
+          const card = document.getElementById(`kbbiCard_${word}`);
+          if (card) {
+            card.classList.add('in-game');
+            const actions = card.querySelector('.kbbi-card-actions');
+            if (actions) {
+              actions.innerHTML = `
+                <button class="card-btn preview" onclick="openKbbiPreviewModal('${escapeHtml(word)}')">
+                  <i class="fa-solid fa-eye"></i> Preview
+                </button>
+                <span class="card-btn added-state">
+                  <i class="fa-solid fa-check"></i> Sudah di Game
+                </span>
+              `;
+            }
+          }
+
+          if (fromModal) {
+            openKbbiPreviewModal(word);
+          }
+
+          if (activeMainTab === 'manager') {
+            loadManagerWords();
+          }
+        } else {
+          showToast(data.error || 'Gagal menambahkan kata', 'fa-triangle-exclamation', '#ef4444');
+        }
+      } catch (err) {
+        showToast('Error koneksi: ' + err.message, 'fa-triangle-exclamation', '#ef4444');
+      }
+    }
+
+    async function deleteWordFromGame(word, filename, fromModal = false) {
+      if (!confirm(`Yakin ingin menghapus kata "${word.toUpperCase()}" dari target permainan?`)) return;
+
+      try {
+        const res = await fetch('/api/wordlist/delete-word', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename, word })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast(`Berhasil menghapus "${word.toUpperCase()}"`, 'fa-circle-check', 'var(--green-correct)');
+          
+          checkKbbiStatus();
+          loadWordlistFilesSummary();
+
+          if (fromModal) {
+            openKbbiPreviewModal(word);
+          }
+
+          if (activeMainTab === 'manager') {
+            loadManagerWords();
+          } else if (activeMainTab === 'kbbi') {
+            performKbbiSearch(document.getElementById('kbbiSearchInput').value.trim());
+          }
+        } else {
+          showToast(data.error || 'Gagal menghapus kata', 'fa-triangle-exclamation', '#ef4444');
+        }
+      } catch (err) {
+        showToast('Error koneksi: ' + err.message, 'fa-triangle-exclamation', '#ef4444');
+      }
+    }
+
+    // ═══════════════════════════════════════════════════
+    // TAB 2: TARGET WORD MANAGER
+    // ═══════════════════════════════════════════════════
+    function switchManagerLang(lang) {
+      managerLang = lang;
+      document.getElementById('langBtnId').classList.toggle('active', lang === 'id');
+      document.getElementById('langBtnEn').classList.toggle('active', lang === 'en');
+      renderManagerLengthPills();
+      managerPage = 1;
+      loadManagerWords();
+    }
+
+    function switchManagerLength(len) {
+      managerLength = len;
+      renderManagerLengthPills();
+      managerPage = 1;
+      loadManagerWords();
+    }
+
+    function renderManagerLengthPills() {
+      const container = document.getElementById('managerLengthPills');
+      if (!container) return;
+
+      const lengths = [3, 4, 5, 6, 7, 8];
+      container.innerHTML = lengths.map(len => {
+        const fileInfo = managerFilesData.find(f => f.lang === managerLang && f.length === len);
+        const count = fileInfo ? fileInfo.targetCount : 0;
+        const isActive = (managerLength === len);
+
+        return `
+          <button class="length-tab-pill ${isActive ? 'active' : ''}" onclick="switchManagerLength(${len})">
+            <span>${len} Huruf</span>
+            <span class="pill-counter">${count.toLocaleString('id-ID')}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    async function loadManagerWords() {
+      const filename = TARGET_FILES[managerLang][managerLength];
+      const title = document.getElementById('currentFileTitle');
+      const subtitle = document.getElementById('currentFileSubtitle');
+      const grid = document.getElementById('wordGridContainer');
+      const pageInfo = document.getElementById('pageInfo');
+      const pageIndicator = document.getElementById('pageIndicator');
+      const prevBtn = document.getElementById('prevPageBtn');
+      const nextBtn = document.getElementById('nextPageBtn');
+
+      title.textContent = `File: ${filename} (${managerLang.toUpperCase()} • ${managerLength} Huruf)`;
+      grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Memuat daftar kata...</div>';
+
+      try {
+        const search = encodeURIComponent(managerSearchQuery);
+        const res = await fetch(`/api/wordlist/words?filename=${encodeURIComponent(filename)}&search=${search}&page=${managerPage}&pageSize=${managerPageSize}`);
+        const data = await res.json();
+
+        if (!data.words || data.words.length === 0) {
+          grid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 50px; color: var(--text-dim);">
+              <i class="fa-solid fa-folder-open" style="font-size: 32px; margin-bottom: 8px;"></i>
+              <div>Tidak ada kata yang sesuai filter</div>
+            </div>
+          `;
+          pageInfo.textContent = `Total 0 kata`;
+          pageIndicator.textContent = `1 / 1`;
+          prevBtn.disabled = true;
+          nextBtn.disabled = true;
+          return;
+        }
+
+        subtitle.textContent = `Total ${data.totalWords.toLocaleString('id-ID')} kata terdaftar di file ini`;
+        pageInfo.textContent = `Menampilkan ${((data.page - 1) * data.pageSize) + 1} - ${Math.min(data.page * data.pageSize, data.filteredCount)} dari ${data.filteredCount} kata`;
+        pageIndicator.textContent = `${data.page} / ${data.totalPages}`;
+        prevBtn.disabled = (data.page <= 1);
+        nextBtn.disabled = (data.page >= data.totalPages);
+
+        grid.innerHTML = data.words.map(w => {
+          return `
+            <div class="word-tile-card">
+              <div class="word-tile-text">${escapeHtml(w)}</div>
+              <div class="word-tile-actions">
+                ${managerLang === 'id' ? `
+                  <button class="tile-mini-btn def" onclick="openKbbiPreviewModal('${escapeHtml(w)}')" title="Cek Definisi di KBBI">
+                    <i class="fa-solid fa-book-open"></i>
+                  </button>
+                ` : ''}
+                <button class="tile-mini-btn del" onclick="deleteWordFromGame('${escapeHtml(w)}', '${filename}')" title="Hapus Kata">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+      } catch (err) {
+        grid.innerHTML = `<div style="grid-column: 1 / -1; color: #ef4444; padding: 20px;">Gagal memuat kata: ${err.message}</div>`;
+      }
+    }
+
+    function onTargetSearchInput() {
+      managerSearchQuery = document.getElementById('targetSearchFilter').value.trim();
+      managerPage = 1;
+      if (window._managerSearchDebounce) clearTimeout(window._managerSearchDebounce);
+      window._managerSearchDebounce = setTimeout(loadManagerWords, 250);
+    }
+
+    function changeManagerPage(delta) {
+      managerPage += delta;
+      loadManagerWords();
+    }
+
+    async function submitManualAddWord() {
+      const input = document.getElementById('manualWordInput');
+      const word = input.value.trim().toLowerCase();
+      const addToValid = document.getElementById('addToValidCheck').checked;
+      const filename = TARGET_FILES[managerLang][managerLength];
+
+      if (!word) {
+        showToast('Ketik kata yang ingin ditambahkan!', 'fa-triangle-exclamation', '#ef4444');
+        return;
+      }
+      if (word.length !== managerLength) {
+        showToast(`Kata harus tepat berpanjang ${managerLength} huruf!`, 'fa-triangle-exclamation', '#ef4444');
+        return;
+      }
+      if (!/^[a-z]+$/.test(word)) {
+        showToast('Kata hanya boleh mengandung huruf a-z tanpa spasi/angka!', 'fa-triangle-exclamation', '#ef4444');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/wordlist/add-word', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename, word, addToValid })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message || `Berhasil menambahkan ${word.toUpperCase()}`, 'fa-circle-check', 'var(--green-correct)');
+          input.value = '';
+          loadWordlistFilesSummary();
+          loadManagerWords();
+        } else {
+          showToast(data.error || 'Gagal menambahkan kata', 'fa-triangle-exclamation', '#ef4444');
+        }
+      } catch (err) {
+        showToast('Error: ' + err.message, 'fa-triangle-exclamation', '#ef4444');
+      }
+    }
+
+    // ═══════════════════════════════════════════════════
+    // TAB 3: RAW EDITOR
+    // ═══════════════════════════════════════════════════
+    function populateRawFileSelect() {
+      const select = document.getElementById('rawFileSelect');
+      if (select.children.length > 0) return;
+
+      const options = [];
+      for (const lang of ['id', 'en']) {
+        for (const len of [3, 4, 5, 6, 7, 8]) {
+          const fn = TARGET_FILES[lang][len];
+          options.push(`<option value="${fn}">${fn} (${lang.toUpperCase()} • ${len}H Target)</option>`);
+        }
+      }
+      select.innerHTML = options.join('');
+    }
+
+    async function loadRawEditorFile() {
+      const select = document.getElementById('rawFileSelect');
+      const filename = select.value || TARGET_FILES.id[5];
+      const editor = document.getElementById('rawEditorBox');
+      const counter = document.getElementById('rawWordCount');
+
+      editor.value = 'Memuat isi file...';
+      try {
+        const res = await fetch(`/api/wordlist/words?filename=${encodeURIComponent(filename)}&pageSize=5000`);
+        const data = await res.json();
+        if (data.words) {
+          editor.value = data.words.join('\n');
+          counter.textContent = `${data.totalWords.toLocaleString('id-ID')} kata terdaftar di ${filename}`;
+        }
+      } catch (err) {
+        editor.value = 'Gagal membaca file: ' + err.message;
+      }
+    }
+
+    async function saveRawEditorContent() {
+      const select = document.getElementById('rawFileSelect');
+      const filename = select.value;
+      const editor = document.getElementById('rawEditorBox');
+      const content = editor.value;
+
+      if (!confirm(`Simpan seluruh perubahan ke file ${filename}?`)) return;
+
+      try {
+        const res = await fetch('/api/wordlist/raw-save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename, content })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'fa-circle-check', 'var(--green-correct)');
+          loadWordlistFilesSummary();
+          loadRawEditorFile();
+        } else {
+          showToast(data.error || 'Gagal menyimpan file', 'fa-triangle-exclamation', '#ef4444');
+        }
+      } catch (err) {
+        showToast('Error: ' + err.message, 'fa-triangle-exclamation', '#ef4444');
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>

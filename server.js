@@ -807,7 +807,38 @@ app.get("/api/kbbi/status", (req, res) => {
   });
 });
 
-// 2. Pencarian Kosakata KBBI
+// Helper untuk mengekstrak definisi ringkas & kelas kata KBBI
+function extractKbbiSnippet(plain) {
+  if (!plain) return { snippet: "", wordClass: "" };
+  const lines = plain.split("\n").map(l => l.trim()).filter(Boolean);
+  if (lines.length === 0) return { snippet: "", wordClass: "" };
+
+  let rawDef = "";
+  for (let i = 0; i < lines.length; i++) {
+    const clean = lines[i].replace(/<[^>]+>/g, "").trim();
+    // Abaikan baris pemenggalan suku kata (misal: "a.pel (1)" atau "men.ta.ri mêntari")
+    if (/^[a-zA-Z\.\-\s\(\)\d\u00C0-\u017F]+$/.test(clean) && clean.includes(".") && !clean.includes(";")) {
+      continue;
+    }
+    if (clean.startsWith("bentuk tidak baku:") || clean.startsWith("[gabungan:")) {
+      continue;
+    }
+    rawDef = clean;
+    break;
+  }
+  if (!rawDef) rawDef = (lines[1] || lines[0] || "").replace(/<[^>]+>/g, "").trim();
+
+  let wordClass = "";
+  const classMatch = rawDef.match(/\b(n|v|a|adv|num|p|ki|cak|kl|ark)\b/);
+  if (classMatch) wordClass = classMatch[1];
+
+  let snippet = rawDef;
+  if (snippet.length > 140) snippet = snippet.slice(0, 137) + "...";
+
+  return { snippet, wordClass };
+}
+
+// 2. Pencarian Kosakata KBBI (Mendukung Tabel & Paginasi Cepat)
 app.get("/api/kbbi/search", (req, res) => {
   if (!isKbbiLoaded && isKbbiLoading) {
     return res.json({ status: "loading", message: "Kamus KBBI sedang dimuat di server...", results: [] });
@@ -816,9 +847,10 @@ app.get("/api/kbbi/search", (req, res) => {
   const query = (req.query.q || "").toLowerCase().trim();
   const len = parseInt(req.query.length) || 0;
   const statusFilter = (req.query.status || "all").toLowerCase(); // all | unadded | added
-  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 40));
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const pageSize = Math.min(200, Math.max(10, parseInt(req.query.pageSize) || parseInt(req.query.limit) || 50));
 
-  const results = [];
+  const allMatches = [];
   const addedLemmas = new Set();
 
   function evaluateItem(lemma, plain, isExact = false) {
@@ -833,19 +865,19 @@ app.get("/api/kbbi/search", (req, res) => {
 
     addedLemmas.add(lemma);
     
-    let snippet = (plain || "").split("\n")[0] || "";
-    if (snippet.length > 120) snippet = snippet.slice(0, 117) + "...";
+    const { snippet, wordClass } = extractKbbiSnippet(plain);
 
-    results.push({
+    allMatches.push({
       lemma,
       plain,
       snippet,
+      wordClass,
       length: lemma.length,
       isTarget,
       targetFile: indonesianTargetFileMap.get(lemma) || (lemma.length >= 3 && lemma.length <= 8 ? TARGET_FILES.id[lemma.length].target : null),
       isExact
     });
-    return results.length >= limit;
+    return allMatches.length >= 5000; // Cap search pool to keep response instant
   }
 
   if (query) {
@@ -855,7 +887,7 @@ app.get("/api/kbbi/search", (req, res) => {
     }
 
     // 2. StartsWith
-    if (results.length < limit) {
+    if (allMatches.length < 5000) {
       for (const [lemma, plain] of kbbiLemmaMap.entries()) {
         if (lemma === query) continue;
         if (lemma.startsWith(query)) {
@@ -865,7 +897,7 @@ app.get("/api/kbbi/search", (req, res) => {
     }
 
     // 3. Includes (if query has at least 3 chars)
-    if (results.length < limit && query.length >= 3) {
+    if (allMatches.length < 5000 && query.length >= 3) {
       for (const [lemma, plain] of kbbiLemmaMap.entries()) {
         if (lemma === query || lemma.startsWith(query)) continue;
         if (lemma.includes(query)) {
@@ -880,13 +912,96 @@ app.get("/api/kbbi/search", (req, res) => {
     }
   }
 
+  const totalFound = allMatches.length;
+  const totalPages = Math.ceil(totalFound / pageSize) || 1;
+  const startIndex = (page - 1) * pageSize;
+  const results = allMatches.slice(startIndex, startIndex + pageSize);
+
   res.json({
     success: true,
     query,
     length: len,
     statusFilter,
-    totalFound: results.length,
+    page,
+    pageSize,
+    totalPages,
+    totalFound,
     results
+  });
+});
+
+// 2b. Auto-Harvest / Ambil Kosakata Otomatis dari KBBI sesuai Panjang Kata
+app.post("/api/kbbi/harvest", (req, res) => {
+  const length = parseInt(req.body.length);
+  const count = Math.min(100, Math.max(1, parseInt(req.body.count) || 10));
+  const addToValid = req.body.addToValid !== false;
+
+  if (!length || length < 3 || length > 8) {
+    return res.status(400).json({ error: "Panjang huruf harus antara 3 dan 8" });
+  }
+
+  const targetFilename = TARGET_FILES.id[length]?.target;
+  const validFilename = TARGET_FILES.id[length]?.valid;
+
+  if (!targetFilename) {
+    return res.status(400).json({ error: `File target untuk ${length} huruf tidak ditemukan` });
+  }
+
+  // Find candidate words in KBBI that are pure a-z, correct length, and NOT yet in target list
+  const candidates = [];
+  for (const [lemma] of kbbiLemmaMap.entries()) {
+    if (lemma.length === length && /^[a-z]+$/.test(lemma)) {
+      if (!indonesianTargetWordsSet.has(lemma)) {
+        candidates.push(lemma);
+        if (candidates.length >= count * 3) break; // Collect pool to allow some variety
+      }
+    }
+  }
+
+  if (candidates.length === 0) {
+    return res.json({ success: false, message: `Semua kosakata ${length} huruf di KBBI sudah ada dalam target permainan!` });
+  }
+
+  // Pick up to `count` words
+  const wordsToHarvest = candidates.slice(0, count);
+
+  const existingTargetWords = readWordFile(targetFilename);
+  const targetSet = new Set(existingTargetWords);
+  let addedTargetCount = 0;
+
+  for (const w of wordsToHarvest) {
+    if (!targetSet.has(w)) {
+      targetSet.add(w);
+      existingTargetWords.push(w);
+      addedTargetCount++;
+    }
+  }
+
+  const totalWords = writeWordFile(targetFilename, existingTargetWords);
+
+  if (addToValid && validFilename) {
+    const existingValidWords = readWordFile(validFilename);
+    const validSet = new Set(existingValidWords);
+    for (const w of wordsToHarvest) {
+      if (!validSet.has(w)) {
+        validSet.add(w);
+        existingValidWords.push(w);
+      }
+    }
+    writeWordFile(validFilename, existingValidWords);
+  }
+
+  refreshTargetWordSets();
+  io.emit("wordlist-updated", { filename: targetFilename, count: addedTargetCount, action: "bulk-harvest" });
+
+  res.json({
+    success: true,
+    message: `Berhasil mengambil ${addedTargetCount} kosakata ${length} huruf dari KBBI ke dalam ${targetFilename}!`,
+    wordsAdded: wordsToHarvest,
+    addedCount: addedTargetCount,
+    length,
+    targetFile: targetFilename,
+    totalWords
   });
 });
 
@@ -936,7 +1051,7 @@ app.get("/api/wordlist/files", (req, res) => {
   });
 });
 
-// 5. Ambil Daftar Kata dari File
+// 5. Ambil Daftar Kata dari File (Mendukung Tampilan Tabel & Definisi KBBI)
 app.get("/api/wordlist/words", (req, res) => {
   const filename = req.query.filename;
   if (!filename) return res.status(400).json({ error: "Parameter filename required" });
@@ -956,6 +1071,18 @@ app.get("/api/wordlist/words", (req, res) => {
   const startIndex = (page - 1) * pageSize;
   const paginatedWords = filtered.slice(startIndex, startIndex + pageSize);
 
+  const enrichedWords = paginatedWords.map(w => {
+    const plain = kbbiLemmaMap.get(w);
+    const { snippet, wordClass } = extractKbbiSnippet(plain);
+    return {
+      word: w,
+      length: w.length,
+      hasKbbi: !!plain,
+      snippet,
+      wordClass
+    };
+  });
+
   res.json({
     success: true,
     filename: safeFilename,
@@ -964,7 +1091,7 @@ app.get("/api/wordlist/words", (req, res) => {
     page,
     pageSize,
     totalPages,
-    words: paginatedWords
+    words: enrichedWords
   });
 });
 
@@ -1097,6 +1224,33 @@ app.post("/api/wordlist/bulk-add", (req, res) => {
     message: `Berhasil menambahkan ${addedCount} kata baru ke ${safeFilename}`,
     addedCount,
     skippedCount: cleanList.length - addedCount,
+    totalWords
+  });
+});
+
+// 8b. Bulk Delete Kata dari File Target
+app.post("/api/wordlist/bulk-delete", (req, res) => {
+  const { filename, words } = req.body;
+  if (!filename || !Array.isArray(words) || words.length === 0) {
+    return res.status(400).json({ error: "Filename and words array required" });
+  }
+
+  const safeFilename = path.basename(filename);
+  const deleteSet = new Set(words.map(w => String(w).trim().toLowerCase()));
+
+  const existingWords = readWordFile(safeFilename);
+  const remainingWords = existingWords.filter(w => !deleteSet.has(w));
+  const deletedCount = existingWords.length - remainingWords.length;
+
+  const totalWords = writeWordFile(safeFilename, remainingWords);
+  refreshTargetWordSets();
+  io.emit("wordlist-updated", { filename: safeFilename, count: deletedCount, action: "bulk-delete" });
+
+  res.json({
+    success: true,
+    message: `Berhasil menghapus ${deletedCount} kata dari ${safeFilename}`,
+    deletedCount,
+    filename: safeFilename,
     totalWords
   });
 });

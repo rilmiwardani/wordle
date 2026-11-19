@@ -14685,5 +14685,340 @@ body.theme-sepia .game-trans-tip {
   color: #8c7360;
 }
 
+/* ============================================================
+   👻 ABSURDLE (ADVERSARIAL WORDLE - CLEAN WORDLE AESTHETICS)
+   ============================================================ */
+.absurdle-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  gap: 10px;
+  box-sizing: border-box;
+  transform: scale(var(--board-scale, 1));
+  transform-origin: top center;
+  user-select: none;
+}
+
+.absurdle-board-wrapper {
+  width: 100%;
+  height: 330px;
+  min-height: 330px;
+  max-height: 330px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 8px 6px;
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+}
+
+.absurdle-board-wrapper::-webkit-scrollbar {
+  width: 4px;
+}
+.absurdle-board-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+}
+
+.absurdle-board {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  align-items: center;
+}
+
+.absurdle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  max-width: 420px;
+  padding: 2px 4px;
+  box-sizing: border-box;
+  animation: absurdleRowSlide 0.25s ease-out;
+  border-radius: 8px;
+}
+
+@keyframes absurdleRowSlide {
+  0% { transform: translateY(-10px) scale(0.98); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.absurdle-row.is-latest {
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.18);
+}
+
+.absurdle-row.row-placeholder {
+  opacity: 0.5;
+  animation: none;
+}
+
+.absurdle-row-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  object-fit: cover;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.absurdle-avatar-placeholder {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.02);
+  color: rgba(255, 255, 255, 0.25);
+  flex-shrink: 0;
+}
+
+.absurdle-tiles-group {
+  display: flex;
+  gap: 5px;
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+}
+
+.absurdle-tile {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 21px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  color: #fff;
+  border: 1.5px solid transparent;
+  box-sizing: border-box;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.absurdle-tile.tile-flip {
+  animation: absurdleFlip 0.5s ease forwards;
+}
+
+@keyframes absurdleFlip {
+  0% { transform: scaleY(1); }
+  50% { transform: scaleY(0); }
+  100% { transform: scaleY(1); }
+}
+
+.absurdle-tile.tile-correct {
+  background: #16a34a;
+  border-color: #22c55e;
+}
+
+.absurdle-tile.tile-present {
+  background: #c6aa24;
+  border-color: #eab308;
+}
+
+.absurdle-tile.tile-absent {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.absurdle-tile.tile-empty {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  color: transparent;
+  text-shadow: none;
+}
+
+.absurdle-row-badge {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  min-width: 46px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.absurdle-row-badge.badge-win {
+  background: #16a34a;
+  color: #fff;
+  border-color: #22c55e;
+}
+
+.absurdle-row-badge.badge-placeholder {
+  opacity: 0.35;
+  border-style: dashed;
+}
+
+/* Keyboard Tracker QWERTY */
+.absurdle-keyboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  max-width: 440px;
+  padding: 6px 4px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.absurdle-kb-row {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+}
+
+.absurdle-key {
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  width: 32px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+}
+
+.absurdle-key.key-correct {
+  background: #16a34a;
+  border-color: #22c55e;
+  color: #fff;
+}
+
+.absurdle-key.key-present {
+  background: #c6aa24;
+  border-color: #eab308;
+  color: #fff;
+}
+
+.absurdle-key.key-absent {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.25);
+}
+
+/* Footer Hint */
+.absurdle-footer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.absurdle-chat-hint {
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #cbd5e1;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 6px 14px;
+  border-radius: 999px;
+  text-align: center;
+}
+
+/* ═══ DAYLIGHT SEPIA THEME SUPPORT ═══ */
+body.theme-sepia .absurdle-board-wrapper,
+body.theme-sepia .absurdle-keyboard-container,
+body.theme-sepia .absurdle-chat-hint {
+  background: #ede3d2;
+  border-color: rgba(66, 52, 40, 0.2);
+  color: #423428;
+}
+
+body.theme-sepia .absurdle-row.is-latest {
+  background: rgba(66, 52, 40, 0.06);
+  box-shadow: 0 0 0 1.5px rgba(66, 52, 40, 0.25);
+}
+
+body.theme-sepia .absurdle-row-avatar {
+  border-color: rgba(66, 52, 40, 0.3);
+}
+
+body.theme-sepia .absurdle-avatar-placeholder {
+  border-color: rgba(66, 52, 40, 0.25);
+  background: rgba(66, 52, 40, 0.04);
+  color: rgba(66, 52, 40, 0.3);
+}
+
+body.theme-sepia .absurdle-tile.tile-correct {
+  background: #15803d;
+  border-color: #166534;
+  color: #fff;
+}
+
+body.theme-sepia .absurdle-tile.tile-present {
+  background: #b45309;
+  border-color: #92400e;
+  color: #fff;
+}
+
+body.theme-sepia .absurdle-tile.tile-absent {
+  background: #c5b6a3;
+  border-color: #ad9c88;
+  color: #f7f2ea;
+}
+
+body.theme-sepia .absurdle-tile.tile-empty {
+  background: rgba(66, 52, 40, 0.06);
+  border-color: rgba(66, 52, 40, 0.18);
+}
+
+body.theme-sepia .absurdle-row-badge {
+  background: #dfd2be;
+  border-color: #bfa88f;
+  color: #423428;
+}
+
+body.theme-sepia .absurdle-key {
+  background: #dfd2be;
+  border-color: #bfa88f;
+  color: #423428;
+}
+
+body.theme-sepia .absurdle-key.key-correct {
+  background: #15803d;
+  border-color: #166534;
+  color: #fff;
+}
+
+body.theme-sepia .absurdle-key.key-present {
+  background: #b45309;
+  border-color: #92400e;
+  color: #fff;
+}
+
+body.theme-sepia .absurdle-key.key-absent {
+  background: rgba(66, 52, 40, 0.08);
+  border-color: rgba(66, 52, 40, 0.12);
+  color: rgba(66, 52, 40, 0.3);
+}
+
 
 

@@ -288,6 +288,18 @@
               </div>
             </div>
           </div>
+
+          <!-- 20. Absurdle (AI Licik) -->
+          <div class="game-card card-absurdle" onclick="selectGame('absurdle')" id="cardAbsurdle">
+            <div class="card-visual" style="display: flex; align-items: center; justify-content: center; gap: 3px;">
+              <i class="fa-solid fa-ghost" style="font-size: 20px; color: #a855f7;"></i>
+            </div>
+            <div class="card-body">
+              <div class="card-top-row">
+                <span class="card-title">ABSURDLE</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -638,6 +650,17 @@
                     <div class="game-card-text">
                       <div class="game-card-title">Antiwordle</div>
                       <div class="game-card-desc">Ranjau Kata: Hindari Menebak Kata Bom!</div>
+                    </div>
+                  </div>
+
+                  <!-- Absurdle -->
+                  <div class="game-card" data-value="absurdle" onclick="selectCustomGame('absurdle', event)">
+                    <div class="game-card-icon badge-absurdle" style="background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.4);">
+                      <i class="fa-solid fa-ghost" style="font-size: 16px; color: #c084fc;"></i>
+                    </div>
+                    <div class="game-card-text">
+                      <div class="game-card-title">Absurdle</div>
+                      <div class="game-card-desc">Lawan AI Licik: Wordle Tanpa Kata Tetap</div>
                     </div>
                   </div>
                 </div>
@@ -2243,6 +2266,27 @@
           <div class="antiwordle-chat-hint" id="antiwordleChatHint">
             <i class="fa-solid fa-circle-info" style="color: #f59e0b;"></i>
             <span id="antiwordleChatHintText">Setiap kata lolos = <strong>+5 Pts</strong>. Hati-hati jangan kena kata bom!</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Absurdle Container (Adversarial Wordle - Clean Wordle Look) -->
+      <div id="absurdleContainer" class="absurdle-container" style="display: none;">
+        <!-- Board Wrapper -->
+        <div class="absurdle-board-wrapper">
+          <div class="absurdle-board" id="absurdleBoard"></div>
+        </div>
+
+        <!-- QWERTY Keyboard Tracker -->
+        <div class="absurdle-keyboard-container">
+          <div class="absurdle-keyboard" id="absurdleKeyboard"></div>
+        </div>
+
+        <!-- Clean Footer Hint -->
+        <div class="absurdle-footer">
+          <div class="absurdle-chat-hint">
+            <i class="fa-solid fa-keyboard" style="color: #fe2c55; margin-right: 6px;"></i>
+            Ketik kata tebakan <strong id="absurdleLenHint">5 huruf</strong> di chat untuk menyudutkan kata!
           </div>
         </div>
       </div>

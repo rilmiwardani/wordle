@@ -1507,7 +1507,8 @@ const ALL_SPECIAL_PTS_PREFIXES = [
   'pts_wmatch_',
   'pts_wpyramid_',
   'pts_sambungkata_',
-  'pts_antiwordle_'
+  'pts_antiwordle_',
+  'pts_absurdle_'
 ];
 
 function isOtherGameModeKey(key) {
@@ -1521,11 +1522,11 @@ function isOtherGameModeKey(key) {
 const ALL_ROTATION_MODES = [
   'wordle', 'word500', 'wordfit', 'colorfit',
   'fillblanks', 'wordtango', 'wordgrid', 'squareword',
-  'wordladder', 'betweenle', 'cascadle', 'wanderwords', 'wordcluster', 'wordmatch', 'wordpyramid', 'antiwordle'
+  'wordladder', 'betweenle', 'cascadle', 'wanderwords', 'wordcluster', 'wordmatch', 'wordpyramid', 'antiwordle', 'absurdle'
 ];
 
 const FAST_PACED_MODES = [
-  'wordle', 'word500', 'squareword', 'betweenle', 'wordladder', 'fillblanks', 'wordpyramid', 'antiwordle'
+  'wordle', 'word500', 'squareword', 'betweenle', 'wordladder', 'fillblanks', 'wordpyramid', 'antiwordle', 'absurdle'
 ];
 
 const GAME_MODE_PRETTY_NAMES = {
@@ -1544,7 +1545,8 @@ const GAME_MODE_PRETTY_NAMES = {
   wordcluster: 'Word Cluster',
   wordmatch: 'Word Match',
   wordpyramid: 'Word Pyramid',
-  antiwordle: 'Antiwordle'
+  antiwordle: 'Antiwordle',
+  absurdle: 'Absurdle'
 };
 
 let tourneySettings = {
@@ -1601,6 +1603,7 @@ function getPtsPrefix() {
   if (currentGameMode === 'wordpyramid') return 'pts_wpyramid_';
   if (currentGameMode === 'sambungkata') return 'pts_sambungkata_';
   if (currentGameMode === 'antiwordle') return 'pts_antiwordle_';
+  if (currentGameMode === 'absurdle') return 'pts_absurdle_';
   return 'pts_';
 }
 
@@ -5146,7 +5149,8 @@ function selectGame(mode) {
     wordmatch: 'WORD MATCH',
     wordpyramid: 'WORD PYRAMID',
     sambungkata: 'SAMBUNG KATA',
-    antiwordle: 'ANTIWORDLE'
+    antiwordle: 'ANTIWORDLE',
+    absurdle: 'ABSURDLE'
   };
   const titleName = gameNames[mode] || mode.toUpperCase();
 
@@ -5313,6 +5317,14 @@ const GAME_MODES_META = {
     color: '#ef4444',
     badge: 'RANJAU KATA',
     tiles: ['B', 'O', 'M', 'B']
+  },
+  absurdle: {
+    title: 'ABSURDLE',
+    tagline: 'Lawan AI Licik: Wordle Tanpa Kata Tetap',
+    icon: 'fa-ghost',
+    color: '#a855f7',
+    badge: 'AI LICIK',
+    tiles: ['E', 'V', 'I', 'L']
   }
 };
 
@@ -5460,6 +5472,7 @@ function switchGameMode(e) {
   else if (currentGameMode === 'wordmatch') nextMode = 'wordpyramid';
   else if (currentGameMode === 'wordpyramid') nextMode = 'sambungkata';
   else if (currentGameMode === 'sambungkata') nextMode = 'antiwordle';
+  else if (currentGameMode === 'antiwordle') nextMode = 'absurdle';
   else nextMode = 'wordle';
 
   changeGameModeDirect(nextMode, e);
@@ -5540,6 +5553,8 @@ function applyGameModeUI() {
   if (sambungKataContainer) sambungKataContainer.style.display = 'none';
   const antiwordleContainer = document.getElementById('antiwordleContainer');
   if (antiwordleContainer) antiwordleContainer.style.display = 'none';
+  const absurdleContainer = document.getElementById('absurdleContainer');
+  if (absurdleContainer) absurdleContainer.style.display = 'none';
   if (currentGameMode !== 'wordmatch') {
     if (typeof stopWordMatchAutoReveal === 'function') stopWordMatchAutoReveal();
   }
@@ -5776,11 +5791,28 @@ function applyGameModeUI() {
     }
     const antiwordleContainer = document.getElementById('antiwordleContainer');
     if (antiwordleContainer) antiwordleContainer.style.display = 'flex';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Absurdle';
     if (!antiwordleSecretWord) {
       startAntiwordleGame();
     } else {
       renderAntiwordleUI();
+    }
+  } else if (currentGameMode === 'absurdle') {
+    if (headerTitle) headerTitle.textContent = 'ABSURDLE';
+    if (hintContainer) hintContainer.style.display = 'none';
+    if (bestGuessContainer) bestGuessContainer.style.display = 'none';
+    if (boardObj) {
+      boardObj.style.display = 'none';
+      boardObj.innerHTML = '';
+      boardObj.className = '';
+    }
+    const absurdleContainer = document.getElementById('absurdleContainer');
+    if (absurdleContainer) absurdleContainer.style.display = 'flex';
+    if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
+    if (!absurdleCandidates || absurdleCandidates.length === 0) {
+      startAbsurdleGame();
+    } else {
+      renderAbsurdleUI();
     }
   } else {
     if (headerTitle) headerTitle.textContent = 'WORDLE';
@@ -8209,6 +8241,11 @@ function startNewRound() {
   if (currentGameMode === 'antiwordle') {
     antiwordleRound = round;
     startAntiwordleGame();
+    return;
+  }
+  if (currentGameMode === 'absurdle') {
+    absurdleRound = round;
+    startAbsurdleGame();
     return;
   }
   if (currentGameMode === 'squareword') {
@@ -11135,6 +11172,10 @@ function handleChatGuess(data, optionalUserData) {
       processAntiwordleGuess(msg, data);
       return;
     }
+    if (currentGameMode === 'absurdle') {
+      processAbsurdleGuess(msg, data);
+      return;
+    }
 
     // Deduplikasi dan pra-validasi cerdas untuk Betweenle agar antrean tidak tersumbat
     if (currentGameMode === 'betweenle') {
@@ -12758,7 +12799,6 @@ window.changeBackground = function() {
           localStorage.setItem('custom_bg_url', dataUrl);
           localStorage.removeItem('custom_bg_color'); // Clear solid color if image is set
           const toggle = document.getElementById('dynamicBgToggle');
-          if (toggle) toggle.checked = false;
           toggleDynamicBg(false);
           applyStaticBg();
           showToast("Background berhasil diubah!");
@@ -21470,7 +21510,373 @@ function renderAntiwordleUI() {
   }
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// 👻 ABSURDLE (ADVERSARIAL WORDLE) ENGINE - PURE & CLEAN WORDLE AESTHETICS
+// ═════════════════════════════════════════════════════════════════════════════
+let absurdleLetterLength = 5;
+let absurdleRound = 1;
+let absurdleCandidates = [];
+let absurdleGuesses = [];
+let absurdleGuessedWords = new Set();
+let absurdleKeyStatuses = {};
+let absurdleIsGameOver = false;
+let absurdleUserCooldown = new Map();
+let absurdleTransitionTimer = null;
+
+function startAbsurdleGame(forceWord = null) {
+  if (currentGameMode !== 'absurdle') return;
+
+  if (absurdleTransitionTimer) {
+    clearTimeout(absurdleTransitionTimer);
+    absurdleTransitionTimer = null;
+  }
+
+  absurdleIsGameOver = false;
+  absurdleGuesses = [];
+  absurdleGuessedWords.clear();
+  absurdleKeyStatuses = {};
+  absurdleUserCooldown.clear();
+
+  // Sinkronkan panjang kata dari allowed_lengths jika ada
+  let allowedLens = [5];
+  try {
+    const saved = JSON.parse(localStorage.getItem('allowed_lengths'));
+    if (Array.isArray(saved) && saved.length > 0) {
+      allowedLens = saved.filter(l => l >= 4 && l <= 8);
+    }
+  } catch (e) {}
+  if (allowedLens.length === 0) allowedLens = [5];
+
+  absurdleLetterLength = allowedLens[Math.floor(Math.random() * allowedLens.length)];
+  WORD_LENGTH = absurdleLetterLength;
+
+  // Pool kata target kandidat
+  let pool = [];
+  if (allTargetWords && allTargetWords[absurdleLetterLength] && allTargetWords[absurdleLetterLength].length > 0) {
+    pool = [...allTargetWords[absurdleLetterLength]];
+  } else if (allValidWords && allValidWords[absurdleLetterLength] && allValidWords[absurdleLetterLength].length > 0) {
+    pool = [...allValidWords[absurdleLetterLength]];
+  } else {
+    pool = ["LAMPU", "PINTU", "RUMAH", "KUCING", "KERETA", "BELAJAR", "BINTANG"].filter(w => w.length === absurdleLetterLength);
+    if (pool.length === 0) pool = ["PINTU", "LAMPU", "RUMAH"];
+  }
+
+  absurdleCandidates = pool.map(w => w.toUpperCase().trim().replace(/[^A-Z]/g, ''));
+
+  const lenHintEl = document.getElementById('absurdleLenHint');
+  if (lenHintEl) lenHintEl.textContent = `${absurdleLetterLength} huruf`;
+
+  const globalRoundEl = document.getElementById('roundNumber');
+  if (globalRoundEl) globalRoundEl.textContent = absurdleRound;
+
+  renderAbsurdleUI();
+  console.log(`[Absurdle] Round ${absurdleRound} started with ${absurdleCandidates.length} candidate words (${absurdleLetterLength} letters)`);
+}
+
+function calcAbsurdlePatternScore(statuses) {
+  let score = 0;
+  for (let i = 0; i < statuses.length; i++) {
+    if (statuses[i] === 'correct') score += 2;
+    else if (statuses[i] === 'present') score += 1;
+  }
+  return score;
+}
+
+function processAbsurdleGuess(rawWord, userData) {
+  if (currentGameMode !== 'absurdle' || absurdleIsGameOver) return;
+  if (!absurdleCandidates || absurdleCandidates.length === 0) return;
+
+  const word = (rawWord || '').toUpperCase().trim().replace(/[^A-Z]/g, '');
+  if (word.length !== absurdleLetterLength) return;
+
+  // Anti-dominasi cooldown per user (2 detik)
+  const userId = userData ? (userData.uniqueId || userData.nickname || 'anon') : 'anon';
+  const now = Date.now();
+  if (absurdleUserCooldown.has(userId) && (now - absurdleUserCooldown.get(userId) < 2000)) {
+    return;
+  }
+
+  // Validasi kamus: kata harus terdaftar di kamus valid
+  const isValid = (typeof isValidWordInDictionaries === 'function')
+    ? isValidWordInDictionaries(word, absurdleLetterLength)
+    : (allValidWords && allValidWords[absurdleLetterLength] && allValidWords[absurdleLetterLength].includes(word));
+
+  if (!isValid && !absurdleCandidates.includes(word)) {
+    return; // Abaikan typo non-baku
+  }
+
+  // Cegah kata duplikat di ronde yang sama
+  if (absurdleGuessedWords.has(word)) {
+    showToast(`"${word}" sudah ditebak di ronde ini!`, 1500);
+    return;
+  }
+  absurdleGuessedWords.add(word);
+  absurdleUserCooldown.set(userId, now);
+
+  // ── ALGORITMA ADVERSARIAL BUCKETING ABSURDLE ──
+  // Kelompokkan kandidat kata berdasarkan pola feedback warna
+  const buckets = new Map();
+  for (let i = 0; i < absurdleCandidates.length; i++) {
+    const candidate = absurdleCandidates[i];
+    const statuses = getWordleFeedback(word, candidate);
+    const pattern = statuses.join(',');
+    let bucket = buckets.get(pattern);
+    if (!bucket) {
+      bucket = { pattern, statuses, words: [] };
+      buckets.set(pattern, bucket);
+    }
+    bucket.words.push(candidate);
+  }
+
+  // Cari bucket terbaik untuk AI (memberi informasi paling sedikit kepada pemain)
+  let bestBucket = null;
+  let maxCount = -1;
+
+  for (const bucket of buckets.values()) {
+    const count = bucket.words.length;
+    if (count > maxCount) {
+      maxCount = count;
+      bestBucket = bucket;
+    } else if (count === maxCount) {
+      // Tie-breaker: pilih yang memiliki bobot hijau/kuning paling sedikit
+      const currentScore = calcAbsurdlePatternScore(bucket.statuses);
+      const bestScore = calcAbsurdlePatternScore(bestBucket.statuses);
+      if (currentScore < bestScore) {
+        bestBucket = bucket;
+      }
+    }
+  }
+
+  if (!bestBucket) return;
+
+  // AI "mengubah pikiran" menyusutkan kandidat ke bucket terpilih
+  absurdleCandidates = bestBucket.words;
+  const statuses = bestBucket.statuses;
+
+  const guessObj = {
+    word: word,
+    statuses: statuses,
+    userName: (userData && (userData.nickname || userData.uniqueId)) || 'Penonton',
+    userAvatar: (userData && userData.profilePictureUrl) || DEFAULT_HOST_AVATAR,
+    isWin: false
+  };
+
+  // Sound feedback flip
+  if (window.sounds && typeof window.sounds.playFlip === 'function') {
+    window.sounds.playFlip(0);
+  }
+
+  // Update status keyboard QWERTY
+  for (let i = 0; i < word.length; i++) {
+    const char = word[i];
+    const stat = statuses[i];
+    const current = absurdleKeyStatuses[char];
+    if (stat === 'correct') {
+      absurdleKeyStatuses[char] = 'correct';
+    } else if (stat === 'present' && current !== 'correct') {
+      absurdleKeyStatuses[char] = 'present';
+    } else if (stat === 'absent' && !current) {
+      absurdleKeyStatuses[char] = 'absent';
+    }
+  }
+
+  // Periksa kondisi kemenangan:
+  // 1. Semua huruf hijau (correct), ATAU
+  // 2. Hanya tersisa 1 kata kandidat dan kata tebakan sama dengan 1 kata tersebut
+  const isAllCorrect = statuses.every(s => s === 'correct');
+  const isCorneredAndGuessed = (absurdleCandidates.length === 1 && word === absurdleCandidates[0]);
+
+  if (isAllCorrect || isCorneredAndGuessed) {
+    guessObj.isWin = true;
+    guessObj.statuses = Array(absurdleLetterLength).fill('correct');
+    absurdleGuesses.push(guessObj);
+    absurdleIsGameOver = true;
+    renderAbsurdleUI();
+
+    handleAbsurdleWin(userData, word);
+    return;
+  }
+
+  absurdleGuesses.push(guessObj);
+  renderAbsurdleUI();
+}
+
+function renderAbsurdleUI() {
+  const container = document.getElementById('absurdleContainer');
+  if (!container || currentGameMode !== 'absurdle') return;
+
+  const boardEl = document.getElementById('absurdleBoard');
+  if (boardEl) {
+    boardEl.innerHTML = '';
+    // Minimal tampilkan 6 baris agar terlihat seperti Wordle klasik.
+    // Jika tebakan >= 6, render seluruh baris dan scroll otomatis ke bawah!
+    const totalRows = Math.max(6, absurdleGuesses.length + (absurdleIsGameOver ? 0 : 1));
+
+    for (let r = 0; r < totalRows; r++) {
+      const item = absurdleGuesses[r];
+
+      if (item) {
+        // Baris Tebakan Aktif
+        const row = document.createElement('div');
+        row.className = 'absurdle-row';
+        if (r === absurdleGuesses.length - 1) row.classList.add('is-latest');
+
+        const avatar = document.createElement('img');
+        avatar.className = 'absurdle-row-avatar';
+        avatar.src = item.userAvatar || DEFAULT_HOST_AVATAR;
+        avatar.title = item.userName;
+        avatar.onerror = function() { this.onerror = null; this.src = DEFAULT_HOST_AVATAR; };
+        row.appendChild(avatar);
+
+        const tilesGroup = document.createElement('div');
+        tilesGroup.className = 'absurdle-tiles-group';
+        for (let i = 0; i < item.word.length; i++) {
+          const tile = document.createElement('div');
+          tile.className = 'absurdle-tile';
+          const stat = item.statuses[i];
+          if (stat === 'correct') tile.classList.add('tile-correct');
+          else if (stat === 'present') tile.classList.add('tile-present');
+          else tile.classList.add('tile-absent');
+
+          tile.textContent = item.word[i];
+          tilesGroup.appendChild(tile);
+        }
+        row.appendChild(tilesGroup);
+
+        const badge = document.createElement('div');
+        badge.className = `absurdle-row-badge ${item.isWin ? 'badge-win' : ''}`;
+        badge.textContent = item.isWin ? '🏆 MENANG' : `#${r + 1}`;
+        row.appendChild(badge);
+
+        boardEl.appendChild(row);
+      } else {
+        // Baris Placeholder (Kosong seperti kotak Wordle biasa)
+        const emptyRow = document.createElement('div');
+        emptyRow.className = 'absurdle-row row-placeholder';
+
+        const placeholderAvatar = document.createElement('div');
+        placeholderAvatar.className = 'absurdle-avatar-placeholder';
+        placeholderAvatar.innerHTML = '<i class="fa-solid fa-user" style="opacity: 0.25; font-size: 13px;"></i>';
+        emptyRow.appendChild(placeholderAvatar);
+
+        const tilesGroup = document.createElement('div');
+        tilesGroup.className = 'absurdle-tiles-group';
+        for (let i = 0; i < absurdleLetterLength; i++) {
+          const emptyTile = document.createElement('div');
+          emptyTile.className = 'absurdle-tile tile-empty';
+          tilesGroup.appendChild(emptyTile);
+        }
+        emptyRow.appendChild(tilesGroup);
+
+        const placeholderBadge = document.createElement('div');
+        placeholderBadge.className = 'absurdle-row-badge badge-placeholder';
+        placeholderBadge.textContent = `#${r + 1}`;
+        emptyRow.appendChild(placeholderBadge);
+
+        boardEl.appendChild(emptyRow);
+      }
+    }
+
+    const wrapper = document.querySelector('.absurdle-board-wrapper');
+    if (wrapper) {
+      setTimeout(() => {
+        wrapper.scrollTop = wrapper.scrollHeight;
+      }, 50);
+    }
+  }
+
+  // Render QWERTY Keyboard
+  const kbEl = document.getElementById('absurdleKeyboard');
+  if (kbEl) {
+    kbEl.innerHTML = '';
+    const kbRows = [
+      ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+      ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+      ['Z', 'X', 'C', 'V', 'B', 'N', 'M']
+    ];
+
+    kbRows.forEach(letters => {
+      const rowDiv = document.createElement('div');
+      rowDiv.className = 'absurdle-kb-row';
+
+      letters.forEach(letter => {
+        const key = document.createElement('div');
+        key.className = 'absurdle-key';
+        key.textContent = letter;
+
+        const stat = absurdleKeyStatuses[letter];
+        if (stat === 'correct') key.classList.add('key-correct');
+        else if (stat === 'present') key.classList.add('key-present');
+        else if (stat === 'absent') key.classList.add('key-absent');
+
+        rowDiv.appendChild(key);
+      });
+
+      kbEl.appendChild(rowDiv);
+    });
+  }
+}
+
+function handleAbsurdleWin(userData, finalWord) {
+  const winnerName = userData ? (userData.nickname || userData.uniqueId || 'Someone') : 'Someone';
+  const avatarUrl = (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : DEFAULT_HOST_AVATAR;
+  const userId = userData ? (userData.uniqueId || userData.nickname) : null;
+
+  // Beri poin kemenangan (30 Poin menaklukkan AI)
+  const earnedPts = 30;
+  if (userId) {
+    addPoints(userData, earnedPts);
+    if (typeof recordWin === 'function') {
+      recordWin(userId);
+    }
+  }
+
+  // Mainkan SFX kemenangan
+  if (window.sounds && typeof window.sounds.playWin === 'function') {
+    window.sounds.playWin();
+  }
+  if (window.playHostAudio) playHostAudio('win');
+
+  // Tampilkan kartu kemenangan baku (#winOverlay)
+  const winOverlay = document.getElementById('winOverlay');
+  const winAvatar = document.getElementById('winAvatar');
+  const winName = document.getElementById('winName');
+  const winPts = document.getElementById('winPts');
+  const winWord = document.getElementById('winWord');
+
+  if (winAvatar) winAvatar.src = avatarUrl;
+  if (winName) winName.textContent = winnerName;
+  if (winPts) winPts.textContent = `+${earnedPts} PTS`;
+  if (winWord) winWord.textContent = finalWord;
+
+  if (winOverlay) {
+    winOverlay.classList.add('active');
+    winOverlay.style.display = 'flex';
+  }
+
+  // Tampilkan like progress bar untuk ronde berikutnya
+  const likeProgressContainer = document.getElementById('likeProgressContainer');
+  if (likeProgressContainer) {
+    likeProgressContainer.style.display = 'block';
+  }
+
+  // Timer jeda otomatis ronde berikutnya
+  absurdleTransitionTimer = setTimeout(() => {
+    if (winOverlay) {
+      winOverlay.classList.remove('active');
+      winOverlay.style.display = 'none';
+    }
+    absurdleRound++;
+    startAbsurdleGame();
+  }, 10000);
+}
+
 // Window Global Exports
+window.startAbsurdleGame = startAbsurdleGame;
+window.processAbsurdleGuess = processAbsurdleGuess;
+window.renderAbsurdleUI = renderAbsurdleUI;
+window.handleAbsurdleWin = handleAbsurdleWin;
+
 window.startAntiwordleGame = startAntiwordleGame;
 window.processAntiwordleGuess = processAntiwordleGuess;
 window.renderAntiwordleUI = renderAntiwordleUI;

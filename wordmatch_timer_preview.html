@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preview Timer Word Match - Koleksi Minimalis Estetik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: #0b0f17;
+      color: #f1f5f9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+    .header-panel {
+      text-align: center;
+      max-width: 680px;
+      margin-bottom: 20px;
+    }
+    .header-panel h1 {
+      font-size: 21px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      color: #25f4ee;
+    }
+    .header-panel p {
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+
+    /* Controls Bar */
+    .controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 24px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 8px 14px;
+      border-radius: 999px;
+    }
+    .btn-ctrl {
+      background: rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+    .btn-ctrl:hover {
+      background: rgba(255, 255, 255, 0.16);
+      color: #fff;
+    }
+    .btn-ctrl.active {
+      background: #25f4ee;
+      border-color: #25f4ee;
+      color: #042f2e;
+      box-shadow: 0 2px 10px rgba(37, 244, 238, 0.35);
+    }
+
+    /* Comparison Grid */
+    .compare-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+      width: 100%;
+      max-width: 960px;
+    }
+
+    .card-preview {
+      background: #131923;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+    .card-preview.highlight {
+      border-color: rgba(37, 244, 238, 0.4);
+      background: #141c29;
+    }
+    .badge-tag {
+      position: absolute;
+      top: -9px;
+      left: 14px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 9.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .badge-old { background: #334155; color: #94a3b8; }
+    .badge-opt1 { background: #25f4ee; color: #042f2e; }
+    .badge-opt2 { background: #f59e0b; color: #451a03; }
+    .badge-opt3 { background: #fe2c55; color: #fff; }
+
+    .card-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .card-desc {
+      font-size: 11.5px;
+      color: #94a3b8;
+      line-height: 1.35;
+    }
+
+    /* Mock Board Container */
+    .board-mock {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .mock-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      min-height: 24px;
+    }
+    .mock-mode-label {
+      font-size: 10.5px;
+      font-weight: 800;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* Mock Tiles */
+    .mock-tiles-row {
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+    }
+    .mock-tile {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 900;
+      border: 1.5px solid;
+    }
+    .mock-tile.revealed {
+      background: #16a34a;
+      border-color: #22c55e;
+      color: #fff;
+    }
+    .mock-tile.empty {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.14);
+      color: rgba(255, 255, 255, 0.25);
+    }
+
+    /* ========================================================
+       OPSI 1: MICRO GLASS PILL (Sangat Ringkas, Tipis & Bersih)
+       Padding tipis, border halus, teks 10.5px, tidak memakan tempat
+       ======================================================== */
+    .micro-glass-pill {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2.5px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--micro-color, rgba(37, 244, 238, 0.4));
+      color: var(--micro-color, #25f4ee);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .micro-glass-pill::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: var(--micro-pct, 100%);
+      background: var(--micro-fill, rgba(37, 244, 238, 0.15));
+      transition: width 0.3s linear;
+      z-index: 1;
+    }
+    .micro-glass-pill > * {
+      position: relative;
+      z-index: 2;
+    }
+    .micro-glass-pill .sec-num {
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+    /* States */
+    .micro-glass-pill.state-normal {
+      --micro-color: #25f4ee;
+      --micro-fill: rgba(37, 244, 238, 0.14);
+    }
+    .micro-glass-pill.state-warning {
+      --micro-color: #fbbf24;
+      --micro-fill: rgba(251, 191, 36, 0.2);
+    }
+    .micro-glass-pill.state-urgent {
+      --micro-color: #fe2c55;
+      --micro-fill: rgba(254, 44, 85, 0.25);
+      animation: microPulse 0.8s infinite ease-in-out;
+    }
+    .micro-glass-pill.state-locked {
+      --micro-color: #94a3b8;
+      --micro-fill: rgba(255, 255, 255, 0.05);
+    }
+
+    /* ========================================================
+       OPSI 2: MINIMALIST CIRCLE GAUGE (iOS Style)
+       Lingkaran SVG 18px tipis + angka di sampingnya
+       ======================================================== */
+    .ios-gauge-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--gauge-color, #25f4ee);
+      transition: color 0.3s ease;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .svg-ring-box {
+      position: relative;
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .svg-ring-box svg {
+      width: 18px;
+      height: 18px;
+      transform: rotate(-90deg);
+    }
+    .svg-ring-bg {
+      stroke: rgba(255, 255, 255, 0.12);
+      stroke-width: 2.2;
+      fill: none;
+    }
+    .svg-ring-bar {
+      stroke: currentColor;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      fill: none;
+      stroke-dasharray: 44;
+      stroke-dashoffset: var(--gauge-offset, 0);
+      transition: stroke-dashoffset 0.4s linear;
+    }
+    .ios-gauge-wrap.state-normal { --gauge-color: #25f4ee; }
+    .ios-gauge-wrap.state-warning { --gauge-color: #f59e0b; }
+    .ios-gauge-wrap.state-urgent {
+      --gauge-color: #fe2c55;
+      animation: microPulse 0.8s infinite ease-in-out;
+    }
+    .ios-gauge-wrap.state-locked { --gauge-color: #94a3b8; }
+
+    /* ========================================================
+       OPSI 3: SLIM LINE ACCENT (Tanpa Kotak Pill Sama Sekali)
+       Hanya teks bersih dengan progress line mikro 2.5px
+       ======================================================== */
+    .slim-text-line {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      color: var(--line-color, #25f4ee);
+      transition: color 0.3s ease;
+    }
+    .slim-text-line .text-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+    }
+    .slim-bar-track {
+      width: 44px;
+      height: 2.5px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .slim-bar-fill {
+      height: 100%;
+      width: var(--slim-pct, 100%);
+      background: currentColor;
+      border-radius: 999px;
+      transition: width 0.3s linear;
+    }
+    .slim-text-line.state-normal { --line-color: #25f4ee; }
+    .slim-text-line.state-warning { --line-color: #fbbf24; }
+    .slim-text-line.state-urgent {
+      --line-color: #fe2c55;
+      animation: microPulse 0.8s infinite ease-in-out;
+    }
+    .slim-text-line.state-locked { --line-color: #94a3b8; }
+
+    @keyframes microPulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.06); opacity: 0.85; }
+    }
+
+    /* Theme Sepia Daylight Support */
+    body.theme-sepia {
+      background: #e4d8c7;
+      color: #3b2c20;
+    }
+    body.theme-sepia .header-panel h1 { color: #854d0e; }
+    body.theme-sepia .header-panel p { color: #6b5744; }
+    body.theme-sepia .card-preview {
+      background: #f4ecdf;
+      border-color: #d8c9b5;
+      box-shadow: 0 4px 14px rgba(66, 52, 40, 0.1);
+    }
+    body.theme-sepia .board-mock {
+      background: #ece2d3;
+      border-color: #d8c9b5;
+    }
+    body.theme-sepia .mock-mode-label { color: #6b5744; }
+    body.theme-sepia .micro-glass-pill {
+      background: rgba(255, 255, 255, 0.6);
+      box-shadow: 0 1px 4px rgba(66, 52, 40, 0.08);
+    }
+    body.theme-sepia .micro-glass-pill.state-normal,
+    body.theme-sepia .ios-gauge-wrap.state-normal,
+    body.theme-sepia .slim-text-line.state-normal {
+      --micro-color: #0d9488;
+      --gauge-color: #0d9488;
+      --line-color: #0d9488;
+    }
+    body.theme-sepia .micro-glass-pill.state-warning,
+    body.theme-sepia .ios-gauge-wrap.state-warning,
+    body.theme-sepia .slim-text-line.state-warning {
+      --micro-color: #b45309;
+      --gauge-color: #b45309;
+      --line-color: #b45309;
+    }
+    body.theme-sepia .micro-glass-pill.state-urgent,
+    body.theme-sepia .ios-gauge-wrap.state-urgent,
+    body.theme-sepia .slim-text-line.state-urgent {
+      --micro-color: #be123c;
+      --gauge-color: #be123c;
+      --line-color: #be123c;
+    }
+    body.theme-sepia .mock-tile.revealed { background: #15803d; border-color: #166534; }
+    body.theme-sepia .mock-tile.empty { background: rgba(66, 52, 40, 0.07); border-color: rgba(66, 52, 40, 0.2); }
+  </style>
+</head>
+<body>
+
+  <div class="header-panel">
+    <h1><i class="fa-solid fa-wand-magic-sparkles"></i> 3 Alternatif Timer Minimalis Estetik</h1>
+    <p>Semua opsi di bawah didesain ringkas, tidak memakan tempat, tidak mengganggu ubin huruf, dan sangat tajam di layar HP TikTok.</p>
+  </div>
+
+  <!-- Interactive Controls Bar -->
+  <div class="controls-bar">
+    <button class="btn-ctrl active" onclick="simulateCountdown()">
+      <i class="fa-solid fa-play"></i> Simulasi Detik (15s &rarr; 0s)
+    </button>
+    <button class="btn-ctrl" onclick="setFixed(15, 'normal')">
+      <i class="fa-solid fa-circle" style="color: #25f4ee; font-size: 7px;"></i> > 10s (Cyan Tenang)
+    </button>
+    <button class="btn-ctrl" onclick="setFixed(8, 'warning')">
+      <i class="fa-solid fa-circle" style="color: #fbbf24; font-size: 7px;"></i> 6-10s (Amber Siaga)
+    </button>
+    <button class="btn-ctrl" onclick="setFixed(3, 'urgent')">
+      <i class="fa-solid fa-circle" style="color: #fe2c55; font-size: 7px;"></i> &le; 5s (Merah Kritis)
+    </button>
+    <button class="btn-ctrl" onclick="setFixed(0, 'locked')">
+      <i class="fa-solid fa-lock" style="font-size: 9px;"></i> Terkunci (Sisa 1)
+    </button>
+    <button class="btn-ctrl" id="themeToggleBtn" onclick="toggleTheme()">
+      <i class="fa-solid fa-sun"></i> Mode Sepia Siang
+    </button>
+  </div>
+
+  <div class="compare-container">
+    
+    <!-- OPSI 1: MICRO GLASS PILL -->
+    <div class="card-preview highlight">
+      <span class="badge-tag badge-opt1">Pilihan 1 (Rekomendasi)</span>
+      <div class="card-title">
+        <i class="fa-solid fa-capsules" style="color: #25f4ee;"></i> Micro Glass Pill
+      </div>
+      <div class="card-desc">
+        Kapsul kaca mikro ultra-ramping (tinggi hanya 20px). Teks ringkas <strong>💡 15s</strong> dengan mini progress fill transparan di dalam kapsul.
+      </div>
+
+      <div class="board-mock">
+        <div class="mock-top-row">
+          <span class="mock-mode-label"><i class="fa-solid fa-font"></i> KATA TARGET</span>
+          
+          <!-- Micro Pill -->
+          <div class="micro-glass-pill state-normal" id="opt1Pill" style="--micro-pct: 100%;">
+            <i class="fa-solid fa-lightbulb" id="opt1Icon" style="font-size: 9.5px;"></i>
+            <span class="sec-num" id="opt1Text">15s</span>
+          </div>
+        </div>
+
+        <div class="mock-tiles-row">
+          <div class="mock-tile revealed">K</div>
+          <div class="mock-tile empty" id="t1_2">?</div>
+          <div class="mock-tile empty">?</div>
+          <div class="mock-tile empty">?</div>
+          <div class="mock-tile empty">?</div>
+          <div class="mock-tile empty">?</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPSI 2: MINIMALIST CIRCLE GAUGE (iOS STYLE) -->
+    <div class="card-preview">
+      <span class="badge-tag badge-opt2">Pilihan 2</span>
+      <div class="card-title">
+        <i class="fa-regular fa-circle-dot" style="color: #f59e0b;"></i> Circle Ring Gauge
+      </div>
+      <div class="card-desc">
+        Gaya modern Apple Watch / iOS. Menggunakan cincin lingkaran SVG mini (18px) berputar memendek + angka detik tanpa border box tebal.
+      </div>
+
+      <div class="board-mock">
+        <div class="mock-top-row">
+          <span class="mock-mode-label"><i class="fa-solid fa-font"></i> KATA TARGET</span>
+          
+          <!-- Circle Gauge -->
+          <div class="ios-gauge-wrap state-normal" id="opt2Wrap">
+            <div class="svg-ring-box">
+              <svg viewBox="0 0 18 18">
+                <circle class="svg-ring-bg" cx="9" cy="9" r="7"></circle>
+                <circle class="svg-ring-bar" id="opt2Ring" cx="9" cy="9" r="7"></circle>
+              </svg>
+            </div>
+            <span id="opt2Text" style="font-variant-numeric: tabular-nums;">15s</span>
+          </div>
+        </div>
+
+        <div class="mock-tiles-row">
+          <div class="mock-tile revealed">K</div>
+          <div class="mock-tile empty" id="t2_2">?</div>
+          <div class="mock-tile empty">?</div>
+          <div class="mock-tile empty">?</div>
+          <div class="mock-tile empty">?</div>
+          <div class="mock-tile empty">?</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPSI 3: SLIM LINE ACCENT -->
+    <div class="card-preview">
+      <span class="badge-tag badge-opt3">Pilihan 3</span>
+      <div class="card-title">
+        <i class="fa-solid fa-minus" style="color: #fe2c55;"></i> Slim Line Accent
+      </div>
+      <div class="card-desc">
+        Zero box. Benar-benar tanpa kapsul. Hanya tulisan bersih dengan garis aksen 2px di bawahnya yang perlahan memendek.
+      </div>
+
+      <div class="board-mock">
+        <div class="mock-top-row">
+          <span class="mock-mode-label"><i class="fa-solid fa-font"></i> KATA TARGET</span>
+          
+          <!-- Slim Line -->
+          <div class="slim-text-line state-normal" id="opt3Line">
+            <div class="text-row">
+              <i class="fa-regular fa-clock" style="font-size: 10px;"></i>
+              <span id="opt3Text">15s</span>
+            </div>
+            <div class="slim-bar-track">
+              <div class="slim-bar-fill" id="opt3Fill" style="width: 100%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mock-tiles-row">
+          <div class="mock-tile revealed">K</div>
+          <div class="mock-tile empty" id="t3_2">?</div>
+          <div class="mock-tile empty">?</div>
+          <div class="mock-tile empty">?</div>
+          <div class="mock-tile empty">?</div>
+          <div class="mock-tile empty">?</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let simTimer = null;
+    let sec = 15;
+    const maxSec = 15;
+    const ringCircumference = 2 * Math.PI * 7; // ~44
+
+    function applyUpdates(s, overrideState = null) {
+      let state = overrideState;
+      if (!state) {
+        if (s > 10) state = 'normal';
+        else if (s > 5) state = 'warning';
+        else state = 'urgent';
+      }
+
+      const pct = Math.max(0, Math.min(100, (s / maxSec) * 100));
+
+      // ── Opsi 1: Micro Glass Pill ──
+      const o1 = document.getElementById('opt1Pill');
+      const o1Text = document.getElementById('opt1Text');
+      const o1Icon = document.getElementById('opt1Icon');
+      o1.className = `micro-glass-pill state-${state}`;
+      if (state === 'locked') {
+        o1.style.setProperty('--micro-pct', '0%');
+        o1Icon.className = 'fa-solid fa-lock';
+        o1Text.textContent = 'Kunci';
+      } else {
+        o1.style.setProperty('--micro-pct', `${pct}%`);
+        o1Icon.className = 'fa-solid fa-lightbulb';
+        o1Text.textContent = `${s}s`;
+      }
+
+      // ── Opsi 2: Circle Ring ──
+      const o2 = document.getElementById('opt2Wrap');
+      const o2Ring = document.getElementById('opt2Ring');
+      const o2Text = document.getElementById('opt2Text');
+      o2.className = `ios-gauge-wrap state-${state}`;
+      if (state === 'locked') {
+        o2Ring.style.strokeDashoffset = ringCircumference;
+        o2Text.textContent = 'Kunci';
+      } else {
+        const offset = ringCircumference - (pct / 100) * ringCircumference;
+        o2Ring.style.strokeDashoffset = offset;
+        o2Text.textContent = `${s}s`;
+      }
+
+      // ── Opsi 3: Slim Line ──
+      const o3 = document.getElementById('opt3Line');
+      const o3Fill = document.getElementById('opt3Fill');
+      const o3Text = document.getElementById('opt3Text');
+      o3.className = `slim-text-line state-${state}`;
+      if (state === 'locked') {
+        o3Fill.style.width = '0%';
+        o3Text.textContent = 'Kunci';
+      } else {
+        o3Fill.style.width = `${pct}%`;
+        o3Text.textContent = `${s}s`;
+      }
+    }
+
+    function simulateCountdown() {
+      if (simTimer) clearInterval(simTimer);
+      sec = maxSec;
+
+      ['t1_2', 't2_2', 't3_2'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.className = 'mock-tile empty';
+          el.textContent = '?';
+        }
+      });
+
+      applyUpdates(sec);
+
+      simTimer = setInterval(() => {
+        sec--;
+        if (sec < 0) {
+          sec = maxSec;
+          // Demo reveal tile
+          ['t1_2', 't2_2', 't3_2'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+              el.className = 'mock-tile revealed';
+              el.textContent = 'E';
+            }
+          });
+        }
+        applyUpdates(sec);
+      }, 1000);
+    }
+
+    function setFixed(s, st) {
+      if (simTimer) {
+        clearInterval(simTimer);
+        simTimer = null;
+      }
+      applyUpdates(s, st);
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle('theme-sepia');
+      const isSepia = document.body.classList.contains('theme-sepia');
+      const btn = document.getElementById('themeToggleBtn');
+      if (isSepia) {
+        btn.innerHTML = '<i class="fa-solid fa-moon"></i> Mode Malam Nature';
+      } else {
+        btn.innerHTML = '<i class="fa-solid fa-sun"></i> Mode Sepia Siang';
+      }
+    }
+
+    simulateCountdown();
+  </script>
+</body>
+</html>

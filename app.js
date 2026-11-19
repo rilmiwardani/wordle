@@ -18148,10 +18148,43 @@ function stopWordMatchAutoReveal() {
 }
 
 function updateWordMatchTimerUI() {
+  const pillEl = document.getElementById('wmTimerPill');
   const timerTextEl = document.getElementById('wmTimerText');
-  if (timerTextEl) {
-    timerTextEl.textContent = `${wordMatchAutoRevealTick}s`;
+  const gaugeBarEl = document.getElementById('wmGaugeBar');
+  if (!pillEl || !timerTextEl) return;
+
+  const ringCircumference = 44; // 2 * Math.PI * 7 (~43.98)
+
+  const hiddenCount = Array.isArray(wordMatchRevealed)
+    ? wordMatchRevealed.filter(c => c === '_').length
+    : 0;
+
+  // Jika sisa huruf tertutup hanya 1 atau kurang (dan game belum selesai),
+  // bantuan otomatis sudah berhenti agar tidak membocorkan 100% kata
+  if (hiddenCount <= 1 && !wordMatchGameOver) {
+    pillEl.className = 'wm-timer-gauge state-locked';
+    timerTextEl.innerHTML = '<i class="fa-solid fa-lock" style="font-size: 9.5px; margin-right: 3px;"></i>Kunci';
+    if (gaugeBarEl) gaugeBarEl.style.strokeDashoffset = ringCircumference;
+    return;
   }
+
+  const tick = Math.max(0, wordMatchAutoRevealTick);
+  const total = Math.max(1, wordMatchAutoRevealSeconds || 60);
+  const pct = Math.max(0, Math.min(100, (tick / total) * 100));
+  const offset = ringCircumference - (pct / 100) * ringCircumference;
+
+  if (gaugeBarEl) {
+    gaugeBarEl.style.strokeDashoffset = offset;
+  }
+
+  let state = 'state-normal';
+  if (tick <= 5) {
+    state = 'state-urgent';
+  } else if (tick <= 10) {
+    state = 'state-warning';
+  }
+  pillEl.className = `wm-timer-gauge ${state}`;
+  timerTextEl.textContent = `${tick}s`;
 }
 
 function revealWordMatchLetter(isManual = false) {
@@ -18168,6 +18201,7 @@ function revealWordMatchLetter(isManual = false) {
     wordMatchRevealed[randomIndex] = wordMatchCurrentWord[randomIndex];
     wordMatchHintsGiven++;
     renderWordMatchUI();
+    updateWordMatchTimerUI();
     if (window.sounds && typeof window.sounds.playWordMatchHint === 'function') {
       window.sounds.playWordMatchHint();
     } else if (window.sounds && typeof window.sounds.playFlip === 'function') {

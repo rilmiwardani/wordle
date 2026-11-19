@@ -1981,10 +1981,15 @@
       <div id="wordMatchContainer" class="wordmatch-container" style="display: none;">
         <!-- Unified Board Card -->
         <div class="wordmatch-board-card">
-          <!-- Top Utility Row (Timer Chip) -->
+          <!-- Top Utility Row (Minimalist Circle Gauge Timer) -->
           <div class="wordmatch-top-row">
-            <div class="wordmatch-timer-pill" id="wmTimerPill" title="Bantuan huruf berikutnya terbuka otomatis">
-              <i class="fa-solid fa-hourglass-half"></i>
+            <div class="wm-timer-gauge state-normal" id="wmTimerPill" title="Bantuan huruf berikutnya terbuka otomatis">
+              <div class="wm-gauge-box">
+                <svg viewBox="0 0 18 18">
+                  <circle class="wm-gauge-bg" cx="9" cy="9" r="7"></circle>
+                  <circle class="wm-gauge-bar" id="wmGaugeBar" cx="9" cy="9" r="7"></circle>
+                </svg>
+              </div>
               <span id="wmTimerText">60s</span>
             </div>
           </div>

@@ -5802,18 +5802,12 @@ function applyGameModeUI() {
     if (hintContainer) hintContainer.style.display = 'none';
     if (bestGuessContainer) bestGuessContainer.style.display = 'none';
     if (boardObj) {
-      boardObj.style.display = 'none';
+      boardObj.style.display = '';
       boardObj.innerHTML = '';
       boardObj.className = '';
     }
-    const absurdleContainer = document.getElementById('absurdleContainer');
-    if (absurdleContainer) absurdleContainer.style.display = 'flex';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Wordle';
-    if (!absurdleCandidates || absurdleCandidates.length === 0) {
-      startAbsurdleGame();
-    } else {
-      renderAbsurdleUI();
-    }
+    const nextName = window.w500UseMastermind ? 'Word Pegs' : 'Word500';
+    if (switchBtn) switchBtn.textContent = `🔄 Switch to ${nextName}`;
   } else {
     if (headerTitle) headerTitle.textContent = 'WORDLE';
     if (hintContainer) hintContainer.style.display = isShowHintsDiscovered ? '' : 'none';
@@ -6498,6 +6492,11 @@ function getInstructionText() {
         if (lastLang === 'en') return `Chain words when it's your turn at the round table!`;
         return `Sambung kata sesuai giliran di Meja Bundar!`;
       }
+    }
+    if (currentGameMode === 'absurdle') {
+      if (lastLang === 'id') return `Tebak kata ${WORD_LENGTH} huruf & taklukkan AI yang terus menghindar!`;
+      if (lastLang === 'mixed') return `Taklukkan AI! / Corner the AI (${WORD_LENGTH} letters)!`;
+      return `Guess ${WORD_LENGTH}-letter words to corner the evasive AI!`;
     }
     if (lastLang === 'id') return `Ketik kata ${WORD_LENGTH} huruf di komentar untuk menebak!`;
     if (lastLang === 'mixed') return `Ketik kata ${WORD_LENGTH} huruf di komentar! / Type a ${WORD_LENGTH}-letter word!`;
@@ -11172,10 +11171,6 @@ function handleChatGuess(data, optionalUserData) {
       processAntiwordleGuess(msg, data);
       return;
     }
-    if (currentGameMode === 'absurdle') {
-      processAbsurdleGuess(msg, data);
-      return;
-    }
 
     // Deduplikasi dan pra-validasi cerdas untuk Betweenle agar antrean tidak tersumbat
     if (currentGameMode === 'betweenle') {
@@ -11208,7 +11203,7 @@ function handleChatGuess(data, optionalUserData) {
         // Jika kata sudah pernah dievaluasi di ronde ini & antrean sedang ramai, skip agar stream responsif
         if (squarewordGuesses && squarewordGuesses.includes(msg) && guessQueue.length >= 2) return;
       }
-    } else if (currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit') {
+    } else if (currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit' || currentGameMode === 'absurdle') {
       if (!isHost) {
         if (msg.length !== WORD_LENGTH) return;
 
@@ -11945,53 +11940,100 @@ function processGuess(guessWord, userData, queueLen = 0) {
   // 2. Determine statuses
   const guessArray = guessWord.split('');
   const targetArray = currentWord ? currentWord.split('') : [];
-  const statuses = Array(WORD_LENGTH).fill('absent');
+  let statuses = Array(WORD_LENGTH).fill('absent');
   
   let correctCount = 0;
   let presentCount = 0;
   let absentCount = 0;
 
   if (isValidWord) {
-    // First pass: correct
-    for (let i = 0; i < WORD_LENGTH; i++) {
-      if (guessArray[i] === targetArray[i]) {
-        statuses[i] = 'correct';
-        targetArray[i] = null;
-        correctCount++;
-        
-        // Wordle mode: hint discovery + assist points
-        if (!isAnySortedMode && !discoveredLetters[i]) {
-          if (guessWord !== currentWord && !isStarterGuess) {
-            addPoints(userData, 2);
-            showFloatingPoints(2, `tile-${currentRow}-${i}`);
+    if (currentGameMode === 'absurdle') {
+      if (!absurdleCandidates || absurdleCandidates.length === 0) {
+        initAbsurdleCandidates();
+      }
+      const buckets = new Map();
+      for (let i = 0; i < absurdleCandidates.length; i++) {
+        const candidate = absurdleCandidates[i];
+        const s = getWordleFeedback(guessWord, candidate);
+        const key = s.join(',');
+        let b = buckets.get(key);
+        if (!b) {
+          b = { key, statuses: s, words: [] };
+          buckets.set(key, b);
+        }
+        b.words.push(candidate);
+      }
+      let bestBucket = null;
+      let maxCount = -1;
+      for (const b of buckets.values()) {
+        const count = b.words.length;
+        if (count > maxCount) {
+          maxCount = count;
+          bestBucket = b;
+        } else if (count === maxCount) {
+          if (calcAbsurdlePatternScore(b.statuses) < calcAbsurdlePatternScore(bestBucket.statuses)) {
+            bestBucket = b;
           }
-          const currentlyDiscovered = discoveredLetters.filter(l => l !== null).length;
-          if (currentlyDiscovered < WORD_LENGTH - 1) {
-            const letter = guessArray[i];
-            discoveredLetters[i] = letter;
-            const hintTile = document.getElementById(`hint-${i}`);
-            if (hintTile) {
-              hintTile.textContent = letter;
-              hintTile.classList.add('discovered');
+        }
+      }
+      if (bestBucket) {
+        absurdleCandidates = bestBucket.words;
+        statuses = [...bestBucket.statuses];
+        currentWord = absurdleCandidates[0];
+        correctCount = statuses.filter(s => s === 'correct').length;
+        presentCount = statuses.filter(s => s === 'present').length;
+        absentCount = WORD_LENGTH - correctCount - presentCount;
+
+        if (statuses.every(s => s === 'correct') || (absurdleCandidates.length === 1 && guessWord === absurdleCandidates[0])) {
+          statuses = Array(WORD_LENGTH).fill('correct');
+          correctCount = WORD_LENGTH;
+          presentCount = 0;
+          absentCount = 0;
+          currentWord = guessWord;
+        }
+      }
+    } else {
+      // First pass: correct
+      for (let i = 0; i < WORD_LENGTH; i++) {
+        if (guessArray[i] === targetArray[i]) {
+          statuses[i] = 'correct';
+          targetArray[i] = null;
+          correctCount++;
+          
+          // Wordle mode: hint discovery + assist points
+          if (!isAnySortedMode && !discoveredLetters[i]) {
+            if (guessWord !== currentWord && !isStarterGuess) {
+              addPoints(userData, 2);
+              showFloatingPoints(2, `tile-${currentRow}-${i}`);
+            }
+            const currentlyDiscovered = discoveredLetters.filter(l => l !== null).length;
+            if (currentlyDiscovered < WORD_LENGTH - 1) {
+              const letter = guessArray[i];
+              discoveredLetters[i] = letter;
+              const hintTile = document.getElementById(`hint-${i}`);
+              if (hintTile) {
+                hintTile.textContent = letter;
+                hintTile.classList.add('discovered');
+              }
             }
           }
+          guessArray[i] = null;
         }
-        guessArray[i] = null;
       }
-    }
 
-    // Second pass: present
-    for (let i = 0; i < WORD_LENGTH; i++) {
-      if (guessArray[i] !== null && targetArray.includes(guessArray[i])) {
-        if (!isNoYellowMode || isAnySortedMode) {
-          statuses[i] = 'present';
+      // Second pass: present
+      for (let i = 0; i < WORD_LENGTH; i++) {
+        if (guessArray[i] !== null && targetArray.includes(guessArray[i])) {
+          if (!isNoYellowMode || isAnySortedMode) {
+            statuses[i] = 'present';
+          }
+          targetArray[targetArray.indexOf(guessArray[i])] = null;
+          presentCount++;
         }
-        targetArray[targetArray.indexOf(guessArray[i])] = null;
-        presentCount++;
       }
+      
+      absentCount = WORD_LENGTH - correctCount - presentCount;
     }
-    
-    absentCount = WORD_LENGTH - correctCount - presentCount;
     
     // Update Best Guess for Word500/WordFit
     if (isAnySortedMode && guessWord !== currentWord) {
@@ -12159,7 +12201,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
   let winPts = 0;
   if (guessWord === currentWord && !isStarterGuess) {
     isWin = true;
-    winPts = (currentGameMode === 'word500' || currentGameMode === 'wordfit') ? 15 : 10;
+    winPts = (currentGameMode === 'absurdle') ? 30 : ((currentGameMode === 'word500' || currentGameMode === 'wordfit') ? 15 : 10);
   }
 
   if (isWin) {
@@ -21511,66 +21553,25 @@ function renderAntiwordleUI() {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// 👻 ABSURDLE (ADVERSARIAL WORDLE) ENGINE - PURE & CLEAN WORDLE AESTHETICS
+// 🧠 ABSURDLE (ADVERSARIAL WORDLE) ENGINE - PURE NATIVE WORDLE BOARD
 // ═════════════════════════════════════════════════════════════════════════════
-let absurdleLetterLength = 5;
-let absurdleRound = 1;
 let absurdleCandidates = [];
-let absurdleGuesses = [];
-let absurdleGuessedWords = new Set();
-let absurdleKeyStatuses = {};
-let absurdleIsGameOver = false;
-let absurdleUserCooldown = new Map();
-let absurdleTransitionTimer = null;
+let absurdleRound = 1;
 
-function startAbsurdleGame(forceWord = null) {
-  if (currentGameMode !== 'absurdle') return;
-
-  if (absurdleTransitionTimer) {
-    clearTimeout(absurdleTransitionTimer);
-    absurdleTransitionTimer = null;
-  }
-
-  absurdleIsGameOver = false;
-  absurdleGuesses = [];
-  absurdleGuessedWords.clear();
-  absurdleKeyStatuses = {};
-  absurdleUserCooldown.clear();
-
-  // Sinkronkan panjang kata dari allowed_lengths jika ada
-  let allowedLens = [5];
-  try {
-    const saved = JSON.parse(localStorage.getItem('allowed_lengths'));
-    if (Array.isArray(saved) && saved.length > 0) {
-      allowedLens = saved.filter(l => l >= 4 && l <= 8);
-    }
-  } catch (e) {}
-  if (allowedLens.length === 0) allowedLens = [5];
-
-  absurdleLetterLength = allowedLens[Math.floor(Math.random() * allowedLens.length)];
-  WORD_LENGTH = absurdleLetterLength;
-
-  // Pool kata target kandidat
+function initAbsurdleCandidates() {
   let pool = [];
-  if (allTargetWords && allTargetWords[absurdleLetterLength] && allTargetWords[absurdleLetterLength].length > 0) {
-    pool = [...allTargetWords[absurdleLetterLength]];
-  } else if (allValidWords && allValidWords[absurdleLetterLength] && allValidWords[absurdleLetterLength].length > 0) {
-    pool = [...allValidWords[absurdleLetterLength]];
+  if (allTargetWords && allTargetWords[WORD_LENGTH] && allTargetWords[WORD_LENGTH].length > 0) {
+    pool = [...allTargetWords[WORD_LENGTH]];
+  } else if (allValidWords && allValidWords[WORD_LENGTH] && allValidWords[WORD_LENGTH].length > 0) {
+    pool = [...allValidWords[WORD_LENGTH]];
   } else {
-    pool = ["LAMPU", "PINTU", "RUMAH", "KUCING", "KERETA", "BELAJAR", "BINTANG"].filter(w => w.length === absurdleLetterLength);
+    pool = ["LAMPU", "PINTU", "RUMAH", "KUCING", "KERETA", "BELAJAR", "BINTANG"].filter(w => w.length === WORD_LENGTH);
     if (pool.length === 0) pool = ["PINTU", "LAMPU", "RUMAH"];
   }
-
   absurdleCandidates = pool.map(w => w.toUpperCase().trim().replace(/[^A-Z]/g, ''));
-
-  const lenHintEl = document.getElementById('absurdleLenHint');
-  if (lenHintEl) lenHintEl.textContent = `${absurdleLetterLength} huruf`;
-
-  const globalRoundEl = document.getElementById('roundNumber');
-  if (globalRoundEl) globalRoundEl.textContent = absurdleRound;
-
-  renderAbsurdleUI();
-  console.log(`[Absurdle] Round ${absurdleRound} started with ${absurdleCandidates.length} candidate words (${absurdleLetterLength} letters)`);
+  if (absurdleCandidates.length > 0) {
+    currentWord = absurdleCandidates[0];
+  }
 }
 
 function calcAbsurdlePatternScore(statuses) {
@@ -21582,300 +21583,70 @@ function calcAbsurdlePatternScore(statuses) {
   return score;
 }
 
-function processAbsurdleGuess(rawWord, userData) {
-  if (currentGameMode !== 'absurdle' || absurdleIsGameOver) return;
-  if (!absurdleCandidates || absurdleCandidates.length === 0) return;
+function startAbsurdleGame() {
+  if (currentGameMode !== 'absurdle') return;
 
-  const word = (rawWord || '').toUpperCase().trim().replace(/[^A-Z]/g, '');
-  if (word.length !== absurdleLetterLength) return;
-
-  // Anti-dominasi cooldown per user (2 detik)
-  const userId = userData ? (userData.uniqueId || userData.nickname || 'anon') : 'anon';
-  const now = Date.now();
-  if (absurdleUserCooldown.has(userId) && (now - absurdleUserCooldown.get(userId) < 2000)) {
-    return;
-  }
-
-  // Validasi kamus: kata harus terdaftar di kamus valid
-  const isValid = (typeof isValidWordInDictionaries === 'function')
-    ? isValidWordInDictionaries(word, absurdleLetterLength)
-    : (allValidWords && allValidWords[absurdleLetterLength] && allValidWords[absurdleLetterLength].includes(word));
-
-  if (!isValid && !absurdleCandidates.includes(word)) {
-    return; // Abaikan typo non-baku
-  }
-
-  // Cegah kata duplikat di ronde yang sama
-  if (absurdleGuessedWords.has(word)) {
-    showToast(`"${word}" sudah ditebak di ronde ini!`, 1500);
-    return;
-  }
-  absurdleGuessedWords.add(word);
-  absurdleUserCooldown.set(userId, now);
-
-  // ── ALGORITMA ADVERSARIAL BUCKETING ABSURDLE ──
-  // Kelompokkan kandidat kata berdasarkan pola feedback warna
-  const buckets = new Map();
-  for (let i = 0; i < absurdleCandidates.length; i++) {
-    const candidate = absurdleCandidates[i];
-    const statuses = getWordleFeedback(word, candidate);
-    const pattern = statuses.join(',');
-    let bucket = buckets.get(pattern);
-    if (!bucket) {
-      bucket = { pattern, statuses, words: [] };
-      buckets.set(pattern, bucket);
+  let allowedLens = [5];
+  try {
+    const saved = JSON.parse(localStorage.getItem('allowed_lengths'));
+    if (Array.isArray(saved) && saved.length > 0) {
+      allowedLens = saved.filter(l => l >= 4 && l <= 8);
     }
-    bucket.words.push(candidate);
+  } catch (e) {}
+  if (allowedLens.length === 0) allowedLens = [5];
+  WORD_LENGTH = allowedLens[Math.floor(Math.random() * allowedLens.length)];
+  document.documentElement.style.setProperty('--word-length', WORD_LENGTH);
+  updateBoardScaleUI();
+
+  if (wordsLoaded) {
+    TARGET_WORDS = allTargetWords[WORD_LENGTH] || [];
+    VALID_WORDS = allValidWords[WORD_LENGTH] || [];
+    availableWords = allAvailableWords[WORD_LENGTH] || [];
+  } else {
+    TARGET_WORDS = [];
+    VALID_WORDS = [];
+    availableWords = [];
   }
+  syncValidWordsSet();
 
-  // Cari bucket terbaik untuk AI (memberi informasi paling sedikit kepada pemain)
-  let bestBucket = null;
-  let maxCount = -1;
+  initAbsurdleCandidates();
 
-  for (const bucket of buckets.values()) {
-    const count = bucket.words.length;
-    if (count > maxCount) {
-      maxCount = count;
-      bestBucket = bucket;
-    } else if (count === maxCount) {
-      // Tie-breaker: pilih yang memiliki bobot hijau/kuning paling sedikit
-      const currentScore = calcAbsurdlePatternScore(bucket.statuses);
-      const bestScore = calcAbsurdlePatternScore(bestBucket.statuses);
-      if (currentScore < bestScore) {
-        bestBucket = bucket;
-      }
-    }
-  }
+  guesses = [];
+  guessQueue = [];
+  discoveredLetters = Array(WORD_LENGTH).fill(null);
+  bestGuess = null;
+  userGuessDedup = new Set();
+  isGameOver = false;
+  isProcessing = false;
+  isWaitingForLikes = false;
 
-  if (!bestBucket) return;
+  const roundNumberEl = document.getElementById('roundNumber');
+  if (roundNumberEl) roundNumberEl.textContent = round;
 
-  // AI "mengubah pikiran" menyusutkan kandidat ke bucket terpilih
-  absurdleCandidates = bestBucket.words;
-  const statuses = bestBucket.statuses;
-
-  const guessObj = {
-    word: word,
-    statuses: statuses,
-    userName: (userData && (userData.nickname || userData.uniqueId)) || 'Penonton',
-    userAvatar: (userData && userData.profilePictureUrl) || DEFAULT_HOST_AVATAR,
-    isWin: false
-  };
-
-  // Sound feedback flip
-  if (window.sounds && typeof window.sounds.playFlip === 'function') {
-    window.sounds.playFlip(0);
-  }
-
-  // Update status keyboard QWERTY
-  for (let i = 0; i < word.length; i++) {
-    const char = word[i];
-    const stat = statuses[i];
-    const current = absurdleKeyStatuses[char];
-    if (stat === 'correct') {
-      absurdleKeyStatuses[char] = 'correct';
-    } else if (stat === 'present' && current !== 'correct') {
-      absurdleKeyStatuses[char] = 'present';
-    } else if (stat === 'absent' && !current) {
-      absurdleKeyStatuses[char] = 'absent';
-    }
-  }
-
-  // Periksa kondisi kemenangan:
-  // 1. Semua huruf hijau (correct), ATAU
-  // 2. Hanya tersisa 1 kata kandidat dan kata tebakan sama dengan 1 kata tersebut
-  const isAllCorrect = statuses.every(s => s === 'correct');
-  const isCorneredAndGuessed = (absurdleCandidates.length === 1 && word === absurdleCandidates[0]);
-
-  if (isAllCorrect || isCorneredAndGuessed) {
-    guessObj.isWin = true;
-    guessObj.statuses = Array(absurdleLetterLength).fill('correct');
-    absurdleGuesses.push(guessObj);
-    absurdleIsGameOver = true;
-    renderAbsurdleUI();
-
-    handleAbsurdleWin(userData, word);
-    return;
-  }
-
-  absurdleGuesses.push(guessObj);
-  renderAbsurdleUI();
-}
-
-function renderAbsurdleUI() {
-  const container = document.getElementById('absurdleContainer');
-  if (!container || currentGameMode !== 'absurdle') return;
-
-  const boardEl = document.getElementById('absurdleBoard');
-  if (boardEl) {
-    boardEl.innerHTML = '';
-    // Minimal tampilkan 6 baris agar terlihat seperti Wordle klasik.
-    // Jika tebakan >= 6, render seluruh baris dan scroll otomatis ke bawah!
-    const totalRows = Math.max(6, absurdleGuesses.length + (absurdleIsGameOver ? 0 : 1));
-
-    for (let r = 0; r < totalRows; r++) {
-      const item = absurdleGuesses[r];
-
-      if (item) {
-        // Baris Tebakan Aktif
-        const row = document.createElement('div');
-        row.className = 'absurdle-row';
-        if (r === absurdleGuesses.length - 1) row.classList.add('is-latest');
-
-        const avatar = document.createElement('img');
-        avatar.className = 'absurdle-row-avatar';
-        avatar.src = item.userAvatar || DEFAULT_HOST_AVATAR;
-        avatar.title = item.userName;
-        avatar.onerror = function() { this.onerror = null; this.src = DEFAULT_HOST_AVATAR; };
-        row.appendChild(avatar);
-
-        const tilesGroup = document.createElement('div');
-        tilesGroup.className = 'absurdle-tiles-group';
-        for (let i = 0; i < item.word.length; i++) {
-          const tile = document.createElement('div');
-          tile.className = 'absurdle-tile';
-          const stat = item.statuses[i];
-          if (stat === 'correct') tile.classList.add('tile-correct');
-          else if (stat === 'present') tile.classList.add('tile-present');
-          else tile.classList.add('tile-absent');
-
-          tile.textContent = item.word[i];
-          tilesGroup.appendChild(tile);
-        }
-        row.appendChild(tilesGroup);
-
-        const badge = document.createElement('div');
-        badge.className = `absurdle-row-badge ${item.isWin ? 'badge-win' : ''}`;
-        badge.textContent = item.isWin ? '🏆 MENANG' : `#${r + 1}`;
-        row.appendChild(badge);
-
-        boardEl.appendChild(row);
-      } else {
-        // Baris Placeholder (Kosong seperti kotak Wordle biasa)
-        const emptyRow = document.createElement('div');
-        emptyRow.className = 'absurdle-row row-placeholder';
-
-        const placeholderAvatar = document.createElement('div');
-        placeholderAvatar.className = 'absurdle-avatar-placeholder';
-        placeholderAvatar.innerHTML = '<i class="fa-solid fa-user" style="opacity: 0.25; font-size: 13px;"></i>';
-        emptyRow.appendChild(placeholderAvatar);
-
-        const tilesGroup = document.createElement('div');
-        tilesGroup.className = 'absurdle-tiles-group';
-        for (let i = 0; i < absurdleLetterLength; i++) {
-          const emptyTile = document.createElement('div');
-          emptyTile.className = 'absurdle-tile tile-empty';
-          tilesGroup.appendChild(emptyTile);
-        }
-        emptyRow.appendChild(tilesGroup);
-
-        const placeholderBadge = document.createElement('div');
-        placeholderBadge.className = 'absurdle-row-badge badge-placeholder';
-        placeholderBadge.textContent = `#${r + 1}`;
-        emptyRow.appendChild(placeholderBadge);
-
-        boardEl.appendChild(emptyRow);
-      }
-    }
-
-    const wrapper = document.querySelector('.absurdle-board-wrapper');
-    if (wrapper) {
-      setTimeout(() => {
-        wrapper.scrollTop = wrapper.scrollHeight;
-      }, 50);
-    }
-  }
-
-  // Render QWERTY Keyboard
-  const kbEl = document.getElementById('absurdleKeyboard');
-  if (kbEl) {
-    kbEl.innerHTML = '';
-    const kbRows = [
-      ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
-      ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-      ['Z', 'X', 'C', 'V', 'B', 'N', 'M']
-    ];
-
-    kbRows.forEach(letters => {
-      const rowDiv = document.createElement('div');
-      rowDiv.className = 'absurdle-kb-row';
-
-      letters.forEach(letter => {
-        const key = document.createElement('div');
-        key.className = 'absurdle-key';
-        key.textContent = letter;
-
-        const stat = absurdleKeyStatuses[letter];
-        if (stat === 'correct') key.classList.add('key-correct');
-        else if (stat === 'present') key.classList.add('key-present');
-        else if (stat === 'absent') key.classList.add('key-absent');
-
-        rowDiv.appendChild(key);
-      });
-
-      kbEl.appendChild(rowDiv);
-    });
-  }
-}
-
-function handleAbsurdleWin(userData, finalWord) {
-  const winnerName = userData ? (userData.nickname || userData.uniqueId || 'Someone') : 'Someone';
-  const avatarUrl = (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : DEFAULT_HOST_AVATAR;
-  const userId = userData ? (userData.uniqueId || userData.nickname) : null;
-
-  // Beri poin kemenangan (30 Poin menaklukkan AI)
-  const earnedPts = 30;
-  if (userId) {
-    addPoints(userData, earnedPts);
-    if (typeof recordWin === 'function') {
-      recordWin(userId);
-    }
-  }
-
-  // Mainkan SFX kemenangan
-  if (window.sounds && typeof window.sounds.playWin === 'function') {
-    window.sounds.playWin();
-  }
-  if (window.playHostAudio) playHostAudio('win');
-
-  // Tampilkan kartu kemenangan baku (#winOverlay)
-  const winOverlay = document.getElementById('winOverlay');
+  currentLikes = 0;
   const winAvatar = document.getElementById('winAvatar');
-  const winName = document.getElementById('winName');
-  const winPts = document.getElementById('winPts');
-  const winWord = document.getElementById('winWord');
+  if (winAvatar) winAvatar.src = 'assets/bg_nature.png';
+  const likeProgress = document.getElementById('likeProgressContainer');
+  if (likeProgress) likeProgress.style.display = 'none';
+  updateLikeProgressBar();
 
-  if (winAvatar) winAvatar.src = avatarUrl;
-  if (winName) winName.textContent = winnerName;
-  if (winPts) winPts.textContent = `+${earnedPts} PTS`;
-  if (winWord) winWord.textContent = finalWord;
-
-  if (winOverlay) {
-    winOverlay.classList.add('active');
-    winOverlay.style.display = 'flex';
+  if (isDynamicBg) {
+    currentBg = currentBg === 'nature' ? 'city' : 'nature';
+    applyDynamicBg();
   }
 
-  // Tampilkan like progress bar untuk ronde berikutnya
-  const likeProgressContainer = document.getElementById('likeProgressContainer');
-  if (likeProgressContainer) {
-    likeProgressContainer.style.display = 'block';
-  }
+  initBoard();
+  startInstructionRotation();
 
-  // Timer jeda otomatis ronde berikutnya
-  absurdleTransitionTimer = setTimeout(() => {
-    if (winOverlay) {
-      winOverlay.classList.remove('active');
-      winOverlay.style.display = 'none';
-    }
-    absurdleRound++;
-    startAbsurdleGame();
-  }, 10000);
+  console.log(`[Absurdle] Round ${round} started with ${absurdleCandidates.length} candidate words (${WORD_LENGTH} letters)`);
+  showToast(`Absurdle Round ${round} Dimulai! Taklukkan AI yang terus berubah!`, 2000);
+  if (window.playHostAudio) playHostAudio('start');
 }
 
 // Window Global Exports
 window.startAbsurdleGame = startAbsurdleGame;
-window.processAbsurdleGuess = processAbsurdleGuess;
-window.renderAbsurdleUI = renderAbsurdleUI;
-window.handleAbsurdleWin = handleAbsurdleWin;
+window.initAbsurdleCandidates = initAbsurdleCandidates;
+window.calcAbsurdlePatternScore = calcAbsurdlePatternScore;
 
 window.startAntiwordleGame = startAntiwordleGame;
 window.processAntiwordleGuess = processAntiwordleGuess;

@@ -18108,9 +18108,9 @@ function startWordMatchGame(forceWord = null) {
   }
 
   const len = wordMatchCurrentWord.length;
-  // Clues: Buka 1 huruf (pertama) untuk kata <= 5 huruf, buka 2 huruf (pertama & terakhir) untuk kata >= 6 huruf
+  // Clues: Buka 1 huruf (pertama) untuk kata <= 6 huruf, buka 2 huruf (pertama & terakhir) untuk kata >= 7 huruf
   let clueIndices = [0];
-  if (len >= 6) clueIndices.push(len - 1);
+  if (len >= 7) clueIndices.push(len - 1);
 
   wordMatchRevealed = wordMatchCurrentWord.split('').map((char, idx) => clueIndices.includes(idx) ? char : '_');
 

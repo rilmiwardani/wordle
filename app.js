@@ -21585,6 +21585,11 @@ function calcAbsurdlePatternScore(statuses) {
 function startAbsurdleGame() {
   if (currentGameMode !== 'absurdle') return;
 
+  // Simpan kata target ronde sebelumnya sebelum menentukan WORD_LENGTH baru
+  if (currentWord && currentWord.length >= 3 && currentWord.length <= 8) {
+    lastRoundTargetWord = currentWord;
+  }
+
   let allowedLens = [5];
   try {
     const saved = JSON.parse(localStorage.getItem('allowed_lengths'));
@@ -21640,6 +21645,95 @@ function startAbsurdleGame() {
   console.log(`[Absurdle] Round ${round} started with ${absurdleCandidates.length} candidate words (${WORD_LENGTH} letters)`);
   showToast(`Absurdle Round ${round} Dimulai! Taklukkan AI yang terus berubah!`, 2000);
   if (window.playHostAudio) playHostAudio('start');
+
+  // ─── Auto-Starter Logic untuk Absurdle (Adaptif Sesuai Setting Host) ───
+  const hostAutoStarterWinner = localStorage.getItem('wordle_autoStarterWinner') !== 'false';
+  const hostAutoStarterTarget = localStorage.getItem('wordle_autoStarter') === 'true';
+
+  if (hostAutoStarterWinner || hostAutoStarterTarget) {
+    let starterWord = null;
+    let starterUserData = null;
+    let starterToastMsg = null;
+
+    const getWinnerEffectiveAvatar = (winner) => {
+      if (!winner) return 'assets/bg_nature.png';
+      const direct = winner.profilePictureUrl || winner.userAvatar || winner.avatar;
+      if (direct && direct !== 'assets/bg_nature.png') return direct;
+      const name = (winner.nickname || winner.userName || winner.uniqueId || winner.userId || '').replace(/^@+/, '');
+      if (name && typeof getUserAvatar === 'function') {
+        const cached = getUserAvatar(name);
+        if (cached && cached !== 'assets/bg_nature.png') return cached;
+      }
+      return direct || 'assets/bg_nature.png';
+    };
+
+    const winnerDispName = (lastRoundWinner && (lastRoundWinner.nickname || lastRoundWinner.userName || lastRoundWinner.uniqueId || 'Juara Sblm')).replace(/^@+/, '');
+    const winnerAvatar = getWinnerEffectiveAvatar(lastRoundWinner);
+    const winnerUid = (lastRoundWinner && (lastRoundWinner.uniqueId || lastRoundWinner.userId)) || 'winner';
+
+    // 1. Coba Nickname Pemenang (jika toggle winner aktif & panjangnya cocok dengan WORD_LENGTH baru)
+    if (hostAutoStarterWinner && lastRoundWinner) {
+      const winnerWord = parseWinnerNicknameForStarter(lastRoundWinner);
+      if (winnerWord && winnerWord.length === WORD_LENGTH) {
+        starterWord = winnerWord;
+        starterUserData = {
+          nickname: winnerDispName,
+          uniqueId: winnerUid,
+          profilePictureUrl: winnerAvatar,
+          isStarter: true
+        };
+        starterToastMsg = `Starting Word: "${starterWord}" (${winnerDispName} • ${WORD_LENGTH} Huruf)`;
+      }
+    }
+
+    // 2. Coba Target Ronde Terakhir (jika belum ada starterWord dan panjang target sebelumnya cocok persis)
+    if (!starterWord && lastRoundTargetWord && lastRoundTargetWord.length === WORD_LENGTH) {
+      starterWord = lastRoundTargetWord;
+      starterUserData = {
+        nickname: lastRoundWinner ? winnerDispName : 'TARGET SBLM',
+        uniqueId: lastRoundWinner ? winnerUid : 'system',
+        profilePictureUrl: lastRoundWinner ? winnerAvatar : 'assets/bg_nature.png',
+        isStarter: true
+      };
+      starterToastMsg = lastRoundWinner
+        ? `Starting Word: "${starterWord}" (Kata Juara @${winnerDispName} • ${WORD_LENGTH} Huruf)`
+        : `Starting Word: "${starterWord}" (Target Sebelumnya • ${WORD_LENGTH} Huruf)`;
+    }
+
+    // 3. Fallback Mix Length / Ronde 1: Ambil kata acak dari kamus yang sesuai panjang WORD_LENGTH baru
+    if (!starterWord) {
+      const wordPool = (VALID_WORDS && VALID_WORDS.length > 0) ? VALID_WORDS : (TARGET_WORDS || []);
+      if (wordPool.length > 0) {
+        const matchingWords = wordPool.filter(w => w.length === WORD_LENGTH);
+        if (matchingWords.length > 0) {
+          starterWord = matchingWords[Math.floor(Math.random() * matchingWords.length)];
+        } else {
+          starterWord = wordPool[Math.floor(Math.random() * wordPool.length)];
+        }
+      }
+      if (starterWord) {
+        starterUserData = {
+          nickname: 'SISTEM',
+          uniqueId: 'system',
+          profilePictureUrl: 'assets/bg_nature.png',
+          isStarter: true
+        };
+        starterToastMsg = `Starting Word: "${starterWord}" (Kata Pembuka • ${WORD_LENGTH} Huruf)`;
+      }
+    }
+
+    // Masukkan ke antrean tebakan jika starterWord ditemukan
+    if (starterWord) {
+      guessQueue.push({
+        guessWord: starterWord,
+        userData: starterUserData || { nickname: 'SISTEM', uniqueId: 'system', isStarter: true }
+      });
+      setTimeout(processQueue, 350);
+      if (starterToastMsg) {
+        setTimeout(() => showToast(starterToastMsg, 3000), 400);
+      }
+    }
+  }
 }
 
 // Window Global Exports

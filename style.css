@@ -10390,7 +10390,7 @@ body.theme-sepia .multi-like-skip-btn {
   margin-bottom: 8px;
 }
 
-/* Minimalist Circle Ring Gauge Timer for Word Match */
+/* Minimalist Circle Ring Gauge Timer for Word Match (Clean Floating, No Pill Box) */
 .wm-timer-gauge {
   display: inline-flex;
   align-items: center;
@@ -10399,14 +10399,11 @@ body.theme-sepia .multi-like-skip-btn {
   font-size: 11.5px;
   font-weight: 800;
   letter-spacing: 0.3px;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  transition: color 0.3s ease, border-color 0.3s ease;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  transition: color 0.3s ease;
   user-select: none;
 }
 
@@ -10449,33 +10446,29 @@ body.theme-sepia .multi-like-skip-btn {
 /* Gauge States */
 .wm-timer-gauge.state-normal {
   --wm-timer-color: #25f4ee;
-  border-color: rgba(37, 244, 238, 0.25);
 }
 
 .wm-timer-gauge.state-warning {
   --wm-timer-color: #fbbf24;
-  border-color: rgba(251, 191, 36, 0.35);
 }
 
 .wm-timer-gauge.state-urgent {
   --wm-timer-color: #fe2c55;
-  border-color: rgba(254, 44, 85, 0.45);
   animation: wmGaugePulse 0.8s infinite ease-in-out;
 }
 
 .wm-timer-gauge.state-locked {
   --wm-timer-color: #94a3b8;
-  border-color: rgba(148, 163, 184, 0.2);
 }
 
 @keyframes wmGaugePulse {
   0%, 100% {
     transform: scale(1);
-    box-shadow: 0 2px 8px rgba(254, 44, 85, 0.2);
+    opacity: 1;
   }
   50% {
-    transform: scale(1.05);
-    box-shadow: 0 4px 14px rgba(254, 44, 85, 0.45);
+    transform: scale(1.08);
+    opacity: 0.85;
   }
 }
 
@@ -10799,33 +10792,29 @@ body.theme-sepia .wordmatch-chat-hint {
 }
 
 body.theme-sepia .wm-timer-gauge {
-  background: rgba(255, 255, 255, 0.55) !important;
-  border-color: rgba(66, 52, 40, 0.15) !important;
-  box-shadow: 0 1px 4px rgba(66, 52, 40, 0.08) !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 body.theme-sepia .wm-gauge-bg {
-  stroke: rgba(66, 52, 40, 0.15) !important;
+  stroke: rgba(66, 52, 40, 0.18) !important;
 }
 
 body.theme-sepia .wm-timer-gauge.state-normal {
   --wm-timer-color: #0d9488 !important;
-  border-color: rgba(13, 148, 136, 0.3) !important;
 }
 
 body.theme-sepia .wm-timer-gauge.state-warning {
   --wm-timer-color: #b45309 !important;
-  border-color: rgba(180, 83, 9, 0.35) !important;
 }
 
 body.theme-sepia .wm-timer-gauge.state-urgent {
   --wm-timer-color: #be123c !important;
-  border-color: rgba(190, 18, 60, 0.4) !important;
 }
 
 body.theme-sepia .wm-timer-gauge.state-locked {
   --wm-timer-color: #715843 !important;
-  border-color: rgba(113, 88, 67, 0.2) !important;
 }
 
 /* ============================================================

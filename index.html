@@ -2263,6 +2263,48 @@
     <div class="chat-safe-zone"></div>
   </div>
 
+  <!-- Broadcast-Quality Game Mode Transition Overlay -->
+  <div id="gameTransitionOverlay" class="game-trans-overlay" style="display: none;" aria-hidden="true">
+    <div class="game-trans-shutter top"></div>
+    <div class="game-trans-shutter bottom"></div>
+
+    <div class="game-trans-content">
+      <div class="game-trans-badge">
+        <span class="game-trans-pulse-dot"></span>
+        <span id="gameTransBadgeText">MODE BARU</span>
+      </div>
+
+      <div class="game-trans-icon-frame" id="gameTransIconFrame">
+        <div class="game-trans-icon-inner" id="gameTransIconInner">
+          <i class="fa-solid fa-gamepad" id="gameTransIcon"></i>
+        </div>
+      </div>
+
+      <div class="game-trans-text-wrap">
+        <div class="game-trans-title" id="gameTransTitle">WORDLE</div>
+        <div class="game-trans-desc" id="gameTransDesc">Tebak 5-8 Huruf dengan Clue Warna</div>
+      </div>
+
+      <!-- Animated Flip Letter Tiles (Signature Wordle Gaming Vibe) -->
+      <div class="game-trans-tiles-row" id="gameTransTilesRow">
+        <div class="game-trans-tile" id="gtTile0">W</div>
+        <div class="game-trans-tile" id="gtTile1">O</div>
+        <div class="game-trans-tile" id="gtTile2">R</div>
+        <div class="game-trans-tile" id="gtTile3">D</div>
+      </div>
+
+      <!-- High Contrast Kinetic Progress Track -->
+      <div class="game-trans-progress-wrap">
+        <div class="game-trans-progress-bar" id="gameTransProgressBar"></div>
+      </div>
+
+      <div class="game-trans-tip">
+        <i class="fa-solid fa-comment-dots" style="color: #25f4ee;"></i>
+        <span>Penonton bisa langsung tebak di chat live!</span>
+      </div>
+    </div>
+  </div>
+
   <!-- Aesthetic Win Overlay -->
   <div class="win-overlay" id="winOverlay">
     <div class="win-card">

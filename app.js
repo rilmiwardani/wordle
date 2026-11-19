@@ -5164,9 +5164,7 @@ function selectGame(mode) {
     loginOverlay.style.display = 'none';
     gameContainer.style.display = 'flex';
     document.getElementById('hostMusicControl').style.display = 'flex';
-    applyGameModeUI();
-    startNewRound();
-    showToast(`🎮 Ganti ke ${titleName}`, 2000);
+    changeGameModeDirect(mode);
     return;
   }
 
@@ -5175,6 +5173,259 @@ function selectGame(mode) {
   loginOverlay.style.display = 'flex';
 }
 window.selectGame = selectGame;
+
+// ═══════════════════════════════════════════════════════════════════
+// KINETIC GAME MODE LOADING TRANSITION (BROADCAST QUALITY)
+// ═══════════════════════════════════════════════════════════════════
+const GAME_MODES_META = {
+  wordle: {
+    title: 'WORDLE',
+    tagline: 'Tebak 5-8 Huruf dengan Petunjuk Warna',
+    icon: 'fa-table-cells',
+    color: '#16a34a',
+    badge: 'MODE KLASIK',
+    tiles: ['W', 'O', 'R', 'D']
+  },
+  word500: {
+    title: 'WORD500',
+    tagline: 'Mastermind Kata 4-6 Huruf',
+    icon: 'fa-calculator',
+    color: '#25f4ee',
+    badge: 'STRATEGI',
+    tiles: ['F', 'I', 'V', 'E']
+  },
+  wordfit: {
+    title: 'WORD FIT',
+    tagline: 'Tebak & Eliminasi Huruf',
+    icon: 'fa-border-all',
+    color: '#f59e0b',
+    badge: 'ELIMINASI',
+    tiles: ['F', 'I', 'T', 'S']
+  },
+  colorfit: {
+    title: 'COLOR FIT',
+    tagline: 'Mastermind Warna & Huruf (RGBYPO)',
+    icon: 'fa-palette',
+    color: '#ec4899',
+    badge: 'WARNA',
+    tiles: ['C', 'O', 'L', 'R']
+  },
+  fillblanks: {
+    title: 'WORD FILL',
+    tagline: 'Kata Rumpang & Clue Huruf Terbuka',
+    icon: 'fa-pen-to-square',
+    color: '#06b6d4',
+    badge: 'RUMPANG',
+    tiles: ['F', 'I', 'L', 'L']
+  },
+  wordtango: {
+    title: 'WORD TANGO',
+    tagline: '4 Kata Bersamaan dari Pool Huruf',
+    icon: 'fa-music',
+    color: '#a855f7',
+    badge: 'POOL HURUF',
+    tiles: ['T', 'A', 'N', 'G']
+  },
+  wordgrid: {
+    title: 'WORD GRID',
+    tagline: 'Matriks Kotak Kata 3×3',
+    icon: 'fa-table-columns',
+    color: '#10b981',
+    badge: 'MATRIKS',
+    tiles: ['G', 'R', 'I', 'D']
+  },
+  squareword: {
+    title: 'KOTAK KATA',
+    tagline: 'Grid 5×5 Horizontal & Vertikal',
+    icon: 'fa-border-top-left',
+    color: '#f97316',
+    badge: 'GRID 5×5',
+    tiles: ['S', 'Q', 'U', 'A']
+  },
+  wordladder: {
+    title: 'WORD LADDER',
+    tagline: 'Tangga Kata: Ganti 1 Huruf per Langkah',
+    icon: 'fa-stairs',
+    color: '#38bdf8',
+    badge: 'TANGGA KATA',
+    tiles: ['S', 'T', 'E', 'P']
+  },
+  betweenle: {
+    title: 'BETWEENLE',
+    tagline: 'Tebak di Antara Kata (Urutan Abjad A-Z)',
+    icon: 'fa-arrows-up-down',
+    color: '#8b5cf6',
+    badge: 'ABJAD A-Z',
+    tiles: ['B', 'T', 'W', 'N']
+  },
+  cascadle: {
+    title: 'CASCADLE',
+    tagline: 'Rantai Kata 3–7 Huruf Berjenjang',
+    icon: 'fa-water',
+    color: '#0ea5e9',
+    badge: 'BERJENJANG',
+    tiles: ['C', 'A', 'S', 'C']
+  },
+  wanderwords: {
+    title: 'WANDER WORDS',
+    tagline: 'Jejak Kata Horizontal & Vertikal',
+    icon: 'fa-route',
+    color: '#14b8a6',
+    badge: 'JEJAK KATA',
+    tiles: ['P', 'A', 'T', 'H']
+  },
+  wordcluster: {
+    title: 'WORD CLUSTER',
+    tagline: 'Tebak 6 Kata Terkait Topik',
+    icon: 'fa-diagram-project',
+    color: '#fe2c55',
+    badge: 'TOPIK KATA',
+    tiles: ['C', 'L', 'U', 'S']
+  },
+  wordmatch: {
+    title: 'WORD MATCH',
+    tagline: 'Skor Kemiripan Kata 1% - 100%',
+    icon: 'fa-bullseye',
+    color: '#22c55e',
+    badge: 'KEMIRIPAN',
+    tiles: ['M', 'A', 'T', 'C']
+  },
+  wordpyramid: {
+    title: 'WORD PYRAMID',
+    tagline: 'Piramida Kata: Susun 2 hingga 8 Huruf',
+    icon: 'fa-shapes',
+    color: '#eab308',
+    badge: 'PIRAMIDA',
+    tiles: ['P', 'Y', 'R', 'M']
+  },
+  sambungkata: {
+    title: 'SAMBUNG KATA',
+    tagline: 'Meja Bundar Suku Kata Bergantian',
+    icon: 'fa-users-rays',
+    color: '#25f4ee',
+    badge: 'MEJA BUNDAR',
+    tiles: ['J', 'O', 'I', 'N']
+  },
+  antiwordle: {
+    title: 'ANTIWORDLE',
+    tagline: 'Ranjau Kata: Hindari Menebak Kata Bom!',
+    icon: 'fa-land-mine-on',
+    color: '#ef4444',
+    badge: 'RANJAU KATA',
+    tiles: ['B', 'O', 'M', 'B']
+  }
+};
+
+let isGameModeTransitioning = false;
+let gameModeTransitionTimer = null;
+
+function triggerGameModeTransition(targetMode, onSwitchReady, onFinish) {
+  const overlay = document.getElementById('gameTransitionOverlay');
+  if (!overlay) {
+    if (typeof onSwitchReady === 'function') onSwitchReady();
+    if (typeof onFinish === 'function') onFinish();
+    return;
+  }
+
+  // Prevent double trigger during active animation
+  if (isGameModeTransitioning) {
+    if (typeof onSwitchReady === 'function') onSwitchReady();
+    return;
+  }
+
+  isGameModeTransitioning = true;
+  if (gameModeTransitionTimer) clearTimeout(gameModeTransitionTimer);
+
+  const meta = GAME_MODES_META[targetMode] || {
+    title: (targetMode || 'GAME').toUpperCase(),
+    tagline: 'Memuat Mode Permainan Baru...',
+    icon: 'fa-gamepad',
+    color: '#25f4ee',
+    badge: 'MODE BARU',
+    tiles: ['G', 'A', 'M', 'E']
+  };
+
+  // Populate data
+  const badgeEl = document.getElementById('gameTransBadgeText');
+  const iconEl = document.getElementById('gameTransIcon');
+  const frameEl = document.getElementById('gameTransIconFrame');
+  const titleEl = document.getElementById('gameTransTitle');
+  const descEl = document.getElementById('gameTransDesc');
+  const progressEl = document.getElementById('gameTransProgressBar');
+
+  if (badgeEl) badgeEl.textContent = meta.badge;
+  if (iconEl) iconEl.className = `fa-solid ${meta.icon}`;
+  if (frameEl) {
+    frameEl.style.setProperty('--mode-color', meta.color);
+    overlay.style.setProperty('--mode-color', meta.color);
+  }
+  if (titleEl) titleEl.textContent = meta.title;
+  if (descEl) descEl.textContent = meta.tagline;
+  if (progressEl) progressEl.style.width = '0%';
+
+  // Reset tiles
+  for (let i = 0; i < 4; i++) {
+    const tileEl = document.getElementById(`gtTile${i}`);
+    if (tileEl) {
+      tileEl.textContent = meta.tiles[i] || '';
+      tileEl.classList.remove('flipped');
+    }
+  }
+
+  // Play audio transition
+  if (window.sounds && typeof window.sounds.playGameTransition === 'function') {
+    window.sounds.playGameTransition();
+  } else if (window.sounds && typeof window.sounds.playFlip === 'function') {
+    window.sounds.playFlip(0);
+  }
+
+  // Activate overlay
+  overlay.classList.remove('revealing');
+  overlay.style.display = 'flex';
+  void overlay.offsetWidth; // Reflow
+  overlay.classList.add('active');
+
+  // Start progress bar
+  setTimeout(() => {
+    if (progressEl) progressEl.style.width = '100%';
+  }, 40);
+
+  // Sequential tile flip animation
+  for (let i = 0; i < 4; i++) {
+    setTimeout(() => {
+      const tileEl = document.getElementById(`gtTile${i}`);
+      if (tileEl) {
+        tileEl.classList.add('flipped');
+        if (window.sounds && typeof window.sounds.playFlip === 'function') {
+          window.sounds.playFlip(i);
+        }
+      }
+    }, 110 + (i * 70));
+  }
+
+  // At 380ms: Execute the actual DOM and game state switch behind the closed shutters
+  setTimeout(() => {
+    try {
+      if (typeof onSwitchReady === 'function') onSwitchReady();
+    } catch(err) {
+      console.error('[GameTransition] Error during onSwitchReady:', err);
+    }
+  }, 380);
+
+  // At 720ms: Kinetic shutters split open to reveal the new game board
+  setTimeout(() => {
+    overlay.classList.add('revealing');
+  }, 720);
+
+  // At 980ms: Hide overlay completely
+  gameModeTransitionTimer = setTimeout(() => {
+    overlay.classList.remove('active', 'revealing');
+    overlay.style.display = 'none';
+    isGameModeTransitioning = false;
+    if (typeof onFinish === 'function') onFinish();
+  }, 980);
+}
+window.triggerGameModeTransition = triggerGameModeTransition;
 
 function switchGameMode(e) {
   if (e) e.stopPropagation();
@@ -5191,28 +5442,27 @@ function switchGameMode(e) {
     return;
   }
 
-  // Seamless switch
-  if (currentGameMode === 'wordle') currentGameMode = 'word500';
-  else if (currentGameMode === 'word500') currentGameMode = 'wordfit';
-  else if (currentGameMode === 'wordfit') currentGameMode = 'colorfit';
-  else if (currentGameMode === 'colorfit') currentGameMode = 'fillblanks';
-  else if (currentGameMode === 'fillblanks') currentGameMode = 'wordtango';
-  else if (currentGameMode === 'wordtango') currentGameMode = 'wordgrid';
-  else if (currentGameMode === 'wordgrid') currentGameMode = 'squareword';
-  else if (currentGameMode === 'squareword') currentGameMode = 'wordladder';
-  else if (currentGameMode === 'wordladder') currentGameMode = 'betweenle';
-  else if (currentGameMode === 'betweenle') currentGameMode = 'cascadle';
-  else if (currentGameMode === 'cascadle') currentGameMode = 'wanderwords';
-  else if (currentGameMode === 'wanderwords') currentGameMode = 'wordcluster';
-  else if (currentGameMode === 'wordcluster') currentGameMode = 'wordmatch';
-  else if (currentGameMode === 'wordmatch') currentGameMode = 'wordpyramid';
-  else if (currentGameMode === 'wordpyramid') currentGameMode = 'sambungkata';
-  else currentGameMode = 'wordle';
-  try { sessionStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
+  // Seamless switch cycling
+  let nextMode = 'wordle';
+  if (currentGameMode === 'wordle') nextMode = 'word500';
+  else if (currentGameMode === 'word500') nextMode = 'wordfit';
+  else if (currentGameMode === 'wordfit') nextMode = 'colorfit';
+  else if (currentGameMode === 'colorfit') nextMode = 'fillblanks';
+  else if (currentGameMode === 'fillblanks') nextMode = 'wordtango';
+  else if (currentGameMode === 'wordtango') nextMode = 'wordgrid';
+  else if (currentGameMode === 'wordgrid') nextMode = 'squareword';
+  else if (currentGameMode === 'squareword') nextMode = 'wordladder';
+  else if (currentGameMode === 'wordladder') nextMode = 'betweenle';
+  else if (currentGameMode === 'betweenle') nextMode = 'cascadle';
+  else if (currentGameMode === 'cascadle') nextMode = 'wanderwords';
+  else if (currentGameMode === 'wanderwords') nextMode = 'wordcluster';
+  else if (currentGameMode === 'wordcluster') nextMode = 'wordmatch';
+  else if (currentGameMode === 'wordmatch') nextMode = 'wordpyramid';
+  else if (currentGameMode === 'wordpyramid') nextMode = 'sambungkata';
+  else if (currentGameMode === 'sambungkata') nextMode = 'antiwordle';
+  else nextMode = 'wordle';
 
-  applyGameModeUI();
-  initWeeklyLeaderboard();
-  startNewRound();
+  changeGameModeDirect(nextMode, e);
 }
 
 function changeGameModeDirect(mode, e) {
@@ -5236,23 +5486,26 @@ function changeGameModeDirect(mode, e) {
     return;
   }
 
-  currentGameMode = mode;
-  try { sessionStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
-  if (tourneySettings.singleGameMode) {
-    tourneySettings.allowedModes = [mode];
-    try { localStorage.setItem('wordle_tourney_settings', JSON.stringify(tourneySettings)); } catch(e) {}
-  }
+  // Smooth kinetic transition
+  triggerGameModeTransition(mode, () => {
+    currentGameMode = mode;
+    try { sessionStorage.setItem('wordle_gameMode', currentGameMode); } catch(e) {}
+    if (tourneySettings.singleGameMode) {
+      tourneySettings.allowedModes = [mode];
+      try { localStorage.setItem('wordle_tourney_settings', JSON.stringify(tourneySettings)); } catch(e) {}
+    }
 
-  const selectElement = document.getElementById('switchGameSelect');
-  if (selectElement) selectElement.value = "";
+    const selectElement = document.getElementById('switchGameSelect');
+    if (selectElement) selectElement.value = "";
 
-  tourneySessionScores = {};
-  tourneySessionRounds = 0;
-  if (typeof updateTourneyUIElements === 'function') updateTourneyUIElements();
+    tourneySessionScores = {};
+    tourneySessionRounds = 0;
+    if (typeof updateTourneyUIElements === 'function') updateTourneyUIElements();
 
-  applyGameModeUI();
-  initWeeklyLeaderboard();
-  startNewRound();
+    applyGameModeUI();
+    initWeeklyLeaderboard();
+    startNewRound();
+  });
 }
 
 function applyGameModeUI() {
@@ -9984,33 +10237,35 @@ function updateObsShareLinkUI(config) {
 
 function remoteChangeGameMode(mode) {
   if (!mode) return;
-  currentGameMode = mode;
-  try { sessionStorage.setItem('wordle_gameMode', mode); } catch(e) {}
   
   if (typeof wgHintInterval !== 'undefined' && wgHintInterval) {
     clearInterval(wgHintInterval);
     wgHintInterval = null;
   }
-  
-  if (typeof initWeeklyLeaderboard === 'function') initWeeklyLeaderboard();
-  
-  const gSelect = document.getElementById('gameSelectOverlay');
-  const lOverlay = document.getElementById('loginOverlay');
-  const gContainer = document.getElementById('gameContainer');
-  
-  if (gSelect) gSelect.style.display = 'none';
-  if (lOverlay) lOverlay.style.display = 'none';
-  if (gContainer) gContainer.style.display = 'flex';
-  
-  const hostMusic = document.getElementById('hostMusicControl');
-  if (hostMusic) hostMusic.style.display = 'flex';
 
-  const selectElement = document.getElementById('switchGameSelect');
-  if (selectElement) selectElement.value = "";
+  triggerGameModeTransition(mode, () => {
+    currentGameMode = mode;
+    try { sessionStorage.setItem('wordle_gameMode', mode); } catch(e) {}
+    
+    if (typeof initWeeklyLeaderboard === 'function') initWeeklyLeaderboard();
+    
+    const gSelect = document.getElementById('gameSelectOverlay');
+    const lOverlay = document.getElementById('loginOverlay');
+    const gContainer = document.getElementById('gameContainer');
+    
+    if (gSelect) gSelect.style.display = 'none';
+    if (lOverlay) lOverlay.style.display = 'none';
+    if (gContainer) gContainer.style.display = 'flex';
+    
+    const hostMusic = document.getElementById('hostMusicControl');
+    if (hostMusic) hostMusic.style.display = 'flex';
 
-  if (typeof applyGameModeUI === 'function') applyGameModeUI();
-  if (typeof startNewRound === 'function') startNewRound();
-  if (typeof showToast === 'function') showToast(`🎮 Mode: ${mode.toUpperCase()}`, 2500);
+    const selectElement = document.getElementById('switchGameSelect');
+    if (selectElement) selectElement.value = "";
+
+    if (typeof applyGameModeUI === 'function') applyGameModeUI();
+    if (typeof startNewRound === 'function') startNewRound();
+  });
 }
 
 function initObsMode() {

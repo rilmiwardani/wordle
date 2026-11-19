@@ -979,6 +979,60 @@ class SoundEngine {
             osc.stop(now + 0.12);
         } catch(e) {}
     }
+
+    // Suara Transisi Keren saat Berpindah Mode Game (Game Switch Whoosh & Arpeggio)
+    playGameTransition() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        try {
+            const now = this.ctx.currentTime;
+
+            // 1. Soft cyber whoosh (white noise terfilter naik)
+            const bufferSize = Math.floor(this.ctx.sampleRate * 0.22);
+            const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (this.ctx.sampleRate * 0.08));
+            }
+            const noise = this.ctx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(600, now);
+            filter.frequency.exponentialRampToValueAtTime(2200, now + 0.18);
+            filter.Q.value = 2.5;
+
+            const noiseGain = this.ctx.createGain();
+            noiseGain.gain.setValueAtTime(0.12, now);
+            noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+            noise.connect(filter);
+            filter.connect(noiseGain);
+            noiseGain.connect(this.ctx.destination);
+            noise.start(now);
+
+            // 2. Rising musical arpeggio (C5 -> E5 -> G5 -> C6)
+            const notes = [523.25, 659.25, 783.99, 1046.50];
+            notes.forEach((freq, idx) => {
+                const noteStart = now + 0.07 + (idx * 0.065);
+                const osc = this.ctx.createOscillator();
+                const noteGain = this.ctx.createGain();
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, noteStart);
+
+                noteGain.gain.setValueAtTime(0.16, noteStart);
+                noteGain.gain.exponentialRampToValueAtTime(0.001, noteStart + 0.22);
+
+                osc.connect(noteGain);
+                noteGain.connect(this.ctx.destination);
+                osc.start(noteStart);
+                osc.stop(noteStart + 0.24);
+            });
+        } catch(e) {}
+    }
 }
 
 window.sounds = new SoundEngine();

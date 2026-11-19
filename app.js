@@ -12793,10 +12793,9 @@ window.handleLeaderboardFileImport = function(input) {
         const dropdown = document.getElementById('settingsDropdown');
         if (dropdown) dropdown.classList.remove('show');
       });
-
     } catch (err) {
-      console.error('Import error:', err);
-      showToast("❌ Gagal membaca file JSON: " + err.message, 3000);
+      console.error("Gagal impor leaderboard:", err);
+      showToast("❌ Gagal membaca file JSON!", 3000);
       input.value = '';
     }
   };

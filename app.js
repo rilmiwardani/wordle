@@ -2007,9 +2007,9 @@ function triggerTourneyPodiumFinale(isManualPreview = false) {
   const nextLabelElem = document.getElementById('tourneyNextLabel');
   if (nextLabelElem) {
     if (tourneySettings.singleGameMode || tourneyPendingNextMode === currentGameMode) {
-      nextLabelElem.innerHTML = '<i class="fa-solid fa-rotate" style="color: #ffd54f; margin-right: 4px;"></i> Sesi Baru Game:';
+      nextLabelElem.textContent = 'Sesi Baru Game:';
     } else {
-      nextLabelElem.innerHTML = '<i class="fa-solid fa-dice" style="color: #f43f5e; margin-right: 4px;"></i> Game Berikutnya:';
+      nextLabelElem.textContent = 'Game Berikutnya:';
     }
   }
 
@@ -5616,15 +5616,15 @@ function applyGameModeUI() {
     if (hintContainer) hintContainer.style.display = 'none';
     if (bestGuessContainer) bestGuessContainer.style.display = 'none'; // replaced by sorted board
     if (switchBtn) {
-      if (currentGameMode === 'word500') switchBtn.textContent = '🔄 Switch to Word Fit';
-      else if (currentGameMode === 'wordfit') switchBtn.textContent = '🔄 Switch to Color Fit';
-      else switchBtn.textContent = '🔄 Switch to Word Fill';
+      if (currentGameMode === 'word500') switchBtn.textContent = 'Switch to Word Fit';
+      else if (currentGameMode === 'wordfit') switchBtn.textContent = 'Switch to Color Fit';
+      else switchBtn.textContent = 'Switch to Word Fill';
     }
   } else if (currentGameMode === 'fillblanks') {
     if (headerTitle) headerTitle.textContent = 'WORD FILL';
     if (hintContainer) hintContainer.style.display = 'none';
     if (bestGuessContainer) bestGuessContainer.style.display = 'none';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Word Tango';
+    if (switchBtn) switchBtn.textContent = 'Switch to Word Tango';
   } else if (currentGameMode === 'wordtango') {
     if (headerTitle) headerTitle.textContent = 'WORD TANGO';
     if (hintContainer) hintContainer.style.display = 'none';
@@ -5632,7 +5632,7 @@ function applyGameModeUI() {
     // wordTangoInfoContainer stays hidden — header already shows mode name
     if (tangoPoolContainer) tangoPoolContainer.style.display = 'flex';
     if (tangoGuessFeed) tangoGuessFeed.style.display = 'flex';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Word Grid';
+    if (switchBtn) switchBtn.textContent = 'Switch to Word Grid';
   } else if (currentGameMode === 'wordgrid') {
     if (headerTitle) headerTitle.textContent = 'WORD GRID';
     if (hintContainer) hintContainer.style.display = 'none';
@@ -5644,7 +5644,7 @@ function applyGameModeUI() {
       boardObj.innerHTML = '';
       boardObj.className = '';
     }
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Kotak Kata';
+    if (switchBtn) switchBtn.textContent = 'Switch to Kotak Kata';
   } else if (currentGameMode === 'squareword') {
     if (headerTitle) headerTitle.textContent = 'KOTAK KATA 5×5';
     if (hintContainer) hintContainer.style.display = 'none';
@@ -5655,14 +5655,14 @@ function applyGameModeUI() {
       boardObj.className = '';
     }
     if (squarewordBoardContainer) squarewordBoardContainer.style.display = 'flex';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Word Ladder';
+    if (switchBtn) switchBtn.textContent = 'Switch to Word Ladder';
   } else if (currentGameMode === 'wordladder') {
     if (headerTitle) headerTitle.textContent = 'WORD LADDER';
     if (hintContainer) hintContainer.style.display = 'none';
     if (bestGuessContainer) bestGuessContainer.style.display = 'none';
     if (wordLadderInfoContainer) wordLadderInfoContainer.style.display = '';
     if (boardObj) boardObj.style.display = '';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Betweenle';
+    if (switchBtn) switchBtn.textContent = 'Switch to Betweenle';
   } else if (currentGameMode === 'betweenle') {
     if (headerTitle) headerTitle.textContent = 'BETWEENLE';
     if (hintContainer) hintContainer.style.display = 'none';
@@ -5673,7 +5673,7 @@ function applyGameModeUI() {
       boardObj.className = '';
     }
     if (betweenleContainer) betweenleContainer.style.display = 'flex';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Cascadle';
+    if (switchBtn) switchBtn.textContent = 'Switch to Cascadle';
     if (!betweenleTopBound) {
       startBetweenleGame();
     } else {
@@ -5689,7 +5689,7 @@ function applyGameModeUI() {
       boardObj.className = '';
     }
     if (cascadleContainer) cascadleContainer.style.display = 'flex';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Wander Words';
+    if (switchBtn) switchBtn.textContent = 'Switch to Wander Words';
     if (!cascadleTargets || !cascadleTargets[3]) {
       startCascadleGame();
     } else {
@@ -5706,7 +5706,7 @@ function applyGameModeUI() {
     }
     const wanderWordsContainer = document.getElementById('wanderWordsContainer');
     if (wanderWordsContainer) wanderWordsContainer.style.display = 'flex';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Word Cluster';
+    if (switchBtn) switchBtn.textContent = 'Switch to Word Cluster';
     if (!wanderWordsCurrentPuzzle) {
       startWanderWordsGame();
     } else {
@@ -5723,7 +5723,7 @@ function applyGameModeUI() {
     }
     const wordClusterContainer = document.getElementById('wordClusterContainer');
     if (wordClusterContainer) wordClusterContainer.style.display = 'flex';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Word Match';
+    if (switchBtn) switchBtn.textContent = 'Switch to Word Match';
     if (!wordClusterCurrentTopic) {
       startWordClusterGame();
     } else {
@@ -5740,7 +5740,7 @@ function applyGameModeUI() {
     }
     const wordMatchContainer = document.getElementById('wordMatchContainer');
     if (wordMatchContainer) wordMatchContainer.style.display = 'flex';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Word Pyramid';
+    if (switchBtn) switchBtn.textContent = 'Switch to Word Pyramid';
     if (!wordMatchCurrentWord) {
       startWordMatchGame();
     } else {
@@ -5757,7 +5757,7 @@ function applyGameModeUI() {
     }
     const wordPyramidContainer = document.getElementById('wordPyramidContainer');
     if (wordPyramidContainer) wordPyramidContainer.style.display = 'flex';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Sambung Kata';
+    if (switchBtn) switchBtn.textContent = 'Switch to Sambung Kata';
     if (!wordPyramidBaseWord) {
       startWordPyramidGame();
     } else {
@@ -5774,7 +5774,7 @@ function applyGameModeUI() {
     }
     const sambungKataContainer = document.getElementById('sambungKataContainer');
     if (sambungKataContainer) sambungKataContainer.style.display = 'flex';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Antiwordle';
+    if (switchBtn) switchBtn.textContent = 'Switch to Antiwordle';
     if (!sambungKataCurrentWord && sambungKataPhase === 'lobby') {
       initSambungKataGame();
     } else {
@@ -5791,7 +5791,7 @@ function applyGameModeUI() {
     }
     const antiwordleContainer = document.getElementById('antiwordleContainer');
     if (antiwordleContainer) antiwordleContainer.style.display = 'flex';
-    if (switchBtn) switchBtn.textContent = '🔄 Switch to Absurdle';
+    if (switchBtn) switchBtn.textContent = 'Switch to Absurdle';
     if (!antiwordleSecretWord) {
       startAntiwordleGame();
     } else {
@@ -5807,13 +5807,13 @@ function applyGameModeUI() {
       boardObj.className = '';
     }
     const nextName = window.w500UseMastermind ? 'Word Pegs' : 'Word500';
-    if (switchBtn) switchBtn.textContent = `🔄 Switch to ${nextName}`;
+    if (switchBtn) switchBtn.textContent = `Switch to ${nextName}`;
   } else {
     if (headerTitle) headerTitle.textContent = 'WORDLE';
     if (hintContainer) hintContainer.style.display = isShowHintsDiscovered ? '' : 'none';
     if (bestGuessContainer) bestGuessContainer.style.display = 'none';
     const nextName = window.w500UseMastermind ? 'Word Pegs' : 'Word500';
-    if (switchBtn) switchBtn.textContent = `🔄 Switch to ${nextName}`;
+    if (switchBtn) switchBtn.textContent = `Switch to ${nextName}`;
   }
   updateBoardScaleUI();
   updateNoRepeatBadgeUI();
@@ -6588,10 +6588,10 @@ function showRankToast(data) {
     rankBadgeHtml = `<span class="toast-rank-badge rank-1"><i class="fa-solid fa-crown"></i> Rank #1</span>`;
     borderHighlight = 'rgba(245, 158, 11, 0.65)';
   } else if (data.sessionRank === 2) {
-    rankBadgeHtml = `<span class="toast-rank-badge rank-2"><i class="fa-solid fa-medal"></i> Rank #2</span>`;
+    rankBadgeHtml = `<span class="toast-rank-badge rank-2">Rank #2</span>`;
     borderHighlight = 'rgba(203, 213, 225, 0.6)';
   } else if (data.sessionRank === 3) {
-    rankBadgeHtml = `<span class="toast-rank-badge rank-3"><i class="fa-solid fa-medal"></i> Rank #3</span>`;
+    rankBadgeHtml = `<span class="toast-rank-badge rank-3">Rank #3</span>`;
     borderHighlight = 'rgba(217, 119, 6, 0.6)';
   } else if (data.sessionRank !== '-') {
     rankBadgeHtml = `<span class="toast-rank-badge rank-n">Rank #${data.sessionRank}</span>`;
@@ -6609,7 +6609,7 @@ function showRankToast(data) {
         <span class="toast-rank-name">${escapeHTML(data.nick)}</span>
         <div class="toast-rank-details">
           ${rankBadgeHtml}
-          <span class="toast-rank-pts"><i class="fa-solid fa-coins" style="color: #fbbf24;"></i> ${data.sessionPts} Pts</span>
+          <span class="toast-rank-pts">${data.sessionPts} Pts</span>
         </div>
       </div>
     </div>
@@ -8773,11 +8773,11 @@ function updateLangBadgeUI(lang) {
   if (!badge) return;
   const target = lang || lastLang || localStorage.getItem('wordle_lang') || 'id';
   if (target === 'en') {
-    badge.innerHTML = '<i class="fa-solid fa-language" style="margin-right: 4px;"></i>EN';
+    badge.textContent = 'EN';
   } else if (target === 'mixed' || target === 'mix') {
-    badge.innerHTML = '<i class="fa-solid fa-globe" style="margin-right: 4px;"></i>MIX';
+    badge.textContent = 'MIX';
   } else {
-    badge.innerHTML = '<i class="fa-solid fa-language" style="margin-right: 4px;"></i>ID';
+    badge.textContent = 'ID';
   }
 }
 
@@ -8857,7 +8857,7 @@ window.toggleAutoStarter = function(checked) {
 window.toggleWinStreakCooldown = function(checked) {
   isWinStreakCooldownEnabled = checked;
   try { localStorage.setItem('wordle_winStreakCooldown', checked); } catch(e) {}
-  showToast(checked ? '🔥 Cooldown Win Streak: AKTIF' : '🔥 Cooldown Win Streak: NONAKTIF', 2000);
+  showToast(checked ? 'Cooldown Win Streak: AKTIF' : 'Cooldown Win Streak: NONAKTIF', 2000);
   const wscToggle = document.getElementById('winStreakCooldownToggle');
   if (wscToggle) wscToggle.checked = checked;
   if (typeof localSocket !== 'undefined' && localSocket && localSocket.connected) {
@@ -8869,7 +8869,7 @@ window.toggleShowHintsDiscovered = function(checked) {
   isShowHintsDiscovered = checked;
   try { localStorage.setItem('wordle_showHintsDiscovered', checked); } catch(e) {}
   applyGameModeUI();
-  showToast(checked ? '💡 Bar Hints Discovered: AKTIF' : '💡 Bar Hints Discovered: NONAKTIF', 2000);
+  showToast(checked ? 'Bar Hints Discovered: AKTIF' : 'Bar Hints Discovered: NONAKTIF', 2000);
 };
 
 let isFollowerOnlyGuess = localStorage.getItem('wordle_followerOnlyGuess') === 'true';
@@ -8890,7 +8890,7 @@ window.toggleFollowerOnlyGuess = function(checked) {
   if (localSocket) {
     localSocket.emit('update-game-settings', { followerOnlyGuess: checked });
   }
-  showToast(checked ? '👤 Tebakan Kata: Hanya Follower' : '👥 Tebakan Kata: Semua Penonton', 2000);
+  showToast(checked ? 'Tebakan Kata: Hanya Follower' : 'Tebakan Kata: Semua Penonton', 2000);
 };
 
 window.toggleFollowerOnlyMusic = function(checked) {
@@ -8903,7 +8903,7 @@ window.toggleFollowerOnlyMusic = function(checked) {
   if (localSocket) {
     localSocket.emit('update-game-settings', { followerOnlyMusic: checked });
   }
-  showToast(checked ? '🎵 Request Musik: Hanya Follower' : '🎵 Request Musik: Semua Penonton', 2000);
+  showToast(checked ? 'Request Musik: Hanya Follower' : 'Request Musik: Semua Penonton', 2000);
 };
 
 function updateNoRepeatBadgeUI() {
@@ -8928,9 +8928,9 @@ function toggleHardMode(e) {
   let msg = 'Hard Mode Dinonaktifkan';
   const isSortedClueMode = (currentGameMode === 'word500' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit');
   if (hardModeState === 'hard') {
-    msg = isSortedClueMode ? '🔥 Hard Mode: Wajib cocok dgn skor petunjuk!' : '🔥 Hard Mode Diaktifkan';
+    msg = isSortedClueMode ? 'Hard Mode: Wajib cocok dgn skor petunjuk!' : 'Hard Mode Diaktifkan';
   } else if (hardModeState === 'ultra') {
-    msg = isSortedClueMode ? '☠️ Ultra Hard: Wajib cocok semua petunjuk!' : '☠️ Ultra Hard Mode Diaktifkan';
+    msg = isSortedClueMode ? 'Ultra Hard: Wajib cocok semua petunjuk!' : 'Ultra Hard Mode Diaktifkan';
   }
   showToast(msg, 2500);
 
@@ -8953,9 +8953,9 @@ window.toggleWgDifficulty = function(e) {
   updateWgDifficultyUI();
   
   let msg = 'Kesulitan Word Grid: MUDAH';
-  if (wgDifficulty === 'medium') msg = '🧩 Kesulitan Word Grid: SEDANG';
-  if (wgDifficulty === 'hard') msg = '🧩 Kesulitan Word Grid: SULIT';
-  if (wgDifficulty === 'mixed') msg = '🧩 Kesulitan Word Grid: CAMPURAN';
+  if (wgDifficulty === 'medium') msg = 'Kesulitan Word Grid: SEDANG';
+  if (wgDifficulty === 'hard') msg = 'Kesulitan Word Grid: SULIT';
+  if (wgDifficulty === 'mixed') msg = 'Kesulitan Word Grid: CAMPURAN';
   showToast(msg, 2000);
   
   if (currentGameMode === 'wordgrid') {
@@ -8967,16 +8967,16 @@ function updateWgDifficultyUI() {
   const btn = document.getElementById('wgDifficultyBtn');
   if (btn) {
     if (wgDifficulty === 'easy') {
-      btn.innerHTML = '🧩 Kesulitan Board: MUDAH';
+      btn.textContent = 'Kesulitan Board: MUDAH';
       btn.style.color = '';
     } else if (wgDifficulty === 'medium') {
-      btn.innerHTML = '🧩 Kesulitan Board: SEDANG';
+      btn.textContent = 'Kesulitan Board: SEDANG';
       btn.style.color = '#ff9f43';
     } else if (wgDifficulty === 'hard') {
-      btn.innerHTML = '🧩 Kesulitan Board: SULIT';
+      btn.textContent = 'Kesulitan Board: SULIT';
       btn.style.color = '#ee5253';
     } else if (wgDifficulty === 'mixed') {
-      btn.innerHTML = '🧩 Kesulitan Board: CAMPURAN';
+      btn.textContent = 'Kesulitan Board: CAMPURAN';
       btn.style.color = '#a855f7'; // matching purple theme
     }
   }
@@ -8986,13 +8986,13 @@ function updateHardModeUI() {
   const btn = document.getElementById('hardModeBtn');
   if (btn) {
     if (hardModeState === 'off') {
-      btn.innerHTML = '🔥 Hard Mode: OFF';
+      btn.textContent = 'Hard Mode: OFF';
       btn.style.color = '';
     } else if (hardModeState === 'hard') {
-      btn.innerHTML = '🔥 Hard Mode: ON';
+      btn.textContent = 'Hard Mode: ON';
       btn.style.color = '#fe2c55';
     } else if (hardModeState === 'ultra') {
-      btn.innerHTML = '☠️ Ultra Hard: ON';
+      btn.textContent = 'Ultra Hard: ON';
       btn.style.color = '#8b0000';
     }
   }
@@ -12225,7 +12225,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
         winAvatar.src = avatarUrl;
       }
       document.getElementById('winName').textContent = winnerName;
-      document.getElementById('winPts').innerHTML = `🪙 +${winPts} Bonus`;
+      document.getElementById('winPts').textContent = `+${winPts} Pts`;
       const winWordEl = document.getElementById('winWord');
       if (winWordEl) {
         if (currentGameMode === 'colorfit') {
@@ -12298,13 +12298,14 @@ let lastToastTime = 0;
 
 function showToast(message, duration = 2800) {
   if (!message) return;
+  const cleanMessage = String(message).replace(/^[\p{Extended_Pictographic}\p{Emoji_Presentation}\u2600-\u27BF\uFE0F\u200D]+\s*/u, '');
   const now = Date.now();
   
   // 1. Anti-spam: Cegah pesan yang persis sama muncul bertubi-tubi dalam waktu 1.5 detik
-  if (message === lastToastMsg && (now - lastToastTime < 1500)) {
+  if (cleanMessage === lastToastMsg && (now - lastToastTime < 1500)) {
     return;
   }
-  lastToastMsg = message;
+  lastToastMsg = cleanMessage;
   lastToastTime = now;
 
   // 2. Anti-flooding: Batasi maksimal 2 toast sekaligus di layar
@@ -12317,7 +12318,7 @@ function showToast(message, duration = 2800) {
 
   const toast = document.createElement('div');
   toast.className = 'toast';
-  toast.textContent = message;
+  toast.textContent = cleanMessage;
   if (typeof toastContainer !== 'undefined' && toastContainer) {
     toastContainer.appendChild(toast);
   } else {
@@ -15151,7 +15152,7 @@ function processWordLadderGuess(guessWord, userData) {
               <div class="multi-win-name">${isMvp ? '👑 ' : ''}${c.userData.nickname || 'Unknown'} <span style="font-size: 11px; opacity: 0.8;">(#${idx + 1})</span></div>
               <div class="multi-win-word" style="font-size: 12px; color: #38bdf8;">${c.steps} Langkah: ${c.words.join(' ➔ ')}</div>
             </div>
-            <div class="multi-win-pts" style="font-size: 14px; font-weight: 900; color: #ffd54f;">🪙 +${c.points} Pts</div>
+            <div class="multi-win-pts" style="font-size: 14px; font-weight: 900; color: #ffd54f;">+${c.points} Pts</div>
           `;
           multiWinList.appendChild(item);
         });
@@ -16094,7 +16095,7 @@ function triggerBetweenleNextAnimation() {
         lastRoundWinner = item.userData || { nickname: item.userName, profilePictureUrl: item.userAvatar };
         lastRoundTargetWord = betweenleSecretWord;
         const winPts = document.getElementById('winPts');
-        if (winPts) winPts.innerHTML = `🪙 +${jackpotPts} Pts`;
+        if (winPts) winPts.textContent = `+${jackpotPts} Pts`;
         const winWord = document.getElementById('winWord');
         if (winWord) {
           winWord.style.display = '';
@@ -16921,7 +16922,7 @@ function launchCascadleVictoryShowcase() {
       <div class="cascadle-showcase-rows" id="cascadleShowcaseRows"></div>
       <div class="cascadle-showcase-footer">
         <div class="cascadle-showcase-countdown">
-          <i class="fa-solid fa-clock-rotate-left"></i> Ronde berikutnya dalam <span id="cascadleCountdownNum" class="cascadle-countdown-val">10</span>s
+          Ronde berikutnya dalam <span id="cascadleCountdownNum" class="cascadle-countdown-val">10</span>s
         </div>
         <button class="cascadle-showcase-btn" onclick="startNewRound()">
           Ronde Baru <i class="fa-solid fa-forward-step"></i>
@@ -17625,7 +17626,7 @@ function handleWanderWordsWin(userData) {
       if (winName) winName.textContent = userName;
 
       const winPts = document.getElementById('winPts');
-      if (winPts) winPts.innerHTML = `🪙 +${ptsAwarded} Poin`;
+      if (winPts) winPts.textContent = `+${ptsAwarded} Pts`;
 
       const winSubtitle = document.getElementById('winSubtitleText');
       if (winSubtitle) winSubtitle.textContent = `CLUE: ${puzzle.clue || 'Wander Words'}`;
@@ -18358,7 +18359,7 @@ function renderWordMatchGuesses() {
   if (wordMatchLatestGuess) {
     const latestTitle = document.createElement('div');
     latestTitle.className = 'wm-section-title';
-    latestTitle.innerHTML = '<i class="fa-solid fa-bolt" style="color: #22c55e;"></i> TEBAKAN TERBARU';
+    latestTitle.textContent = 'TEBAKAN TERBARU';
     container.appendChild(latestTitle);
 
     container.appendChild(createWordMatchGuessElement(wordMatchLatestGuess, wordMatchLatestGuess.isNew));
@@ -18371,7 +18372,7 @@ function renderWordMatchGuesses() {
 
       const bestTitle = document.createElement('div');
       bestTitle.className = 'wm-section-title';
-      bestTitle.innerHTML = '<i class="fa-solid fa-fire" style="color: #f59e0b;"></i> TEBAKAN TERBAIK';
+      bestTitle.textContent = 'TEBAKAN TERBAIK';
       container.appendChild(bestTitle);
     }
   }
@@ -18537,7 +18538,7 @@ function handleWordMatchWin(userData) {
 
   const winPtsEl = document.getElementById('winPts');
   if (winPtsEl) {
-    winPtsEl.innerHTML = `<i class="fa-solid fa-coins" style="color: #ffd54f;"></i> +${winPts} Pts`;
+    winPtsEl.textContent = `+${winPts} Pts`;
   }
 
   const winWordEl = document.getElementById('winWord');
@@ -19214,7 +19215,7 @@ function launchWordPyramidVictoryShowcase() {
       <div class="wordpyramid-showcase-rows" id="wpShowcaseRows"></div>
       <div class="wordpyramid-showcase-footer">
         <div class="wordpyramid-showcase-countdown">
-          <i class="fa-solid fa-clock-rotate-left"></i> Ronde baru dalam <span id="wpCountdownNum" class="wordpyramid-countdown-val">10</span>s
+          Ronde baru dalam <span id="wpCountdownNum" class="wordpyramid-countdown-val">10</span>s
         </div>
         <button class="wordpyramid-showcase-btn" onclick="startNewRound()">
           Ronde Baru <i class="fa-solid fa-forward-step"></i>
@@ -20600,9 +20601,9 @@ function handleSambungKataWin(winnerData, reason = 'knockout') {
 
   const winTitleEl = document.getElementById('winTitleText');
   if (winTitleEl) {
-    winTitleEl.innerHTML = (reason === 'round_limit')
-      ? `<i class="fa-solid fa-flag-checkered" style="color: #ffd54f; margin-right: 5px;"></i> JUARA ${sambungKataMaxRounds} PUTARAN`
-      : `<i class="fa-solid fa-crown" style="color: #ffd54f; margin-right: 5px;"></i> JUARA MEJA BUNDAR`;
+    winTitleEl.textContent = (reason === 'round_limit')
+      ? `JUARA ${sambungKataMaxRounds} PUTARAN`
+      : `JUARA MEJA BUNDAR`;
   }
 
   const winAvatar = document.getElementById('winAvatar');
@@ -20618,9 +20619,9 @@ function handleSambungKataWin(winnerData, reason = 'knockout') {
   const winPtsEl = document.getElementById('winPts');
   if (winPtsEl) {
     if (reason === 'round_limit' && finalScore > 0) {
-      winPtsEl.innerHTML = `<i class="fa-solid fa-star" style="color: #ffd54f; margin-right: 4px;"></i> Total: ${finalScore} Pts (+${winPts} Menang)`;
+      winPtsEl.textContent = `Total: ${finalScore} Pts (+${winPts} Menang)`;
     } else {
-      winPtsEl.innerHTML = `<i class="fa-solid fa-trophy" style="color: #ffd54f; margin-right: 4px;"></i> +${winPts} PTS`;
+      winPtsEl.textContent = `+${winPts} Pts`;
     }
   }
 
@@ -21334,18 +21335,18 @@ function handleAntiwordleDetonate(userData, word, userName, userAvatar) {
 
   renderAntiwordleUI();
 
-  showToast(`💥 @${userName} MENGINJAK RANJAU! KATA BOM: ${word}! (0 Poin)`, 4000);
+  showToast(`@${userName} MENGINJAK RANJAU! KATA BOM: ${word}! (0 Poin)`, 4000);
 
   // Tampilkan Kartu Hasil Ronde (Adaptasi Win Overlay Baku)
   setTimeout(() => {
     const winTitle = document.getElementById('winTitleText');
     if (winTitle) {
-      winTitle.innerHTML = '<i class="fa-solid fa-bomb" style="color: #ef4444; margin-right: 6px;"></i> RANJAU MELEDAK!';
+      winTitle.textContent = 'RANJAU MELEDAK!';
     }
     const winName = document.getElementById('winName');
     if (winName) winName.textContent = `@${userName} (Korban Bom)`;
     const winPts = document.getElementById('winPts');
-    if (winPts) winPts.innerHTML = '💥 0 Pts (Menginjak Ranjau)';
+    if (winPts) winPts.textContent = '0 Pts (Menginjak Ranjau)';
     const winSubtitle = document.getElementById('winSubtitleText');
     if (winSubtitle) winSubtitle.textContent = 'Kata Bom yang Terinjak:';
     const winWord = document.getElementById('winWord');
@@ -21360,7 +21361,7 @@ function handleAntiwordleDetonate(userData, word, userName, userAvatar) {
     }
     const winFooter = document.getElementById('winFooter');
     if (winFooter) {
-      winFooter.textContent = `🛡️ Total ${antiwordleSurvivalCount} tebakan berhasil selamat!`;
+      winFooter.textContent = `Total ${antiwordleSurvivalCount} tebakan berhasil selamat!`;
     }
 
     lastRoundWinner = userData || { nickname: userName, profilePictureUrl: userAvatar };
@@ -21378,17 +21379,17 @@ function handleAntiwordleDefused() {
     window.sounds.playWin();
   }
 
-  showToast(`🏆 LUAR BIASA! BOM BERHASIL DIJINAKKAN! Komunitas bertahan 15 ronde!`, 4000);
+  showToast(`LUAR BIASA! BOM BERHASIL DIJINAKKAN! Komunitas bertahan 15 ronde!`, 4000);
 
   setTimeout(() => {
     const winTitle = document.getElementById('winTitleText');
     if (winTitle) {
-      winTitle.innerHTML = '<i class="fa-solid fa-shield-halved" style="color: #22c55e; margin-right: 6px;"></i> BOM BERHASIL DIJINAKKAN!';
+      winTitle.textContent = 'BOM BERHASIL DIJINAKKAN!';
     }
     const winName = document.getElementById('winName');
     if (winName) winName.textContent = 'SEMUA SURVIVOR';
     const winPts = document.getElementById('winPts');
-    if (winPts) winPts.innerHTML = '🛡️ +20 Pts Kemenangan Tim';
+    if (winPts) winPts.textContent = '+20 Pts Kemenangan Tim';
     const winSubtitle = document.getElementById('winSubtitleText');
     if (winSubtitle) winSubtitle.textContent = 'Kata Bom yang Berhasil Dihindari:';
     const winWord = document.getElementById('winWord');

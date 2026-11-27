@@ -11864,7 +11864,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
           });
         }
         triggerWinTransition(5000, true);
-      }, 1000);
+      }, 2200);
     }
     return;
   }
@@ -11998,7 +11998,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
               });
             }
             triggerWinTransition(10000, true);
-          }, 1000);
+          }, 2200);
         }
       } else {
         // Pattern matched but wrong target word
@@ -12676,7 +12676,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
             }, 1200);
             setTimeout(() => {
               triggerWinTransition(4500, true);
-            }, 2400);
+            }, 3600);
           } else {
             triggerWinTransition(4500, true);
           }
@@ -12771,9 +12771,11 @@ function processGuess(guessWord, userData, queueLen = 0) {
           }, 1200); // Mulai wave saat huruf terakhir hampir selesai flip
         }
         
+        const isBoardRevealMode = (currentGameMode === 'symble' || currentGameMode === 'word500' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit' || currentGameMode === 'xordle');
+        const preOverlayDelay = isBoardRevealMode ? 3600 : 3000;
         setTimeout(() => {
           triggerWinTransition(4000);
-        }, 2400); // Tunggu wave selesai sebelum memunculkan overlay
+        }, preOverlayDelay); // Beri waktu penonton mengamati jawaban & sandi terbuka ("Oh!" moment)
       } else {
         triggerWinTransition(4000);
       }
@@ -15262,7 +15264,7 @@ async function processSquarewordGuess(guessWord, userData) {
       }
 
       triggerWinTransition(9000, true);
-    }, 800);
+    }, 2400);
   }
 }
 
@@ -16595,7 +16597,7 @@ function triggerBetweenleNextAnimation() {
         }
 
         triggerWinTransition(4500, false);
-      }, 1200);
+      }, 2200);
       return;
     }
 
@@ -18144,7 +18146,7 @@ function handleWanderWordsWin(userData) {
       } else if (typeof triggerWinTransition === 'function') {
         triggerWinTransition(5000, false);
       }
-    }, 1200);
+    }, 2200);
 
   }, totalPathDelay);
 }
@@ -18453,7 +18455,7 @@ function processWordClusterGuess(guessWord, userData) {
   if (allSolved) {
     setTimeout(() => {
       handleWordClusterWin();
-    }, 1800); // Jeda 1.8 detik agar 6 ubin hijau terlihat penuh memuaskan sebelum popup muncul
+    }, 2300); // Jeda 2.3 detik agar 6 ubin hijau terlihat penuh memuaskan sebelum popup muncul
   }
 
   return true;
@@ -19137,7 +19139,7 @@ function handleWordMatchWin(userData) {
 
   setTimeout(() => {
     triggerWinTransition(4000, false);
-  }, 1000);
+  }, 2300);
 }
 
 window.revealWordMatchHint = revealWordMatchHint;
@@ -21233,7 +21235,7 @@ function handleSambungKataWin(winnerData, reason = 'knockout') {
     if (typeof triggerWinTransition === 'function') {
       triggerWinTransition(5000, false);
     }
-  }, 1000);
+  }, 2200);
 }
 
 // Render Seluruh Antarmuka Meja Bundar (UI)
@@ -21945,7 +21947,7 @@ function handleAntiwordleDetonate(userData, word, userName, userAvatar) {
     lastRoundTargetWord = antiwordleSecretWord;
 
     triggerWinTransition(4500, false);
-  }, 1200);
+  }, 2200);
 }
 
 // Menangani kemenangan kolektif jika komunitas berhasil bertahan hingga 15 kata aman
@@ -21978,7 +21980,7 @@ function handleAntiwordleDefused() {
     if (winFooter) winFooter.textContent = 'Ronde baru akan segera dimulai...';
 
     triggerWinTransition(4500, false);
-  }, 1200);
+  }, 2200);
 }
 
 // Merender seluruh tampilan ubin tebakan dan status keyboard A-Z
@@ -23148,7 +23150,7 @@ function processShuntleGuess(rawWord, userData, queueLen = 0) {
       }, 1100);
       setTimeout(() => {
         triggerWinTransition(4000);
-      }, 2300);
+      }, 3000);
     } else {
       triggerWinTransition(4000);
     }

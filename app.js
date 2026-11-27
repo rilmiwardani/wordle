@@ -23313,23 +23313,24 @@ function getSymbleSlotAppearance(status, wordleStatusOverride = null) {
     : 0;
   const item = palette.items[slotIdx] || palette.items[0];
   const isSepia = document.body && document.body.classList.contains('theme-sepia');
+  const accentColor = isSepia ? item.sepiaBg : item.border;
 
   const labelMap = { correct: 'TEPAT', present: 'ADA', absent: 'SALAH' };
 
   if (symbleIsCipherRevealed) {
-    // Use wordleStatusOverride (guess-centric letter status, just like symble.app's wordleInfo!) for tile background color
     const colorStatus = wordleStatusOverride || status;
     if (colorStatus === 'correct') {
-      return { bg: '#16a34a', border: '#22c55e', icon: item.icon, iconColor: '#ffffff', label: labelMap[status] || 'TEPAT', isRevealed: true, slotIdx };
+      return { bg: '#16a34a', border: '#22c55e', icon: item.icon, iconColor: '#ffffff', accentColor, label: labelMap[status] || 'TEPAT', isRevealed: true, slotIdx };
     }
     if (colorStatus === 'present') {
-      return { bg: '#c6aa24', border: '#d4b82f', icon: item.icon, iconColor: '#ffffff', label: labelMap[status] || 'ADA', isRevealed: true, slotIdx };
+      return { bg: '#c6aa24', border: '#d4b82f', icon: item.icon, iconColor: '#ffffff', accentColor, label: labelMap[status] || 'ADA', isRevealed: true, slotIdx };
     }
     return {
       bg: isSepia ? '#857466' : '#3a4454',
       border: isSepia ? '#706053' : '#4f5b6e',
       icon: item.icon,
       iconColor: '#ffffff',
+      accentColor,
       label: labelMap[status] || 'SALAH',
       isRevealed: true,
       slotIdx
@@ -23342,18 +23343,20 @@ function getSymbleSlotAppearance(status, wordleStatusOverride = null) {
       border: isSepia ? '#706053' : '#4f5b6e',
       icon: item.icon,
       iconColor: '#ffffff',
+      accentColor,
       label: 'SALAH',
       isRevealed: true,
       slotIdx
     };
   }
 
-  if (symbleVisualMode === 'symbol_only' || symbleVisualMode === 'shape_only') {
+  if (symbleVisualMode === 'symbol_only' || symbleVisualMode === 'shape_only' || symbleVisualMode === 'top_strip' || symbleVisualMode === 'corner_ribbon') {
     return {
       bg: isSepia ? '#cfc2ae' : '#1e2633',
-      border: isSepia ? 'rgba(66, 52, 40, 0.42)' : 'rgba(255, 255, 255, 0.28)',
+      border: isSepia ? 'rgba(66, 52, 40, 0.38)' : 'rgba(255, 255, 255, 0.24)',
       icon: item.icon,
-      iconColor: isSepia ? item.sepiaBg : item.border,
+      iconColor: accentColor,
+      accentColor,
       label: '?',
       isRevealed: false,
       slotIdx
@@ -23365,6 +23368,7 @@ function getSymbleSlotAppearance(status, wordleStatusOverride = null) {
     border: isSepia ? item.sepiaBorder : item.border,
     icon: item.icon,
     iconColor: 'rgba(255, 255, 255, 0.92)',
+    accentColor,
     label: '?',
     isRevealed: false,
     slotIdx
@@ -23381,7 +23385,7 @@ function applySymbleTileAppearance(tile, status) {
   const app = getSymbleSlotAppearance(status, wordleSt);
   const isSepia = document.body && document.body.classList.contains('theme-sepia');
   const isShapedMode = (symbleVisualMode === 'shape_color' || symbleVisualMode === 'shape_only');
-  const isNeutralMode = (symbleVisualMode === 'symbol_only' || symbleVisualMode === 'shape_only');
+  const isNeutralMode = (symbleVisualMode === 'symbol_only' || symbleVisualMode === 'shape_only' || symbleVisualMode === 'top_strip' || symbleVisualMode === 'corner_ribbon');
 
   tile.style.backgroundColor = app.bg;
   tile.style.borderColor = app.border;
@@ -23399,8 +23403,39 @@ function applySymbleTileAppearance(tile, status) {
   }
 
   let iconEl = tile.querySelector('.symble-corner-icon');
-  if (symbleVisualMode === 'color_only' || isShapedMode) {
+  let stripEl = tile.querySelector('.symble-top-strip');
+  let ribbonEl = tile.querySelector('.symble-corner-ribbon');
+
+  // Clean up unused indicator elements
+  if (symbleVisualMode !== 'both' && symbleVisualMode !== 'symbol_only') {
     if (iconEl) iconEl.remove();
+  }
+  if (symbleVisualMode !== 'top_strip') {
+    if (stripEl) stripEl.remove();
+  }
+  if (symbleVisualMode !== 'corner_ribbon') {
+    if (ribbonEl) ribbonEl.remove();
+  }
+
+  if (symbleVisualMode === 'top_strip') {
+    tile.style.paddingTop = '4px';
+    tile.style.paddingRight = '0px';
+    if (!stripEl) {
+      stripEl = document.createElement('span');
+      stripEl.className = 'symble-top-strip';
+      tile.appendChild(stripEl);
+    }
+    stripEl.style.backgroundColor = app.accentColor;
+  } else if (symbleVisualMode === 'corner_ribbon') {
+    tile.style.paddingTop = '0px';
+    tile.style.paddingRight = '0px';
+    if (!ribbonEl) {
+      ribbonEl = document.createElement('span');
+      ribbonEl.className = 'symble-corner-ribbon';
+      tile.appendChild(ribbonEl);
+    }
+    ribbonEl.style.borderTopColor = app.accentColor;
+  } else if (symbleVisualMode === 'color_only' || isShapedMode) {
     tile.style.paddingTop = '0px';
     tile.style.paddingRight = '0px';
   } else {
@@ -23431,7 +23466,7 @@ function updateSymbleInfoBarUI(revealed) {
   const palette = SYMBLE_MATTE_PALETTES[symbleActivePaletteIdx] || SYMBLE_MATTE_PALETTES[0];
   const isSepia = document.body && document.body.classList.contains('theme-sepia');
   const isShapedMode = (symbleVisualMode === 'shape_color' || symbleVisualMode === 'shape_only');
-  const isNeutralMode = (symbleVisualMode === 'symbol_only' || symbleVisualMode === 'shape_only');
+  const isNeutralMode = (symbleVisualMode === 'symbol_only' || symbleVisualMode === 'shape_only' || symbleVisualMode === 'top_strip' || symbleVisualMode === 'corner_ribbon');
 
   const slotToStatus = {};
   Object.keys(symbleMeaningToSlot).forEach(st => {
@@ -23444,12 +23479,14 @@ function updateSymbleInfoBarUI(revealed) {
     const st = slotToStatus[slotIdx] || 'absent';
     const item = palette.items[slotIdx];
     const isThisSlotRevealed = symbleIsCipherRevealed || (symbleIsAbsentHintRevealed && st === 'absent');
+    const accentColor = isSepia ? item.sepiaBg : item.border;
 
-    // Keep each badge's original Soft Matte color in #symbleInfoBar even when revealed so viewers can see which color meant TEPAT / ADA / SALAH!
     let bg, border, textColor = '#ffffff';
-    if (isNeutralMode && !isThisSlotRevealed) {
+    if (isNeutralMode) {
       bg = isSepia ? '#cfc2ae' : '#1e2633';
-      border = isSepia ? 'rgba(66, 52, 40, 0.42)' : 'rgba(255, 255, 255, 0.28)';
+      border = (symbleVisualMode === 'corner_ribbon' || symbleVisualMode === 'top_strip')
+        ? accentColor
+        : (isSepia ? 'rgba(66, 52, 40, 0.42)' : 'rgba(255, 255, 255, 0.28)');
       textColor = isSepia ? '#3b2c20' : '#ffffff';
     } else {
       bg = isSepia ? item.sepiaBg : item.bg;
@@ -23458,12 +23495,19 @@ function updateSymbleInfoBarUI(revealed) {
 
     const text = isThisSlotRevealed ? (labelMap[st] || 'SALAH') : '?';
     const iconColor = (isNeutralMode && !isThisSlotRevealed)
-      ? (isSepia ? item.sepiaBg : item.border)
+      ? accentColor
       : '#ffffff';
 
     let iconHtml = '';
-    if (isShapedMode) {
-      const miniBorder = (isNeutralMode && !isThisSlotRevealed && isSepia) ? '#3b2c20' : 'rgba(255,255,255,0.92)';
+    let extraPillPadding = '';
+    if (symbleVisualMode === 'top_strip') {
+      iconHtml = `<span class="symble-pill-top-strip" style="background:${accentColor};"></span>`;
+      extraPillPadding = 'padding-top: 6px; padding-left: 11px; padding-right: 11px;';
+    } else if (symbleVisualMode === 'corner_ribbon') {
+      iconHtml = `<span class="symble-pill-corner-ribbon" style="border-top-color:${accentColor};"></span>`;
+      extraPillPadding = 'padding-left: 11px; padding-right: 13px;';
+    } else if (isShapedMode) {
+      const miniBorder = (isNeutralMode && isSepia) ? '#3b2c20' : 'rgba(255,255,255,0.92)';
       iconHtml = `<span class="symble-shape-mini shape-${slotIdx}" style="border-color:${miniBorder};"></span>`;
     } else if (symbleVisualMode === 'color_only') {
       iconHtml = `<span style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.85);display:inline-block;"></span>`;
@@ -23473,7 +23517,7 @@ function updateSymbleInfoBarUI(revealed) {
 
     const pillShapeClass = isShapedMode ? ` symble-pill-shape-${slotIdx}` : '';
 
-    return `<span class="symble-legend-pill${pillShapeClass}" style="background:${bg}; border: 1px solid ${border}; color:${textColor};">
+    return `<span class="symble-legend-pill${pillShapeClass}" style="background:${bg}; border: 1.5px solid ${border}; color:${textColor}; ${extraPillPadding}">
       ${iconHtml}
       <span>${text}</span>
     </span>`;
@@ -23498,7 +23542,7 @@ function revealSymbleRoundCipher() {
 }
 
 function changeSymbleVisualMode(mode) {
-  const validModes = ['both', 'color_only', 'symbol_only', 'shape_color', 'shape_only'];
+  const validModes = ['both', 'color_only', 'symbol_only', 'shape_color', 'shape_only', 'top_strip', 'corner_ribbon'];
   symbleVisualMode = validModes.includes(mode) ? mode : 'both';
   try { localStorage.setItem('symble_visual_mode', symbleVisualMode); } catch (e) {}
   initSymblePaletteControls();
@@ -23508,7 +23552,9 @@ function changeSymbleVisualMode(mode) {
     color_only: 'Hanya Warna Ubin (Huruf Bersih)',
     symbol_only: 'Hanya Simbol Pojok (Ubin Netral)',
     shape_color: 'Bentuk Ubin Simbol + Warna',
-    shape_only: 'Hanya Bentuk Ubin Simbol (Netral)'
+    shape_only: 'Hanya Bentuk Ubin Simbol (Netral)',
+    top_strip: 'Pita Bar Atas Berwarna (Ubin Netral)',
+    corner_ribbon: 'Lipatan Sudut Berwarna (Ubin Netral)'
   };
   if (typeof showToast === 'function') {
     showToast(`Tampilan Symble: ${labels[symbleVisualMode]}`, 1800);
@@ -23555,27 +23601,29 @@ function evaluateSymbleGuess(guessWord, targetWord) {
     return { statuses, correctCount: 0, presentCount: 0 };
   }
 
-  const remainingTarget = targetWord.split('');
   const remainingGuess = guessWord.split('');
+  const remainingTarget = targetWord.split('');
   let correctCount = 0;
   let presentCount = 0;
 
+  // Pass 1: Huruf tebakan di kotak ke-i tepat sama dengan huruf target di kotak ke-i
   for (let i = 0; i < len; i++) {
-    if (remainingTarget[i] === remainingGuess[i]) {
+    if (remainingGuess[i] === remainingTarget[i]) {
       statuses[i] = 'correct';
-      remainingTarget[i] = null;
       remainingGuess[i] = null;
+      remainingTarget[i] = null;
       correctCount++;
     }
   }
 
+  // Pass 2: Huruf tebakan di kotak ke-i ada di kata target tetapi di posisi berbeda
   for (let i = 0; i < len; i++) {
-    if (remainingTarget[i] !== null) {
-      const foundInGuess = remainingGuess.indexOf(remainingTarget[i]);
-      if (foundInGuess !== -1) {
+    if (remainingGuess[i] !== null) {
+      const foundInTarget = remainingTarget.indexOf(remainingGuess[i]);
+      if (foundInTarget !== -1) {
         statuses[i] = 'present';
-        remainingGuess[foundInGuess] = null;
-        remainingTarget[i] = null;
+        remainingTarget[foundInTarget] = null;
+        remainingGuess[i] = null;
         presentCount++;
       } else {
         statuses[i] = 'absent';

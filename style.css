@@ -5176,6 +5176,58 @@ body.theme-sepia .tile.shuntle-space-absent {
   border-radius: 6px 1px 6px 1px;
 }
 
+/* Symble Opsi 6 (Pita Bar Atas) & Opsi 7 (Lipatan Sudut) */
+.tile.symble-tile {
+  overflow: hidden;
+}
+
+.tile .symble-top-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(7px * var(--board-scale, 1));
+  pointer-events: none;
+  z-index: 2;
+}
+
+.tile .symble-corner-ribbon {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-top: calc(18px * var(--board-scale, 1)) solid #5b93b3;
+  border-left: calc(18px * var(--board-scale, 1)) solid transparent;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.symble-legend-pill {
+  position: relative;
+  overflow: hidden;
+}
+
+.symble-pill-top-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  pointer-events: none;
+}
+
+.symble-pill-corner-ribbon {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-top: 13px solid #5b93b3;
+  border-left: 13px solid transparent;
+  pointer-events: none;
+}
+
 body.theme-sepia .symble-info-bar {
   background: rgba(255, 250, 240, 0.72);
   border-color: rgba(66, 52, 40, 0.22);

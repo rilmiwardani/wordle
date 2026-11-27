@@ -1511,7 +1511,8 @@ const ALL_SPECIAL_PTS_PREFIXES = [
   'pts_absurdle_',
   'pts_xordle_',
   'pts_warmle_',
-  'pts_shuntle_'
+  'pts_shuntle_',
+  'pts_symble_'
 ];
 
 function isOtherGameModeKey(key) {
@@ -1525,11 +1526,11 @@ function isOtherGameModeKey(key) {
 const ALL_ROTATION_MODES = [
   'wordle', 'word500', 'wordfit', 'colorfit',
   'fillblanks', 'wordtango', 'wordgrid', 'squareword',
-  'wordladder', 'betweenle', 'cascadle', 'wanderwords', 'wordcluster', 'wordmatch', 'wordpyramid', 'antiwordle', 'absurdle', 'xordle', 'warmle', 'shuntle'
+  'wordladder', 'betweenle', 'cascadle', 'wanderwords', 'wordcluster', 'wordmatch', 'wordpyramid', 'antiwordle', 'absurdle', 'xordle', 'warmle', 'shuntle', 'symble'
 ];
 
 const FAST_PACED_MODES = [
-  'wordle', 'word500', 'squareword', 'betweenle', 'wordladder', 'fillblanks', 'wordpyramid', 'antiwordle', 'absurdle', 'xordle', 'warmle', 'shuntle'
+  'wordle', 'word500', 'squareword', 'betweenle', 'wordladder', 'fillblanks', 'wordpyramid', 'antiwordle', 'absurdle', 'xordle', 'warmle', 'shuntle', 'symble'
 ];
 
 const GAME_MODE_PRETTY_NAMES = {
@@ -1552,7 +1553,8 @@ const GAME_MODE_PRETTY_NAMES = {
   absurdle: 'Absurdle',
   xordle: 'Xordle',
   warmle: 'Warmle',
-  shuntle: 'Shuntle'
+  shuntle: 'Shuntle',
+  symble: 'Symble'
 };
 
 let tourneySettings = {
@@ -1613,6 +1615,7 @@ function getPtsPrefix() {
   if (currentGameMode === 'xordle') return 'pts_xordle_';
   if (currentGameMode === 'warmle') return 'pts_warmle_';
   if (currentGameMode === 'shuntle') return 'pts_shuntle_';
+  if (currentGameMode === 'symble') return 'pts_symble_';
   return 'pts_';
 }
 
@@ -5162,7 +5165,8 @@ function selectGame(mode) {
     absurdle: 'ABSURDLE',
     xordle: 'XORDLE',
     warmle: 'WARMLE',
-    shuntle: 'SHUNTLE'
+    shuntle: 'SHUNTLE',
+    symble: 'SYMBLE'
   };
   const titleName = gameNames[mode] || mode.toUpperCase();
 
@@ -5361,6 +5365,14 @@ const GAME_MODES_META = {
     color: '#38bdf8',
     badge: '4–7 HURUF GESER',
     tiles: ['S', 'H', 'N', 'T']
+  },
+  symble: {
+    title: 'SYMBLE',
+    tagline: 'Pecahkan 3 Simbol Sandi Acak • Posisi Mengikuti Kata Target',
+    icon: 'fa-gem',
+    color: '#5b93b3',
+    badge: 'SANDI SIMBOL',
+    tiles: ['S', 'Y', 'M', 'B']
   }
 };
 
@@ -5512,6 +5524,7 @@ function switchGameMode(e) {
   else if (currentGameMode === 'absurdle') nextMode = 'xordle';
   else if (currentGameMode === 'xordle') nextMode = 'warmle';
   else if (currentGameMode === 'warmle') nextMode = 'shuntle';
+  else if (currentGameMode === 'shuntle') nextMode = 'symble';
   else nextMode = 'wordle';
 
   changeGameModeDirect(nextMode, e);
@@ -5600,6 +5613,8 @@ function applyGameModeUI() {
   if (warmleInfoBar) warmleInfoBar.style.display = 'none';
   const shuntleInfoBar = document.getElementById('shuntleInfoBar');
   if (shuntleInfoBar) shuntleInfoBar.style.display = 'none';
+  const symbleInfoBar = document.getElementById('symbleInfoBar');
+  if (symbleInfoBar) symbleInfoBar.style.display = 'none';
   if (currentGameMode !== 'wordmatch') {
     if (typeof stopWordMatchAutoReveal === 'function') stopWordMatchAutoReveal();
   }
@@ -5883,6 +5898,18 @@ function applyGameModeUI() {
       boardObj.innerHTML = '';
       boardObj.className = '';
     }
+    if (switchBtn) switchBtn.textContent = 'Switch to Symble';
+  } else if (currentGameMode === 'symble') {
+    if (headerTitle) headerTitle.textContent = 'SYMBLE';
+    if (hintContainer) hintContainer.style.display = 'none';
+    if (bestGuessContainer) bestGuessContainer.style.display = 'none';
+    if (symbleInfoBar) symbleInfoBar.style.display = 'flex';
+    if (boardObj) {
+      boardObj.style.display = '';
+      boardObj.innerHTML = '';
+      boardObj.className = '';
+    }
+    if (typeof updateSymbleInfoBarUI === 'function') updateSymbleInfoBarUI(false);
     if (switchBtn) switchBtn.textContent = 'Switch to Wordle';
   } else {
     if (headerTitle) headerTitle.textContent = 'WORDLE';
@@ -6570,24 +6597,29 @@ function getInstructionText() {
       }
     }
     if (currentGameMode === 'absurdle') {
-      if (lastLang === 'id') return `Tebak kata ${WORD_LENGTH} huruf & taklukkan AI yang terus menghindar!`;
+      if (lastLang === 'id') return `Tebak kata ${WORD_LENGTH} huruf & pojokkan AI!`;
       if (lastLang === 'mixed') return `Taklukkan AI! / Corner the AI (${WORD_LENGTH} letters)!`;
-      return `Guess ${WORD_LENGTH}-letter words to corner the evasive AI!`;
+      return `Guess ${WORD_LENGTH}-letter words to corner the AI!`;
     }
     if (currentGameMode === 'xordle') {
-      if (lastLang === 'id') return `Tebak 2 kata ${WORD_LENGTH} huruf sekaligus (tanpa huruf yang sama)!`;
-      if (lastLang === 'mixed') return `Tebak 2 kata ${WORD_LENGTH} huruf! / Guess 2 disjoint ${WORD_LENGTH}-letter words!`;
-      return `Guess 2 ${WORD_LENGTH}-letter words with no shared letters on 1 board!`;
+      if (lastLang === 'id') return `Tebak 2 kata ${WORD_LENGTH} huruf (tanpa huruf sama)!`;
+      if (lastLang === 'mixed') return `Tebak 2 kata ${WORD_LENGTH} huruf! / Guess 2 ${WORD_LENGTH}-letter words!`;
+      return `Guess 2 ${WORD_LENGTH}-letter words with no shared letters!`;
     }
     if (currentGameMode === 'warmle') {
-      if (lastLang === 'id') return `Kuning = huruf berjarak 1–3 langkah abjad dari huruf asli di kotak itu!`;
-      if (lastLang === 'mixed') return `Kuning = dekat ±1-3 abjad! / Yellow = within ±1-3 letters in alphabet!`;
-      return `Yellow tile = letter is within 1–3 alphabetical steps at that position!`;
+      if (lastLang === 'id') return `Kuning = dekat ±1–3 langkah di urutan abjad!`;
+      if (lastLang === 'mixed') return `Kuning = dekat ±1–3 abjad! / Yellow = ±1–3 letters!`;
+      return `Yellow = within ±1–3 letters in the alphabet!`;
     }
     if (currentGameMode === 'shuntle') {
-      if (lastLang === 'id') return `Ketik kata 4–7 huruf! Posisi kata rahasia bisa tergeser di dalam 7 kotak!`;
-      if (lastLang === 'mixed') return `Tebak kata 4–7 huruf di papan 7 kotak! / Guess 4–7 letter words!`;
-      return `Type any 4–7 letter word! The secret word may be shifted inside the 7 tiles!`;
+      if (lastLang === 'id') return `Tebak kata 4–7 huruf di kolom komentar!`;
+      if (lastLang === 'mixed') return `Tebak kata 4–7 huruf! / Guess a 4–7 letter word!`;
+      return `Guess any 4–7 letter word in chat!`;
+    }
+    if (currentGameMode === 'symble') {
+      if (lastLang === 'id') return `Pecahkan 3 simbol sandi & tebak kata ${WORD_LENGTH} huruf!`;
+      if (lastLang === 'mixed') return `Pecahkan 3 simbol sandi (${WORD_LENGTH} huruf)! / Crack the 3 symbols!`;
+      return `Crack the 3 mystery symbols & guess the ${WORD_LENGTH}-letter word!`;
     }
     if (lastLang === 'id') return `Ketik kata ${WORD_LENGTH} huruf di komentar untuk menebak!`;
     if (lastLang === 'mixed') return `Ketik kata ${WORD_LENGTH} huruf di komentar! / Type a ${WORD_LENGTH}-letter word!`;
@@ -8367,7 +8399,7 @@ function startNewRound() {
     lastRoundTargetWord = currentWord;
   }
 
-  const isGuessMode = !currentGameMode || currentGameMode === 'wordle' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit';
+  const isGuessMode = !currentGameMode || currentGameMode === 'wordle' || currentGameMode === 'warmle' || currentGameMode === 'symble' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit';
   let parsedWinnerWord = null;
   if (isAutoStarterWinnerNickname && isGuessMode && lastRoundWinner) {
     parsedWinnerWord = parseWinnerNicknameForStarter(lastRoundWinner);
@@ -8610,13 +8642,16 @@ function startNewRound() {
   console.log(`[Cheat] Target word is: ${currentWord}`);
   startInstructionRotation();
   const getW500Name = () => window.w500UseMastermind ? 'Word Pegs 5' : 'Word500';
-  const gameName = currentGameMode === 'wordladder' ? 'Word Ladder' : (currentGameMode === 'squareword' ? 'Kotak Kata' : (currentGameMode === 'wordtango' ? 'Word Tango' : (currentGameMode === 'fillblanks' ? 'Word Fill' : (currentGameMode === 'word500' ? getW500Name() : 'Wordle'))));
+  if (currentGameMode === 'symble' && typeof initSymbleRoundCipher === 'function') {
+    initSymbleRoundCipher();
+  }
+  const gameName = currentGameMode === 'symble' ? 'Symble' : (currentGameMode === 'warmle' ? 'Warmle' : (currentGameMode === 'wordladder' ? 'Word Ladder' : (currentGameMode === 'squareword' ? 'Kotak Kata' : (currentGameMode === 'wordtango' ? 'Word Tango' : (currentGameMode === 'fillblanks' ? 'Word Fill' : (currentGameMode === 'word500' ? getW500Name() : 'Wordle'))))));
   showToast(`${gameName} Round ${round} Started!`, 2000);
   
   if (window.playHostAudio) playHostAudio('start');
 
   // Auto-Starter logic
-  const isGuessModeForStarter = !currentGameMode || currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit';
+  const isGuessModeForStarter = !currentGameMode || currentGameMode === 'wordle' || currentGameMode === 'warmle' || currentGameMode === 'symble' || currentGameMode === 'word500' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit';
 
   if (isGuessModeForStarter && (isAutoStarterWinnerNickname || isAutoStarterPreviousTarget)) {
     let starterWord = null;
@@ -9026,12 +9061,18 @@ function toggleHardMode(e) {
   try { localStorage.setItem('wordle_hardModeState', hardModeState); } catch(e) {}
   updateHardModeUI();
   
-  let msg = 'Hard Mode Dinonaktifkan';
+  let msg = (currentGameMode === 'symble')
+    ? 'Symble Normal: Bantuan 1 simbol terbuka setelah 5 tebakan'
+    : 'Hard Mode Dinonaktifkan';
   const isSortedClueMode = (currentGameMode === 'word500' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit');
   if (hardModeState === 'hard') {
-    msg = isSortedClueMode ? 'Hard Mode: Wajib cocok dgn skor petunjuk!' : 'Hard Mode Diaktifkan';
+    msg = (currentGameMode === 'symble')
+      ? 'Symble Hard: Tanpa bantuan pembuka simbol (100% Murni)!'
+      : (isSortedClueMode ? 'Hard Mode: Wajib cocok dgn skor petunjuk!' : 'Hard Mode Diaktifkan');
   } else if (hardModeState === 'ultra') {
-    msg = isSortedClueMode ? 'Ultra Hard: Wajib cocok semua petunjuk!' : 'Ultra Hard Mode Diaktifkan';
+    msg = (currentGameMode === 'symble')
+      ? 'Symble Ultra Hard: Sandi simbol diacak ulang tiap 4 tebakan!'
+      : (isSortedClueMode ? 'Ultra Hard: Wajib cocok semua petunjuk!' : 'Ultra Hard Mode Diaktifkan');
   }
   showToast(msg, 2500);
 
@@ -9188,6 +9229,7 @@ function syncVisualThemeUI(theme) {
   document.body.classList.toggle('theme-sepia', isSepia);
   document.body.setAttribute('data-theme', theme);
   document.documentElement.classList.toggle('theme-sepia', isSepia);
+  if (typeof refreshSymbleBoardColors === 'function') refreshSymbleBoardColors();
 
   // Update Settings Buttons
   const btnDark = document.getElementById('themeBtnDark');
@@ -9335,7 +9377,7 @@ function getWordleFeedback(guess, target) {
 }
 
 function validateHardMode(guessWord) {
-  if (hardModeState === 'off' || guesses.length === 0 || currentGameMode === 'xordle') return { valid: true };
+  if (hardModeState === 'off' || guesses.length === 0 || currentGameMode === 'xordle' || currentGameMode === 'symble') return { valid: true };
 
   let validPastGuesses;
   if (currentGameMode === 'colorfit') {
@@ -10905,6 +10947,59 @@ function setupSocketListeners() {
   // sway = ayunan sinus kiri-kanan, content = pop-in. Tidak ada keyframe
   // berlapis yang membuat gerak "berhenti-jalan" di tiap titik.
   const FLOATING_GIFT_MAX = 8;
+  let isFloatingGiftEnabled = localStorage.getItem('wordle_floatingGiftEnabled') !== 'false';
+  let floatingGiftStyle = localStorage.getItem('wordle_floatingGiftStyle') || 'float';
+
+  function syncFloatingGiftControlsUI() {
+    const tog = document.getElementById('floatingGiftToggle');
+    if (tog) tog.checked = isFloatingGiftEnabled;
+    const sel = document.getElementById('giftAnimStyleSelect');
+    if (sel) sel.value = floatingGiftStyle;
+    const row = document.getElementById('giftAnimStyleControlRow');
+    if (row) row.style.opacity = isFloatingGiftEnabled ? '1' : '0.5';
+  }
+  setTimeout(syncFloatingGiftControlsUI, 50);
+  document.addEventListener('DOMContentLoaded', syncFloatingGiftControlsUI);
+
+  window.toggleFloatingGift = function(checked) {
+    isFloatingGiftEnabled = !!checked;
+    try { localStorage.setItem('wordle_floatingGiftEnabled', isFloatingGiftEnabled); } catch(e) {}
+    syncFloatingGiftControlsUI();
+    if (!isFloatingGiftEnabled) {
+      const container = document.getElementById('floatingGiftContainer');
+      if (container) container.innerHTML = '';
+    }
+    showToast(isFloatingGiftEnabled ? 'Animasi Gambar Gift: AKTIF' : 'Animasi Gambar Gift: NONAKTIF', 1800);
+  };
+
+  window.changeFloatingGiftStyle = function(styleVal) {
+    floatingGiftStyle = styleVal || 'float';
+    try { localStorage.setItem('wordle_floatingGiftStyle', floatingGiftStyle); } catch(e) {}
+    syncFloatingGiftControlsUI();
+    const styleNames = {
+      float: 'Melayang Naik',
+      fountain: 'Air Mancur / Parabola',
+      pop: 'Pop-Up Spotlight',
+      meteor: 'Meluncur Diagonal',
+      stamp: 'Cap / Stempel Keras',
+      rain: 'Hujan dari Atas',
+      random: 'Acak Semua Gaya'
+    };
+    showToast('Gaya Animasi Gift: ' + (styleNames[floatingGiftStyle] || floatingGiftStyle), 1800);
+  };
+
+  window.previewFloatingGiftStyle = function(e) {
+    if (e) e.stopPropagation();
+    const hostAv = (typeof getHostAvatar === 'function') ? getHostAvatar() : 'assets/default-avatar.png';
+    spawnFloatingGift({
+      nickname: 'Host',
+      uniqueId: 'host',
+      profilePictureUrl: hostAv,
+      giftName: 'Gift Test',
+      repeatCount: 5
+    }, true);
+  };
+
   const _decodedGiftImgs = new Set();
   function preloadGiftImage(url) {
     if (!url || _decodedGiftImgs.has(url)) return Promise.resolve();
@@ -10916,11 +11011,12 @@ function setupSocketListeners() {
       img.onerror = finish;
       img.src = url;
       if (img.decode) img.decode().then(finish, finish);
-      setTimeout(finish, 300); // jangan tahan animasi terlalu lama
+      setTimeout(finish, 300);
     });
   }
 
-  function spawnFloatingGift(userData) {
+  function spawnFloatingGift(userData, forcePreview = false) {
+    if (!isFloatingGiftEnabled && !forcePreview) return;
     const container = document.getElementById('floatingGiftContainer');
     if (!container || !userData) return;
 
@@ -10930,112 +11026,157 @@ function setupSocketListeners() {
     const avatarSrc = userData.profilePictureUrl || 'assets/default-avatar.png';
     const rawName = userData.nickname || userData.uniqueId || 'Seseorang';
     const cleanNick = rawName.replace(/^@+/, '').trim() || 'Seseorang';
+    const allStyles = ['float', 'stamp', 'fountain', 'pop', 'meteor', 'rain'];
 
     preloadGiftImage(userData.giftPictureUrl).then(() => {
-    for (let i = 0; i < spawnCount; i++) {
-      setTimeout(() => {
-        // Batasi jumlah gift melayang bersamaan (gift storm)
-        while (container.children.length >= FLOATING_GIFT_MAX) {
-          container.firstElementChild.remove();
-        }
+      for (let i = 0; i < spawnCount; i++) {
+        setTimeout(() => {
+          while (container.children.length >= FLOATING_GIFT_MAX) {
+            container.firstElementChild.remove();
+          }
 
-        const item = document.createElement('div');
-        item.className = 'floating-gift-item';
+          const resolvedStyle = (floatingGiftStyle === 'random')
+            ? allStyles[Math.floor(Math.random() * allStyles.length)]
+            : (allStyles.includes(floatingGiftStyle) ? floatingGiftStyle : 'float');
 
-        // Sebar posisi per gelombang agar tidak menumpuk di satu titik
-        const randomLeft = Math.floor(12 + Math.random() * 76);
-        item.style.left = `${randomLeft}%`;
-        item.style.setProperty('--rise-dur', `${(4.2 + Math.random() * 0.8).toFixed(2)}s`);
+          const item = document.createElement('div');
+          item.className = 'floating-gift-item style-' + resolvedStyle;
 
-        const sway = document.createElement('div');
-        sway.className = 'floating-gift-sway';
-        const swayDur = 1.6 + Math.random() * 0.6;
-        sway.style.setProperty('--sway-x', `${(8 + Math.random() * 10).toFixed(1)}px`);
-        sway.style.setProperty('--sway-rot', `${(2 + Math.random() * 3).toFixed(1)}deg`);
-        sway.style.setProperty('--sway-dur', `${swayDur.toFixed(2)}s`);
-        // Fase acak supaya tiap gift tidak berayun serempak
-        sway.style.animationDelay = `-${(Math.random() * swayDur).toFixed(2)}s`;
+          if (resolvedStyle === 'fountain') {
+            const centerLeft = Math.floor(42 + Math.random() * 16);
+            const dir = (i % 2 === 0 ? 1 : -1) * (Math.random() < 0.3 ? -1 : 1);
+            const arcX = dir * Math.floor(75 + Math.random() * 115);
+            const arcRot = dir * Math.floor(10 + Math.random() * 12);
+            item.style.left = `${centerLeft}%`;
+            item.style.setProperty('--arc-x', `${arcX}px`);
+            item.style.setProperty('--arc-rot', `${arcRot}deg`);
+            item.style.setProperty('--rise-dur', `${(3.2 + Math.random() * 0.5).toFixed(2)}s`);
+          } else if (resolvedStyle === 'pop') {
+            const popLeft = Math.floor(22 + Math.random() * 56);
+            const popTop = Math.floor(26 + Math.random() * 34);
+            item.style.left = `${popLeft}%`;
+            item.style.setProperty('--pop-top', `${popTop}%`);
+            item.style.setProperty('--rise-dur', `${(3.0 + Math.random() * 0.4).toFixed(2)}s`);
+          } else if (resolvedStyle === 'meteor') {
+            const goRight = Math.random() >= 0.5;
+            const startLeft = goRight ? Math.floor(12 + Math.random() * 24) : Math.floor(64 + Math.random() * 24);
+            const dx = (goRight ? 1 : -1) * Math.floor(170 + Math.random() * 110);
+            const rot = (goRight ? 1 : -1) * Math.floor(8 + Math.random() * 8);
+            item.style.left = `${startLeft}%`;
+            item.style.setProperty('--meteor-dx', `${dx}px`);
+            item.style.setProperty('--meteor-rot', `${rot}deg`);
+            item.style.setProperty('--rise-dur', `${(3.3 + Math.random() * 0.6).toFixed(2)}s`);
+          } else if (resolvedStyle === 'stamp') {
+            const stampLeft = Math.floor(22 + Math.random() * 56);
+            const stampTop = Math.floor(24 + Math.random() * 38);
+            const stampDir = (Math.random() >= 0.5 ? 1 : -1);
+            const stampRot = stampDir * Math.floor(5 + Math.random() * 9);
+            item.style.left = `${stampLeft}%`;
+            item.style.setProperty('--stamp-top', `${stampTop}%`);
+            item.style.setProperty('--stamp-rot', `${stampRot}deg`);
+            item.style.setProperty('--rise-dur', `${(2.7 + Math.random() * 0.4).toFixed(2)}s`);
 
-        const content = document.createElement('div');
-        content.className = 'floating-gift-content';
+            const ring = document.createElement('div');
+            ring.className = 'floating-stamp-ring';
+            item.appendChild(ring);
+          } else if (resolvedStyle === 'rain') {
+            const rainLeft = Math.floor(12 + Math.random() * 76);
+            item.style.left = `${rainLeft}%`;
+            item.style.setProperty('--rise-dur', `${(4.1 + Math.random() * 0.7).toFixed(2)}s`);
+          } else {
+            const randomLeft = Math.floor(12 + Math.random() * 76);
+            item.style.left = `${randomLeft}%`;
+            item.style.setProperty('--rise-dur', `${(4.2 + Math.random() * 0.8).toFixed(2)}s`);
+          }
 
-        if (userData.giftPictureUrl) {
-          const giftImg = document.createElement('img');
-          giftImg.className = 'floating-gift-img';
-          giftImg.src = userData.giftPictureUrl;
-          giftImg.alt = userData.giftName || 'Gift';
-          giftImg.onerror = function() { this.style.display = 'none'; };
-          content.appendChild(giftImg);
-        } else {
-          const giftIcon = document.createElement('div');
-          giftIcon.className = 'floating-gift-img';
-          giftIcon.style.display = 'flex';
-          giftIcon.style.alignItems = 'center';
-          giftIcon.style.justifyContent = 'center';
-          giftIcon.style.fontSize = '38px';
-          giftIcon.style.color = '#ffd700';
-          giftIcon.innerHTML = '<i class="fa-solid fa-gift"></i>';
-          content.appendChild(giftIcon);
-        }
+          const sway = document.createElement('div');
+          sway.className = 'floating-gift-sway';
+          const swayDur = 1.6 + Math.random() * 0.6;
+          sway.style.setProperty('--sway-x', `${(8 + Math.random() * 10).toFixed(1)}px`);
+          sway.style.setProperty('--sway-rot', `${(2 + Math.random() * 3).toFixed(1)}deg`);
+          sway.style.setProperty('--sway-dur', `${swayDur.toFixed(2)}s`);
+          sway.style.animationDelay = `-${(Math.random() * swayDur).toFixed(2)}s`;
 
-        if (repeatCount > 1) {
-          const combo = document.createElement('span');
-          combo.className = 'floating-gift-combo';
-          combo.textContent = `x${repeatCount}`;
-          content.appendChild(combo);
-        }
+          const content = document.createElement('div');
+          content.className = 'floating-gift-content';
 
-        const senderPill = document.createElement('div');
-        senderPill.className = 'floating-gift-sender-pill';
+          if (userData.giftPictureUrl) {
+            const giftImg = document.createElement('img');
+            giftImg.className = 'floating-gift-img';
+            giftImg.src = userData.giftPictureUrl;
+            giftImg.alt = userData.giftName || 'Gift';
+            giftImg.onerror = function() { this.style.display = 'none'; };
+            content.appendChild(giftImg);
+          } else {
+            const giftIcon = document.createElement('div');
+            giftIcon.className = 'floating-gift-img';
+            giftIcon.style.display = 'flex';
+            giftIcon.style.alignItems = 'center';
+            giftIcon.style.justifyContent = 'center';
+            giftIcon.style.fontSize = '38px';
+            giftIcon.style.color = '#ffd700';
+            giftIcon.innerHTML = '<i class="fa-solid fa-gift"></i>';
+            content.appendChild(giftIcon);
+          }
 
-        const senderAvatar = document.createElement('img');
-        senderAvatar.className = 'floating-gift-avatar';
-        senderAvatar.src = avatarSrc;
-        senderAvatar.onerror = function() { this.src = 'assets/default-avatar.png'; };
+          if (repeatCount > 1) {
+            const combo = document.createElement('span');
+            combo.className = 'floating-gift-combo';
+            combo.textContent = `x${repeatCount}`;
+            content.appendChild(combo);
+          }
 
-        const senderName = document.createElement('span');
-        senderName.className = 'floating-gift-name';
-        senderName.textContent = cleanNick;
+          const senderPill = document.createElement('div');
+          senderPill.className = 'floating-gift-sender-pill';
 
-        senderPill.appendChild(senderAvatar);
-        senderPill.appendChild(senderName);
-        content.appendChild(senderPill);
+          const senderAvatar = document.createElement('img');
+          senderAvatar.className = 'floating-gift-avatar';
+          senderAvatar.src = avatarSrc;
+          senderAvatar.onerror = function() { this.src = 'assets/default-avatar.png'; };
 
-        sway.appendChild(content);
-        item.appendChild(sway);
+          const senderName = document.createElement('span');
+          senderName.className = 'floating-gift-name';
+          senderName.textContent = cleanNick;
 
-        // Percikan kecil saat muncul (tanpa glow, warna palet resmi)
-        const sparkleColors = ['#ffd54f', '#fe2c55', '#25f4ee', '#ffffff', '#f59e0b'];
-        const sparkleCount = isLowPowerMode ? 0 : 6;
-        for (let s = 0; s < sparkleCount; s++) {
-          const sparkle = document.createElement('div');
-          sparkle.className = 'floating-sparkle';
-          const size = Math.floor(Math.random() * 5 + 5);
-          sparkle.style.width = `${size}px`;
-          sparkle.style.height = `${size}px`;
-          sparkle.style.backgroundColor = sparkleColors[Math.floor(Math.random() * sparkleColors.length)];
+          senderPill.appendChild(senderAvatar);
+          senderPill.appendChild(senderName);
+          content.appendChild(senderPill);
 
-          const angle = (Math.PI * 2 / sparkleCount) * s + (Math.random() * 0.4);
-          const dist = Math.random() * 40 + 40;
-          const tx = Math.cos(angle) * dist;
-          const ty = Math.sin(angle) * dist - 20;
+          sway.appendChild(content);
+          item.appendChild(sway);
 
-          sparkle.style.setProperty('--tx', `${tx.toFixed(1)}px`);
-          sparkle.style.setProperty('--ty', `${ty.toFixed(1)}px`);
-          sparkle.style.setProperty('--duration', `${(0.9 + Math.random() * 0.5).toFixed(2)}s`);
-          sparkle.addEventListener('animationend', () => sparkle.remove(), { once: true });
-          item.appendChild(sparkle);
-        }
+          const sparkleColors = ['#ffd54f', '#fe2c55', '#25f4ee', '#ffffff', '#f59e0b'];
+          const sparkleCount = isLowPowerMode ? 0 : 6;
+          for (let s = 0; s < sparkleCount; s++) {
+            const sparkle = document.createElement('div');
+            sparkle.className = 'floating-sparkle';
+            const size = Math.floor(Math.random() * 5 + 5);
+            sparkle.style.width = `${size}px`;
+            sparkle.style.height = `${size}px`;
+            sparkle.style.backgroundColor = sparkleColors[Math.floor(Math.random() * sparkleColors.length)];
 
-        const cleanup = () => { if (item.parentNode) item.remove(); };
-        item.addEventListener('animationend', (e) => {
-          if (e.target === item && e.animationName === 'floatingGiftRise') cleanup();
-        });
-        setTimeout(cleanup, 5600); // fallback jika animationend tidak terpicu
+            const angle = (Math.PI * 2 / sparkleCount) * s + (Math.random() * 0.4);
+            const dist = Math.random() * 40 + 40;
+            const tx = Math.cos(angle) * dist;
+            const ty = Math.sin(angle) * dist - 20;
 
-        container.appendChild(item);
-      }, i * 320);
-    }
+            sparkle.style.setProperty('--tx', `${tx.toFixed(1)}px`);
+            sparkle.style.setProperty('--ty', `${ty.toFixed(1)}px`);
+            sparkle.style.setProperty('--duration', `${(0.9 + Math.random() * 0.5).toFixed(2)}s`);
+            sparkle.addEventListener('animationend', () => sparkle.remove(), { once: true });
+            item.appendChild(sparkle);
+          }
+
+          const cleanup = () => { if (item.parentNode) item.remove(); };
+          const mainAnims = ['floatingGiftRise', 'floatingGiftStamp', 'floatingGiftFountain', 'floatingGiftPopSpotlight', 'floatingGiftMeteor', 'floatingGiftRain'];
+          item.addEventListener('animationend', (e) => {
+            if (e.target === item && mainAnims.includes(e.animationName)) cleanup();
+          });
+          setTimeout(cleanup, 5600);
+
+          container.appendChild(item);
+        }, i * 320);
+      }
     });
   }
   window.spawnFloatingGift = spawnFloatingGift;
@@ -11366,9 +11507,9 @@ function handleChatGuess(data, optionalUserData) {
                         (allValidWords && allValidWords[len] && allValidWords[len].includes(msg)) ||
                         (typeof fullValidDictionary !== 'undefined' && fullValidDictionary && fullValidDictionary.has(msg));
         if (!isValid) return;
-        if (guesses && guesses.includes(msg) && data._shuntleOffset === null) return;
+        if (msg.length === 7 && guesses && guesses.includes(msg)) return;
       }
-    } else if (currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit' || currentGameMode === 'absurdle' || currentGameMode === 'xordle' || currentGameMode === 'warmle') {
+    } else if (currentGameMode === 'wordle' || currentGameMode === 'word500' || currentGameMode === 'wordfit' || currentGameMode === 'colorfit' || currentGameMode === 'absurdle' || currentGameMode === 'xordle' || currentGameMode === 'warmle' || currentGameMode === 'symble') {
       if (!isHost) {
         if (msg.length !== WORD_LENGTH) return;
 
@@ -12054,14 +12195,24 @@ function processGuess(guessWord, userData, queueLen = 0) {
     tooltip.textContent = invalidTooltipMsg;
     document.body.appendChild(tooltip);
     
-    // Position it dynamically after row is rendered
+    // Position it dynamically after row is rendered (avoid covering #warmleInfoBar in Warmle mode)
     requestAnimationFrame(() => {
       const rowRect = row.getBoundingClientRect();
       const tooltipHeight = tooltip.offsetHeight;
+      let anchorTop = rowRect.top;
+      if (currentGameMode === 'warmle' || currentGameMode === 'symble') {
+        const infoBar = document.getElementById(currentGameMode === 'symble' ? 'symbleInfoBar' : 'warmleInfoBar');
+        if (infoBar && infoBar.offsetParent !== null) {
+          const barRect = infoBar.getBoundingClientRect();
+          if (barRect.top > 0 && barRect.top < anchorTop) {
+            anchorTop = barRect.top;
+          }
+        }
+      }
       tooltip.style.position = 'fixed';
       tooltip.style.bottom = 'auto';
       tooltip.style.left = (rowRect.left + rowRect.width / 2) + 'px';
-      tooltip.style.top = (rowRect.top - tooltipHeight - 8) + 'px';
+      tooltip.style.top = Math.max(8, anchorTop - tooltipHeight - 6) + 'px';
       tooltip.style.zIndex = '50';
     });
 
@@ -12137,6 +12288,12 @@ function processGuess(guessWord, userData, queueLen = 0) {
           presentCount++;
         }
       }
+      absentCount = WORD_LENGTH - correctCount - presentCount;
+    } else if (currentGameMode === 'symble') {
+      const symRes = evaluateSymbleGuess(guessWord, currentWord);
+      statuses = symRes.statuses;
+      correctCount = symRes.correctCount;
+      presentCount = symRes.presentCount;
       absentCount = WORD_LENGTH - correctCount - presentCount;
     } else if (currentGameMode === 'xordle') {
       const xorRes = evaluateXordleGuess(guessWord);
@@ -12273,14 +12430,22 @@ function processGuess(guessWord, userData, queueLen = 0) {
         }, i * stepDelay);
 
         setTimeout(() => {
-          tiles[i].classList.add(statuses[i]);
-          // Jika terbuka huruf hijau (correct), bunyikan chime halus
-          if (statuses[i] === 'correct' && queueLen <= 2 && window.sounds && typeof window.sounds.playGreenChime === 'function') {
+          if (currentGameMode === 'symble' && typeof applySymbleTileAppearance === 'function') {
+            applySymbleTileAppearance(tiles[i], statuses[i]);
+          } else {
+            tiles[i].classList.add(statuses[i]);
+          }
+          // Jika terbuka huruf hijau (correct), bunyikan chime halus (skip di symble agar tidak bocor)
+          if (currentGameMode !== 'symble' && statuses[i] === 'correct' && queueLen <= 2 && window.sounds && typeof window.sounds.playGreenChime === 'function') {
             window.sounds.playGreenChime();
           }
         }, (i * stepDelay) + revealOffset);
       } else {
-        tiles[i].classList.add(statuses[i]);
+        if (currentGameMode === 'symble' && typeof applySymbleTileAppearance === 'function') {
+          applySymbleTileAppearance(tiles[i], statuses[i]);
+        } else {
+          tiles[i].classList.add(statuses[i]);
+        }
       }
     }
   }
@@ -12383,6 +12548,9 @@ function processGuess(guessWord, userData, queueLen = 0) {
     
     if (isValidWord) {
       guesses.push(guessWord);
+      if (currentGameMode === 'symble' && guessWord !== currentWord && typeof onSymbleNonWinningGuess === 'function') {
+        onSymbleNonWinningGuess(guesses.length, queueLen);
+      }
     } else {
       row.classList.add('is-invalid-row');
     }
@@ -12423,7 +12591,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
       const solverId = userData ? (userData.uniqueId || userData.nickname || solverName) : solverName;
       const solverAvatar = (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : 'assets/bg_nature.png';
       const solvedTotal = xordleSolved.filter(Boolean).length;
-      const ptsForThisWord = (solvedTotal === 1) ? 10 : 15;
+      const ptsForThisWord = (solvedTotal === 1) ? 15 : 10;
       xordleSolvers[matchedIdx] = { id: solverId, name: solverName, avatar: solverAvatar, word: guessWord, pts: ptsForThisWord, userData };
 
       // Penanda visual menarik pada baris yang menebak kata target (border emas + badge 1/2 atau 2/2)
@@ -12457,31 +12625,31 @@ function processGuess(guessWord, userData, queueLen = 0) {
         }
       } else {
         // Kata 2 ketemu -> Ronde Xordle Selesai!
-        const s0 = xordleSolvers[0] || { id: solverId, name: solverName, avatar: solverAvatar, word: xordleTargets[0], pts: 10 };
-        const s1 = xordleSolvers[1] || { id: solverId, name: solverName, avatar: solverAvatar, word: xordleTargets[1], pts: 15 };
+        const s0 = xordleSolvers[0] || { id: solverId, name: solverName, avatar: solverAvatar, word: xordleTargets[0], pts: 15 };
+        const s1 = xordleSolvers[1] || { id: solverId, name: solverName, avatar: solverAvatar, word: xordleTargets[1], pts: 10 };
         const isSameSolver = (String(s0.id).toLowerCase() === String(s1.id).toLowerCase());
 
         if (isSameSolver) {
-          // 1 orang memborong kedua kata -> tampilkan #winOverlay tunggal (+25 Pts total ronde)
+          // 1 orang memborong kedua kata -> tampilkan #winOverlay tunggal (+25 Pts total ronde: 15 + 10)
           isWin = true;
-          winPts = 15; // 10 poin sudah ditambahkan saat Kata 1 ketemu
+          winPts = 10; // 15 poin sudah ditambahkan saat Kata 1 ketemu
           currentWord = `${xordleTargets[0]} + ${xordleTargets[1]}`;
         } else {
           // 2 orang berbeda menjawab Kata 1 dan Kata 2 -> tampilkan #multiWinOverlay dengan kedua pemenang!
           isGameOver = true;
           guessQueue = [];
-          addPoints(userData, 15);
-          recordWin(userData && (userData.uniqueId || userData.nickname));
-          showFloatingPoints(15, `avatar-${currentRow}`);
-          lastRoundWinner = userData;
-          lastRoundTargetWord = `${xordleTargets[0]} + ${xordleTargets[1]}`;
+          addPoints(userData, 10);
+          recordWin((s0 && s0.id) || (userData && (userData.uniqueId || userData.nickname)));
+          showFloatingPoints(10, `avatar-${currentRow}`);
+          lastRoundWinner = (s0 && s0.userData) ? s0.userData : userData;
+          lastRoundTargetWord = xordleTargets[0] || xordleTargets[1];
 
           const multiWinList = document.getElementById('multiWinList');
           if (multiWinList) {
             multiWinList.innerHTML = '';
             [s0, s1].forEach((solver, idx) => {
               const item = document.createElement('div');
-              item.className = `multi-win-item ${idx === 1 ? 'mvp' : ''}`;
+              item.className = `multi-win-item ${idx === 0 ? 'mvp' : ''}`;
               item.innerHTML = `
                 <img class="multi-win-avatar" src="${solver.avatar || 'assets/bg_nature.png'}" onerror="this.onerror=null;this.src='assets/bg_nature.png';" alt="Avatar">
                 <div class="multi-win-info">
@@ -12521,7 +12689,10 @@ function processGuess(guessWord, userData, queueLen = 0) {
     }
   } else if (guessWord === currentWord && !isStarterGuess) {
     isWin = true;
-    winPts = (currentGameMode === 'absurdle') ? 30 : ((currentGameMode === 'word500' || currentGameMode === 'wordfit') ? 15 : 10);
+    winPts = (currentGameMode === 'absurdle') ? 30 : ((currentGameMode === 'word500' || currentGameMode === 'wordfit' || currentGameMode === 'symble') ? 15 : 10);
+    if (currentGameMode === 'symble' && typeof revealSymbleRoundCipher === 'function') {
+      setTimeout(() => revealSymbleRoundCipher(), 650);
+    }
   }
 
   if (isWin) {
@@ -18427,8 +18598,9 @@ let wordMatchGuesses = [];
 let wordMatchLatestGuess = null;
 let wordMatchRound = 1;
 let wordMatchAutoRevealTimer = null;
-let wordMatchAutoRevealSeconds = 60;
-let wordMatchAutoRevealTick = 60;
+let wordMatchAutoRevealEnabled = localStorage.getItem('wordmatch_auto_reveal_enabled') !== 'false';
+let wordMatchAutoRevealSeconds = Math.max(15, Math.min(180, parseInt(localStorage.getItem('wordmatch_reveal_seconds') || '60', 10) || 60));
+let wordMatchAutoRevealTick = wordMatchAutoRevealSeconds;
 let wordMatchGameOver = false;
 let wordMatchHintsGiven = 0;
 let wordMatchTransitionTimer = null;
@@ -18543,13 +18715,63 @@ function startWordMatchGame(forceWord = null) {
   console.log(`[WordMatch] Round ${wordMatchRound} started: "${wordMatchCurrentWord}" (${len} letters)`);
 }
 
+function syncWordMatchSettingsUI() {
+  const toggleEl = document.getElementById('wmAutoRevealToggle');
+  if (toggleEl) toggleEl.checked = wordMatchAutoRevealEnabled;
+  const sliderEl = document.getElementById('wmRevealDelayInput');
+  if (sliderEl) sliderEl.value = wordMatchAutoRevealSeconds;
+  const labelEl = document.getElementById('wmRevealDelayLabel');
+  if (labelEl) labelEl.textContent = `${wordMatchAutoRevealSeconds} Detik`;
+  const rowEl = document.getElementById('wmRevealDelayControlRow');
+  if (rowEl) {
+    rowEl.style.opacity = wordMatchAutoRevealEnabled ? '1' : '0.45';
+    rowEl.style.pointerEvents = wordMatchAutoRevealEnabled ? 'auto' : 'none';
+  }
+}
+
+function toggleWmAutoReveal(checked) {
+  wordMatchAutoRevealEnabled = Boolean(checked);
+  try { localStorage.setItem('wordmatch_auto_reveal_enabled', String(wordMatchAutoRevealEnabled)); } catch (e) {}
+  syncWordMatchSettingsUI();
+  if (currentGameMode === 'wordmatch') {
+    if (wordMatchAutoRevealEnabled && !wordMatchGameOver) {
+      initWordMatchAutoReveal();
+    } else {
+      stopWordMatchAutoReveal();
+      updateWordMatchTimerUI();
+    }
+  }
+  if (typeof showToast === 'function') {
+    showToast(wordMatchAutoRevealEnabled ? `Timer Reveal Word Match: AKTIF (${wordMatchAutoRevealSeconds}s)` : 'Timer Reveal Word Match: NONAKTIF', 2000);
+  }
+}
+
+function updateWmRevealDelay(val) {
+  const sec = Math.max(15, Math.min(180, parseInt(val, 10) || 60));
+  wordMatchAutoRevealSeconds = sec;
+  try { localStorage.setItem('wordmatch_reveal_seconds', String(sec)); } catch (e) {}
+  syncWordMatchSettingsUI();
+  if (currentGameMode === 'wordmatch' && wordMatchAutoRevealEnabled && !wordMatchGameOver) {
+    wordMatchAutoRevealTick = sec;
+    updateWordMatchTimerUI();
+  }
+}
+
+window.toggleWmAutoReveal = toggleWmAutoReveal;
+window.updateWmRevealDelay = updateWmRevealDelay;
+window.syncWordMatchSettingsUI = syncWordMatchSettingsUI;
+setTimeout(syncWordMatchSettingsUI, 0);
+
 function initWordMatchAutoReveal() {
   stopWordMatchAutoReveal();
+  syncWordMatchSettingsUI();
   wordMatchAutoRevealTick = wordMatchAutoRevealSeconds;
   updateWordMatchTimerUI();
 
+  if (!wordMatchAutoRevealEnabled) return;
+
   wordMatchAutoRevealTimer = setInterval(() => {
-    if (wordMatchGameOver || currentGameMode !== 'wordmatch') {
+    if (wordMatchGameOver || currentGameMode !== 'wordmatch' || !wordMatchAutoRevealEnabled) {
       stopWordMatchAutoReveal();
       return;
     }
@@ -18575,6 +18797,20 @@ function updateWordMatchTimerUI() {
   const timerTextEl = document.getElementById('wmTimerText');
   const gaugeBarEl = document.getElementById('wmGaugeBar');
   if (!pillEl || !timerTextEl) return;
+
+  const topRowEl = pillEl.parentElement;
+  if (!wordMatchAutoRevealEnabled) {
+    pillEl.style.display = 'none';
+    if (topRowEl && topRowEl.classList.contains('wordmatch-top-row')) {
+      topRowEl.style.display = 'none';
+    }
+    return;
+  } else {
+    pillEl.style.display = '';
+    if (topRowEl && topRowEl.classList.contains('wordmatch-top-row')) {
+      topRowEl.style.display = '';
+    }
+  }
 
   const ringCircumference = 44; // 2 * Math.PI * 7 (~43.98)
 
@@ -22180,8 +22416,8 @@ function evaluateXordleGuess(guessWord) {
   const len = WORD_LENGTH;
   const statuses = Array(len).fill('absent');
   const activeTargets = [];
-  if (xordleTargets[0]) activeTargets.push(xordleTargets[0]);
-  if (xordleTargets[1]) activeTargets.push(xordleTargets[1]);
+  if (!xordleSolved[0] && xordleTargets[0]) activeTargets.push(xordleTargets[0]);
+  if (!xordleSolved[1] && xordleTargets[1]) activeTargets.push(xordleTargets[1]);
 
   if (activeTargets.length === 0) {
     return { statuses, correctCount: 0, presentCount: 0 };
@@ -22231,8 +22467,8 @@ function updateXordleTargetBarUI() {
 function startXordleGame() {
   if (currentGameMode !== 'xordle') return;
 
-  if (xordleTargets[0] && xordleTargets[1]) {
-    lastRoundTargetWord = `${xordleTargets[0]} + ${xordleTargets[1]}`;
+  if (xordleTargets[1] || xordleTargets[0]) {
+    lastRoundTargetWord = xordleTargets[1] || xordleTargets[0];
   }
 
   let allowedLens = [5, 6, 7, 8];
@@ -22293,6 +22529,83 @@ function startXordleGame() {
   console.log(`[Xordle] Round ${round} started: ${xordleTargets[0]} & ${xordleTargets[1]} (${WORD_LENGTH} letters)`);
   showToast(`Xordle Round ${round} Dimulai! Temukan 2 kata tanpa huruf sama!`, 2400);
   if (window.playHostAudio) playHostAudio('start');
+
+  // ─── Auto-Starter Logic untuk Xordle (Adaptif Sesuai Setting Host) ───
+  if (isAutoStarterWinnerNickname || isAutoStarterPreviousTarget) {
+    let starterWord = null;
+    let starterUserData = null;
+    let starterToastMsg = null;
+
+    const getWinnerEffectiveAvatar = (winner) => {
+      if (!winner) return 'assets/bg_nature.png';
+      const direct = winner.profilePictureUrl || winner.userAvatar || winner.avatar;
+      if (direct && direct !== 'assets/bg_nature.png') return direct;
+      const name = (winner.nickname || winner.userName || winner.uniqueId || winner.userId || '').replace(/^@+/, '');
+      if (name && typeof getUserAvatar === 'function') {
+        const cached = getUserAvatar(name);
+        if (cached && cached !== 'assets/bg_nature.png') return cached;
+      }
+      return direct || 'assets/bg_nature.png';
+    };
+
+    const winnerDispName = (lastRoundWinner && (lastRoundWinner.nickname || lastRoundWinner.userName || lastRoundWinner.uniqueId || 'Juara Sblm')).replace(/^@+/, '');
+    const winnerAvatar = getWinnerEffectiveAvatar(lastRoundWinner);
+    const winnerUid = (lastRoundWinner && (lastRoundWinner.uniqueId || lastRoundWinner.userId)) || 'winner';
+
+    const isNotXordleTarget = (w) => w && w !== xordleTargets[0] && w !== xordleTargets[1];
+
+    if (isAutoStarterWinnerNickname && lastRoundWinner) {
+      const winnerWord = parseWinnerNicknameForStarter(lastRoundWinner);
+      if (winnerWord && winnerWord.length === WORD_LENGTH && isNotXordleTarget(winnerWord)) {
+        starterWord = winnerWord;
+        starterUserData = { nickname: winnerDispName, uniqueId: winnerUid, profilePictureUrl: winnerAvatar, isStarter: true };
+        starterToastMsg = `Starting Word: "${starterWord}" (${winnerDispName} • ${WORD_LENGTH} Huruf)`;
+      }
+    }
+
+    const cleanPrevTarget = (lastRoundTargetWord || '').split('+')[0].trim();
+    if (!starterWord && cleanPrevTarget && cleanPrevTarget.length === WORD_LENGTH && isNotXordleTarget(cleanPrevTarget)) {
+      starterWord = cleanPrevTarget;
+      starterUserData = {
+        nickname: lastRoundWinner ? winnerDispName : 'TARGET SBLM',
+        uniqueId: lastRoundWinner ? winnerUid : 'system',
+        profilePictureUrl: lastRoundWinner ? winnerAvatar : 'assets/bg_nature.png',
+        isStarter: true
+      };
+      starterToastMsg = lastRoundWinner
+        ? `Starting Word: "${starterWord}" (Kata Juara @${winnerDispName} • ${WORD_LENGTH} Huruf)`
+        : `Starting Word: "${starterWord}" (Target Sebelumnya • ${WORD_LENGTH} Huruf)`;
+    }
+
+    if (!starterWord) {
+      const wordPool = (VALID_WORDS && VALID_WORDS.length > 0) ? VALID_WORDS : (TARGET_WORDS || []);
+      if (wordPool.length > 0) {
+        const matchingWords = wordPool.filter(w => w.length === WORD_LENGTH && isNotXordleTarget(w));
+        if (matchingWords.length > 0) {
+          starterWord = matchingWords[Math.floor(Math.random() * matchingWords.length)];
+        }
+      }
+      if (starterWord) {
+        starterUserData = {
+          nickname: lastRoundWinner ? winnerDispName : 'SISTEM',
+          uniqueId: lastRoundWinner ? winnerUid : 'system',
+          profilePictureUrl: lastRoundWinner ? winnerAvatar : 'assets/bg_nature.png',
+          isStarter: true
+        };
+      }
+    }
+
+    if (starterWord) {
+      guessQueue.push({
+        guessWord: starterWord,
+        userData: starterUserData || { nickname: 'SISTEM', uniqueId: 'system', isStarter: true }
+      });
+      setTimeout(processQueue, 350);
+      if (starterToastMsg) {
+        setTimeout(() => showToast(starterToastMsg, 3000), 400);
+      }
+    }
+  }
 }
 
 window.startXordleGame = startXordleGame;
@@ -22305,6 +22618,8 @@ window.updateXordleTargetBarUI = updateXordleTargetBarUI;
 let shuntleSecretWord = '';
 let shuntleOffset = 0;
 let shuntleDiscoveredCols = Array(7).fill(null);
+let shuntleRowHistory = [];
+let shuntlePaddedGuesses = [];
 let shuntleRound = 1;
 let shuntleUsedWords = new Set();
 
@@ -22337,7 +22652,6 @@ function pickShuntleTarget() {
     if (iso.length > 0) cleanPool = iso;
   }
 
-  // Filter kata yang belum pernah dipakai di sesi ini
   let unusedPool = cleanPool.filter(w => !shuntleUsedWords.has(w));
   if (unusedPool.length === 0) {
     for (const w of Array.from(shuntleUsedWords)) {
@@ -22359,6 +22673,60 @@ function pickShuntleTarget() {
   const offset = maxOffset > 0 ? Math.floor(Math.random() * (maxOffset + 1)) : 0;
 
   return { secret, offset };
+}
+
+function updateShuntleNextRowHints() {
+  if (currentGameMode !== 'shuntle' || !board) return;
+  const rows = Array.from(board.querySelectorAll('.board-row'));
+  rows.forEach(r => {
+    r.querySelectorAll('.tile').forEach(t => {
+      t.classList.remove('shuntle-space-correct', 'shuntle-space-elsewhere', 'shuntle-space-absent');
+    });
+  });
+
+  if (isGameOver || shuntleRowHistory.length === 0) return;
+
+  // Find first empty placeholder row below guessed rows
+  const emptyRow = rows.find(r => {
+    const av = r.querySelector('.guesser-avatar');
+    return !av || !av.classList.contains('show');
+  });
+  if (!emptyRow) return;
+
+  // Check if space ' ' is globally absent (a row had spaces and all of them were 'absent')
+  let spaceGloballyAbsent = false;
+  for (const histRow of shuntleRowHistory) {
+    const spaceCells = histRow.filter(c => c.letter === ' ');
+    if (spaceCells.length > 0 && spaceCells.every(c => c.status === 'absent')) {
+      spaceGloballyAbsent = true;
+      break;
+    }
+  }
+
+  const tiles = emptyRow.querySelectorAll('.tile');
+  for (let col = 0; col < 7; col++) {
+    const tile = tiles[col];
+    if (!tile) continue;
+    let known = null;
+    if (spaceGloballyAbsent) {
+      known = 'absent';
+    } else {
+      for (const histRow of shuntleRowHistory) {
+        const cell = histRow[col];
+        if (!cell || cell.letter !== ' ') continue;
+        if (cell.status === 'absent') {
+          known = 'absent';
+        } else if (cell.status === 'correct' && known !== 'absent') {
+          known = 'correct';
+        } else if (cell.status === 'present' && known === null) {
+          known = 'present';
+        }
+      }
+    }
+    if (known === 'correct') tile.classList.add('shuntle-space-correct');
+    else if (known === 'present') tile.classList.add('shuntle-space-elsewhere');
+    else if (known === 'absent') tile.classList.add('shuntle-space-absent');
+  }
 }
 
 function startShuntleGame() {
@@ -22383,6 +22751,8 @@ function startShuntleGame() {
   shuntleSecretWord = picked.secret;
   shuntleOffset = picked.offset;
   shuntleDiscoveredCols = Array(7).fill(null);
+  shuntleRowHistory = [];
+  shuntlePaddedGuesses = [];
   currentWord = shuntleSecretWord;
 
   guesses = [];
@@ -22415,34 +22785,150 @@ function startShuntleGame() {
   console.log(`[Shuntle] Round ${round} started: "${shuntleSecretWord}" (${shuntleSecretWord.length} letters, offset ${shuntleOffset})`);
   showToast(`Shuntle Round ${round} Dimulai! Tebak kata 4–7 huruf di papan 7 kotak!`, 2400);
   if (window.playHostAudio) playHostAudio('start');
+
+  // ─── Auto-Starter Logic untuk Shuntle (Mendukung Kata 4–7 Huruf dari Ronde Sebelumnya) ───
+  if (isAutoStarterWinnerNickname || isAutoStarterPreviousTarget) {
+    let starterWord = null;
+    let starterUserData = null;
+    let starterToastMsg = null;
+
+    const getWinnerEffectiveAvatar = (winner) => {
+      if (!winner) return 'assets/bg_nature.png';
+      const direct = winner.profilePictureUrl || winner.userAvatar || winner.avatar;
+      if (direct && direct !== 'assets/bg_nature.png') return direct;
+      const name = (winner.nickname || winner.userName || winner.uniqueId || winner.userId || '').replace(/^@+/, '');
+      if (name && typeof getUserAvatar === 'function') {
+        const cached = getUserAvatar(name);
+        if (cached && cached !== 'assets/bg_nature.png') return cached;
+      }
+      return direct || 'assets/bg_nature.png';
+    };
+
+    const winnerDispName = (lastRoundWinner && (lastRoundWinner.nickname || lastRoundWinner.userName || lastRoundWinner.uniqueId || 'Juara Sblm')).replace(/^@+/, '');
+    const winnerAvatar = getWinnerEffectiveAvatar(lastRoundWinner);
+    const winnerUid = (lastRoundWinner && (lastRoundWinner.uniqueId || lastRoundWinner.userId)) || 'winner';
+
+    if (isAutoStarterWinnerNickname && lastRoundWinner) {
+      const winnerWord = parseWinnerNicknameForStarter(lastRoundWinner);
+      if (winnerWord && winnerWord.length >= 4 && winnerWord.length <= 7 && winnerWord !== shuntleSecretWord) {
+        starterWord = winnerWord;
+        starterUserData = { nickname: winnerDispName, uniqueId: winnerUid, profilePictureUrl: winnerAvatar, isStarter: true };
+        starterToastMsg = `Starting Word: "${starterWord}" (${winnerDispName} • ${starterWord.length} Huruf)`;
+      }
+    }
+
+    const cleanPrevTarget = (lastRoundTargetWord || '').split('+')[0].trim().replace(/[^A-Z]/g, '');
+    if (!starterWord && cleanPrevTarget && cleanPrevTarget.length >= 4 && cleanPrevTarget.length <= 7 && cleanPrevTarget !== shuntleSecretWord) {
+      starterWord = cleanPrevTarget;
+      starterUserData = {
+        nickname: lastRoundWinner ? winnerDispName : 'TARGET SBLM',
+        uniqueId: lastRoundWinner ? winnerUid : 'system',
+        profilePictureUrl: lastRoundWinner ? winnerAvatar : 'assets/bg_nature.png',
+        isStarter: true
+      };
+      starterToastMsg = lastRoundWinner
+        ? `Starting Word: "${starterWord}" (Kata Juara @${winnerDispName} • ${starterWord.length} Huruf)`
+        : `Starting Word: "${starterWord}" (Target Sebelumnya • ${starterWord.length} Huruf)`;
+    }
+
+    if (!starterWord) {
+      const fallbackLen = shuntleSecretWord.length || 5;
+      const pool = (allTargetWords && allTargetWords[fallbackLen] && allTargetWords[fallbackLen].length > 0)
+        ? allTargetWords[fallbackLen]
+        : ((allValidWords && allValidWords[fallbackLen]) || []);
+      const candidates = pool.filter(w => w && w !== shuntleSecretWord);
+      if (candidates.length > 0) {
+        starterWord = candidates[Math.floor(Math.random() * candidates.length)];
+        starterUserData = {
+          nickname: lastRoundWinner ? winnerDispName : 'SISTEM',
+          uniqueId: lastRoundWinner ? winnerUid : 'system',
+          profilePictureUrl: lastRoundWinner ? winnerAvatar : 'assets/bg_nature.png',
+          isStarter: true
+        };
+      }
+    }
+
+    if (starterWord) {
+      guessQueue.push({
+        guessWord: starterWord,
+        userData: starterUserData || { nickname: 'SISTEM', uniqueId: 'system', isStarter: true }
+      });
+      setTimeout(processQueue, 350);
+      if (starterToastMsg) {
+        setTimeout(() => showToast(starterToastMsg, 3000), 400);
+      }
+    }
+  }
 }
 
 function computeShuntleGuessOffset(cleanWord, manualOffset) {
   const maxOffset = Math.max(0, 7 - cleanWord.length);
-  if (cleanWord === shuntleSecretWord) {
-    return shuntleOffset;
-  }
   if (typeof manualOffset === 'number' && manualOffset >= 0) {
     return Math.min(maxOffset, manualOffset);
   }
-  for (let c = 0; c < 7; c++) {
-    const anchoredChar = shuntleDiscoveredCols[c];
-    if (!anchoredChar) continue;
-    for (let k = 0; k < cleanWord.length; k++) {
-      if (cleanWord[k] === anchoredChar) {
-        const candidateOffset = c - k;
-        if (candidateOffset >= 0 && candidateOffset <= maxOffset) {
-          return candidateOffset;
+  if (cleanWord === shuntleSecretWord) {
+    return shuntleOffset;
+  }
+  if (maxOffset === 0) return 0;
+
+  let bestOffset = 0;
+  let bestScore = -Infinity;
+
+  for (let off = 0; off <= maxOffset; off++) {
+    const candSlots = Array(7).fill(' ');
+    for (let i = 0; i < cleanWord.length; i++) {
+      candSlots[off + i] = cleanWord[i];
+    }
+    const padded = candSlots.join('');
+    let score = 0;
+
+    // Avoid repeating the exact same padded position if another shunt offset hasn't been tried yet
+    if (shuntlePaddedGuesses.includes(padded)) {
+      score -= 500;
+    }
+
+    for (let col = 0; col < 7; col++) {
+      const ch = candSlots[col];
+      for (const histRow of shuntleRowHistory) {
+        const cell = histRow[col];
+        if (!cell) continue;
+        if (ch === ' ') {
+          if (cell.letter === ' ') {
+            if (cell.status === 'correct') score += 55;
+            else if (cell.status === 'present' || cell.status === 'absent') score -= 45;
+          } else if (cell.status === 'correct') {
+            score -= 60; // Known green letter here, don't put space
+          }
+        } else {
+          if (cell.letter === ' ' && cell.status === 'correct') {
+            score -= 65; // Known green space here, don't put letter
+          } else if (cell.letter === ' ' && cell.status === 'present') {
+            score += 22; // Space at this column was yellow, so a letter belongs here
+          } else if (cell.letter === ch) {
+            if (cell.status === 'correct') score += 65;
+            else if (cell.status === 'present' || cell.status === 'absent') score -= 35;
+          } else if (cell.letter !== ' ' && cell.status === 'correct') {
+            score -= 20;
+          }
         }
       }
     }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestOffset = off;
+    }
   }
-  return 0;
+
+  return bestOffset;
 }
 
 function processShuntleGuess(rawWord, userData, queueLen = 0) {
   if (isGameOver) return;
-  const cleanWord = String(rawWord || '').toUpperCase().replace(/[^A-Z]/g, '');
+  const rawStr = String(rawWord || '').trim();
+  const leadingMatch = rawStr.match(/^[._\-]+/);
+  const inlineOffset = leadingMatch ? leadingMatch[0].length : null;
+  const cleanWord = rawStr.toUpperCase().replace(/[^A-Z]/g, '');
   if (cleanWord.length < 4 || cleanWord.length > 7) return;
 
   if (!shuntleSecretWord || shuntleSecretWord.length < 4) {
@@ -22457,15 +22943,26 @@ function processShuntleGuess(rawWord, userData, queueLen = 0) {
                     (allValidWords && allValidWords[wLen] && allValidWords[wLen].includes(cleanWord)) ||
                     (typeof fullValidDictionary !== 'undefined' && fullValidDictionary && fullValidDictionary.size > 0 && fullValidDictionary.has(cleanWord));
 
-  if (!wordsLoaded && (!allValidWords || !allValidWords[wLen] || allValidWords[wLen].length === 0)) {
+  const isStarterGuess = !!(userData && (userData.isStarter || userData.uniqueId === 'system'));
+  if (isStarterGuess || (!wordsLoaded && (!allValidWords || !allValidWords[wLen] || allValidWords[wLen].length === 0))) {
     isValidWord = true;
   }
 
+  const manualOffset = (userData && typeof userData._shuntleOffset === 'number')
+    ? userData._shuntleOffset
+    : inlineOffset;
+  const guessOffset = computeShuntleGuessOffset(cleanWord, manualOffset);
+
+  const guessSlots = Array(7).fill(' ');
+  for (let i = 0; i < cleanWord.length; i++) {
+    guessSlots[guessOffset + i] = cleanWord[i];
+  }
+  const paddedGuess = guessSlots.join('');
+
   let invalidReason = '';
-  const manualOffset = (userData && typeof userData._shuntleOffset === 'number') ? userData._shuntleOffset : null;
-  if (isValidWord && guesses.includes(cleanWord) && manualOffset === null) {
+  if (isValidWord && shuntlePaddedGuesses.includes(paddedGuess)) {
     isValidWord = false;
-    invalidReason = (lastLang === 'en') ? 'Already guessed this round' : 'Kata sudah ditebak di ronde ini';
+    invalidReason = (lastLang === 'en') ? 'Already guessed at this position' : 'Kata sudah ditebak di posisi ini';
   } else if (!isValidWord) {
     invalidReason = (lastLang === 'en') ? 'Not in dictionary' : 'Kata tidak ada di kamus';
   }
@@ -22480,50 +22977,47 @@ function processShuntleGuess(rawWord, userData, queueLen = 0) {
   const invalidTooltips = document.querySelectorAll('.is-invalid-tooltip');
   invalidTooltips.forEach(el => el.remove());
 
-  const guessOffset = computeShuntleGuessOffset(cleanWord, manualOffset);
-
-  const guessSlots = Array(7).fill(' ');
-  for (let i = 0; i < cleanWord.length; i++) {
-    guessSlots[guessOffset + i] = cleanWord[i];
-  }
-
   const targetSlots = Array(7).fill(' ');
   for (let i = 0; i < shuntleSecretWord.length; i++) {
     targetSlots[shuntleOffset + i] = shuntleSecretWord[i];
   }
 
-  const statuses = Array(7).fill('blank');
+  // Exact Shuntle (shuntle.com) 7-slot evaluation: spaces (' ') are evaluated just like letters!
+  const statuses = Array(7).fill('absent');
   let correctCount = 0;
   let presentCount = 0;
 
   if (isValidWord) {
-    const remainingTargetLetters = targetSlots.map(ch => (ch === ' ' ? null : ch));
-    const remainingGuessLetters = guessSlots.map(ch => (ch === ' ' ? null : ch));
+    const remainingTarget = targetSlots.slice();
+    const remainingGuess = guessSlots.slice();
 
+    // Pass 1: Correct position (letters AND spaces!)
     for (let i = 0; i < 7; i++) {
-      if (remainingGuessLetters[i] !== null && remainingGuessLetters[i] === remainingTargetLetters[i]) {
+      if (remainingGuess[i] === remainingTarget[i]) {
         statuses[i] = 'correct';
-        remainingTargetLetters[i] = null;
-        remainingGuessLetters[i] = null;
-        correctCount++;
+        remainingTarget[i] = null;
+        remainingGuess[i] = null;
+        if (guessSlots[i] !== ' ') correctCount++;
 
         if (!shuntleDiscoveredCols[i]) {
           shuntleDiscoveredCols[i] = guessSlots[i];
-          if (cleanWord !== shuntleSecretWord) {
+          if (guessSlots[i] !== ' ' && paddedGuess !== targetSlots.join('') && !isStarterGuess) {
             addPoints(userData, 2);
           }
         }
       }
     }
 
+    // Pass 2: Elsewhere / Present (letters AND spaces!)
     for (let i = 0; i < 7; i++) {
-      if (remainingGuessLetters[i] === null) continue;
-      const foundIdx = remainingTargetLetters.indexOf(remainingGuessLetters[i]);
+      if (remainingGuess[i] === null) continue;
+      const foundIdx = remainingTarget.indexOf(remainingGuess[i]);
       if (foundIdx !== -1) {
-        statuses[i] = isNoYellowMode ? 'absent' : 'present';
-        remainingTargetLetters[foundIdx] = null;
-        remainingGuessLetters[i] = null;
-        presentCount++;
+        const isSpace = remainingGuess[i] === ' ';
+        statuses[i] = (isNoYellowMode && !isSpace) ? 'absent' : 'present';
+        remainingTarget[foundIdx] = null;
+        remainingGuess[i] = null;
+        if (!isSpace) presentCount++;
       } else {
         statuses[i] = 'absent';
       }
@@ -22549,14 +23043,16 @@ function processShuntleGuess(rawWord, userData, queueLen = 0) {
     tile.id = `tile-${currentRow}-${i}`;
     const ch = guessSlots[i];
 
-    if (ch === ' ') {
-      tile.textContent = '';
-      tile.classList.add('shuntle-blank-tile');
-    } else if (!isValidWord) {
-      tile.textContent = ch;
-      tile.classList.add('invalid');
+    if (!isValidWord) {
+      if (ch === ' ') {
+        tile.textContent = '';
+        tile.classList.add('shuntle-blank-tile');
+      } else {
+        tile.textContent = ch;
+        tile.classList.add('invalid');
+      }
     } else {
-      tile.textContent = ch;
+      tile.textContent = (ch === ' ') ? '' : ch;
       if (flipCfg.shouldFlip) {
         const stepDelay = flipCfg.stepDelay;
         const revealOffset = flipCfg.revealOffset;
@@ -22569,7 +23065,7 @@ function processShuntleGuess(rawWord, userData, queueLen = 0) {
         }, i * stepDelay);
         setTimeout(() => {
           tile.classList.add(statuses[i]);
-          if (statuses[i] === 'correct' && queueLen <= 2 && window.sounds && typeof window.sounds.playGreenChime === 'function') {
+          if (statuses[i] === 'correct' && ch !== ' ' && queueLen <= 2 && window.sounds && typeof window.sounds.playGreenChime === 'function') {
             window.sounds.playGreenChime();
           }
         }, (i * stepDelay) + revealOffset);
@@ -22580,24 +23076,38 @@ function processShuntleGuess(rawWord, userData, queueLen = 0) {
     row.appendChild(tile);
   }
 
+  const isWinningGuess = isValidWord && (paddedGuess === targetSlots.join(''));
+
   board.insertBefore(row, board.firstChild);
   const displayRows = getDisplayRows();
   if (board.children.length > displayRows) {
-    board.removeChild(board.lastElementChild);
+    // Keep 1 empty hint row at the bottom while game is still in progress
+    const lastChild = board.lastElementChild;
+    const lastIsEmpty = lastChild && (!lastChild.querySelector('.guesser-avatar') || !lastChild.querySelector('.guesser-avatar').classList.contains('show'));
+    if (!isWinningGuess && lastIsEmpty && board.children.length >= 2) {
+      board.removeChild(board.children[board.children.length - 2]);
+    } else {
+      board.removeChild(board.lastElementChild);
+    }
   }
 
   if (!isValidWord) {
     if (window.sounds) window.sounds.playInvalid();
     if (window.playHostAudio) playHostAudio('invalid');
     if (invalidReason) showToast(invalidReason, 2000);
+    updateShuntleNextRowHints();
     return;
   }
 
   guesses.push(cleanWord);
+  shuntlePaddedGuesses.push(paddedGuess);
+  shuntleRowHistory.push(guessSlots.map((ch, idx) => ({ letter: ch, status: statuses[idx] })));
+  updateShuntleNextRowHints();
 
-  if (cleanWord === shuntleSecretWord) {
+  if (isWinningGuess) {
     isGameOver = true;
     guessQueue = [];
+    updateShuntleNextRowHints();
     const winPts = 15;
     addPoints(userData, winPts);
     recordWin(userData && (userData.uniqueId || userData.nickname));
@@ -22625,7 +23135,7 @@ function processShuntleGuess(rawWord, userData, queueLen = 0) {
     }
 
     if (isGameAnimationsEnabled) {
-      const winningTiles = Array.from(row.querySelectorAll('.tile')).filter(t => !t.classList.contains('shuntle-blank-tile'));
+      const winningTiles = Array.from(row.querySelectorAll('.tile'));
       setTimeout(() => {
         winningTiles.forEach((t, idx) => {
           setTimeout(() => {
@@ -22649,3 +23159,429 @@ function processShuntleGuess(rawWord, userData, queueLen = 0) {
 
 window.startShuntleGame = startShuntleGame;
 window.processShuntleGuess = processShuntleGuess;
+window.updateShuntleNextRowHints = updateShuntleNextRowHints;
+
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 💎 SYMBLE (3 SIMBOL SANDI ACAK • POSISI MENGIKUTI KATA TARGET • SOFT MATTE)
+// ═════════════════════════════════════════════════════════════════════════════
+const SYMBLE_MATTE_PALETTES = [
+  {
+    id: 0,
+    name: 'Earth & Ocean',
+    items: [
+      { key: 's0', label: 'Biru Baja', icon: 'fa-gem', bg: '#3b6e8c', border: '#5b93b3', sepiaBg: '#35627d', sepiaBorder: '#284d63' },
+      { key: 's1', label: 'Terakota',  icon: 'fa-star', bg: '#9e5a47', border: '#c27863', sepiaBg: '#8f4f3d', sepiaBorder: '#733d2e' },
+      { key: 's2', label: 'Abu Sage',  icon: 'fa-play', bg: '#4b636e', border: '#6b8794', sepiaBg: '#4c5f69', sepiaBorder: '#3b4b54' }
+    ]
+  },
+  {
+    id: 1,
+    name: 'Nordic Matte',
+    items: [
+      { key: 's0', label: 'Toska Redup', icon: 'fa-bolt', bg: '#2f706b', border: '#4d948e', sepiaBg: '#28615c', sepiaBorder: '#1e4b47' },
+      { key: 's1', label: 'Ochre Kayu',  icon: 'fa-shield-halved', bg: '#946834', border: '#b88549', sepiaBg: '#855b2b', sepiaBorder: '#69461f' },
+      { key: 's2', label: 'Plum Kalem',  icon: 'fa-cube', bg: '#685273', border: '#8a6f96', sepiaBg: '#5c4766', sepiaBorder: '#47364f' }
+    ]
+  },
+  {
+    id: 2,
+    name: 'Dusk & Bronze',
+    items: [
+      { key: 's0', label: 'Indigo Malam', icon: 'fa-circle', bg: '#485685', border: '#6978ab', sepiaBg: '#3e4b75', sepiaBorder: '#2f395c' },
+      { key: 's1', label: 'Perunggu',     icon: 'fa-moon', bg: '#7a6544', border: '#9e845c', sepiaBg: '#6e593a', sepiaBorder: '#57452b' },
+      { key: 's2', label: 'Bata Lembut',  icon: 'fa-crown', bg: '#8a4f58', border: '#ad6b75', sepiaBg: '#7a434c', sepiaBorder: '#61333a' }
+    ]
+  },
+  {
+    id: 3,
+    name: 'Forest & Clay',
+    items: [
+      { key: 's0', label: 'Pinus Kalem', icon: 'fa-leaf', bg: '#3d6b58', border: '#5c917b', sepiaBg: '#345c4b', sepiaBorder: '#264538' },
+      { key: 's1', label: 'Amber Tanah', icon: 'fa-fire', bg: '#8c6239', border: '#b08050', sepiaBg: '#7a542f', sepiaBorder: '#5e3f21' },
+      { key: 's2', label: 'Lembayung',   icon: 'fa-compass', bg: '#585978', border: '#78799c', sepiaBg: '#4c4d69', sepiaBorder: '#3a3b52' }
+    ]
+  },
+  {
+    id: 4,
+    name: 'Mocha & Slate',
+    items: [
+      { key: 's0', label: 'Teal Abu',    icon: 'fa-diamond', bg: '#3b6973', border: '#598d99', sepiaBg: '#325a63', sepiaBorder: '#24434a' },
+      { key: 's1', label: 'Kopi Hangat', icon: 'fa-feather', bg: '#7d5a4f', border: '#a1776a', sepiaBg: '#6e4e44', sepiaBorder: '#543a32' },
+      { key: 's2', label: 'Olive Redup', icon: 'fa-clover',  bg: '#5c6b4b', border: '#7b8c67', sepiaBg: '#4f5c40', sepiaBorder: '#3c4730' }
+    ]
+  }
+];
+
+let symblePaletteMode = localStorage.getItem('symble_palette_mode') || 'auto';
+let symbleVisualMode = localStorage.getItem('symble_visual_mode') || 'both'; // 'both' | 'color_only' | 'symbol_only'
+let symbleActivePaletteIdx = 0;
+// Maps meaning ('correct' | 'present' | 'absent') -> symbol slot index (0 | 1 | 2)
+let symbleMeaningToSlot = { correct: 0, present: 1, absent: 2 };
+let symbleIsCipherRevealed = false;
+let symbleIsAbsentHintRevealed = false;
+
+function initSymblePaletteControls() {
+  const sel = document.getElementById('symblePaletteSelect');
+  if (sel) sel.value = symblePaletteMode;
+  const vSel = document.getElementById('symbleVisualModeSelect');
+  if (vSel) vSel.value = symbleVisualMode;
+}
+
+function initSymbleRoundCipher() {
+  symbleIsCipherRevealed = false;
+  symbleIsAbsentHintRevealed = false;
+  if (symblePaletteMode === 'auto') {
+    symbleActivePaletteIdx = (round - 1) % SYMBLE_MATTE_PALETTES.length;
+  } else {
+    const parsed = parseInt(symblePaletteMode, 10);
+    symbleActivePaletteIdx = (!isNaN(parsed) && parsed >= 0 && parsed < SYMBLE_MATTE_PALETTES.length) ? parsed : 0;
+  }
+
+  // Randomly shuffle which symbol slot (0, 1, 2) represents 'correct', 'present', 'absent'
+  const slots = [0, 1, 2];
+  for (let i = slots.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = slots[i];
+    slots[i] = slots[j];
+    slots[j] = tmp;
+  }
+  symbleMeaningToSlot = {
+    correct: slots[0],
+    present: slots[1],
+    absent: slots[2]
+  };
+
+  initSymblePaletteControls();
+  updateSymbleInfoBarUI(false);
+}
+
+function shiftSymbleUltraCipher() {
+  if (currentGameMode !== 'symble' || isGameOver || symbleIsCipherRevealed) return;
+  const step = Math.random() < 0.5 ? 1 : 2;
+  symbleMeaningToSlot = {
+    correct: (symbleMeaningToSlot.correct + step) % 3,
+    present: (symbleMeaningToSlot.present + step) % 3,
+    absent:  (symbleMeaningToSlot.absent + step) % 3
+  };
+  if (symblePaletteMode === 'auto') {
+    symbleActivePaletteIdx = (symbleActivePaletteIdx + 1) % SYMBLE_MATTE_PALETTES.length;
+  }
+  refreshSymbleBoardColors();
+  if (typeof showToast === 'function') {
+    showToast('ULTRA HARD: 4 Tebakan Berlalu — Sandi Simbol Diacak Ulang!', 2800);
+  }
+}
+
+function onSymbleNonWinningGuess(guessCount, queueLen = 0) {
+  if (currentGameMode !== 'symble' || isGameOver || symbleIsCipherRevealed) return;
+  const flipCfg = (typeof getFlipSpeedConfig === 'function') ? getFlipSpeedConfig(queueLen) : { shouldFlip: false };
+  const revealDelay = flipCfg.shouldFlip ? ((WORD_LENGTH * flipCfg.stepDelay) + flipCfg.revealOffset + 150) : 150;
+
+  if (hardModeState === 'off' && guessCount === 5 && !symbleIsAbsentHintRevealed) {
+    setTimeout(() => {
+      if (currentGameMode !== 'symble' || isGameOver || symbleIsCipherRevealed) return;
+      symbleIsAbsentHintRevealed = true;
+      refreshSymbleBoardColors();
+      const palette = SYMBLE_MATTE_PALETTES[symbleActivePaletteIdx] || SYMBLE_MATTE_PALETTES[0];
+      const absentItem = palette.items[symbleMeaningToSlot.absent] || palette.items[0];
+      if (typeof showToast === 'function') {
+        showToast(`Bantuan Symble (5 Tebakan): "${absentItem.label}" artinya SALAH!`, 3200);
+      }
+    }, revealDelay);
+  } else if (hardModeState === 'ultra' && guessCount > 0 && (guessCount % 4 === 0)) {
+    setTimeout(() => {
+      shiftSymbleUltraCipher();
+    }, revealDelay);
+  }
+}
+
+function getSymbleSlotAppearance(status) {
+  const palette = SYMBLE_MATTE_PALETTES[symbleActivePaletteIdx] || SYMBLE_MATTE_PALETTES[0];
+  const slotIdx = (symbleMeaningToSlot && typeof symbleMeaningToSlot[status] === 'number')
+    ? symbleMeaningToSlot[status]
+    : 0;
+  const item = palette.items[slotIdx] || palette.items[0];
+  const isSepia = document.body && document.body.classList.contains('theme-sepia');
+
+  if (symbleIsCipherRevealed) {
+    if (status === 'correct') {
+      return { bg: '#16a34a', border: '#22c55e', icon: item.icon, iconColor: '#ffffff', label: 'TEPAT', isRevealed: true, slotIdx };
+    }
+    if (status === 'present') {
+      return { bg: '#c6aa24', border: '#d4b82f', icon: item.icon, iconColor: '#ffffff', label: 'ADA', isRevealed: true, slotIdx };
+    }
+    return {
+      bg: isSepia ? '#857466' : '#3a4454',
+      border: isSepia ? '#706053' : '#4f5b6e',
+      icon: item.icon,
+      iconColor: '#ffffff',
+      label: 'SALAH',
+      isRevealed: true,
+      slotIdx
+    };
+  }
+
+  if (symbleIsAbsentHintRevealed && status === 'absent') {
+    return {
+      bg: isSepia ? '#857466' : '#3a4454',
+      border: isSepia ? '#706053' : '#4f5b6e',
+      icon: item.icon,
+      iconColor: '#ffffff',
+      label: 'SALAH',
+      isRevealed: true,
+      slotIdx
+    };
+  }
+
+  if (symbleVisualMode === 'symbol_only' || symbleVisualMode === 'shape_only') {
+    return {
+      bg: isSepia ? '#cfc2ae' : '#1e2633',
+      border: isSepia ? 'rgba(66, 52, 40, 0.42)' : 'rgba(255, 255, 255, 0.28)',
+      icon: item.icon,
+      iconColor: isSepia ? item.sepiaBg : item.border,
+      label: '?',
+      isRevealed: false,
+      slotIdx
+    };
+  }
+
+  return {
+    bg: isSepia ? item.sepiaBg : item.bg,
+    border: isSepia ? item.sepiaBorder : item.border,
+    icon: item.icon,
+    iconColor: 'rgba(255, 255, 255, 0.92)',
+    label: '?',
+    isRevealed: false,
+    slotIdx
+  };
+}
+
+function applySymbleTileAppearance(tile, status) {
+  if (!tile) return;
+  tile.dataset.symbleStatus = status;
+  tile.classList.remove('correct', 'present', 'absent', 'symble-shape-0', 'symble-shape-1', 'symble-shape-2');
+  tile.classList.add('symble-tile');
+
+  const app = getSymbleSlotAppearance(status);
+  const isSepia = document.body && document.body.classList.contains('theme-sepia');
+  const isShapedMode = (symbleVisualMode === 'shape_color' || symbleVisualMode === 'shape_only');
+  const isNeutralMode = (symbleVisualMode === 'symbol_only' || symbleVisualMode === 'shape_only');
+
+  tile.style.backgroundColor = app.bg;
+  tile.style.borderColor = app.border;
+
+  if (isNeutralMode && !app.isRevealed && isSepia) {
+    tile.style.setProperty('color', '#3b2c20', 'important');
+    tile.style.textShadow = 'none';
+  } else {
+    tile.style.setProperty('color', '#ffffff', 'important');
+    tile.style.textShadow = '0 1px 2px rgba(0, 0, 0, 0.35)';
+  }
+
+  if (isShapedMode) {
+    tile.classList.add(`symble-shape-${app.slotIdx}`);
+  }
+
+  let iconEl = tile.querySelector('.symble-corner-icon');
+  if (symbleVisualMode === 'color_only' || isShapedMode) {
+    if (iconEl) iconEl.remove();
+    tile.style.paddingTop = '0px';
+    tile.style.paddingRight = '0px';
+  } else {
+    tile.style.paddingTop = '3px';
+    tile.style.paddingRight = '2px';
+    if (!iconEl) {
+      iconEl = document.createElement('i');
+      tile.appendChild(iconEl);
+    }
+    iconEl.className = `fa-solid ${app.icon} symble-corner-icon`;
+    iconEl.style.color = app.iconColor || 'rgba(255, 255, 255, 0.92)';
+    iconEl.style.fontSize = (symbleVisualMode === 'symbol_only')
+      ? 'calc(10px * var(--board-scale, 1))'
+      : 'calc(8.5px * var(--board-scale, 1))';
+  }
+}
+
+function updateSymbleInfoBarUI(revealed) {
+  if (typeof revealed === 'boolean') {
+    symbleIsCipherRevealed = revealed;
+  }
+  const qBtn = document.getElementById('symblePaletteQuickBtn');
+  if (qBtn) qBtn.remove();
+
+  const badgesContainer = document.getElementById('symbleLegendBadges');
+  if (!badgesContainer) return;
+
+  const palette = SYMBLE_MATTE_PALETTES[symbleActivePaletteIdx] || SYMBLE_MATTE_PALETTES[0];
+  const isSepia = document.body && document.body.classList.contains('theme-sepia');
+  const isShapedMode = (symbleVisualMode === 'shape_color' || symbleVisualMode === 'shape_only');
+  const isNeutralMode = (symbleVisualMode === 'symbol_only' || symbleVisualMode === 'shape_only');
+
+  const slotToStatus = {};
+  Object.keys(symbleMeaningToSlot).forEach(st => {
+    slotToStatus[symbleMeaningToSlot[st]] = st;
+  });
+
+  const shapeNames = ['Bulat', 'Perisai', 'Permata'];
+
+  badgesContainer.innerHTML = [0, 1, 2].map(slotIdx => {
+    const st = slotToStatus[slotIdx] || 'absent';
+    const item = palette.items[slotIdx];
+    const app = getSymbleSlotAppearance(st);
+    const isThisSlotRevealed = symbleIsCipherRevealed || (symbleIsAbsentHintRevealed && st === 'absent');
+
+    let bg, border, textColor = '#ffffff';
+    if (isThisSlotRevealed) {
+      bg = app.bg;
+      border = app.border;
+    } else if (isNeutralMode) {
+      bg = isSepia ? '#cfc2ae' : '#1e2633';
+      border = isSepia ? 'rgba(66, 52, 40, 0.42)' : 'rgba(255, 255, 255, 0.28)';
+      textColor = isSepia ? '#3b2c20' : '#ffffff';
+    } else {
+      bg = isSepia ? item.sepiaBg : item.bg;
+      border = isSepia ? item.sepiaBorder : item.border;
+    }
+
+    const text = isThisSlotRevealed ? app.label : '?';
+    const iconColor = (isNeutralMode && !isThisSlotRevealed)
+      ? (isSepia ? item.sepiaBg : item.border)
+      : '#ffffff';
+
+    let iconHtml = '';
+    if (isShapedMode) {
+      const miniBorder = (isNeutralMode && !isThisSlotRevealed && isSepia) ? '#3b2c20' : 'rgba(255,255,255,0.92)';
+      iconHtml = `<span class="symble-shape-mini shape-${slotIdx}" style="border-color:${miniBorder};"></span>`;
+    } else if (symbleVisualMode === 'color_only') {
+      iconHtml = `<span style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.85);display:inline-block;"></span>`;
+    } else {
+      iconHtml = `<i class="fa-solid ${item.icon}" style="color:${iconColor};"></i>`;
+    }
+
+    const pillShapeClass = isShapedMode ? ` symble-pill-shape-${slotIdx}` : '';
+
+    return `<span class="symble-legend-pill${pillShapeClass}" style="background:${bg}; border: 1px solid ${border}; color:${textColor};">
+      ${iconHtml}
+      <span>${text}</span>
+    </span>`;
+  }).join('');
+}
+
+function refreshSymbleBoardColors() {
+  if (currentGameMode !== 'symble') return;
+  updateSymbleInfoBarUI();
+  if (!board) return;
+  const symTiles = board.querySelectorAll('.tile.symble-tile');
+  symTiles.forEach(tile => {
+    const st = tile.dataset.symbleStatus;
+    if (st) applySymbleTileAppearance(tile, st);
+  });
+}
+
+function revealSymbleRoundCipher() {
+  if (currentGameMode !== 'symble') return;
+  symbleIsCipherRevealed = true;
+  refreshSymbleBoardColors();
+}
+
+function changeSymbleVisualMode(mode) {
+  const validModes = ['both', 'color_only', 'symbol_only', 'shape_color', 'shape_only'];
+  symbleVisualMode = validModes.includes(mode) ? mode : 'both';
+  try { localStorage.setItem('symble_visual_mode', symbleVisualMode); } catch (e) {}
+  initSymblePaletteControls();
+  refreshSymbleBoardColors();
+  const labels = {
+    both: 'Warna + Simbol Pojok',
+    color_only: 'Hanya Warna Ubin (Huruf Bersih)',
+    symbol_only: 'Hanya Simbol Pojok (Ubin Netral)',
+    shape_color: 'Bentuk Ubin Simbol + Warna',
+    shape_only: 'Hanya Bentuk Ubin Simbol (Netral)'
+  };
+  if (typeof showToast === 'function') {
+    showToast(`Tampilan Symble: ${labels[symbleVisualMode]}`, 1800);
+  }
+}
+
+function changeSymblePaletteMode(val) {
+  symblePaletteMode = String(val || 'auto');
+  try { localStorage.setItem('symble_palette_mode', symblePaletteMode); } catch (e) {}
+
+  if (symblePaletteMode === 'auto') {
+    symbleActivePaletteIdx = (symbleActivePaletteIdx + 1) % SYMBLE_MATTE_PALETTES.length;
+  } else {
+    const parsed = parseInt(symblePaletteMode, 10);
+    if (!isNaN(parsed) && parsed >= 0 && parsed < SYMBLE_MATTE_PALETTES.length) {
+      symbleActivePaletteIdx = parsed;
+    }
+  }
+  initSymblePaletteControls();
+  refreshSymbleBoardColors();
+  const palette = SYMBLE_MATTE_PALETTES[symbleActivePaletteIdx] || SYMBLE_MATTE_PALETTES[0];
+  if (typeof showToast === 'function') {
+    showToast(`Palet Symble: ${palette.name}`, 1800);
+  }
+}
+
+function cycleSymblePalette(e) {
+  if (e) e.stopPropagation();
+  symbleActivePaletteIdx = (symbleActivePaletteIdx + 1) % SYMBLE_MATTE_PALETTES.length;
+  symblePaletteMode = String(symbleActivePaletteIdx);
+  try { localStorage.setItem('symble_palette_mode', symblePaletteMode); } catch (err) {}
+  initSymblePaletteControls();
+  refreshSymbleBoardColors();
+  const palette = SYMBLE_MATTE_PALETTES[symbleActivePaletteIdx] || SYMBLE_MATTE_PALETTES[0];
+  if (typeof showToast === 'function') {
+    showToast(`Palet Symble: ${palette.name}`, 1600);
+  }
+}
+
+function evaluateSymbleGuess(guessWord, targetWord) {
+  const len = WORD_LENGTH;
+  const statuses = Array(len).fill('absent');
+  if (!targetWord || !guessWord) {
+    return { statuses, correctCount: 0, presentCount: 0 };
+  }
+
+  const remainingTarget = targetWord.split('');
+  const remainingGuess = guessWord.split('');
+  let correctCount = 0;
+  let presentCount = 0;
+
+  for (let i = 0; i < len; i++) {
+    if (remainingTarget[i] === remainingGuess[i]) {
+      statuses[i] = 'correct';
+      remainingTarget[i] = null;
+      remainingGuess[i] = null;
+      correctCount++;
+    }
+  }
+
+  for (let i = 0; i < len; i++) {
+    if (remainingTarget[i] !== null) {
+      const foundInGuess = remainingGuess.indexOf(remainingTarget[i]);
+      if (foundInGuess !== -1) {
+        statuses[i] = 'present';
+        remainingGuess[foundInGuess] = null;
+        remainingTarget[i] = null;
+        presentCount++;
+      } else {
+        statuses[i] = 'absent';
+      }
+    }
+  }
+
+  return { statuses, correctCount, presentCount };
+}
+
+window.initSymbleRoundCipher = initSymbleRoundCipher;
+window.updateSymbleInfoBarUI = updateSymbleInfoBarUI;
+window.refreshSymbleBoardColors = refreshSymbleBoardColors;
+window.revealSymbleRoundCipher = revealSymbleRoundCipher;
+window.changeSymbleVisualMode = changeSymbleVisualMode;
+window.changeSymblePaletteMode = changeSymblePaletteMode;
+window.cycleSymblePalette = cycleSymblePalette;
+window.evaluateSymbleGuess = evaluateSymbleGuess;
+window.applySymbleTileAppearance = applySymbleTileAppearance;
+window.onSymbleNonWinningGuess = onSymbleNonWinningGuess;
+window.shiftSymbleUltraCipher = shiftSymbleUltraCipher;

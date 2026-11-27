@@ -4389,6 +4389,162 @@ header {
   100% { opacity: 0; }
 }
 
+/* Gaya 2: Air Mancur / Lontar Parabola (Fountain Arc) */
+.floating-gift-item.style-fountain {
+  bottom: -90px;
+  animation:
+    floatingGiftFountain var(--rise-dur, 3.4s) cubic-bezier(0.22, 0.68, 0.38, 0.98) forwards,
+    floatingGiftFade var(--rise-dur, 3.4s) linear forwards;
+}
+
+@keyframes floatingGiftFountain {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.55) rotate(0deg);
+  }
+  45% {
+    transform: translate3d(calc(var(--arc-x, 120px) * 0.6), calc(-68vh), 0) scale(1.06) rotate(calc(var(--arc-rot, 14deg) * 0.6));
+  }
+  100% {
+    transform: translate3d(var(--arc-x, 120px), calc(-22vh), 0) scale(0.9) rotate(var(--arc-rot, 14deg));
+  }
+}
+
+/* Gaya 3: Pop-Up Spotlight (Zoom & Bounce di Area Tengah Layar) */
+.floating-gift-item.style-pop {
+  bottom: auto;
+  top: var(--pop-top, 42%);
+  animation: floatingGiftPopSpotlight var(--rise-dur, 3.2s) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes floatingGiftPopSpotlight {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0) scale(0.25);
+  }
+  16% {
+    opacity: 1;
+    transform: translate3d(0, -6px, 0) scale(1.14);
+  }
+  26% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  78% {
+    opacity: 1;
+    transform: translate3d(0, -10px, 0) scale(1.02);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -28px, 0) scale(0.6);
+  }
+}
+
+/* Gaya 4: Meluncur Diagonal (Meteor Slide) */
+.floating-gift-item.style-meteor {
+  bottom: -90px;
+  animation:
+    floatingGiftMeteor var(--rise-dur, 3.6s) cubic-bezier(0.2, 0.45, 0.35, 1) forwards,
+    floatingGiftFade var(--rise-dur, 3.6s) linear forwards;
+}
+
+@keyframes floatingGiftMeteor {
+  from {
+    transform: translate3d(0, 0, 0) rotate(calc(var(--meteor-rot, -10deg) * -0.5)) scale(0.8);
+  }
+  to {
+    transform: translate3d(var(--meteor-dx, 240px), calc(-100vh - 140px), 0) rotate(var(--meteor-rot, 10deg)) scale(1.05);
+  }
+}
+
+/* Gaya 5: Hujan Gift dari Atas (Rain Drop) */
+.floating-gift-item.style-rain {
+  bottom: auto;
+  top: -120px;
+  animation:
+    floatingGiftRain var(--rise-dur, 4.4s) cubic-bezier(0.3, 0.15, 0.55, 1) forwards,
+    floatingGiftFade var(--rise-dur, 4.4s) linear forwards;
+}
+
+@keyframes floatingGiftRain {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, calc(100vh + 170px), 0);
+  }
+}
+
+/* Gaya 6: Cap / Stempel Keras ke Layar (Hard Stamp Slam + Impact Shockwave) */
+.floating-gift-item.style-stamp {
+  bottom: auto;
+  top: var(--stamp-top, 38%);
+  animation: floatingGiftStamp var(--rise-dur, 2.9s) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.floating-gift-item.style-stamp .floating-gift-sway,
+.floating-gift-item.style-stamp .floating-gift-content {
+  animation: none !important;
+}
+
+@keyframes floatingGiftStamp {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -35px, 0) scale(3.1) rotate(calc(var(--stamp-rot, -9deg) * 1.6));
+  }
+  9% {
+    opacity: 1;
+    transform: translate3d(0, 4px, 0) scale(0.82) rotate(var(--stamp-rot, -9deg));
+  }
+  14% {
+    opacity: 1;
+    transform: translate3d(-4px, -2px, 0) scale(1.08) rotate(calc(var(--stamp-rot, -9deg) + 2deg));
+  }
+  19% {
+    opacity: 1;
+    transform: translate3d(3px, 2px, 0) scale(0.97) rotate(calc(var(--stamp-rot, -9deg) - 1deg));
+  }
+  24% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(var(--stamp-rot, -9deg));
+  }
+  82% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(var(--stamp-rot, -9deg));
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.88) rotate(var(--stamp-rot, -9deg));
+  }
+}
+
+.floating-stamp-ring {
+  position: absolute;
+  left: 50%;
+  top: 40px;
+  width: 76px;
+  height: 76px;
+  margin-left: -38px;
+  margin-top: -38px;
+  border-radius: 50%;
+  border: 3px solid #ffd54f;
+  pointer-events: none;
+  z-index: 1;
+  animation: stampShockwave 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.07s both;
+}
+
+@keyframes stampShockwave {
+  0% {
+    opacity: 0.95;
+    transform: scale(0.45);
+    border-width: 4px;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.15);
+    border-width: 1px;
+  }
+}
+
 /* Lapis 2: ayunan kiri-kanan bergelombang sinus (ease-in-out alternate) */
 .floating-gift-sway {
   animation: floatingGiftSway var(--sway-dur, 1.8s) ease-in-out infinite alternate;
@@ -4862,6 +5018,19 @@ body.theme-sepia .warmle-alpha-strip {
   color: transparent !important;
 }
 
+/* Shuntle active empty row space-hint borders (matching shuntle.com) */
+.tile.shuntle-space-correct {
+  border: 2.5px solid var(--correct) !important;
+}
+
+.tile.shuntle-space-elsewhere {
+  border: 2.5px dotted #eab308 !important;
+}
+
+.tile.shuntle-space-absent {
+  border: 2px dotted rgba(255, 255, 255, 0.65) !important;
+}
+
 body.theme-sepia .shuntle-info-bar {
   background: rgba(255, 250, 240, 0.72);
   border-color: rgba(66, 52, 40, 0.22);
@@ -4878,6 +5047,138 @@ body.theme-sepia .shuntle-info-sub {
 body.theme-sepia .tile.shuntle-blank-tile {
   background: rgba(66, 52, 40, 0.03) !important;
   border: 1.5px dashed rgba(66, 52, 40, 0.2) !important;
+}
+
+body.theme-sepia .tile.shuntle-space-correct {
+  border: 2.5px solid var(--correct) !important;
+}
+
+body.theme-sepia .tile.shuntle-space-elsewhere {
+  border: 2.5px dotted #ca8a04 !important;
+}
+
+body.theme-sepia .tile.shuntle-space-absent {
+  border: 2px dotted rgba(66, 52, 40, 0.6) !important;
+}
+
+/* =========================================
+   SYMBLE INFO BAR & CORNER CIPHER BADGES
+   ========================================= */
+.symble-info-bar {
+  width: fit-content;
+  max-width: 92vw;
+  margin: 0 auto 10px;
+  padding: 5px 10px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-sizing: border-box;
+}
+
+.symble-legend-badges {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.symble-legend-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.4px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+  transition: background 0.25s ease, border-color 0.25s ease;
+}
+
+.symble-legend-pill i {
+  font-size: 10px;
+  opacity: 0.95;
+}
+
+#symblePaletteQuickBtn,
+.symble-palette-quick-btn {
+  display: none !important;
+}
+
+.tile.symble-tile {
+  position: relative;
+  color: #ffffff !important;
+  padding-top: 3px;
+  padding-right: 2px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.tile .symble-corner-icon {
+  position: absolute;
+  top: 2.5px;
+  right: 3px;
+  font-size: calc(8.5px * var(--board-scale, 1));
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.9);
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
+
+/* Symble Shaped Tiles (Opsi 4 & 5: Bentuk Kotak Huruf Menjadi Simbol) */
+.tile.symble-shape-0 {
+  border-radius: 50% !important;
+}
+
+.tile.symble-shape-1 {
+  border-radius: 6px 6px 24px 24px !important;
+}
+
+.tile.symble-shape-2 {
+  border-radius: 22px 4px 22px 4px !important;
+}
+
+.symble-legend-pill.symble-pill-shape-0 {
+  border-radius: 999px !important;
+}
+
+.symble-legend-pill.symble-pill-shape-1 {
+  border-radius: 4px 4px 14px 14px !important;
+}
+
+.symble-legend-pill.symble-pill-shape-2 {
+  border-radius: 14px 3px 14px 3px !important;
+}
+
+.symble-shape-mini {
+  width: 11px;
+  height: 11px;
+  display: inline-block;
+  border: 1.5px solid rgba(255, 255, 255, 0.92);
+  box-sizing: border-box;
+}
+
+.symble-shape-mini.shape-0 {
+  border-radius: 50%;
+}
+
+.symble-shape-mini.shape-1 {
+  border-radius: 2px 2px 6px 6px;
+}
+
+.symble-shape-mini.shape-2 {
+  border-radius: 6px 1px 6px 1px;
+}
+
+body.theme-sepia .symble-info-bar {
+  background: rgba(255, 250, 240, 0.72);
+  border-color: rgba(66, 52, 40, 0.22);
 }
 
 /* ══════════════════════════════════════════ */

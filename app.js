@@ -12295,6 +12295,10 @@ function processGuess(guessWord, userData, queueLen = 0) {
       correctCount = symRes.correctCount;
       presentCount = symRes.presentCount;
       absentCount = WORD_LENGTH - correctCount - presentCount;
+      const wordleStatuses = getWordleFeedback(guessWord, currentWord);
+      for (let k = 0; k < WORD_LENGTH; k++) {
+        if (tiles[k]) tiles[k].dataset.symbleWordleStatus = wordleStatuses[k];
+      }
     } else if (currentGameMode === 'xordle') {
       const xorRes = evaluateXordleGuess(guessWord);
       statuses = xorRes.statuses;
@@ -12691,7 +12695,11 @@ function processGuess(guessWord, userData, queueLen = 0) {
     isWin = true;
     winPts = (currentGameMode === 'absurdle') ? 30 : ((currentGameMode === 'word500' || currentGameMode === 'wordfit' || currentGameMode === 'symble') ? 15 : 10);
     if (currentGameMode === 'symble' && typeof revealSymbleRoundCipher === 'function') {
-      setTimeout(() => revealSymbleRoundCipher(), 650);
+      const winFlipCfg = getFlipSpeedConfig(queueLen);
+      const allFlippedDelay = winFlipCfg.shouldFlip
+        ? ((WORD_LENGTH * winFlipCfg.stepDelay) + winFlipCfg.revealOffset + 120)
+        : 200;
+      setTimeout(() => revealSymbleRoundCipher(), allFlippedDelay);
     }
   }
 
@@ -23298,7 +23306,7 @@ function onSymbleNonWinningGuess(guessCount, queueLen = 0) {
   }
 }
 
-function getSymbleSlotAppearance(status) {
+function getSymbleSlotAppearance(status, wordleStatusOverride = null) {
   const palette = SYMBLE_MATTE_PALETTES[symbleActivePaletteIdx] || SYMBLE_MATTE_PALETTES[0];
   const slotIdx = (symbleMeaningToSlot && typeof symbleMeaningToSlot[status] === 'number')
     ? symbleMeaningToSlot[status]
@@ -23306,19 +23314,23 @@ function getSymbleSlotAppearance(status) {
   const item = palette.items[slotIdx] || palette.items[0];
   const isSepia = document.body && document.body.classList.contains('theme-sepia');
 
+  const labelMap = { correct: 'TEPAT', present: 'ADA', absent: 'SALAH' };
+
   if (symbleIsCipherRevealed) {
-    if (status === 'correct') {
-      return { bg: '#16a34a', border: '#22c55e', icon: item.icon, iconColor: '#ffffff', label: 'TEPAT', isRevealed: true, slotIdx };
+    // Use wordleStatusOverride (guess-centric letter status, just like symble.app's wordleInfo!) for tile background color
+    const colorStatus = wordleStatusOverride || status;
+    if (colorStatus === 'correct') {
+      return { bg: '#16a34a', border: '#22c55e', icon: item.icon, iconColor: '#ffffff', label: labelMap[status] || 'TEPAT', isRevealed: true, slotIdx };
     }
-    if (status === 'present') {
-      return { bg: '#c6aa24', border: '#d4b82f', icon: item.icon, iconColor: '#ffffff', label: 'ADA', isRevealed: true, slotIdx };
+    if (colorStatus === 'present') {
+      return { bg: '#c6aa24', border: '#d4b82f', icon: item.icon, iconColor: '#ffffff', label: labelMap[status] || 'ADA', isRevealed: true, slotIdx };
     }
     return {
       bg: isSepia ? '#857466' : '#3a4454',
       border: isSepia ? '#706053' : '#4f5b6e',
       icon: item.icon,
       iconColor: '#ffffff',
-      label: 'SALAH',
+      label: labelMap[status] || 'SALAH',
       isRevealed: true,
       slotIdx
     };
@@ -23365,7 +23377,8 @@ function applySymbleTileAppearance(tile, status) {
   tile.classList.remove('correct', 'present', 'absent', 'symble-shape-0', 'symble-shape-1', 'symble-shape-2');
   tile.classList.add('symble-tile');
 
-  const app = getSymbleSlotAppearance(status);
+  const wordleSt = tile.dataset.symbleWordleStatus || status;
+  const app = getSymbleSlotAppearance(status, wordleSt);
   const isSepia = document.body && document.body.classList.contains('theme-sepia');
   const isShapedMode = (symbleVisualMode === 'shape_color' || symbleVisualMode === 'shape_only');
   const isNeutralMode = (symbleVisualMode === 'symbol_only' || symbleVisualMode === 'shape_only');
@@ -23425,19 +23438,16 @@ function updateSymbleInfoBarUI(revealed) {
     slotToStatus[symbleMeaningToSlot[st]] = st;
   });
 
-  const shapeNames = ['Bulat', 'Perisai', 'Permata'];
+  const labelMap = { correct: 'TEPAT', present: 'ADA', absent: 'SALAH' };
 
   badgesContainer.innerHTML = [0, 1, 2].map(slotIdx => {
     const st = slotToStatus[slotIdx] || 'absent';
     const item = palette.items[slotIdx];
-    const app = getSymbleSlotAppearance(st);
     const isThisSlotRevealed = symbleIsCipherRevealed || (symbleIsAbsentHintRevealed && st === 'absent');
 
+    // Keep each badge's original Soft Matte color in #symbleInfoBar even when revealed so viewers can see which color meant TEPAT / ADA / SALAH!
     let bg, border, textColor = '#ffffff';
-    if (isThisSlotRevealed) {
-      bg = app.bg;
-      border = app.border;
-    } else if (isNeutralMode) {
+    if (isNeutralMode && !isThisSlotRevealed) {
       bg = isSepia ? '#cfc2ae' : '#1e2633';
       border = isSepia ? 'rgba(66, 52, 40, 0.42)' : 'rgba(255, 255, 255, 0.28)';
       textColor = isSepia ? '#3b2c20' : '#ffffff';
@@ -23446,7 +23456,7 @@ function updateSymbleInfoBarUI(revealed) {
       border = isSepia ? item.sepiaBorder : item.border;
     }
 
-    const text = isThisSlotRevealed ? app.label : '?';
+    const text = isThisSlotRevealed ? (labelMap[st] || 'SALAH') : '?';
     const iconColor = (isNeutralMode && !isThisSlotRevealed)
       ? (isSepia ? item.sepiaBg : item.border)
       : '#ffffff';

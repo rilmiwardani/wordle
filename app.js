@@ -12492,10 +12492,6 @@ function processGuess(guessWord, userData, queueLen = 0) {
       correctCount = symRes.correctCount;
       presentCount = symRes.presentCount;
       absentCount = WORD_LENGTH - correctCount - presentCount;
-      const wordleStatuses = getWordleFeedback(guessWord, currentWord);
-      for (let k = 0; k < WORD_LENGTH; k++) {
-        if (tiles[k]) tiles[k].dataset.symbleWordleStatus = wordleStatuses[k];
-      }
     } else if (currentGameMode === 'xordle') {
       const xorRes = evaluateXordleGuess(guessWord);
       statuses = xorRes.statuses;
@@ -23580,8 +23576,7 @@ function applySymbleTileAppearance(tile, status) {
   tile.classList.remove('correct', 'present', 'absent', 'symble-shape-0', 'symble-shape-1', 'symble-shape-2');
   tile.classList.add('symble-tile');
 
-  const wordleSt = tile.dataset.symbleWordleStatus || status;
-  const app = getSymbleSlotAppearance(status, wordleSt);
+  const app = getSymbleSlotAppearance(status);
   const isSepia = document.body && document.body.classList.contains('theme-sepia');
   const isShapedMode = (symbleVisualMode === 'shape_color' || symbleVisualMode === 'shape_only');
   const isNeutralMode = (symbleVisualMode === 'symbol_only' || symbleVisualMode === 'shape_only' || symbleVisualMode === 'top_strip' || symbleVisualMode === 'corner_ribbon');
@@ -23805,24 +23800,27 @@ function evaluateSymbleGuess(guessWord, targetWord) {
   let correctCount = 0;
   let presentCount = 0;
 
-  // Pass 1: Huruf tebakan di kotak ke-i tepat sama dengan huruf target di kotak ke-i
+  // Pass 1 (TEPAT): Huruf kata rahasia di posisi ke-i sama dengan huruf tebakan di posisi ke-i
   for (let i = 0; i < len; i++) {
-    if (remainingGuess[i] === remainingTarget[i]) {
+    if (remainingTarget[i] === remainingGuess[i]) {
       statuses[i] = 'correct';
-      remainingGuess[i] = null;
       remainingTarget[i] = null;
+      remainingGuess[i] = null;
       correctCount++;
     }
   }
 
-  // Pass 2: Huruf tebakan di kotak ke-i ada di kata target tetapi di posisi berbeda
+  // Pass 2 (ADA vs SALAH — Logika Kasih Paham / Symble Asli):
+  // Setiap kotak ke-i mengevaluasi huruf KATA RAHASIA (targetWord[i]) terhadap tebakan pemain (guessWord):
+  // - 'present' (ADA): Ada huruf di tebakan pemain yang seharusnya berada di posisi ke-i ini
+  // - 'absent' (SALAH): Huruf rahasia di posisi ke-i ini tidak muncul sama sekali dalam tebakan pemain
   for (let i = 0; i < len; i++) {
-    if (remainingGuess[i] !== null) {
-      const foundInTarget = remainingTarget.indexOf(remainingGuess[i]);
-      if (foundInTarget !== -1) {
+    if (remainingTarget[i] !== null) {
+      const foundInGuess = remainingGuess.indexOf(remainingTarget[i]);
+      if (foundInGuess !== -1) {
         statuses[i] = 'present';
-        remainingTarget[foundInTarget] = null;
-        remainingGuess[i] = null;
+        remainingGuess[foundInGuess] = null;
+        remainingTarget[i] = null;
         presentCount++;
       } else {
         statuses[i] = 'absent';

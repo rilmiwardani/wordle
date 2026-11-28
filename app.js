@@ -1176,10 +1176,80 @@ let activeChampionStreak = {
   count: 0
 };
 
+const STREAK_FLAME_SVG_PATH = "M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z";
+let _streakGradUid = 0;
+
+function getStreakTierInfo(streakCount) {
+  if (streakCount >= 10) return { tierClass: 'tier-mythic', color: '#fb7185', top: '#ffffff', mid: '#fb7185', bot: '#9f1239' };
+  if (streakCount >= 8)  return { tierClass: 'tier-gold',   color: '#facc15', top: '#ffffff', mid: '#fde047', bot: '#b45309' };
+  if (streakCount >= 5)  return { tierClass: 'tier-violet', color: '#c084fc', top: '#ffffff', mid: '#f472b6', bot: '#7e22ce' };
+  if (streakCount >= 3)  return { tierClass: 'tier-cyan',   color: '#38bdf8', top: '#ffffff', mid: '#38bdf8', bot: '#0284c7' };
+  return { tierClass: 'tier-orange', color: '#ff9800', top: '#fff176', mid: '#ff9800', bot: '#ef4444' };
+}
+
+function createPureFlameSVG(tierInfo, size = 12) {
+  const gid = 'sfg_' + (++_streakGradUid);
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${tierInfo.top}"/><stop offset="45%" stop-color="${tierInfo.mid}"/><stop offset="100%" stop-color="${tierInfo.bot}"/></linearGradient></defs><path fill="url(#${gid})" d="${STREAK_FLAME_SVG_PATH}"/></svg>`;
+}
+
+function isPlayerStreakChampion(userOrName) {
+  if (!activeChampionStreak || activeChampionStreak.count < 2 || !activeChampionStreak.userId) return false;
+  const champId = String(activeChampionStreak.userId || '').trim().toLowerCase();
+  const champName = String(activeChampionStreak.userName || '').trim().toLowerCase();
+  if (!userOrName) return false;
+  if (typeof userOrName === 'string') {
+    const clean = userOrName.trim().toLowerCase();
+    return clean !== '' && (clean === champName || clean === champId);
+  }
+  const uid = String(userOrName.uniqueId || userOrName.userId || userOrName.id || '').trim().toLowerCase();
+  const uname = String(userOrName.nickname || userOrName.userName || '').trim().toLowerCase();
+  return (uid !== '' && (uid === champId || uid === champName)) ||
+         (uname !== '' && (uname === champName || uname === champId));
+}
+
+function getLeaderboardStreakHTML(username, prefix = 'lb') {
+  if (!isPlayerStreakChampion(username)) return '';
+  const count = activeChampionStreak.count;
+  const tier = getStreakTierInfo(count);
+  return `<span class="${prefix}-streak-flame ${tier.tierClass}" title="Win Streak ${count}x">${createPureFlameSVG(tier, 11)}<b>${count}</b></span>`;
+}
+
+function applyGuesserStreakVisual(containerEl, avatarEl, userData) {
+  if (!containerEl && !avatarEl) return;
+  const STREAK_AVATAR_CLASSES = ['streak-tier-orange', 'streak-tier-cyan', 'streak-tier-violet', 'streak-tier-gold', 'streak-tier-mythic'];
+  if (avatarEl) {
+    STREAK_AVATAR_CLASSES.forEach(c => avatarEl.classList.remove(c));
+  }
+  if (containerEl) {
+    const oldBadge = containerEl.querySelector('.row-streak-badge');
+    if (oldBadge) oldBadge.remove();
+  }
+  if (!isPlayerStreakChampion(userData)) return;
+  const count = activeChampionStreak.count;
+  const tier = getStreakTierInfo(count);
+  if (avatarEl) {
+    avatarEl.classList.add('streak-' + tier.tierClass);
+  }
+  if (containerEl) {
+    const badge = document.createElement('span');
+    badge.className = `row-streak-badge ${tier.tierClass}`;
+    badge.innerHTML = `${createPureFlameSVG(tier, 13)}<b>${count}</b>`;
+    containerEl.appendChild(badge);
+  }
+}
+
 function updateWinStreakFlame(winnerData) {
   const streakContainer = document.getElementById('winStreakContainer');
-  const streakNumEl = document.getElementById('winStreakCount');
-  if (!streakContainer || !streakNumEl) return;
+  const winAvatarEl = document.getElementById('winAvatar');
+  if (!streakContainer) return;
+
+  const AVATAR_STREAK_CLASSES = [
+    'streak-tier-orange', 'streak-tier-cyan', 'streak-tier-violet',
+    'streak-tier-gold', 'streak-tier-mythic', 'streak-tier-broken'
+  ];
+  if (winAvatarEl) {
+    AVATAR_STREAK_CLASSES.forEach(c => winAvatarEl.classList.remove(c));
+  }
 
   if (!winnerData) {
     streakContainer.style.display = 'none';
@@ -1190,35 +1260,66 @@ function updateWinStreakFlame(winnerData) {
   const currentWinnerId = String(rawId).trim();
   const currentWinnerName = String(winnerData.nickname || winnerData.userName || currentWinnerId).trim();
 
-  // Jika pemenang tidak valid atau host / bot testing, sembunyikan streak
-  if (!currentWinnerId || currentWinnerId.toLowerCase() === 'host' || currentWinnerId.toLowerCase() === 'host_offline' || currentWinnerName.toLowerCase() === 'host') {
+  // Abaikan entitas sistem otomatis (starter kata otomatis)
+  if (!currentWinnerId || currentWinnerId.toLowerCase() === 'system' || currentWinnerName.toLowerCase() === 'sistem' || currentWinnerName.toLowerCase() === 'target sblm') {
     streakContainer.style.display = 'none';
     return;
   }
 
-  // Cek apakah pemenang ini mempertahankan gelarnya dari ronde sebelumnya
+  let brokenStreak = null;
   if (activeChampionStreak.userId && activeChampionStreak.userId.toLowerCase() === currentWinnerId.toLowerCase()) {
     activeChampionStreak.count++;
+    activeChampionStreak.userName = currentWinnerName || activeChampionStreak.userName;
   } else {
+    if (activeChampionStreak.userId && activeChampionStreak.count >= 2) {
+      brokenStreak = {
+        userId: activeChampionStreak.userId,
+        userName: activeChampionStreak.userName,
+        count: activeChampionStreak.count
+      };
+    }
     activeChampionStreak.userId = currentWinnerId;
     activeChampionStreak.userName = currentWinnerName;
     activeChampionStreak.count = 1;
   }
 
   const streak = activeChampionStreak.count;
-  if (streak >= 2) {
-    // Tentukan tingkatan 5 warna api (5 Tiered Flame Spectrum)
-    let tierClass = 'tier-orange';
-    if (streak >= 10) tierClass = 'tier-mythic';
-    else if (streak >= 8) tierClass = 'tier-gold';
-    else if (streak >= 5) tierClass = 'tier-violet';
-    else if (streak >= 3) tierClass = 'tier-cyan';
 
-    streakContainer.className = `win-streak-container ${tierClass}`;
-    streakNumEl.textContent = streak;
+  if (brokenStreak) {
+    const brokenTier = getStreakTierInfo(brokenStreak.count);
+    if (winAvatarEl) winAvatarEl.classList.add('streak-tier-broken');
+    streakContainer.className = 'win-streak-container is-broken';
+    streakContainer.innerHTML = `
+      <div class="streak-break-wrap">
+        <div class="streak-split-box">
+          <div class="streak-spark-ring"></div>
+          <svg viewBox="0 0 24 24" class="streak-half-tl"><path fill="${brokenTier.color}" d="${STREAK_FLAME_SVG_PATH}"/></svg>
+          <svg viewBox="0 0 24 24" class="streak-half-br"><path fill="${brokenTier.color}" d="${STREAK_FLAME_SVG_PATH}"/></svg>
+          <span class="streak-slash-bar"></span>
+        </div>
+        <div class="streak-old-num-wrap">
+          <span class="streak-old-num" style="color: ${brokenTier.color};">${brokenStreak.count}</span>
+          <span class="streak-strike-bar"></span>
+        </div>
+        <span class="streak-broken-label">STREAK BROKEN!</span>
+      </div>
+    `;
+    streakContainer.style.display = 'flex';
+  } else if (streak >= 2) {
+    const tier = getStreakTierInfo(streak);
+    if (winAvatarEl) winAvatarEl.classList.add('streak-' + tier.tierClass);
+    streakContainer.className = `win-streak-container ${tier.tierClass}`;
+    streakContainer.innerHTML = `
+      <span class="win-streak-flame"><i class="fa-solid fa-fire-flame-curved"></i></span>
+      <span id="winStreakCount" class="win-streak-num">${streak}</span>
+    `;
     streakContainer.style.display = 'flex';
   } else {
     streakContainer.style.display = 'none';
+  }
+
+  if (typeof renderLeaderboard === 'function') {
+    renderLeaderboard();
   }
 }
 
@@ -2340,18 +2441,25 @@ function renderLeaderboard() {
 
   // If item count changed, rebuild cleanly
   if (existingItems.length !== sortedPlayers.length) {
-    lbList.innerHTML = sortedPlayers.map(([username, data], index) => `
+    lbList.innerHTML = sortedPlayers.map(([username, data], index) => {
+      const isChamp = isPlayerStreakChampion(username);
+      const avatarTierCls = isChamp ? (' streak-' + getStreakTierInfo(activeChampionStreak.count).tierClass) : '';
+      return `
       <div class="lb-item">
         <div class="lb-avatar-wrapper">
-          <img src="${data.avatar || 'assets/bg_nature.png'}" class="lb-avatar" onerror="this.onerror=null;this.src='assets/bg_nature.png';">
+          <img src="${data.avatar || 'assets/bg_nature.png'}" class="lb-avatar${avatarTierCls}" onerror="this.onerror=null;this.src='assets/bg_nature.png';">
           <div class="lb-rank rank-${index + 1}">${index + 1}</div>
         </div>
         <div class="lb-info">
           <span class="lb-name">${escapeHTML(username)}</span>
-          <span class="lb-pts">${data[currentLbTab + 'Pts']} pts</span>
+          <div class="lb-pts-row">
+            <span class="lb-pts">${data[currentLbTab + 'Pts']} pts</span>
+            <span class="lb-streak-slot">${getLeaderboardStreakHTML(username, 'lb')}</span>
+          </div>
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
     if (typeof renderFloatingLeaderboard === 'function' && (typeof window !== 'undefined' ? window.isFloatingLbVisible : isFloatingLbVisible)) {
       renderFloatingLeaderboard();
     }
@@ -2365,8 +2473,14 @@ function renderLeaderboard() {
 
     const avatarImg = item.querySelector('.lb-avatar');
     const newAvatar = data.avatar || 'assets/bg_nature.png';
-    if (avatarImg && avatarImg.getAttribute('src') !== newAvatar) {
-      avatarImg.src = newAvatar;
+    if (avatarImg) {
+      if (avatarImg.getAttribute('src') !== newAvatar) {
+        avatarImg.src = newAvatar;
+      }
+      ['streak-tier-orange', 'streak-tier-cyan', 'streak-tier-violet', 'streak-tier-gold', 'streak-tier-mythic'].forEach(c => avatarImg.classList.remove(c));
+      if (isPlayerStreakChampion(username)) {
+        avatarImg.classList.add('streak-' + getStreakTierInfo(activeChampionStreak.count).tierClass);
+      }
     }
 
     const nameSpan = item.querySelector('.lb-name');
@@ -2381,6 +2495,16 @@ function renderLeaderboard() {
       ptsSpan.style.transition = 'color 0.25s ease';
       ptsSpan.style.color = '#38bdf8';
       setTimeout(() => { if (ptsSpan) ptsSpan.style.color = ''; }, 350);
+    }
+
+    let streakSlot = item.querySelector('.lb-streak-slot');
+    if (!streakSlot && ptsSpan && ptsSpan.parentNode) {
+      streakSlot = document.createElement('span');
+      streakSlot.className = 'lb-streak-slot';
+      ptsSpan.parentNode.appendChild(streakSlot);
+    }
+    if (streakSlot) {
+      streakSlot.innerHTML = getLeaderboardStreakHTML(username, 'lb');
     }
 
     const rankDiv = item.querySelector('.lb-rank');
@@ -4176,6 +4300,7 @@ function renderFloatingLeaderboard(forceTab) {
         <div class="flb-badge-rank">${rankBadge}</div>
         <img class="flb-avatar" src="${avatarUrl}" onerror="this.onerror=null;this.src='assets/bg_nature.png';">
         <div class="flb-user" title="@${safeName}">${safeName}</div>
+        ${getLeaderboardStreakHTML(player.username, 'flb')}
         <div class="flb-score">${player.pts} <small>PTS</small></div>
       </div>
     `;
@@ -5979,6 +6104,7 @@ function createWord500RowEl(guessData, isLatest, revealAllColors = false) {
   avatar.src = (guessData.userData && guessData.userData.profilePictureUrl) ? guessData.userData.profilePictureUrl : 'assets/bg_nature.png';
   avatar.classList.add('show');
   row.appendChild(avatar);
+  applyGuesserStreakVisual(row, avatar, guessData.userData);
   const isAllRed = guessData.a === guessData.word.length;
   
   let statuses = null;
@@ -6126,6 +6252,7 @@ function createWordFitRowEl(guessData, isLatest, revealAllColors = false) {
   avatar.src = (guessData.userData && guessData.userData.profilePictureUrl) ? guessData.userData.profilePictureUrl : 'assets/bg_nature.png';
   avatar.classList.add('show');
   row.appendChild(avatar);
+  applyGuesserStreakVisual(row, avatar, guessData.userData);
   const isAllRed = guessData.a === guessData.word.length;
   
   let statuses = null;
@@ -10949,15 +11076,31 @@ function setupSocketListeners() {
   const FLOATING_GIFT_MAX = 8;
   let isFloatingGiftEnabled = localStorage.getItem('wordle_floatingGiftEnabled') !== 'false';
   let floatingGiftStyle = localStorage.getItem('wordle_floatingGiftStyle') || 'float';
+  let floatingGiftLayout = localStorage.getItem('wordle_floatingGiftLayout') || 'avatar'; // 'avatar' | 'gift' | 'duo'
 
   function syncFloatingGiftControlsUI() {
     const tog = document.getElementById('floatingGiftToggle');
     if (tog) tog.checked = isFloatingGiftEnabled;
     const sel = document.getElementById('giftAnimStyleSelect');
     if (sel) sel.value = floatingGiftStyle;
+    const lSel = document.getElementById('giftFocusLayoutSelect');
+    if (lSel) lSel.value = floatingGiftLayout;
     const row = document.getElementById('giftAnimStyleControlRow');
     if (row) row.style.opacity = isFloatingGiftEnabled ? '1' : '0.5';
   }
+
+  window.changeFloatingGiftLayout = function(layoutVal) {
+    const valid = ['avatar', 'gift', 'duo'];
+    floatingGiftLayout = valid.includes(layoutVal) ? layoutVal : 'avatar';
+    try { localStorage.setItem('wordle_floatingGiftLayout', floatingGiftLayout); } catch (e) {}
+    syncFloatingGiftControlsUI();
+    const layoutNames = {
+      avatar: 'Foto Profil Besar (Avatar Spotlight)',
+      gift: 'Gambar Gift Besar',
+      duo: 'Duo Seimbang (Avatar & Gift Sejajar)'
+    };
+    showToast('Tata Letak Gift: ' + (layoutNames[floatingGiftLayout] || floatingGiftLayout), 1800);
+  };
   setTimeout(syncFloatingGiftControlsUI, 50);
   document.addEventListener('DOMContentLoaded', syncFloatingGiftControlsUI);
 
@@ -11098,49 +11241,100 @@ function setupSocketListeners() {
           sway.style.animationDelay = `-${(Math.random() * swayDur).toFixed(2)}s`;
 
           const content = document.createElement('div');
-          content.className = 'floating-gift-content';
+          content.className = 'floating-gift-content layout-' + floatingGiftLayout;
 
-          if (userData.giftPictureUrl) {
-            const giftImg = document.createElement('img');
-            giftImg.className = 'floating-gift-img';
-            giftImg.src = userData.giftPictureUrl;
-            giftImg.alt = userData.giftName || 'Gift';
-            giftImg.onerror = function() { this.style.display = 'none'; };
-            content.appendChild(giftImg);
-          } else {
+          const createGiftNode = (fallbackFontSize = '38px') => {
+            if (userData.giftPictureUrl) {
+              const giftImg = document.createElement('img');
+              giftImg.className = 'floating-gift-img';
+              giftImg.src = userData.giftPictureUrl;
+              giftImg.alt = userData.giftName || 'Gift';
+              giftImg.onerror = function() { this.style.display = 'none'; };
+              return giftImg;
+            }
             const giftIcon = document.createElement('div');
             giftIcon.className = 'floating-gift-img';
             giftIcon.style.display = 'flex';
             giftIcon.style.alignItems = 'center';
             giftIcon.style.justifyContent = 'center';
-            giftIcon.style.fontSize = '38px';
+            giftIcon.style.fontSize = fallbackFontSize;
             giftIcon.style.color = '#ffd700';
             giftIcon.innerHTML = '<i class="fa-solid fa-gift"></i>';
-            content.appendChild(giftIcon);
-          }
-
-          if (repeatCount > 1) {
-            const combo = document.createElement('span');
-            combo.className = 'floating-gift-combo';
-            combo.textContent = `x${repeatCount}`;
-            content.appendChild(combo);
-          }
+            return giftIcon;
+          };
 
           const senderPill = document.createElement('div');
           senderPill.className = 'floating-gift-sender-pill';
-
-          const senderAvatar = document.createElement('img');
-          senderAvatar.className = 'floating-gift-avatar';
-          senderAvatar.src = avatarSrc;
-          senderAvatar.onerror = function() { this.src = 'assets/default-avatar.png'; };
 
           const senderName = document.createElement('span');
           senderName.className = 'floating-gift-name';
           senderName.textContent = cleanNick;
 
-          senderPill.appendChild(senderAvatar);
-          senderPill.appendChild(senderName);
-          content.appendChild(senderPill);
+          if (floatingGiftLayout === 'avatar') {
+            // Opsi 1: Foto Profil Besar (68px) + Badge Gift di sudut kanan bawah (36px)
+            const heroWrap = document.createElement('div');
+            heroWrap.className = 'floating-avatar-hero-wrap';
+
+            const heroAvatar = document.createElement('img');
+            heroAvatar.className = 'floating-avatar-hero';
+            heroAvatar.src = avatarSrc;
+            heroAvatar.onerror = function() { this.src = 'assets/default-avatar.png'; };
+            heroWrap.appendChild(heroAvatar);
+
+            const cornerBadge = document.createElement('div');
+            cornerBadge.className = 'floating-gift-corner-badge';
+            cornerBadge.appendChild(createGiftNode('20px'));
+            heroWrap.appendChild(cornerBadge);
+
+            if (repeatCount > 1) {
+              const combo = document.createElement('span');
+              combo.className = 'floating-gift-combo';
+              combo.textContent = `x${repeatCount}`;
+              heroWrap.appendChild(combo);
+            }
+
+            content.appendChild(heroWrap);
+            senderPill.appendChild(senderName);
+            content.appendChild(senderPill);
+          } else if (floatingGiftLayout === 'duo') {
+            // Opsi 3: Duo Seimbang (Avatar 56px & Gift 54px berdampingan)
+            const duoRow = document.createElement('div');
+            duoRow.className = 'floating-duo-row';
+
+            const duoAvatar = document.createElement('img');
+            duoAvatar.className = 'floating-avatar-duo';
+            duoAvatar.src = avatarSrc;
+            duoAvatar.onerror = function() { this.src = 'assets/default-avatar.png'; };
+            duoRow.appendChild(duoAvatar);
+            duoRow.appendChild(createGiftNode('32px'));
+
+            if (repeatCount > 1) {
+              const combo = document.createElement('span');
+              combo.className = 'floating-gift-combo';
+              combo.textContent = `x${repeatCount}`;
+              duoRow.appendChild(combo);
+            }
+
+            content.appendChild(duoRow);
+            senderPill.appendChild(senderName);
+            content.appendChild(senderPill);
+          } else {
+            // Opsi 2: Gambar Gift Besar (72px) + Avatar Kecil (24px) di pita nama
+            content.appendChild(createGiftNode('38px'));
+            if (repeatCount > 1) {
+              const combo = document.createElement('span');
+              combo.className = 'floating-gift-combo';
+              combo.textContent = `x${repeatCount}`;
+              content.appendChild(combo);
+            }
+            const senderAvatar = document.createElement('img');
+            senderAvatar.className = 'floating-gift-avatar';
+            senderAvatar.src = avatarSrc;
+            senderAvatar.onerror = function() { this.src = 'assets/default-avatar.png'; };
+            senderPill.appendChild(senderAvatar);
+            senderPill.appendChild(senderName);
+            content.appendChild(senderPill);
+          }
 
           sway.appendChild(content);
           item.appendChild(sway);
@@ -11789,6 +11983,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
         avatar.src = (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : 'assets/bg_nature.png';
         avatar.style.display = '';
         avatar.classList.add('show');
+        applyGuesserStreakVisual(row, avatar, userData);
         showFloatingPoints(pts, avatar.id);
       }
 
@@ -11935,6 +12130,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
             avatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
             avatar.src = (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : 'assets/bg_nature.png';
             avatar.classList.add('show');
+            applyGuesserStreakVisual(row, avatar, userData);
             showFloatingPoints(pts, avatar.id);
           }
           
@@ -12242,6 +12438,7 @@ function processGuess(guessWord, userData, queueLen = 0) {
   avatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
   avatar.src = (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : 'assets/bg_nature.png';
   row.appendChild(avatar);
+  applyGuesserStreakVisual(row, avatar, userData);
 
   const tiles = [];
   for (let j = 0; j < WORD_LENGTH; j++) {
@@ -15481,6 +15678,7 @@ function renderWordLadderBoard() {
     avatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
     avatar.src = (item.userData && item.userData.profilePictureUrl) ? item.userData.profilePictureUrl : 'assets/bg_nature.png';
     avatarWrap.appendChild(avatar);
+    applyGuesserStreakVisual(avatarWrap, avatar, item.userData);
 
     const stepChip = document.createElement('span');
     stepChip.className = 'ladder-step-num';
@@ -23045,6 +23243,7 @@ function processShuntleGuess(rawWord, userData, queueLen = 0) {
   avatar.onerror = function() { this.onerror = null; this.src = 'assets/bg_nature.png'; };
   avatar.src = (userData && userData.profilePictureUrl) ? userData.profilePictureUrl : 'assets/bg_nature.png';
   row.appendChild(avatar);
+  applyGuesserStreakVisual(row, avatar, userData);
 
   const flipCfg = getFlipSpeedConfig(queueLen);
   for (let i = 0; i < 7; i++) {

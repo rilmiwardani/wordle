@@ -7,7 +7,7 @@
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=overlays-content">
   <title>TikTok Live Games</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=91">
+  <link rel="stylesheet" href="style.css?v=93">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
   <script src="https://www.youtube.com/iframe_api"></script>
@@ -1077,21 +1077,28 @@
                   <div class="settings-toggle-row settings-card-box" id="giftAnimStyleControlRow"
                     onclick="event.stopPropagation()" style="margin: 4px 0; gap: 4px; padding: 8px 12px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                      <span class="settings-control-title">Gaya Animasi Gift:</span>
+                      <span class="settings-control-title">Gaya &amp; Tata Letak Gift:</span>
                       <button type="button" onclick="previewFloatingGiftStyle(event)"
                         style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;"><i
                           class="fa-solid fa-play" style="margin-right: 4px;"></i> Test</button>
                     </div>
-                    <select id="giftAnimStyleSelect" onchange="changeFloatingGiftStyle(this.value)"
+                    <select id="giftFocusLayoutSelect" onchange="changeFloatingGiftLayout(this.value)"
                       onclick="event.stopPropagation()"
                       style="width: 100%; padding: 6px 8px; margin-top: 3px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; font-size: 12px; cursor: pointer;">
-                      <option value="float">Melayang Naik (Default)</option>
-                      <option value="stamp">Cap / Stempel Keras ke Layar</option>
-                      <option value="fountain">Air Mancur / Lontar Parabola</option>
-                      <option value="pop">Pop-Up Spotlight (Zoom Tengah)</option>
-                      <option value="meteor">Meluncur Diagonal (Meteor)</option>
-                      <option value="rain">Hujan Gift dari Atas</option>
-                      <option value="random">Acak Semua Gaya (Random)</option>
+                      <option value="avatar">1. Foto Profil Besar (Avatar Spotlight)</option>
+                      <option value="gift">2. Gambar Gift Besar (Default)</option>
+                      <option value="duo">3. Duo Seimbang (Avatar &amp; Gift Sejajar)</option>
+                    </select>
+                    <select id="giftAnimStyleSelect" onchange="changeFloatingGiftStyle(this.value)"
+                      onclick="event.stopPropagation()"
+                      style="width: 100%; padding: 6px 8px; margin-top: 4px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; font-size: 12px; cursor: pointer;">
+                      <option value="float">Gerak: Melayang Naik (Default)</option>
+                      <option value="stamp">Gerak: Cap / Stempel Keras ke Layar</option>
+                      <option value="fountain">Gerak: Air Mancur / Lontar Parabola</option>
+                      <option value="pop">Gerak: Pop-Up Spotlight (Zoom Tengah)</option>
+                      <option value="meteor">Gerak: Meluncur Diagonal (Meteor)</option>
+                      <option value="rain">Gerak: Hujan Gift dari Atas</option>
+                      <option value="random">Gerak: Acak Semua Gaya (Random)</option>
                     </select>
                   </div>
                   <div class="settings-toggle-row settings-card-box" id="symblePaletteControlRow"
@@ -3848,8 +3855,7 @@
   <script src="wordladder_puzzles_en.js"></script>
   <script src="wanderwords_puzzles.js"></script>
   <script src="wordcluster_puzzles.js?v=8"></script>
-  <script src="app.js?v=111"></script>
-  <script src="app.js?v=121"></script>
+  <script src="app.js?v=123"></script>
 </body>
 
 </html>

@@ -2430,16 +2430,60 @@ header {
 
 /* Avatar Guesser */
 .guesser-avatar {
-  width: 100%;
+  width: 88%;
+  justify-self: center;
   aspect-ratio: 1/1;
   border-radius: 50% !important;
   border: 2px solid rgba(255,255,255,0.45);
   opacity: 0;
-  transition: opacity 0.3s, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: opacity 0.3s, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.3s ease;
   box-shadow: 0 4px 10px rgba(0,0,0,0.55);
   object-fit: cover;
   background-color: var(--empty);
 }
+
+.guesser-avatar.streak-tier-orange { border-color: #f97316 !important; box-shadow: 0 3px 10px rgba(249, 115, 22, 0.45); }
+.guesser-avatar.streak-tier-cyan   { border-color: #38bdf8 !important; box-shadow: 0 3px 10px rgba(56, 189, 248, 0.45); }
+.guesser-avatar.streak-tier-violet { border-color: #c084fc !important; box-shadow: 0 3px 10px rgba(192, 132, 252, 0.45); }
+.guesser-avatar.streak-tier-gold   { border-color: #facc15 !important; box-shadow: 0 3px 10px rgba(250, 204, 21, 0.5); }
+.guesser-avatar.streak-tier-mythic { border-color: #fb7185 !important; box-shadow: 0 3px 10px rgba(251, 113, 133, 0.55); }
+
+/* Pure Flame Streak Indicator on Guess Row (Outer Bottom-Left Corner, Airy Breathing Room) */
+.row-streak-badge {
+  position: absolute;
+  bottom: 2px;
+  left: 0px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.95));
+}
+
+.row-streak-badge svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  animation: tiktokFlameDance 0.85s ease-in-out infinite alternate;
+  transform-origin: 50% 90%;
+}
+
+.row-streak-badge b {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10.5px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.3px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+}
+
+.row-streak-badge.tier-orange b { color: #ff9800; }
+.row-streak-badge.tier-cyan b   { color: #38bdf8; }
+.row-streak-badge.tier-violet b { color: #c084fc; }
+.row-streak-badge.tier-gold b   { color: #facc15; }
+.row-streak-badge.tier-mythic b { color: #fb7185; }
 
 .guesser-avatar.show {
   opacity: 1;
@@ -2979,7 +3023,15 @@ header {
   /* Bayangan statis natural - animasi box-shadow infinite memicu repaint tiap frame */
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
   background: rgba(255, 255, 255, 0.05);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
+
+#winAvatar.streak-tier-orange { border-color: #f97316; box-shadow: 0 8px 22px rgba(249, 115, 22, 0.38); }
+#winAvatar.streak-tier-cyan   { border-color: #38bdf8; box-shadow: 0 8px 22px rgba(56, 189, 248, 0.38); }
+#winAvatar.streak-tier-violet { border-color: #c084fc; box-shadow: 0 8px 22px rgba(192, 132, 252, 0.4); }
+#winAvatar.streak-tier-gold   { border-color: #facc15; box-shadow: 0 8px 24px rgba(250, 204, 21, 0.42); }
+#winAvatar.streak-tier-mythic { border-color: #e11d48; box-shadow: 0 8px 24px rgba(225, 29, 72, 0.45); }
+#winAvatar.streak-tier-broken { border-color: #ffd54f; box-shadow: 0 8px 22px rgba(255, 213, 79, 0.38); }
 
 .crown-icon {
   position: absolute;
@@ -3022,14 +3074,15 @@ header {
   white-space: nowrap;
 }
 
-/* TikTok Win Streak Flame Badge (Minimalist Pure Flame & Number di Bawah Nama) */
+/* TikTok Win Streak Flame Badge (Minimalist Pure Flame & Number + Kinetic Lightning Split Streak Broken) */
 .win-streak-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 7px;
   width: 100%;
-  margin: 2px auto 10px auto;
+  min-height: 28px;
+  margin: 6px auto 14px auto;
   user-select: none;
   animation: winStreakPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -3040,15 +3093,23 @@ header {
 }
 
 .win-streak-flame {
-  display: inline-block;
-  font-size: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 25px;
   animation: tiktokFlameDance 0.85s ease-in-out infinite alternate;
   transform-origin: 50% 90%;
 }
 
+.win-streak-flame svg {
+  width: 26px;
+  height: 26px;
+  display: block;
+}
+
 .win-streak-num {
   font-family: 'Outfit', sans-serif;
-  font-size: 21px;
+  font-size: 22px;
   font-weight: 900;
   letter-spacing: -0.5px;
   line-height: 1;
@@ -3059,6 +3120,137 @@ header {
   35% { transform: scale(1.14, 0.92) rotate(2.5deg); }
   70% { transform: scale(0.94, 1.1) rotate(-2.5deg); }
   100% { transform: scale(1.06, 0.97) rotate(1.5deg); }
+}
+
+/* Kinetic Streak Broken ("Api Terbelah Kilat" / Lightning Split Flame) */
+@keyframes streakSlashLine {
+  0%   { opacity: 0; transform: translate(-28px, 18px) rotate(-38deg) scaleX(0.1); }
+  25%  { opacity: 1; transform: translate(0, 0) rotate(-38deg) scaleX(1.15); }
+  60%  { opacity: 1; transform: translate(0, 0) rotate(-38deg) scaleX(1); }
+  100% { opacity: 0.88; transform: translate(0, 0) rotate(-38deg) scaleX(0.95); }
+}
+@keyframes streakSplitTopLeft {
+  0%, 18% { transform: translate(0, 0) rotate(0deg); filter: grayscale(0); opacity: 1; }
+  45%     { transform: translate(-4px, -3px) rotate(-14deg); filter: grayscale(0.75); opacity: 0.78; }
+  100%    { transform: translate(-3.5px, -2.5px) rotate(-12deg); filter: grayscale(0.85); opacity: 0.68; }
+}
+@keyframes streakSplitBotRight {
+  0%, 18% { transform: translate(0, 0) rotate(0deg); filter: grayscale(0); opacity: 1; }
+  45%     { transform: translate(4px, 3px) rotate(14deg); filter: grayscale(0.75); opacity: 0.78; }
+  100%    { transform: translate(3.5px, 2.5px) rotate(12deg); filter: grayscale(0.85); opacity: 0.68; }
+}
+@keyframes streakShakeBeforeBreak {
+  0%   { transform: translateX(0); }
+  10%  { transform: translateX(-3px) rotate(-3deg); }
+  20%  { transform: translateX(3px) rotate(3deg); }
+  30%  { transform: translateX(0); }
+  100% { transform: translateX(0); }
+}
+@keyframes streakSparkBurst {
+  0%, 15% { opacity: 0; transform: scale(0.2); }
+  30%     { opacity: 1; transform: scale(1.25); }
+  100%    { opacity: 0; transform: scale(1.9); }
+}
+@keyframes streakStrikeExpand {
+  0%, 25% { width: 0%; opacity: 0; }
+  55%     { width: 112%; opacity: 1; }
+  100%    { width: 108%; opacity: 0.92; }
+}
+@keyframes streakSlayerSlideIn {
+  0%, 28% { opacity: 0; transform: translateY(6px) scale(0.9); }
+  65%     { opacity: 1; transform: translateY(0) scale(1.04); }
+  100%    { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.streak-break-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  animation: streakShakeBeforeBreak 0.85s ease-out forwards;
+}
+
+.streak-split-box {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.streak-spark-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid #fde047;
+  pointer-events: none;
+  animation: streakSparkBurst 0.65s ease-out forwards;
+}
+
+.streak-half-tl {
+  position: absolute;
+  inset: 0;
+  width: 26px;
+  height: 26px;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  animation: streakSplitTopLeft 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.streak-half-br {
+  position: absolute;
+  inset: 0;
+  width: 26px;
+  height: 26px;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  animation: streakSplitBotRight 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.streak-slash-bar {
+  position: absolute;
+  width: 32px;
+  height: 2.5px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, #fde047, #ffffff, #fde047, transparent);
+  box-shadow: 0 0 6px #fde047;
+  animation: streakSlashLine 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.streak-old-num-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.streak-old-num {
+  font-family: 'Outfit', sans-serif;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+  opacity: 0.55;
+}
+
+.streak-strike-bar {
+  position: absolute;
+  left: -2px;
+  top: 50%;
+  height: 2px;
+  background: #fde047;
+  border-radius: 999px;
+  transform: rotate(-16deg);
+  animation: streakStrikeExpand 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.streak-broken-label {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11.5px;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #fde047;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.65);
+  animation: streakSlayerSlideIn 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 /* 5 Tier Gradient Textures (Tanpa Kotak, Murni Ikon & Angka) */
@@ -3816,7 +4008,7 @@ header {
   display: flex;
   flex-direction: row;
   justify-content: space-around;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
 }
 
@@ -3834,21 +4026,21 @@ header {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
-  padding: 2px 8px 2px 3px;
+  padding: 3.5px 9px 3.5px 4.5px;
   flex: 1;
   min-width: 0;
-  gap: 6px;
+  gap: 7px;
   position: relative;
 }
 
 .lb-avatar-wrapper {
   position: relative;
-  width: 22px;
-  height: 22px;
+  width: 23px;
+  height: 23px;
   flex-shrink: 0;
 }
 
@@ -3860,6 +4052,12 @@ header {
   background: var(--empty);
   border: 1.5px solid rgba(255, 255, 255, 0.2);
 }
+
+.lb-avatar.streak-tier-orange { border-color: #f97316 !important; }
+.lb-avatar.streak-tier-cyan   { border-color: #38bdf8 !important; }
+.lb-avatar.streak-tier-violet { border-color: #c084fc !important; }
+.lb-avatar.streak-tier-gold   { border-color: #facc15 !important; }
+.lb-avatar.streak-tier-mythic { border-color: #fb7185 !important; }
 
 .lb-rank {
   position: absolute;
@@ -3887,6 +4085,7 @@ header {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  flex: 1;
   justify-content: center;
 }
 
@@ -3899,8 +4098,15 @@ header {
   text-overflow: ellipsis;
   width: 100%;
   text-align: left;
-  line-height: 1.1;
-  margin-bottom: 1px;
+  line-height: 1.15;
+  margin-bottom: 1.5px;
+}
+
+.lb-pts-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
 }
 
 .lb-pts {
@@ -3909,7 +4115,45 @@ header {
   color: var(--success);
   text-align: left;
   line-height: 1.1;
+  white-space: nowrap;
 }
+
+/* Pure Borderless Flame in Top Rank & Floating Leaderboard (Airy Breathing Room) */
+.lb-streak-flame,
+.flb-streak-flame {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.flb-streak-flame {
+  margin-right: 6px;
+}
+
+.lb-streak-flame svg,
+.flb-streak-flame svg {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  animation: tiktokFlameDance 0.85s ease-in-out infinite alternate;
+  transform-origin: 50% 90%;
+}
+
+.lb-streak-flame b,
+.flb-streak-flame b {
+  font-family: 'Outfit', sans-serif;
+  font-size: 9.5px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.lb-streak-flame.tier-orange b, .flb-streak-flame.tier-orange b { color: #ff9800; }
+.lb-streak-flame.tier-cyan b,   .flb-streak-flame.tier-cyan b   { color: #38bdf8; }
+.lb-streak-flame.tier-violet b, .flb-streak-flame.tier-violet b { color: #c084fc; }
+.lb-streak-flame.tier-gold b,   .flb-streak-flame.tier-gold b   { color: #facc15; }
+.lb-streak-flame.tier-mythic b, .flb-streak-flame.tier-mythic b { color: #fb7185; }
 
 /* Fix for compact vertical screens */
 @media (max-height: 750px) {
@@ -4635,6 +4879,96 @@ header {
   0% { transform: scale(0.4) rotate(-15deg); }
   70% { transform: scale(1.3) rotate(8deg); }
   100% { transform: scale(1) rotate(0deg); }
+}
+
+/* =========================================================
+   TATA LETAK GIFT 1: FOTO PROFIL BESAR (AVATAR SPOTLIGHT)
+   ========================================================= */
+.floating-gift-content.layout-avatar {
+  flex-direction: column;
+}
+
+.floating-gift-content.layout-avatar .floating-avatar-hero-wrap {
+  position: relative;
+  width: 68px;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.floating-gift-content.layout-avatar .floating-avatar-hero {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  border: 2.5px solid #ffd700;
+  object-fit: cover;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55);
+  z-index: 2;
+}
+
+.floating-gift-content.layout-avatar .floating-gift-corner-badge {
+  position: absolute;
+  bottom: -4px;
+  right: -10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(15, 15, 26, 0.94);
+  border: 1.5px solid #ffd700;
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.6);
+  z-index: 4;
+}
+
+.floating-gift-content.layout-avatar .floating-gift-corner-badge .floating-gift-img {
+  width: 100%;
+  height: 100%;
+}
+
+.floating-gift-content.layout-avatar .floating-gift-sender-pill {
+  padding: 3px 12px;
+  bottom: -16px;
+}
+
+/* =========================================================
+   TATA LETAK GIFT 3: DUO SEIMBANG (AVATAR & GIFT SEJAJAR)
+   ========================================================= */
+.floating-gift-content.layout-duo {
+  flex-direction: column;
+}
+
+.floating-gift-content.layout-duo .floating-duo-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 64px;
+}
+
+.floating-gift-content.layout-duo .floating-avatar-duo {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2.5px solid #ffd700;
+  object-fit: cover;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.55);
+  z-index: 2;
+}
+
+.floating-gift-content.layout-duo .floating-gift-img {
+  width: 54px;
+  height: 54px;
+  margin-left: -10px;
+  z-index: 3;
+}
+
+.floating-gift-content.layout-duo .floating-gift-sender-pill {
+  padding: 3px 12px;
+  bottom: -15px;
 }
 
 .floating-sparkle {
@@ -9151,11 +9485,23 @@ body.theme-sepia .win-name {
   text-shadow: none !important;
 }
 
-body.theme-sepia .win-streak-container.tier-orange .win-streak-num { color: #c2410c !important; text-shadow: none !important; }
-body.theme-sepia .win-streak-container.tier-cyan .win-streak-num { color: #0369a1 !important; text-shadow: none !important; }
-body.theme-sepia .win-streak-container.tier-violet .win-streak-num { color: #7e22ce !important; text-shadow: none !important; }
-body.theme-sepia .win-streak-container.tier-gold .win-streak-num { color: #a16207 !important; text-shadow: none !important; }
-body.theme-sepia .win-streak-container.tier-mythic .win-streak-num { color: #be123c !important; text-shadow: none !important; }
+body.theme-sepia .win-streak-container.tier-orange .win-streak-num,
+body.theme-sepia .lb-streak-flame.tier-orange b,
+body.theme-sepia .flb-streak-flame.tier-orange b { color: #c2410c !important; text-shadow: none !important; }
+body.theme-sepia .win-streak-container.tier-cyan .win-streak-num,
+body.theme-sepia .lb-streak-flame.tier-cyan b,
+body.theme-sepia .flb-streak-flame.tier-cyan b { color: #0369a1 !important; text-shadow: none !important; }
+body.theme-sepia .win-streak-container.tier-violet .win-streak-num,
+body.theme-sepia .lb-streak-flame.tier-violet b,
+body.theme-sepia .flb-streak-flame.tier-violet b { color: #7e22ce !important; text-shadow: none !important; }
+body.theme-sepia .win-streak-container.tier-gold .win-streak-num,
+body.theme-sepia .lb-streak-flame.tier-gold b,
+body.theme-sepia .flb-streak-flame.tier-gold b { color: #a16207 !important; text-shadow: none !important; }
+body.theme-sepia .win-streak-container.tier-mythic .win-streak-num,
+body.theme-sepia .lb-streak-flame.tier-mythic b,
+body.theme-sepia .flb-streak-flame.tier-mythic b { color: #be123c !important; text-shadow: none !important; }
+body.theme-sepia .streak-broken-label { color: #b45309 !important; text-shadow: none !important; }
+body.theme-sepia .streak-strike-bar { background: #b45309 !important; }
 
 body.theme-sepia .win-pts {
   background: #edf5ee !important;

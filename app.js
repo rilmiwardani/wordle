@@ -23375,45 +23375,45 @@ const SYMBLE_MATTE_PALETTES = [
     id: 0,
     name: 'Earth & Ocean',
     items: [
-      { key: 's0', label: 'Biru Baja', icon: 'fa-gem', bg: '#3b6e8c', border: '#5b93b3', sepiaBg: '#35627d', sepiaBorder: '#284d63' },
-      { key: 's1', label: 'Terakota',  icon: 'fa-star', bg: '#9e5a47', border: '#c27863', sepiaBg: '#8f4f3d', sepiaBorder: '#733d2e' },
-      { key: 's2', label: 'Abu Sage',  icon: 'fa-play', bg: '#4b636e', border: '#6b8794', sepiaBg: '#4c5f69', sepiaBorder: '#3b4b54' }
+      { key: 's0', label: 'Biru Baja',  icon: 'fa-gem',  bg: '#2d6e9e', border: '#4d93c7', sepiaBg: '#275f8a', sepiaBorder: '#1c486b' },
+      { key: 's1', label: 'Terakota',   icon: 'fa-star', bg: '#b3523b', border: '#d96a50', sepiaBg: '#9e4631', sepiaBorder: '#7a3322' },
+      { key: 's2', label: 'Lembayung',  icon: 'fa-play', bg: '#6f4e8c', border: '#936eb3', sepiaBg: '#5f4178', sepiaBorder: '#472f5c' }
     ]
   },
   {
     id: 1,
     name: 'Nordic Matte',
     items: [
-      { key: 's0', label: 'Toska Redup', icon: 'fa-bolt', bg: '#2f706b', border: '#4d948e', sepiaBg: '#28615c', sepiaBorder: '#1e4b47' },
-      { key: 's1', label: 'Ochre Kayu',  icon: 'fa-shield-halved', bg: '#946834', border: '#b88549', sepiaBg: '#855b2b', sepiaBorder: '#69461f' },
-      { key: 's2', label: 'Plum Kalem',  icon: 'fa-cube', bg: '#685273', border: '#8a6f96', sepiaBg: '#5c4766', sepiaBorder: '#47364f' }
+      { key: 's0', label: 'Toska Nordik', icon: 'fa-bolt',          bg: '#237a72', border: '#38a399', sepiaBg: '#1e6962', sepiaBorder: '#154f49' },
+      { key: 's1', label: 'Amber Kayu',   icon: 'fa-shield-halved', bg: '#a66a2c', border: '#cc873f', sepiaBg: '#915b23', sepiaBorder: '#704418' },
+      { key: 's2', label: 'Berry Kalem',  icon: 'fa-cube',          bg: '#8f446c', border: '#b55d8c', sepiaBg: '#7a385b', sepiaBorder: '#5e2945' }
     ]
   },
   {
     id: 2,
     name: 'Dusk & Bronze',
     items: [
-      { key: 's0', label: 'Indigo Malam', icon: 'fa-circle', bg: '#485685', border: '#6978ab', sepiaBg: '#3e4b75', sepiaBorder: '#2f395c' },
-      { key: 's1', label: 'Perunggu',     icon: 'fa-moon', bg: '#7a6544', border: '#9e845c', sepiaBg: '#6e593a', sepiaBorder: '#57452b' },
-      { key: 's2', label: 'Bata Lembut',  icon: 'fa-crown', bg: '#8a4f58', border: '#ad6b75', sepiaBg: '#7a434c', sepiaBorder: '#61333a' }
+      { key: 's0', label: 'Indigo Malam',  icon: 'fa-circle', bg: '#3e5496', border: '#5c75bf', sepiaBg: '#344780', sepiaBorder: '#263563' },
+      { key: 's1', label: 'Emas Perunggu', icon: 'fa-moon',   bg: '#9c7a38', border: '#c29b4d', sepiaBg: '#87682d', sepiaBorder: '#694f1f' },
+      { key: 's2', label: 'Merah Marun',   icon: 'fa-crown',  bg: '#99414d', border: '#bf5866', sepiaBg: '#853641', sepiaBorder: '#662730' }
     ]
   },
   {
     id: 3,
-    name: 'Forest & Clay',
+    name: 'Sky & Clay',
     items: [
-      { key: 's0', label: 'Pinus Kalem', icon: 'fa-leaf', bg: '#3d6b58', border: '#5c917b', sepiaBg: '#345c4b', sepiaBorder: '#264538' },
-      { key: 's1', label: 'Amber Tanah', icon: 'fa-fire', bg: '#8c6239', border: '#b08050', sepiaBg: '#7a542f', sepiaBorder: '#5e3f21' },
-      { key: 's2', label: 'Lembayung',   icon: 'fa-compass', bg: '#585978', border: '#78799c', sepiaBg: '#4c4d69', sepiaBorder: '#3a3b52' }
+      { key: 's0', label: 'Biru Langit', icon: 'fa-leaf',    bg: '#32739c', border: '#4f97c4', sepiaBg: '#2a6285', sepiaBorder: '#1e4966' },
+      { key: 's1', label: 'Tanah Liat',  icon: 'fa-fire',    bg: '#ad5937', border: '#d4724c', sepiaBg: '#964b2d', sepiaBorder: '#73371f' },
+      { key: 's2', label: 'Ungu Anggur', icon: 'fa-compass', bg: '#644b87', border: '#8568ad', sepiaBg: '#553f73', sepiaBorder: '#402e57' }
     ]
   },
   {
     id: 4,
-    name: 'Mocha & Slate',
+    name: 'Mocha & Rose',
     items: [
-      { key: 's0', label: 'Teal Abu',    icon: 'fa-diamond', bg: '#3b6973', border: '#598d99', sepiaBg: '#325a63', sepiaBorder: '#24434a' },
-      { key: 's1', label: 'Kopi Hangat', icon: 'fa-feather', bg: '#7d5a4f', border: '#a1776a', sepiaBg: '#6e4e44', sepiaBorder: '#543a32' },
-      { key: 's2', label: 'Olive Redup', icon: 'fa-clover',  bg: '#5c6b4b', border: '#7b8c67', sepiaBg: '#4f5c40', sepiaBorder: '#3c4730' }
+      { key: 's0', label: 'Teal Laut',    icon: 'fa-diamond', bg: '#287580', border: '#3e9aa6', sepiaBg: '#21636c', sepiaBorder: '#174950' },
+      { key: 's1', label: 'Rosewood',     icon: 'fa-feather', bg: '#a64d59', border: '#cc6674', sepiaBg: '#8f404b', sepiaBorder: '#6e2e37' },
+      { key: 's2', label: 'Kopi Karamel', icon: 'fa-clover',  bg: '#8f6838', border: '#b5864c', sepiaBg: '#7a582d', sepiaBorder: '#5c411f' }
     ]
   }
 ];
@@ -23570,19 +23570,42 @@ function getSymbleSlotAppearance(status, wordleStatusOverride = null) {
   };
 }
 
+function getSymbleContrastingShapeSVG(slotIdx, fillColor, strokeColor, isMini = false) {
+  if (isMini) {
+    if (slotIdx === 0) {
+      // 0: Lingkaran Penuh (Circle ●)
+      return `<svg class="symble-shape-mini-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.2" fill="rgba(255,255,255,0.16)" stroke="${strokeColor}" stroke-width="2.4"/></svg>`;
+    }
+    if (slotIdx === 1) {
+      // 1: Kotak Persegi Tajam 90° (Sharp Square ■)
+      return `<svg class="symble-shape-mini-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="0.5" fill="rgba(255,255,255,0.16)" stroke="${strokeColor}" stroke-width="2.4" stroke-linejoin="miter"/></svg>`;
+    }
+    // 2: Segi Enam Lancip Atas-Bawah (Hexagon ⬢)
+    return `<svg class="symble-shape-mini-svg" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,1.5 22,6.5 22,17.5 12,22.5 2,17.5 2,6.5" fill="rgba(255,255,255,0.16)" stroke="${strokeColor}" stroke-width="2.4" stroke-linejoin="round"/></svg>`;
+  }
+
+  if (slotIdx === 0) {
+    // 0: Lingkaran Penuh (Circle ● — 100% melengkung tanpa sudut)
+    return `<svg class="symble-tile-shape-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><circle cx="50" cy="50" r="44" fill="${fillColor}" stroke="${strokeColor}" stroke-width="6.2"/></svg>`;
+  }
+  if (slotIdx === 1) {
+    // 1: Kotak Persegi Siku Tajam 90° (Sharp Square ■ — 4 sisi datar & sudut siku tegas)
+    return `<svg class="symble-tile-shape-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><rect x="8" y="8" width="84" height="84" rx="1" fill="${fillColor}" stroke="${strokeColor}" stroke-width="6.2" stroke-linejoin="miter"/></svg>`;
+  }
+  // 2: Segi Enam Lancip Atas-Bawah (Pointed Hexagon ⬢ — dinding samping tegak lurus lega untuk huruf, atap & alas lancip segitiga)
+  return `<svg class="symble-tile-shape-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polygon points="50,3 93,24 93,76 50,97 7,76 7,24" fill="${fillColor}" stroke="${strokeColor}" stroke-width="6.2" stroke-linejoin="round"/></svg>`;
+}
+
 function applySymbleTileAppearance(tile, status) {
   if (!tile) return;
   tile.dataset.symbleStatus = status;
-  tile.classList.remove('correct', 'present', 'absent', 'symble-shape-0', 'symble-shape-1', 'symble-shape-2');
+  tile.classList.remove('correct', 'present', 'absent', 'symble-shape-0', 'symble-shape-1', 'symble-shape-2', 'symble-shaped-tile');
   tile.classList.add('symble-tile');
 
   const app = getSymbleSlotAppearance(status);
   const isSepia = document.body && document.body.classList.contains('theme-sepia');
   const isShapedMode = (symbleVisualMode === 'shape_color' || symbleVisualMode === 'shape_only');
   const isNeutralMode = (symbleVisualMode === 'symbol_only' || symbleVisualMode === 'shape_only' || symbleVisualMode === 'top_strip' || symbleVisualMode === 'corner_ribbon');
-
-  tile.style.backgroundColor = app.bg;
-  tile.style.borderColor = app.border;
 
   if (isNeutralMode && !app.isRevealed && isSepia) {
     tile.style.setProperty('color', '#3b2c20', 'important');
@@ -23592,13 +23615,10 @@ function applySymbleTileAppearance(tile, status) {
     tile.style.textShadow = '0 1px 2px rgba(0, 0, 0, 0.35)';
   }
 
-  if (isShapedMode) {
-    tile.classList.add(`symble-shape-${app.slotIdx}`);
-  }
-
   let iconEl = tile.querySelector('.symble-corner-icon');
   let stripEl = tile.querySelector('.symble-top-strip');
   let ribbonEl = tile.querySelector('.symble-corner-ribbon');
+  let shapeSvgEl = tile.querySelector('.symble-tile-shape-svg');
 
   // Clean up unused indicator elements
   if (symbleVisualMode !== 'both' && symbleVisualMode !== 'symbol_only') {
@@ -23610,40 +23630,59 @@ function applySymbleTileAppearance(tile, status) {
   if (symbleVisualMode !== 'corner_ribbon') {
     if (ribbonEl) ribbonEl.remove();
   }
+  if (!isShapedMode && shapeSvgEl) {
+    shapeSvgEl.remove();
+  }
 
-  if (symbleVisualMode === 'top_strip') {
-    tile.style.paddingTop = '4px';
-    tile.style.paddingRight = '0px';
-    if (!stripEl) {
-      stripEl = document.createElement('span');
-      stripEl.className = 'symble-top-strip';
-      tile.appendChild(stripEl);
-    }
-    stripEl.style.backgroundColor = app.accentColor;
-  } else if (symbleVisualMode === 'corner_ribbon') {
+  if (isShapedMode) {
+    tile.classList.add('symble-shaped-tile', `symble-shape-${app.slotIdx}`);
+    tile.style.backgroundColor = 'transparent';
+    tile.style.borderColor = 'transparent';
     tile.style.paddingTop = '0px';
     tile.style.paddingRight = '0px';
-    if (!ribbonEl) {
-      ribbonEl = document.createElement('span');
-      ribbonEl.className = 'symble-corner-ribbon';
-      tile.appendChild(ribbonEl);
-    }
-    ribbonEl.style.borderTopColor = app.accentColor;
-  } else if (symbleVisualMode === 'color_only' || isShapedMode) {
-    tile.style.paddingTop = '0px';
-    tile.style.paddingRight = '0px';
+    if (shapeSvgEl) shapeSvgEl.remove();
+    const shapeStroke = (symbleVisualMode === 'shape_only' && !app.isRevealed)
+      ? (isSepia ? 'rgba(66, 52, 40, 0.68)' : 'rgba(255, 255, 255, 0.68)')
+      : app.border;
+    tile.insertAdjacentHTML('beforeend', getSymbleContrastingShapeSVG(app.slotIdx, app.bg, shapeStroke, false));
   } else {
-    tile.style.paddingTop = '3px';
-    tile.style.paddingRight = '2px';
-    if (!iconEl) {
-      iconEl = document.createElement('i');
-      tile.appendChild(iconEl);
+    tile.style.backgroundColor = app.bg;
+    tile.style.borderColor = app.border;
+
+    if (symbleVisualMode === 'top_strip') {
+      tile.style.paddingTop = '4px';
+      tile.style.paddingRight = '0px';
+      if (!stripEl) {
+        stripEl = document.createElement('span');
+        stripEl.className = 'symble-top-strip';
+        tile.appendChild(stripEl);
+      }
+      stripEl.style.backgroundColor = app.accentColor;
+    } else if (symbleVisualMode === 'corner_ribbon') {
+      tile.style.paddingTop = '0px';
+      tile.style.paddingRight = '0px';
+      if (!ribbonEl) {
+        ribbonEl = document.createElement('span');
+        ribbonEl.className = 'symble-corner-ribbon';
+        tile.appendChild(ribbonEl);
+      }
+      ribbonEl.style.borderTopColor = app.accentColor;
+    } else if (symbleVisualMode === 'color_only') {
+      tile.style.paddingTop = '0px';
+      tile.style.paddingRight = '0px';
+    } else {
+      tile.style.paddingTop = '3px';
+      tile.style.paddingRight = '2px';
+      if (!iconEl) {
+        iconEl = document.createElement('i');
+        tile.appendChild(iconEl);
+      }
+      iconEl.className = `fa-solid ${app.icon} symble-corner-icon`;
+      iconEl.style.color = app.iconColor || 'rgba(255, 255, 255, 0.92)';
+      iconEl.style.fontSize = (symbleVisualMode === 'symbol_only')
+        ? 'calc(10px * var(--board-scale, 1))'
+        : 'calc(8.5px * var(--board-scale, 1))';
     }
-    iconEl.className = `fa-solid ${app.icon} symble-corner-icon`;
-    iconEl.style.color = app.iconColor || 'rgba(255, 255, 255, 0.92)';
-    iconEl.style.fontSize = (symbleVisualMode === 'symbol_only')
-      ? 'calc(10px * var(--board-scale, 1))'
-      : 'calc(8.5px * var(--board-scale, 1))';
   }
 }
 
@@ -23701,17 +23740,15 @@ function updateSymbleInfoBarUI(revealed) {
       iconHtml = `<span class="symble-pill-corner-ribbon" style="border-top-color:${accentColor};"></span>`;
       extraPillPadding = 'padding-left: 11px; padding-right: 13px;';
     } else if (isShapedMode) {
-      const miniBorder = (isNeutralMode && isSepia) ? '#3b2c20' : 'rgba(255,255,255,0.92)';
-      iconHtml = `<span class="symble-shape-mini shape-${slotIdx}" style="border-color:${miniBorder};"></span>`;
+      const miniStroke = (isNeutralMode && isSepia) ? '#3b2c20' : 'rgba(255,255,255,0.95)';
+      iconHtml = getSymbleContrastingShapeSVG(slotIdx, 'transparent', miniStroke, true);
     } else if (symbleVisualMode === 'color_only') {
       iconHtml = `<span style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.85);display:inline-block;"></span>`;
     } else {
       iconHtml = `<i class="fa-solid ${item.icon}" style="color:${iconColor};"></i>`;
     }
 
-    const pillShapeClass = isShapedMode ? ` symble-pill-shape-${slotIdx}` : '';
-
-    return `<span class="symble-legend-pill${pillShapeClass}" style="background:${bg}; border: 1.5px solid ${border}; color:${textColor}; ${extraPillPadding}">
+    return `<span class="symble-legend-pill" style="background:${bg}; border: 1.5px solid ${border}; color:${textColor}; ${extraPillPadding}">
       ${iconHtml}
       <span>${text}</span>
     </span>`;

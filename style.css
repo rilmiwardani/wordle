@@ -4008,7 +4008,7 @@ header {
   display: flex;
   flex-direction: row;
   justify-content: space-around;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
 }
 
@@ -4026,21 +4026,21 @@ header {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
-  padding: 3.5px 9px 3.5px 4.5px;
+  padding: 2px 8px 2px 3px;
   flex: 1;
   min-width: 0;
-  gap: 7px;
+  gap: 6px;
   position: relative;
 }
 
 .lb-avatar-wrapper {
   position: relative;
-  width: 23px;
-  height: 23px;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
 }
 
@@ -4085,7 +4085,6 @@ header {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  flex: 1;
   justify-content: center;
 }
 
@@ -4098,14 +4097,14 @@ header {
   text-overflow: ellipsis;
   width: 100%;
   text-align: left;
-  line-height: 1.15;
-  margin-bottom: 1.5px;
+  line-height: 1.1;
+  margin-bottom: 1px;
 }
 
 .lb-pts-row {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   min-width: 0;
 }
 
@@ -5465,49 +5464,33 @@ body.theme-sepia .tile.shuntle-space-absent {
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
 }
 
-/* Symble Shaped Tiles (Opsi 4 & 5: Bentuk Kotak Huruf Menjadi Simbol) */
-.tile.symble-shape-0 {
-  border-radius: 50% !important;
+/* Symble Shaped Tiles (Opsi 4 & 5: 3 Siluet Geometri Kontras Tinggi — Lingkaran ●, Kotak Tajam ■, Segi Enam Lancip ⬢) */
+.tile.symble-shaped-tile {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  z-index: 1;
 }
 
-.tile.symble-shape-1 {
-  border-radius: 6px 6px 24px 24px !important;
+.tile .symble-tile-shape-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+  overflow: visible;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.38));
 }
 
-.tile.symble-shape-2 {
-  border-radius: 22px 4px 22px 4px !important;
-}
-
-.symble-legend-pill.symble-pill-shape-0 {
-  border-radius: 999px !important;
-}
-
-.symble-legend-pill.symble-pill-shape-1 {
-  border-radius: 4px 4px 14px 14px !important;
-}
-
-.symble-legend-pill.symble-pill-shape-2 {
-  border-radius: 14px 3px 14px 3px !important;
-}
-
-.symble-shape-mini {
-  width: 11px;
-  height: 11px;
+.symble-shape-mini-svg {
+  width: 14px;
+  height: 14px;
   display: inline-block;
-  border: 1.5px solid rgba(255, 255, 255, 0.92);
-  box-sizing: border-box;
-}
-
-.symble-shape-mini.shape-0 {
-  border-radius: 50%;
-}
-
-.symble-shape-mini.shape-1 {
-  border-radius: 2px 2px 6px 6px;
-}
-
-.symble-shape-mini.shape-2 {
-  border-radius: 6px 1px 6px 1px;
+  vertical-align: middle;
+  flex-shrink: 0;
+  overflow: visible;
 }
 
 /* Symble Opsi 6 (Pita Bar Atas) & Opsi 7 (Lipatan Sudut) */
